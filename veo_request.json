@@ -1,25 +1,11 @@
 {
     "instances": [
-      {
-        "prompt": "Okay, here's a storyboard outline for a YouTube Shorts video promoting the Pix Phone 10, localized for the US, France, and Japan. \n
-The core concept is a fast-paced, visually driven showcase of the phone's AI capabilities and sleek design, adapted for each region's cultural nuances.\n
-Core Concept: 'Unlock the Future in Your Pocket' - Each version highlights a specific AI feature and ties it into a relatable, everyday scenario. The focus is on speed, ease of use, and how the phone simplifies life.\n
-\n
-Music: Upbeat, trendy, and globally appealing electronic music with subtle regional variations (e.g., a slightly more pop-infused track for the US, a touch of French house for France, and J-Pop/electronic fusion for Japan).\n
-\n
-Overall Style: Clean, modern, and visually stunning. Use dynamic camera angles, quick cuts, and seamless transitions to keep viewers engaged. Emphasize the phone's screen and its UI.\n
-\n
-Storyboard Structure (All Versions):\n
-\n
-Opening Scene (0-3 seconds): A close-up of someone's hand reaching for the Pix Phone 10. The screen lights up, showcasing a visually appealing lock screen or animation. Text overlay: 'Pix Phone 10.'\n
-Feature Highlight (3-7 seconds): Demonstrate a key AI feature in action. This is where the localization comes into play.\n
-Benefit Showcase (7-10 seconds): Show how that feature solves a problem or makes life easier.\n
-Design Showcase (10-12 seconds): Quick cuts showcasing the phone's sleek design, various color options, and key physical features (camera, buttons, etc.).\n
-Call to Action (12-15 seconds): Text overlay: 'Pre-order Now!' or 'Learn More at [Website]' A simple animation of the phone rotating, highlighting the pre-order webpage on the phone's screen."
-      }
+        {
+            "prompt": "Okay, here's a storyboard outline for a YouTube Shorts video promoting the Pix Phone 10, localized for the US, France, and Japan. The core concept is a fast-paced, visually driven showcase of the phone's AI capabilities and sleek design, adapted for each region's cultural nuances.Core Concept: 'Unlock the Future in Your Pocket' - Each version highlights a specific AI feature and ties it into a relatable, everyday scenario. The focus is on speed, ease of use, and how the phone simplifies life.\nMusic: Upbeat, trendy, and globally appealing electronic music with subtle regional variations (e.g., a slightly more pop-infused track for the US, a touch of French house for France, and J-Pop/electronic fusion for Japan).\nOverall Style: Clean, modern, and visually stunning. Use dynamic camera angles, quick cuts, and seamless transitions to keep viewers engaged. Emphasize the phone's screen and its UI.\nStoryboard Structure (All Versions):\nOpening Scene (0-3 seconds): A close-up of someone's hand reaching for the Pix Phone 10. The screen lights up, showcasing a visually appealing lock screen or animation. Text overlay: 'Pix Phone 10.'\nFeature Highlight (3-7 seconds): Demonstrate a key AI feature in action. This is where the localization comes into play.\nBenefit Showcase (7-10 seconds): Show how that feature solves a problem or makes life easier.\nDesign Showcase (10-12 seconds): Quick cuts showcasing the phone's sleek design, various color options, and key physical features (camera, buttons, etc.).\nCall to Action (12-15 seconds): Text overlay: 'Pre-order Now!' or 'Learn More at [Website]' A simple animation of the phone rotating, highlighting the pre-order webpage on the phone's screen."
+        }
     ],
     "parameters": {
-      "storageUri": "gs://marketing-veo-output-jw-2025",
-      "sampleCount": "4"
+        "storageUri": "gs://marketing-veo-output-jw-2025/march25",
+        "sampleCount": 4
     }
-  }
+}
