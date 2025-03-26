@@ -10,7 +10,16 @@ requires-python = ">=3.11"
 dependencies = [
     "gcloud (>=0.18.3,<0.19.0)",
     "google-genai (>=1.7.0,<2.0.0)",
-    "ipykernel (>=6.29.5,<7.0.0)"
+    "ipykernel (>=6.29.5,<7.0.0)",
+    "google-cloud-aiplatform (>=1.85.0,<2.0.0)",
+    "google-api-python-client (>=2.165.0,<3.0.0)",
+    "google-auth-oauthlib (>=1.2.1,<2.0.0)",
+    "google-auth-httplib2 (>=0.2.0,<0.3.0)",
+    "google-api-core (>=2.24.2,<3.0.0)",
+    "google (>=3.0.0,<4.0.0)",
+    "pandas (>=2.2.3,<3.0.0)",
+    "db-dtypes (>=1.4.2,<2.0.0)",
+    "google-cloud-secret-manager (>=2.23.2,<3.0.0)",
 ]
 
 
