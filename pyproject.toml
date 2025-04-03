@@ -22,6 +22,7 @@ dependencies = [
     "google-cloud-secret-manager (>=2.23.2,<3.0.0)",
     "google-cloud-bigquery (>=3.31.0,<4.0.0)",
     "python-dotenv (>=1.1.0,<2.0.0)",
+    "matplotlib (>=3.10.1,<4.0.0)",
 ]
 
 
