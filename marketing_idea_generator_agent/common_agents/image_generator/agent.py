@@ -12,8 +12,8 @@ image_generation_agent = Agent(
     instruction=image_generation_instructions,
     tools=[
         generate_image,
+        generate_video,
         load_artifacts,
-        LongRunningFunctionTool(func=generate_video),
     ],
     generate_content_config=types.GenerateContentConfig(
         temperature=1.0,

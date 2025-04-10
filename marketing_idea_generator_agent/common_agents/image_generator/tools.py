@@ -28,7 +28,7 @@ def generate_image(prompt: str, tool_context: "ToolContext"):
     return {"status": "ok", "filename": "image.png"}
 
 
-def generate_video(prompt: str, tool_context: "ToolContext"):
+def generate_video(prompt: str, tool_context: "ToolContext") -> str:
     """Generates an image based on the prompt."""
 
     operation = client.models.generate_videos(
@@ -46,8 +46,9 @@ def generate_video(prompt: str, tool_context: "ToolContext"):
 
     if operation.response:
         video_uri = operation.result.generated_videos[0].video.uri
+        print(f"The location for this video is here: {video_uri}")
         tool_context.save_artifact(
             "video.mp4",
             types.Part.from_uri(file_uri=video_uri, mime_type="video/mp4"),
         )
-        return {"status": "ok", "filename": "video.png"}
+        return f"The location for this video is here: {video_uri}"
