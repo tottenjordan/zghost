@@ -1,19 +1,20 @@
-[project]
-name = "zghost"
+[tool.poetry]
+name = "marketing_idea_generator_agent"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "jtott"}
-]
+authors = ["Jeremy Wortz <jwortz@google.com>"]
 readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
-    "gcloud (>=0.18.3,<0.19.0)",
-    "google-genai (>=1.7.0,<2.0.0)",
-    "ipykernel (>=6.29.5,<7.0.0)"
-]
+package-mode = true 
+
+[tool.poetry.dependencies]
+python = "^3.12"
+ipython = "^9.1.0"
+jupyter = "^1.1.1"
+google-genai = "^1.10.0"
+pillow = "^11.1.0"
+google-adk = "0.1.0"
 
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
