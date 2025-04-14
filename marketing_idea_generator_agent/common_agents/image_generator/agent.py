@@ -5,19 +5,17 @@ from google.adk.tools import ToolContext, LongRunningFunctionTool
 from .prompts import (
     image_generation_instructions,
     video_generation_tips,
-    movie_code_generation_example,
+    # movie_code_generation_example,
 )
 from google.genai import types
-from google.adk.code_executors.unsafe_local_code_executor import UnsafeLocalCodeExecutor
 
+# from google.adk.code_executors.unsafe_local_code_executor import UnsafeLocalCodeExecutor
 
 
 image_generation_agent = Agent(
     model="gemini-2.0-flash-001",
     name="image_generation_agent",
-    instruction=image_generation_instructions
-    + video_generation_tips
-    + movie_code_generation_example,
+    instruction=image_generation_instructions + video_generation_tips,
     tools=[
         generate_image,
         LongRunningFunctionTool(generate_video),
@@ -27,5 +25,5 @@ image_generation_agent = Agent(
         temperature=1.0,
         # response_modalities=["TEXT", "AUDIO"],
     ),
-    code_executor=UnsafeLocalCodeExecutor(),
+    # code_executor=UnsafeLocalCodeExecutor(),
 )
