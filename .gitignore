@@ -1,3 +1,4 @@
-/.venv
+.venv
 /google-cloud-cli-linux-x86_64.tar.gz
 /google-cloud-sdk
+*.pyc
