@@ -13,7 +13,6 @@ except ImportError:
 import requests
 import trafilatura
 from requests.exceptions import RequestException
-from google.adk.tools import ToolContext
 from google.genai import types
 import uuid
 from google import genai
@@ -60,33 +59,9 @@ def analyze_youtube_videos(
         )
         return result.text
 
-# def save_yt_artifacts_from_search(
-#     search_results_urls: list[str], tool_context: "ToolContext"
-# ):
-#     """
-#     Saves youtube artifacts from search results.
-#     Args:
-#         search_results_urls (list[str]): The list of urls to check for youtube.com
-#         tool_context (ToolContext): The tool context.
-#     Returns:
-#         None
-#     """
-#     for url in search_results_urls:
-#         if "youtube.com" in url:
-#             video_part = types.Part.from_uri(
-#                 file_uri=url,
-#                 mime_type="video/*",
-#             )
-#             filename = uuid.uuid4()
-#             tool_context.save_artifact(
-#                 f"{filename}.png",
-#                 video_part,
-#             )
-
 
 async def perform_google_search(
     query: str,
-    # tool_context: "ToolContext",
     num_results: int = 10,
     lang: str = "en",
     pause_time: float = 2.0,
@@ -128,29 +103,6 @@ async def perform_google_search(
 
     return search_results_urls
 
-
-# # --- Example Usage ---
-# # Decide on the search term based on the findings:
-# # search_term_adk = "Google Agent Development Kit" # For the ADK framework [4, 11]
-# search_term_sdk = (
-#     "Google Gemini AI SDK python"  # For the core Gemini API library [1, 3, 9]
-# )
-# search_term_general = "What is the latest Gemini model?"  # For a general search
-
-# # Choose which term to use for the example:
-# # Let's search for the ADK as originally requested, using the more specific name
-# chosen_search_term = "Google Agent Development Kit"
-
-# # Perform the search
-# results = perform_google_search(chosen_search_term, num_results=5)
-
-# # Print the results
-# if results:
-#     print("\n--- Search Results URLs ---")
-#     for i, url in enumerate(results):
-#         print(f"{i+1}: {url}")
-# else:
-#     print("\nNo results were returned or an error occurred.")
 
 
 def extract_main_text_from_url(
