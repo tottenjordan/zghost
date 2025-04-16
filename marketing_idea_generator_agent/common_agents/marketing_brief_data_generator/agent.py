@@ -11,6 +11,6 @@ brief_data_generation_agent = Agent(
     generate_content_config=types.GenerateContentConfig(
         temperature=0.1,
     ),
-    # output_schema=MarketingCampaignBrief,
+    output_schema=MarketingCampaignBrief,
     output_key="campaign_brief",
 )

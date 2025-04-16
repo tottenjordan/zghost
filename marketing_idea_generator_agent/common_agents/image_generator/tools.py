@@ -1,14 +1,13 @@
 from google.adk import Agent
-from google.adk.tools import load_artifacts
 from google.adk.tools import ToolContext
 from google.genai import Client
 from google.genai import types
-from google.genai.types import GenerateVideosConfig, Image
+from google.genai.types import GenerateVideosConfig
+from google.genai import types
 import time
 import os
 import uuid
 from google.cloud import storage
-
 
 # Only Vertex AI supports image generation for now.
 client = Client()
@@ -39,7 +38,28 @@ def generate_image(prompt: str, tool_context: "ToolContext", number_of_images: i
             f"{filename}.png",
             types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
         )
+        # save the file locally for gcs upload
+        upload_file_to_gcs(file_path=f"{filename}.png", file_data=image_bytes)
     return {"status": "ok", "filename": f"{filename}.png"}
+
+
+def upload_file_to_gcs(
+    file_path: str, file_data: bytes, gcs_bucket: str = os.environ.get("BUCKET")
+):
+    """
+    Uploads a file to a GCS bucket.
+    Args:
+        file_path (str): The path to the file to upload.
+        gcs_bucket (str): The name of the GCS bucket.
+    Returns:
+        str: The GCS URI of the uploaded file.
+    """
+    gcs_bucket = gcs_bucket.replace("gs://", "")
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(gcs_bucket)
+    blob = bucket.blob(os.path.basename(file_path))
+    blob.upload_from_string(file_data, content_type="image/png")
+    return f"gs://{gcs_bucket}/{os.path.basename(file_path)}"
 
 
 def generate_video(
@@ -48,6 +68,7 @@ def generate_video(
     number_of_videos: int = 1,
     aspect_ratio: str = "16:9",
     negative_prompt: str = "",
+    existing_image_filename: str = "",
 ) -> str:
     """Generates an image based on the prompt.
     Args:
@@ -63,17 +84,31 @@ def generate_video(
     Supported aspect ratios are:
         16:9 (landscape) and 9:16 (portrait) are supported.
     """
-
-    operation = client.models.generate_videos(
-        model="veo-2.0-generate-001",
-        prompt=prompt,
-        config=GenerateVideosConfig(
-            aspect_ratio=aspect_ratio,
-            number_of_videos=number_of_videos,
-            output_gcs_uri=os.environ.get("BUCKET"),
-            negative_prompt=negative_prompt,
-        ),
-    )
+    if existing_image_filename is not "":
+        gcs_location = f"{os.environ.get('BUCKET')}/{existing_image_filename}"
+        existing_image = types.Image(gcs_uri=gcs_location, mime_type="image/png")
+        operation = client.models.generate_videos(
+            model="veo-2.0-generate-001",
+            prompt=prompt,
+            image=existing_image,
+            config=GenerateVideosConfig(
+                aspect_ratio=aspect_ratio,
+                number_of_videos=number_of_videos,
+                output_gcs_uri=os.environ.get("BUCKET"),
+                negative_prompt=negative_prompt,
+            ),
+        )
+    else:
+        operation = client.models.generate_videos(
+            model="veo-2.0-generate-001",
+            prompt=prompt,
+            config=GenerateVideosConfig(
+                aspect_ratio=aspect_ratio,
+                number_of_videos=number_of_videos,
+                output_gcs_uri=os.environ.get("BUCKET"),
+                negative_prompt=negative_prompt,
+            ),
+        )
     while not operation.done:
         time.sleep(15)
         operation = client.operations.get(operation)

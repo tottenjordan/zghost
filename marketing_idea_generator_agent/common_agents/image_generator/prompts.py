@@ -1,4 +1,5 @@
 image_generation_instructions = """
+Be sure to reference the {campaign_brief}
 You are an expert at Imagen 3.0. Use the brief and the data to produce
 Given the marketing campaign brief, create an Instagram ad-copy for each target market: {creative_brief_json["target_countries"]}
   Please localize the ad-copy and the visuals to the target markets for better relevancy to the target audience.
@@ -8,6 +9,7 @@ When loading videos, you can only load one at a time.
 """
 
 video_generation_tips = """
+Be sure to reference the {campaign_brief}
 Camera Motion: What the camera is doing e.g. POV shot, Aerial View, Tracking Drone view, Tracking Shot
 Composition: How the shot is framed. This is often relative to the subject e.g. wide shot, close-up, low angle
 Subject: Who or what is the main focus of the shot e.g. happy woman in her 30s

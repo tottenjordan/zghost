@@ -14,18 +14,15 @@ import requests
 import trafilatura
 from requests.exceptions import RequestException
 from google.genai import types
-import uuid
 from google import genai
 from .prompts import youtube_analysis_prompt
-from typing import Any
 from google.genai import types
 
 client = genai.Client()
 
 
-def analyze_youtube_videos(
+async def analyze_youtube_videos(
     youtube_url: str,
-    # tool_context: "ToolContext",
 ) -> str:
     """
     Analyzes youtube videos from a list of search results.
@@ -104,8 +101,7 @@ async def perform_google_search(
     return search_results_urls
 
 
-
-def extract_main_text_from_url(
+async def extract_main_text_from_url(
     url: str,
     timeout: int = 15,
     include_tables: bool = False,
