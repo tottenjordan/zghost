@@ -81,8 +81,8 @@ def generate_video(
 
     if operation.response:
 
-        for genrated_video in operation.result.generated_videos:
-            video_uri = genrated_video.video.uri
+        for generated_video in operation.result.generated_videos:
+            video_uri = generated_video.video.uri
             video_url = video_uri.replace("gs://", "https://storage.googleapis.com/")
             filename = uuid.uuid4()
             print(f"The location for this video is here: {video_url}")
@@ -91,5 +91,3 @@ def generate_video(
                 types.Part.from_uri(file_uri=video_url, mime_type="video/mp4"),
             )
         return f"The location for this video is here: {video_url}"
-
-

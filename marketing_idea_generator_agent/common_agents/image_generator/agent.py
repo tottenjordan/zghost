@@ -23,7 +23,6 @@ image_generation_agent = Agent(
     ],
     generate_content_config=types.GenerateContentConfig(
         temperature=1.0,
-        # response_modalities=["TEXT", "AUDIO"],
     ),
     # code_executor=UnsafeLocalCodeExecutor(),
 )

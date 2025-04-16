@@ -13,10 +13,83 @@ except ImportError:
 import requests
 import trafilatura
 from requests.exceptions import RequestException
+from google.adk.tools import ToolContext
+from google.genai import types
+import uuid
+from google import genai
+from .prompts import youtube_analysis_prompt
+from typing import Any
+from google.genai import types
+
+client = genai.Client()
 
 
-def perform_google_search(
-    query: str, num_results: int = 10, lang: str = "en", pause_time: float = 2.0
+def analyze_youtube_videos(
+    youtube_url: str,
+    # tool_context: "ToolContext",
+) -> str:
+    """
+    Analyzes youtube videos from a list of search results.
+    Args:
+        search_results_urls (list[str]): The list of urls to check for youtube.com
+    Returns:
+        Results from the youtube video analysis prompt.
+    """
+
+    if "youtube.com" not in youtube_url:
+        return "Not a valid youtube URL"
+    else:
+        video1 = types.Part.from_uri(
+            file_uri=youtube_url,
+            mime_type="video/*",
+        )
+
+        model = "gemini-2.0-flash-001"
+        contents = [
+            types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=youtube_analysis_prompt), video1],
+            )
+        ]
+        result = client.models.generate_content(
+            model=model,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                temperature=0.1,
+            ),
+        )
+        return result.text
+
+# def save_yt_artifacts_from_search(
+#     search_results_urls: list[str], tool_context: "ToolContext"
+# ):
+#     """
+#     Saves youtube artifacts from search results.
+#     Args:
+#         search_results_urls (list[str]): The list of urls to check for youtube.com
+#         tool_context (ToolContext): The tool context.
+#     Returns:
+#         None
+#     """
+#     for url in search_results_urls:
+#         if "youtube.com" in url:
+#             video_part = types.Part.from_uri(
+#                 file_uri=url,
+#                 mime_type="video/*",
+#             )
+#             filename = uuid.uuid4()
+#             tool_context.save_artifact(
+#                 f"{filename}.png",
+#                 video_part,
+#             )
+
+
+async def perform_google_search(
+    query: str,
+    # tool_context: "ToolContext",
+    num_results: int = 10,
+    lang: str = "en",
+    pause_time: float = 2.0,
 ):
     """
     Performs a Google search for a given query using the googlesearch-python library.
@@ -175,9 +248,3 @@ def extract_main_text_from_url(
         extracted_text = None
 
     return extracted_text
-# test_urls = ['https://www.pcmag.com/picks/the-best-phones',
-#              'https://www.zdnet.com/article/best-phone/',
-#              'https://www.gsmarena.com/top_20_phones_of_the_year_2023-news-61070.php']
-
-# for url in test_urls:
-#     print(extract_main_text_from_url(url=url))
