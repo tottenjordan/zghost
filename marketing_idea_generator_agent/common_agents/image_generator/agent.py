@@ -17,7 +17,7 @@ image_generation_agent = Agent(
     name="image_generation_agent",
     instruction=image_generation_instructions + video_generation_tips,
     tools=[
-        generate_image,
+        LongRunningFunctionTool(generate_image),
         LongRunningFunctionTool(generate_video),
         load_artifacts,
     ],

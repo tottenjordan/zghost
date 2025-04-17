@@ -10,6 +10,8 @@ except ImportError:
     print("Please install it first using: pip install googlesearch-python")
     search = None  # Set search to None so the script doesn't crash immediately
 
+import asyncio
+import aiohttp
 import os
 import pandas as pd
 import requests
@@ -17,15 +19,17 @@ import trafilatura
 from requests.exceptions import RequestException
 from google.genai import types
 from google import genai
-from .prompts import youtube_analysis_prompt
+
+# from .prompts import youtube_analysis_prompt
 from google.genai import types
 
 import googleapiclient.discovery
+
 # import googleapiclient.errors
 from google.cloud import secretmanager
 
 from typing import Optional, AsyncGenerator
-
+import os
 
 # clients
 client = genai.Client()
@@ -137,8 +141,8 @@ def perform_google_search(
     num_results: int = 10,
     lang: str = "en",
     pause_time: float = 2.0,
-)-> list:
-# ) -> AsyncGenerator[list, None]:
+) -> list:
+    # ) -> AsyncGenerator[list, None]:
     """
     Performs a Google search for a given query using the googlesearch-python library.
 
@@ -177,31 +181,26 @@ def perform_google_search(
     return search_results_urls
 
 
-def extract_main_text_from_url(
+async def extract_main_text_from_url(
     url: str,
+    session: aiohttp.ClientSession,  # Pass the session for reuse
     timeout: int = 15,
     include_tables: bool = False,
     favour_precision: bool = True,
-)-> str:
+) -> Optional[str]:  # Returns a single string or None
     """
-    Fetches a webpage and extracts the main textual content using trafilatura.
-
-    This aims to remove boilerplate (menus, ads, footers) to get text suitable
-    for processing by language models like Gemini.
+    Fetches a webpage asynchronously and extracts the main textual content using trafilatura.
 
     Args:
         url (str): The URL of the webpage to scrape.
+        session (aiohttp.ClientSession): The aiohttp session to use for requests.
         timeout (int): Max time in seconds to wait for the server response.
         include_tables (bool): Whether to include text found within HTML tables.
-        favour_precision (bool): If True, prioritizes accuracy over recall
-                                 (less text, potentially higher quality).
-                                 If False (favour_recall), tries to get more text.
+        favour_precision (bool): If True, prioritizes accuracy over recall.
 
     Returns:
-        str: The extracted main text content as a single string, or None if
-             an error occurs or content extraction fails significantly.
+        Optional[str]: The extracted main text content, or None if an error occurs.
     """
-    # Using a realistic User-Agent can help avoid being blocked by some websites
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -212,95 +211,171 @@ def extract_main_text_from_url(
     print(f"Attempting to fetch URL: {url}")
 
     try:
-        # Fetch the HTML content
-        response = requests.get(
+        async with session.get(
             url, headers=headers, timeout=timeout, allow_redirects=True
-        )
-        # Raise an HTTPError for bad responses (4xx or 5xx)
-        response.raise_for_status()
+        ) as response:
+            # Raise an HTTPError for bad responses (4xx or 5xx)
+            # aiohttp doesn't raise by default like requests, so we check status
+            if response.status >= 400:
+                print(f"HTTP Error {response.status} for URL {url}")
+                # Optionally raise an exception or just return None
+                # response.raise_for_status() # This would raise ClientResponseError
+                return None  # Return None on client/server errors
 
-        # Optional: Check content type (trafilatura often handles non-HTML gracefully)
-        content_type = response.headers.get("content-type", "").lower()
-        if "text/html" not in content_type:
-            print(
-                f"Warning: Content-Type is '{content_type}'. Extraction might be suboptimal."
-            )
-            # You could choose to return None here if you strictly require HTML
+            # Check content type (optional)
+            content_type = response.headers.get("content-type", "").lower()
+            if "text/html" not in content_type:
+                print(
+                    f"Warning: Content-Type for {url} is '{content_type}'. Extraction might be suboptimal."
+                )
 
-        # Use trafilatura to extract the main content from the fetched HTML
-        # response.content passes the raw bytes, letting trafilatura handle encoding
-        print("Extracting main content using trafilatura...")
-        extracted_text = trafilatura.extract(
-            response.content,
-            include_comments=False,  # Don't include HTML comments
-            include_tables=include_tables,  # Include table text if requested
-            favor_precision=favour_precision,
-            # target_language='en' # Optional: Specify language code if known e.g., 'en', 'de'
-            # Helps if encoding/language detection is tricky
-        )
+            # Read the response content as bytes (best for trafilatura)
+            html_content = await response.read()
 
-        if not extracted_text and favour_precision:
-            # If precision mode yielded nothing, try recall mode as a fallback
-            print("Precision mode yielded no text, trying recall mode...")
+            # Run trafilatura extraction (potentially blocking, see note below)
+            print(f"Extracting main content from {url} using trafilatura...")
+            # Note: trafilatura itself is synchronous CPU-bound code.
+            # For *very* heavy pages or *many* concurrent tasks on a limited machine,
+            # you *might* consider running this part in a thread pool executor too,
+            # using loop.run_in_executor(None, trafilatura.extract, ...),
+            # but often the network I/O is the main bottleneck, so direct call is fine.
             extracted_text = trafilatura.extract(
-                response.content,
+                html_content,
                 include_comments=False,
                 include_tables=include_tables,
-                favor_recall=True,  # Switch to favouring recall
+                favor_precision=favour_precision,
+                # target_language='en' # Optional
             )
 
-        if extracted_text:
-            print(
-                f"Successfully extracted content (approx. {len(extracted_text)} chars)."
-            )
-        else:
-            # Check if original response text had *any* text, even if not extracted
-            if response.text and len(response.text.strip()) > 0:
+            if not extracted_text and favour_precision:
                 print(
-                    "Trafilatura could not extract main content, though the page was fetched."
+                    f"Precision mode yielded no text for {url}, trying recall mode..."
+                )
+                extracted_text = trafilatura.extract(
+                    html_content,
+                    include_comments=False,
+                    include_tables=include_tables,
+                    favor_recall=True,  # Switch to favouring recall
+                )
+
+            if extracted_text:
+                print(
+                    f"Successfully extracted content from {url} (approx. {len(extracted_text)} chars)."
                 )
             else:
-                print("The fetched page appears to have no text content.")
-            extracted_text = None  # Ensure None is returned if extraction fails
+                # Check if original response text had *any* text
+                try:
+                    # Try decoding for the check, ignore errors
+                    page_text = html_content.decode(errors="ignore")
+                    if page_text and len(page_text.strip()) > 0:
+                        print(
+                            f"Trafilatura could not extract main content from {url}, though the page was fetched."
+                        )
+                    else:
+                        print(
+                            f"The fetched page {url} appears to have no text content."
+                        )
+                except Exception:  # Guard against decoding errors just for the print
+                    print(
+                        f"Trafilatura could not extract main content from {url} (and checking raw text failed)."
+                    )
 
-    except RequestException as e:
-        print(f"Error fetching or processing URL {url}: {e}")
-        extracted_text = None  # Ensure None on network/HTTP error
+                extracted_text = None  # Ensure None is returned if extraction fails
+
+    except aiohttp.ClientError as e:
+        # Handles client-side exceptions like connection errors, timeouts
+        print(f"Aiohttp client error fetching URL {url}: {e}")
+        extracted_text = None
+    except asyncio.TimeoutError:
+        print(f"Timeout error fetching URL {url} after {timeout} seconds.")
+        extracted_text = None
     except Exception as e:
-        # Catch potential unexpected errors during extraction
-        print(f"An unexpected error occurred: {e}")
+        # Catch potential unexpected errors during extraction or other issues
+        print(f"An unexpected error occurred for URL {url}: {type(e).__name__} - {e}")
         extracted_text = None
 
+    # No yield needed, just return the final result for this URL
     return extracted_text
 
 
-def query_web(
+async def query_web(
     query: str,
     num_results: int = 10,
     lang: str = "en",
     pause_time: float = 2.0,
-) -> list[dict]:
+    scrape_timeout: int = 15,  # Add timeout for scraping
+    include_tables: bool = False,
+    favour_precision: bool = True,
+) -> list[dict[str, Optional[str]]]:  # Return list of dicts, text can be None
     """
-    Queries the web for a given query and returns a list of dictionaries containing the URL and the extracted text from the website.
+    Asynchronously queries the web and scrapes results concurrently.
 
     Args:
         query (str): The search term.
-        num_results (int): The desired number of search results to retrieve.
-        lang (str): The language code for the search (e.g., 'en', 'es').
-        pause_time (float): Seconds to pause between HTTP requests to avoid blocking.
+        num_results (int): Max number of search results to retrieve URLs for.
+        lang (str): Language code for the search.
+        pause_time (float): Pause between Google search requests (sync part).
+        scrape_timeout (int): Timeout in seconds for each website scraping attempt.
+        include_tables (bool): Whether to include table text during scraping.
+        favour_precision (bool): Prioritize precision in text extraction.
 
     Returns:
-        list[dict]: A list of dictionaries, where each dictionary contains the URL and the extracted text from the website.
+        List[Dict[str, Optional[str]]]: A list of dictionaries, each containing:
+            'url': The URL of the search result.
+            'website_text': The extracted text (str) or None if scraping failed.
     """
+    # Step 1: Perform the Google search (synchronous code run in a thread)
+    # Use asyncio.to_thread to run the blocking search function without blocking the event loop
+    try:
+        urls = await asyncio.to_thread(
+            perform_google_search, query, num_results, lang, pause_time
+        )
+    except Exception as e:
+        print(f"Error running Google search in thread: {e}")
+        urls = []
 
+    if not urls:
+        print("No URLs found or search failed.")
+        return []
+
+    print(f"\nStarting concurrent scraping for {len(urls)} URLs...")
     results = []
-    for url in perform_google_search(query, num_results, lang, pause_time):
-        site = {}
-        site["url"] = url
-        site["website_text"] = extract_main_text_from_url(url=url)
-        results.append(site)
+    # Create a single aiohttp session to be reused for all requests
+    async with aiohttp.ClientSession() as session:
+        # Create a list of tasks for concurrent scraping
+        tasks = [
+            extract_main_text_from_url(
+                url,
+                session,
+                timeout=scrape_timeout,
+                include_tables=include_tables,
+                favour_precision=favour_precision,
+            )
+            for url in urls
+        ]
 
+        # Run tasks concurrently and gather results
+        # return_exceptions=True ensures that if one task fails, others continue,
+        # and the exception object is returned in place of the result.
+        scraped_texts_or_errors = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # Step 3: Combine URLs with scraped text (or error indicators)
+    print("\nScraping finished. Processing results...")
+    for i, url in enumerate(urls):
+        site_data = {"url": url}
+        result = scraped_texts_or_errors[i]
+
+        if isinstance(result, Exception):
+            print(f"Failed to scrape {url}: {type(result).__name__} - {result}")
+            site_data["website_text"] = None  # Indicate failure with None
+        elif result is None:
+            print(f"Scraping completed for {url}, but no text was extracted.")
+            site_data["website_text"] = None  # Indicate no text extracted with None
+        else:
+            print(f"Successfully processed {url}")
+            site_data["website_text"] = result  # Assign the extracted text
+
+        results.append(site_data)
+
+    print(f"\nProcessed {len(results)} URLs.")
     return results
-
-
-# query_web("trailer park boys")

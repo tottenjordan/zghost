@@ -16,6 +16,8 @@ google-adk = "0.1.0"
 google-cloud-aiplatform = {extras = ["agent-engines"], version = "^1.88.0"}
 googlesearch-python = "^1.3.0"
 trafilatura = "^2.0.0"
+pandas = "^2.2.3"
+aiohttp = "^3.11.16"
 
 
 
