@@ -3,3 +3,4 @@
 /google-cloud-sdk
 *.pyc
 .env
+**/__pycache__/*.cpython-312.pyc
