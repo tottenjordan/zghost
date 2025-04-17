@@ -19,8 +19,8 @@ root_agent = Agent(
     instruction=root_agent_instructions,
     global_instruction=(
         f"""
-        You are an expert marketing agent at developing new image and video outputs from 
-        marketing campaign briefs, enriched by Google Search.
+        You are an expert marketing agent developing new image and video outputs from 
+        marketing campaign briefs, enriched by Google Search and YouTube.
         """
     ),
     sub_agents=[

@@ -10,6 +10,8 @@ except ImportError:
     print("Please install it first using: pip install googlesearch-python")
     search = None  # Set search to None so the script doesn't crash immediately
 
+import os
+import pandas as pd
 import requests
 import trafilatura
 from requests.exceptions import RequestException
@@ -18,15 +20,87 @@ from google import genai
 from .prompts import youtube_analysis_prompt
 from google.genai import types
 
+import googleapiclient.discovery
+# import googleapiclient.errors
+from google.cloud import secretmanager
+
+from typing import Optional, AsyncGenerator
+
+
+# clients
 client = genai.Client()
+sm_client = secretmanager.SecretManagerServiceClient()
+
+# get secret
+SECRET_ID = (
+    f'projects/{os.environ.get("GOOGLE_CLOUD_PROJECT_NUMBER")}/secrets/yt-data-api'
+)
+SECRET_VERSION = "{}/versions/1".format(SECRET_ID)
+# SECRET_NAME = sm_client.secret_path(os.environ.get("GOOGLE_CLOUD_PROJECT"), SECRET_ID)
+response = sm_client.access_secret_version(request={"name": SECRET_VERSION})
+YOUTUBE_DATA_API_KEY = response.payload.data.decode("UTF-8")
 
 
-async def analyze_youtube_videos(
+def query_youtube_api(
+    query: str,
+    video_duration: str = "short",
+    video_order: str = "relevance",
+    num_video_results: int = 3,
+    max_num_days_ago: int = 30,
+    channel_id: Optional[str] = None,
+) -> dict:
+    """
+    Gets a response from the YouTube Data API for a given search query.
+
+    Args:
+        query (str): The search query.
+        video_duration (str): The duration of the videos to search for. Must be one of: 'any', 'long', 'medium', 'short'
+        max_num_days_ago (int): The maximum number of days ago the videos should have been published.
+        video_order (str): The order in which the videos should be returned. Must be one of 'date', 'rating', 'relevance', 'title', 'viewCount'
+        num_video_results (int): The number of video results to return.
+        channel_id (Optional[str]): The ID of the channel to search within.
+
+    Returns:
+        dict: The response from the YouTube Data API.
+    """
+
+    api_service_name = "youtube"
+    api_version = "v3"
+    developer_key = YOUTUBE_DATA_API_KEY
+    youtube = googleapiclient.discovery.build(
+        api_service_name, api_version, developerKey=developer_key
+    )
+
+    published_after_timestamp = (
+        (pd.Timestamp.now() - pd.DateOffset(days=max_num_days_ago))
+        .tz_localize("UTC")
+        .isoformat()
+    )
+
+    # Using Search:list - https://developers.google.com/youtube/v3/docs/search/list
+    yt_data_api_request = youtube.search().list(
+        part="id,snippet",
+        type="video",
+        q=query,
+        videoDuration=video_duration,
+        maxResults=num_video_results,
+        publishedAfter=published_after_timestamp,
+        channelId=channel_id,
+        order=video_order,
+    )
+    yt_data_api_response = yt_data_api_request.execute()
+
+    return yt_data_api_response
+
+
+def analyze_youtube_videos(
+    prompt: str,
     youtube_url: str,
 ) -> str:
     """
     Analyzes youtube videos from a list of search results.
     Args:
+        prompt (str): The prompt to use for the analysis.
         search_results_urls (list[str]): The list of urls to check for youtube.com
     Returns:
         Results from the youtube video analysis prompt.
@@ -44,7 +118,7 @@ async def analyze_youtube_videos(
         contents = [
             types.Content(
                 role="user",
-                parts=[types.Part.from_text(text=youtube_analysis_prompt), video1],
+                parts=[types.Part.from_text(text=prompt), video1],
             )
         ]
         result = client.models.generate_content(
@@ -52,17 +126,19 @@ async def analyze_youtube_videos(
             contents=contents,
             config=types.GenerateContentConfig(
                 temperature=0.1,
+                # system_instruction=youtube_analysis_prompt,
             ),
         )
         return result.text
 
 
-async def perform_google_search(
+def perform_google_search(
     query: str,
     num_results: int = 10,
     lang: str = "en",
     pause_time: float = 2.0,
-):
+)-> list:
+# ) -> AsyncGenerator[list, None]:
     """
     Performs a Google search for a given query using the googlesearch-python library.
 
@@ -101,12 +177,12 @@ async def perform_google_search(
     return search_results_urls
 
 
-async def extract_main_text_from_url(
+def extract_main_text_from_url(
     url: str,
     timeout: int = 15,
     include_tables: bool = False,
     favour_precision: bool = True,
-):
+)-> str:
     """
     Fetches a webpage and extracts the main textual content using trafilatura.
 
@@ -196,3 +272,35 @@ async def extract_main_text_from_url(
         extracted_text = None
 
     return extracted_text
+
+
+def query_web(
+    query: str,
+    num_results: int = 10,
+    lang: str = "en",
+    pause_time: float = 2.0,
+) -> list[dict]:
+    """
+    Queries the web for a given query and returns a list of dictionaries containing the URL and the extracted text from the website.
+
+    Args:
+        query (str): The search term.
+        num_results (int): The desired number of search results to retrieve.
+        lang (str): The language code for the search (e.g., 'en', 'es').
+        pause_time (float): Seconds to pause between HTTP requests to avoid blocking.
+
+    Returns:
+        list[dict]: A list of dictionaries, where each dictionary contains the URL and the extracted text from the website.
+    """
+
+    results = []
+    for url in perform_google_search(query, num_results, lang, pause_time):
+        site = {}
+        site["url"] = url
+        site["website_text"] = extract_main_text_from_url(url=url)
+        results.append(site)
+
+    return results
+
+
+# query_web("trailer park boys")
