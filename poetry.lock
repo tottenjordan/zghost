@@ -959,13 +959,13 @@ files = [
 
 [[package]]
 name = "google-adk"
-version = "0.1.0"
+version = "0.2.0"
 description = "Agent Development Kit"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "google_adk-0.1.0-py3-none-any.whl", hash = "sha256:b8590bf6223fab24ca9af454f864c0f990b1edd6bbda5236f2031010d0c26862"},
-    {file = "google_adk-0.1.0.tar.gz", hash = "sha256:c2b45731881e6b99ed7075361fe1ae8732475a8e7a9dce75216e4df10fa664b6"},
+    {file = "google_adk-0.2.0-py3-none-any.whl", hash = "sha256:85f4d0aa6345bda8dc15e1cd8d6784e222507d1b73e21368fea14198f8ff346e"},
+    {file = "google_adk-0.2.0.tar.gz", hash = "sha256:5d7525c10d86766f8e048d87858a992c99fa5df637af88bddba5e1a4985a6247"},
 ]
 
 [package.dependencies]
@@ -995,7 +995,7 @@ dev = ["flit (>=3.10.0)", "isort (>=6.0.0)", "pyink (>=24.10.0)", "pylint (>=2.6
 docs = ["autodoc_pydantic", "furo", "myst-parser", "sphinx", "sphinx-autodoc-typehints", "sphinx-rtd-theme"]
 eval = ["google-cloud-aiplatform[evaluation] (>=1.87.0)", "pandas (>=2.2.3)", "tabulate (>=0.9.0)"]
 extensions = ["anthropic (>=0.43.0)", "beautifulsoup4 (>=3.2.2)", "crewai[tools]", "docker (>=7.0.0)", "langgraph (>=0.2.60)", "litellm (>=1.63.11)", "llama-index-readers-file (>=0.4.0)", "lxml (>=5.3.0)"]
-test = ["langchain-community (>=0.3.17)", "pytest (>=8.3.4)", "pytest-asyncio (>=0.25.0)", "pytest-mock (>=3.14.0)", "pytest-xdist (>=3.6.1)"]
+test = ["anthropic (>=0.43.0)", "langchain-community (>=0.3.17)", "langgraph (>=0.2.60)", "litellm (>=1.63.11)", "llama-index-readers-file (>=0.4.0)", "pytest (>=8.3.4)", "pytest-asyncio (>=0.25.0)", "pytest-mock (>=3.14.0)", "pytest-xdist (>=3.6.1)"]
 
 [[package]]
 name = "google-api-core"
@@ -5104,4 +5104,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "bc3e08315eb39619825479dd92af89084b318f30959053a4f80d8e662cec82a8"
+content-hash = "9689519289e5043643fabd4a727789beecc5e17a5ee61241392914502c99cb9c"
