@@ -65,7 +65,7 @@ def upload_file_to_gcs(
 from google.cloud import storage
 
 
-def download_blob(bucket_name, source_blob_name, destination_file_name):
+def download_blob(bucket_name, source_blob_name):
     """Downloads a blob from the bucket."""
     # The ID of your GCS bucket
     # bucket_name = "your-bucket-name"
@@ -85,13 +85,8 @@ def download_blob(bucket_name, source_blob_name, destination_file_name):
     # any content from Google Cloud Storage. As we don't need additional data,
     # using `Bucket.blob` is preferred here.
     blob = bucket.blob(source_blob_name)
-    blob.download_to_filename(destination_file_name)
+    return blob.download_as_bytes()
 
-    print(
-        "Downloaded storage object {} from bucket {} to local file {}.".format(
-            source_blob_name, bucket_name, destination_file_name
-        )
-    )
 
 
 def generate_video(
@@ -153,7 +148,7 @@ def generate_video(
             video_url = video_uri.replace("gs://", "https://storage.googleapis.com/")
             filename = uuid.uuid4()
             BUCKET = os.getenv("BUCKET")
-            download_blob(
+            video_bytes = download_blob(
                 BUCKET.replace("gs://", ""),
                 video_uri.replace(BUCKET, "")[1:],
                 f"{filename}.mp4",
@@ -161,7 +156,7 @@ def generate_video(
             print(f"The location for this video is here: {filename}.mp4")
             tool_context.save_artifact(
                 f"{filename}.mp4",
-                types.Part.from_uri(file_uri=f"{filename}.mp4", mime_type="video/mp4"),
+                types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
             )
         return f"The location for this video is here: {filename}.mp4"
 
