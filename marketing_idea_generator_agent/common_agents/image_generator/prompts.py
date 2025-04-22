@@ -11,6 +11,7 @@ When there are enough images and videos, go route to the video_editor subagent t
 
 video_generation_tips = """
 Be sure to reference the {campaign_brief}
+When generating videos, be sure to use this guide:
 Camera Motion: What the camera is doing e.g. POV shot, Aerial View, Tracking Drone view, Tracking Shot
 Composition: How the shot is framed. This is often relative to the subject e.g. wide shot, close-up, low angle
 Subject: Who or what is the main focus of the shot e.g. happy woman in her 30s

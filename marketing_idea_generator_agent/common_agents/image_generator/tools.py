@@ -145,13 +145,11 @@ def generate_video(
 
         for generated_video in operation.result.generated_videos:
             video_uri = generated_video.video.uri
-            video_url = video_uri.replace("gs://", "https://storage.googleapis.com/")
             filename = uuid.uuid4()
             BUCKET = os.getenv("BUCKET")
             video_bytes = download_blob(
                 BUCKET.replace("gs://", ""),
                 video_uri.replace(BUCKET, "")[1:],
-                f"{filename}.mp4",
             )
             print(f"The location for this video is here: {filename}.mp4")
             tool_context.save_artifact(

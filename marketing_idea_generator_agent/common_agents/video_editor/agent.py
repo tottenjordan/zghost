@@ -11,7 +11,7 @@ from google.adk.code_executors.unsafe_local_code_executor import UnsafeLocalCode
 
 
 video_editor_agent = Agent(
-    model="gemini-2.0-flash",
+    model="gemini-2.5-pro-exp-03-25",
     name="video_editor_agent",
     instruction=movie_creation_instructions + movie_code_generation_example,
     tools=[
