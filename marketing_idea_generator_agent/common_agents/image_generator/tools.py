@@ -88,10 +88,10 @@ def download_blob(bucket_name, source_blob_name):
     return blob.download_as_bytes()
 
 
-
 def generate_video(
     prompt: str,
     tool_context: "ToolContext",
+    duration_seconds: int,
     number_of_videos: int = 1,
     aspect_ratio: str = "16:9",
     negative_prompt: str = "",
@@ -101,6 +101,7 @@ def generate_video(
     Args:
         prompt (str): The prompt to generate the video from.
         tool_context (ToolContext): The tool context.
+        duration_seconds (int): How long the video should be in seconds
         number_of_videos (int, optional): The number of videos to generate. Defaults to 1.
         aspect_ratio (str, optional): The aspect ratio of the video. Defaults to "16:9".
         negative_prompt (str, optional): The negative prompt to use. Defaults to "".
@@ -111,6 +112,13 @@ def generate_video(
     Supported aspect ratios are:
         16:9 (landscape) and 9:16 (portrait) are supported.
     """
+    gen_config = GenerateVideosConfig(
+        aspect_ratio=aspect_ratio,
+        number_of_videos=number_of_videos,
+        output_gcs_uri=os.environ.get("BUCKET"),
+        negative_prompt=negative_prompt,
+        duration_seconds=duration_seconds,
+    )
     if existing_image_filename is not "":
         gcs_location = f"{os.environ.get('BUCKET')}/{existing_image_filename}"
         existing_image = types.Image(gcs_uri=gcs_location, mime_type="image/png")
@@ -118,23 +126,11 @@ def generate_video(
             model="veo-2.0-generate-001",
             prompt=prompt,
             image=existing_image,
-            config=GenerateVideosConfig(
-                aspect_ratio=aspect_ratio,
-                number_of_videos=number_of_videos,
-                output_gcs_uri=os.environ.get("BUCKET"),
-                negative_prompt=negative_prompt,
-            ),
+            config=gen_config,
         )
     else:
         operation = client.models.generate_videos(
-            model="veo-2.0-generate-001",
-            prompt=prompt,
-            config=GenerateVideosConfig(
-                aspect_ratio=aspect_ratio,
-                number_of_videos=number_of_videos,
-                output_gcs_uri=os.environ.get("BUCKET"),
-                negative_prompt=negative_prompt,
-            ),
+            model="veo-2.0-generate-001", prompt=prompt, config=gen_config
         )
     while not operation.done:
         time.sleep(15)
