@@ -62,6 +62,38 @@ def upload_file_to_gcs(
     return f"gs://{gcs_bucket}/{os.path.basename(file_path)}"
 
 
+from google.cloud import storage
+
+
+def download_blob(bucket_name, source_blob_name, destination_file_name):
+    """Downloads a blob from the bucket."""
+    # The ID of your GCS bucket
+    # bucket_name = "your-bucket-name"
+
+    # The ID of your GCS object
+    # source_blob_name = "storage-object-name"
+
+    # The path to which the file should be downloaded
+    # destination_file_name = "local/path/to/file"
+
+    storage_client = storage.Client()
+
+    bucket = storage_client.bucket(bucket_name)
+
+    # Construct a client side representation of a blob.
+    # Note `Bucket.blob` differs from `Bucket.get_blob` as it doesn't retrieve
+    # any content from Google Cloud Storage. As we don't need additional data,
+    # using `Bucket.blob` is preferred here.
+    blob = bucket.blob(source_blob_name)
+    blob.download_to_filename(destination_file_name)
+
+    print(
+        "Downloaded storage object {} from bucket {} to local file {}.".format(
+            source_blob_name, bucket_name, destination_file_name
+        )
+    )
+
+
 def generate_video(
     prompt: str,
     tool_context: "ToolContext",
@@ -120,9 +152,27 @@ def generate_video(
             video_uri = generated_video.video.uri
             video_url = video_uri.replace("gs://", "https://storage.googleapis.com/")
             filename = uuid.uuid4()
-            print(f"The location for this video is here: {video_url}")
+            BUCKET = os.getenv("BUCKET")
+            download_blob(
+                BUCKET.replace("gs://", ""),
+                video_uri.replace(BUCKET, "")[1:],
+                f"{filename}.mp4",
+            )
+            print(f"The location for this video is here: {filename}.mp4")
             tool_context.save_artifact(
                 f"{filename}.mp4",
-                types.Part.from_uri(file_uri=video_url, mime_type="video/mp4"),
+                types.Part.from_uri(file_uri=f"{filename}.mp4", mime_type="video/mp4"),
             )
-        return f"The location for this video is here: {video_url}"
+        return f"The location for this video is here: {filename}.mp4"
+
+
+# local test
+# video_uri = "gs://zghost-media-center/10347484941892065326/sample_0.mp4"
+# video_url = video_uri.replace("gs://", "https://storage.googleapis.com/")
+# filename = uuid.uuid4()
+# BUCKET = "gs://zghost-media-center"
+# download_blob(
+#     BUCKET.replace("gs://", ""),
+#     video_uri.replace(BUCKET, "")[1:],
+#     f"{filename}.mp4",
+# )

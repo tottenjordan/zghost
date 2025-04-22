@@ -7,7 +7,7 @@ from .common_agents.marketing_brief_data_generator.agent import (
 )
 from .common_agents.idea_generator.agent import create_new_ideas_agent
 from .prompts import root_agent_instructions
-
+from .common_agents.video_editor.agent import video_editor_agent
 # from google.adk.tools.google_search_tool import GoogleSearchTool
 from .common_agents.image_generator.agent import image_generation_agent
 from google.adk.tools import google_search
@@ -27,6 +27,7 @@ root_agent = Agent(
         brief_data_generation_agent,
         create_new_ideas_agent,
         image_generation_agent,
+        video_editor_agent
     ],
     tools=[
         # google_search,

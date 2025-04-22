@@ -15,6 +15,7 @@ root_agent_instructions = f"""
         brief_data_generation_agent,
         create_new_ideas_agent,
         image_generation_agent,
+        video_editor_agent,
     ]
 
   sub-agents can be thought of as tools.
@@ -24,5 +25,6 @@ root_agent_instructions = f"""
   2) Extract the details from the sample marketing brief. Use the brief_data_generation_agent for this task.
      Be sure to use the schema provided to generate the most detailed summary of the brief.
   3) Use the create_new_ideas_agent tool to find answers to the following questions: \n {google_search_questions} \n
-  4) Use the image_generation_agent tool to create marketing images
+  4) Use the image_generation_agent tool to create marketing images and videos
+  5) Once there are enough videos and images available, use the video_editor_agent subagent to edit a full video
 """

@@ -6,6 +6,7 @@ Given the marketing campaign brief, create an Instagram ad-copy for each target 
 Also note you have a generate_video tool that can be used to generate videos for the campaign. 
 
 When loading videos, you can only load one at a time.
+When there are enough images and videos, go route to the video_editor subagent to create a full video for the brief.
 """
 
 video_generation_tips = """
