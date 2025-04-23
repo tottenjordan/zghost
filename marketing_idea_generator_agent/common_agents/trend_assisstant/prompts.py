@@ -3,7 +3,7 @@ Follow the steps below to query trending videos from YouTube and prepare them fo
 
 Be sure to limit the number of videos to max 2 per region to save time on demos and focus on shorter videos for the same reason.
 Make sure the video is less than 2 minutes long.
-While researching the trends, keep in mind the {marketing_brief}. Use this to find intersectional concepts with the brief.
+While researching the trends, keep in mind the {campaign_brief}. Use this to find intersectional concepts with the brief.
 1) Use the `get_youtube_trends` tool to query the YouTube Data API for trending videos in select target markets.
 2) Use the `analyze_youtube_videos` tool to analyze each video. Find each video's URL in the response entry titled: "videoURL".
 3) Generate a brief summary describing what is taking place or being discussed, use the `analyze_youtube_videos` to analyze the video with Gemini
