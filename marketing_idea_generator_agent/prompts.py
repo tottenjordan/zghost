@@ -1,13 +1,5 @@
-google_search_questions = """
-- What are the latest competitive analysis of the product
-- What is the general public sentiment about the product?
-"""
-
 root_agent_instructions = f"""
-  I am planning to launch a campaign for my product and I want to understand the latest trends in the phone industry.
-  Please answer the following questions:
-  - What are the latest competitive analysis of the product
-  - What is the general public sentiment about the product?
+  I am planning to launch a campaign for my product and I want to understand any relevant trends.
 
   Here are my sub-agents:
 
@@ -22,10 +14,6 @@ root_agent_instructions = f"""
 
   Your task flow is to:
   1) Prompt the user for a creative brief, this could be available via URL as a pdf
-  2) Extract the details from the sample marketing brief. Use the brief_data_generation_agent for this task.
+  2) Extract the details from the sample marketing brief. Use the `brief_data_generation_agent` for this task.
      Be sure to use the schema provided to generate the most detailed summary of the brief.
-  3) Use the create_new_ideas_agent tool to find answers to the following questions: \n {google_search_questions} \n
-  4) Use the `create_new_ideas_agent` tool to find recently published YouTube videos related to the campaign brief
-  5) Use the `trends_and_insights_agent` tool to find the most popular videos in each target market
-  4) Use the image_generation_agent tool to create marketing images
 """

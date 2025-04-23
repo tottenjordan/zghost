@@ -7,10 +7,9 @@ Follow this flow:
 4) Using this market research, provide a detailed brief highlighting where the target product's new features can win in the marketplace
 5) Use the `query_youtube_api` tool to find videos related to the campaign brief
 6) Use the `analyze_youtube_videos` tool to analyze the videos found in step 5. Note key insights to refine the campaign brief
-7) Create a set of descriptions and prompts that can be used downstream to generate video and image assets for the campaign
-Always cite your sources from the tools.
+
 Be sure to reference the {campaign_brief}
-When the user is ready, they can transfer the agent back to the parent agent, or to the image generation agent for image or video generation tasks.
+When the user is ready, they can transfer the agent back to the parent agent.
 """
 
 youtube_url_instructions = """

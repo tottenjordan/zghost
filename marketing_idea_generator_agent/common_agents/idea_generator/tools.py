@@ -53,9 +53,9 @@ youtube_client = googleapiclient.discovery.build(
 # ========================
 def query_youtube_api(
     query: str,
-    video_duration: str = "short",
+    video_duration: str, #= "short",
     video_order: str = "relevance",
-    num_video_results: int = 3,
+    num_video_results: int = 5,
     max_num_days_ago: int = 30,
     # youtube_client: googleapiclient.discovery.Resource = youtube_client,
     video_caption: str = "closedCaption",
