@@ -62,6 +62,32 @@ def upload_file_to_gcs(
     return f"gs://{gcs_bucket}/{os.path.basename(file_path)}"
 
 
+from google.cloud import storage
+
+
+def download_blob(bucket_name, source_blob_name):
+    """Downloads a blob from the bucket."""
+    # The ID of your GCS bucket
+    # bucket_name = "your-bucket-name"
+
+    # The ID of your GCS object
+    # source_blob_name = "storage-object-name"
+
+    # The path to which the file should be downloaded
+    # destination_file_name = "local/path/to/file"
+
+    storage_client = storage.Client()
+
+    bucket = storage_client.bucket(bucket_name)
+
+    # Construct a client side representation of a blob.
+    # Note `Bucket.blob` differs from `Bucket.get_blob` as it doesn't retrieve
+    # any content from Google Cloud Storage. As we don't need additional data,
+    # using `Bucket.blob` is preferred here.
+    blob = bucket.blob(source_blob_name)
+    return blob.download_as_bytes()
+
+
 def generate_video(
     prompt: str,
     tool_context: "ToolContext",
@@ -84,6 +110,12 @@ def generate_video(
     Supported aspect ratios are:
         16:9 (landscape) and 9:16 (portrait) are supported.
     """
+    gen_config = GenerateVideosConfig(
+        aspect_ratio=aspect_ratio,
+        number_of_videos=number_of_videos,
+        output_gcs_uri=os.environ.get("BUCKET"),
+        negative_prompt=negative_prompt,
+    )
     if existing_image_filename is not "":
         gcs_location = f"{os.environ.get('BUCKET')}/{existing_image_filename}"
         existing_image = types.Image(gcs_uri=gcs_location, mime_type="image/png")
@@ -91,23 +123,11 @@ def generate_video(
             model="veo-2.0-generate-001",
             prompt=prompt,
             image=existing_image,
-            config=GenerateVideosConfig(
-                aspect_ratio=aspect_ratio,
-                number_of_videos=number_of_videos,
-                output_gcs_uri=os.environ.get("BUCKET"),
-                negative_prompt=negative_prompt,
-            ),
+            config=gen_config,
         )
     else:
         operation = client.models.generate_videos(
-            model="veo-2.0-generate-001",
-            prompt=prompt,
-            config=GenerateVideosConfig(
-                aspect_ratio=aspect_ratio,
-                number_of_videos=number_of_videos,
-                output_gcs_uri=os.environ.get("BUCKET"),
-                negative_prompt=negative_prompt,
-            ),
+            model="veo-2.0-generate-001", prompt=prompt, config=gen_config
         )
     while not operation.done:
         time.sleep(15)
@@ -118,11 +138,18 @@ def generate_video(
 
         for generated_video in operation.result.generated_videos:
             video_uri = generated_video.video.uri
-            video_url = video_uri.replace("gs://", "https://storage.googleapis.com/")
             filename = uuid.uuid4()
-            print(f"The location for this video is here: {video_url}")
+            BUCKET = os.getenv("BUCKET")
+            video_bytes = download_blob(
+                BUCKET.replace("gs://", ""),
+                video_uri.replace(BUCKET, "")[1:],
+            )
+            print(f"The location for this video is here: {filename}.mp4")
             tool_context.save_artifact(
                 f"{filename}.mp4",
-                types.Part.from_uri(file_uri=video_url, mime_type="video/mp4"),
+                types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
             )
-        return f"The location for this video is here: {video_url}"
+        return f"The location for this video is here: {filename}.mp4"
+
+
+
