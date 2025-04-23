@@ -10,70 +10,88 @@ except ImportError:
     print("Please install it first using: pip install googlesearch-python")
     search = None  # Set search to None so the script doesn't crash immediately
 
+
+import os
 import asyncio
 import aiohttp
-import os
-import pandas as pd
-import requests
+
+# import requests
 import trafilatura
-from requests.exceptions import RequestException
-from google.genai import types
+import pandas as pd
+from typing import Optional  # , AsyncGenerator
+
+# from requests.exceptions import RequestException
+
 from google import genai
-
-# from .prompts import youtube_analysis_prompt
 from google.genai import types
-
-import googleapiclient.discovery
 
 # import googleapiclient.errors
-from google.cloud import secretmanager
+import googleapiclient.discovery
+from google.cloud import secretmanager as sm
 
-from typing import Optional, AsyncGenerator
-import os
+# from .prompts import youtube_analysis_prompt
+
 
 # clients
 client = genai.Client()
-sm_client = secretmanager.SecretManagerServiceClient()
 
-# get secret
+sm_client = sm.SecretManagerServiceClient()
 SECRET_ID = (
     f'projects/{os.environ.get("GOOGLE_CLOUD_PROJECT_NUMBER")}/secrets/yt-data-api'
 )
 SECRET_VERSION = "{}/versions/1".format(SECRET_ID)
-# SECRET_NAME = sm_client.secret_path(os.environ.get("GOOGLE_CLOUD_PROJECT"), SECRET_ID)
 response = sm_client.access_secret_version(request={"name": SECRET_VERSION})
 YOUTUBE_DATA_API_KEY = response.payload.data.decode("UTF-8")
 
+youtube_client = googleapiclient.discovery.build(
+    serviceName="youtube", version="v3", developerKey=YOUTUBE_DATA_API_KEY
+)
 
+
+# ========================
+# youtube tools
+# ========================
 def query_youtube_api(
     query: str,
     video_duration: str = "short",
     video_order: str = "relevance",
     num_video_results: int = 3,
     max_num_days_ago: int = 30,
+    # youtube_client: googleapiclient.discovery.Resource = youtube_client,
+    video_caption: str = "closedCaption",
+    channel_type: Optional[str] = "any",
     channel_id: Optional[str] = None,
+    event_type: Optional[str] = None,
 ) -> dict:
     """
     Gets a response from the YouTube Data API for a given search query.
 
     Args:
         query (str): The search query.
-        video_duration (str): The duration of the videos to search for. Must be one of: 'any', 'long', 'medium', 'short'
-        max_num_days_ago (int): The maximum number of days ago the videos should have been published.
-        video_order (str): The order in which the videos should be returned. Must be one of 'date', 'rating', 'relevance', 'title', 'viewCount'
+        video_duration (str): The duration (minutes) of the videos to search for.
+            Must be one of: 'any', 'long', 'medium', 'short', where short=(-inf, 4), medium=[4, 20], long=(20, inf)
+        video_order (str): The order in which the videos should be returned.
+            Must be one of 'date', 'rating', 'relevance', 'title', 'viewCount'
         num_video_results (int): The number of video results to return.
+        max_num_days_ago (int): The maximum number of days ago the videos should have been published.
+        youtube_client (googleapiclient.discovery.Resource): The YouTube Data API client.
+        video_caption (str): whether API should filter video search results based on whether they have captions.
+            Must be one of "any", "closedCaption", "none"
+            "any" = Do not filter results based on caption availability.
+            "closedCaption" = Only include videos with closed captions.
+            "none" = Only include videos that do not have captions.
+        channel_type (Optional[str]): The type of channel to search within.
+            Must be one of "show", "any", or "channelTypeUnspecified". Specifying "show" retrieves only TV shows
         channel_id (Optional[str]): The ID of the channel to search within.
+        eventType (str): restricts a search to broadcast events. Must be one of "upcoming", "live", "completed", None
+            None = does not restrict to broadcast events
+            "completed" = Only include completed broadcasts.
+            "live" = Only include active broadcasts.
+            "upcoming" = Only include upcoming broadcasts.
 
     Returns:
         dict: The response from the YouTube Data API.
     """
-
-    api_service_name = "youtube"
-    api_version = "v3"
-    developer_key = YOUTUBE_DATA_API_KEY
-    youtube = googleapiclient.discovery.build(
-        api_service_name, api_version, developerKey=developer_key
-    )
 
     published_after_timestamp = (
         (pd.Timestamp.now() - pd.DateOffset(days=max_num_days_ago))
@@ -82,19 +100,86 @@ def query_youtube_api(
     )
 
     # Using Search:list - https://developers.google.com/youtube/v3/docs/search/list
-    yt_data_api_request = youtube.search().list(
-        part="id,snippet",
+    yt_data_api_request = youtube_client.search().list(
         type="video",
+        part="id,snippet",
+        relevanceLanguage="en",
         q=query,
         videoDuration=video_duration,
-        maxResults=num_video_results,
-        publishedAfter=published_after_timestamp,
-        channelId=channel_id,
         order=video_order,
+        maxResults=num_video_results,
+        videoCaption=video_caption,
+        channelType=channel_type,
+        channelId=channel_id,
+        eventType=event_type,
+        publishedAfter=published_after_timestamp,
     )
     yt_data_api_response = yt_data_api_request.execute()
-
     return yt_data_api_response
+
+
+# def get_youtube_trends(
+#     part: str = "snippet,contentDetails,statistics",
+#     chart: str = "mostPopular",
+#     region_code: str = "US",
+#     max_results: int = 5,
+#     # youtube_client: googleapiclient.discovery.Resource = youtube_client,
+# ) -> dict:
+#     """
+#     Returns a dictionary of videos that match the API request parameters e.g., popular/trending videos
+
+#     Args:
+#         part (str): The parts of the video resource to include in the response.
+#         chart (str): The chart to retrieve. Only 'mostPopular' is supported; returns the most popular
+#             videos for the specified content region and video category.
+#         region_code (str): selects a video chart available in the specified region.
+#             values are ISO 3166-1 alpha-2 country codes
+#         max_results (int): The number of video results to return.
+#         youtube_client (googleapiclient.discovery.Resource): The YouTube Data API client.
+
+#     Returns:
+#         dict: The response from the YouTube Data API.
+#     """
+
+#     # https://developers.google.com/youtube/v3/docs/videos
+#     request = youtube_client.videos().list(
+#         part=part,
+#         chart=chart,
+#         regionCode=region_code,
+#         maxResults=max_results,
+#     )
+#     response = request.execute()
+
+#     # prepare results
+#     trend_dict = {}
+#     for index, video in enumerate(response["items"]):
+#         # the `tags` field is ommitted if video doesnt have tags
+#         if "tags" in video["snippet"].keys():
+#             TAGS_VALUE = video["snippet"]["tags"]
+#         else:
+#             TAGS_VALUE = []
+#         trend_dict.update(
+#             {
+#                 index: {
+#                     "videoTitle": video["snippet"]["title"],
+#                     "channelTitle": video["snippet"]["channelTitle"],
+#                     "videoDescription": video["snippet"]["description"],
+#                     "videoURL": f"https://www.youtube.com/watch?v={video['id']}",
+#                     "videoThumbnail": video["snippet"]["thumbnails"]["high"]["url"],
+#                     # 'duration': video['contentDetails']['duration'],
+#                     "viewCount": video["statistics"]["viewCount"],
+#                     "likeCount": video["statistics"]["likeCount"],
+#                     "favoriteCount": video["statistics"]["favoriteCount"],
+#                     "commentCount": video["statistics"]["commentCount"],
+#                     "videoId": video["id"],
+#                     "channelId": video["snippet"]["channelId"],
+#                     "publishedAt": video["snippet"]["publishedAt"],
+#                     "videoTags": TAGS_VALUE,
+#                 }
+#             }
+#         )
+
+#     return trend_dict
 
 
 def analyze_youtube_videos(
@@ -136,6 +221,9 @@ def analyze_youtube_videos(
         return result.text
 
 
+# ========================
+# search tools
+# ========================
 def perform_google_search(
     query: str,
     num_results: int = 10,
@@ -163,7 +251,8 @@ def perform_google_search(
     search_results_urls = []
     print(f"Searching Google for: '{query}' (up to {num_results} results)...")
     try:
-        # The search function returns a generator. We convert it to a list.[[1](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AWQVqAIt0WzakIytkvxX-NyLXvi8MeY_Lt0gOuYicrDUrmlo-oMJU5YQyD8tzXvLuLEhWcYU9l5rdXcKddjNmU0AEb2_LVzo3sGqCr7_xnWMkqIUtpuW9_rohiniNpWh0CQoxZKz1tXlOg==)]
+        # The search function returns a generator. We convert it to a list.
+        #   [[1](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AWQVqAIt0WzakIytkvxX-NyLXvi8MeY_Lt0gOuYicrDUrmlo-oMJU5YQyD8tzXvLuLEhWcYU9l5rdXcKddjNmU0AEb2_LVzo3sGqCr7_xnWMkqIUtpuW9_rohiniNpWh0CQoxZKz1tXlOg==)]
         # 'stop=num_results' ensures we try to fetch exactly that many.
         # 'pause' helps avoid getting temporarily blocked by Google.
         results_generator = search(

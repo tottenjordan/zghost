@@ -12,6 +12,8 @@ from .prompts import root_agent_instructions
 from .common_agents.image_generator.agent import image_generation_agent
 from google.adk.tools import google_search
 
+from .common_agents.trend_assisstant.agent import trends_and_insights_agent
+
 
 root_agent = Agent(
     model="gemini-2.0-flash-exp",
@@ -27,6 +29,7 @@ root_agent = Agent(
         brief_data_generation_agent,
         create_new_ideas_agent,
         image_generation_agent,
+        trends_and_insights_agent,
     ],
     tools=[
         # google_search,

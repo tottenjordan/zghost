@@ -24,4 +24,11 @@ Reference the {campaign_brief}.
 How do these videos provide additional marketing insights?
 """
 
-trends_analysis_prompt = "TODO"
+# get_youtube_trends_prompt = """
+# To search YouTube for trending videos, use the `get_youtube_trends` tool. For each trending video, complete the following steps:
+# 1) Use the `analyze_youtube_videos` tool to analyze each video. Find each video's URL in the response entry titled: "videoURL".
+# 2) Generate a brief sumamry describing what is taking place or being discussed
+# 3) Describe the key entities involved. This could be a person, place, organization or named event. This includes their backgrounds, roles, and any other relevant information
+# 4) Describe the relationships between the key entities described in the previous step
+# When the user is ready, they can transfer the agent back to the parent agent. 
+# """
