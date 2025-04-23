@@ -1,9 +1,5 @@
 # imports
 import os
-import pandas as pd
-from typing import Optional
-from ...tools import analyze_youtube_videos as analyze_yt_videos
-from google import genai
 
 import googleapiclient.discovery
 from google.cloud import secretmanager as sm
@@ -41,17 +37,6 @@ def get_youtube_trends(
         dict: The response from the YouTube Data API.
     """
 
-    # YT_TREND_ANALYSIS_PROMPT = """
-    # Generate a summary describing what is taking place or being discussed in the video.
-    # Describe the key entities involved. This could be a person, place, organization or named event. This includes their backgrounds, roles, and any other relevant information.
-    # Describe the relationships between the key entities described in the previous step
-    # """
-
-    # part (str): The parts of the video resource to include in the response.
-    # chart (str): The chart to retrieve. Only 'mostPopular' is supported; returns the most popular
-    # videos for the specified content region and video category.
-
-    # https://developers.google.com/youtube/v3/docs/videos
     request = youtube_client.videos().list(
         part="snippet,contentDetails,statistics",
         chart="mostPopular",

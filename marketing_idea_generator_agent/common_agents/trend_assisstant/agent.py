@@ -12,7 +12,7 @@ from .tools import get_youtube_trends
 
 official_tooling = [google_search]
 tools = [
-    LongRunningFunctionTool(get_youtube_trends),
+    get_youtube_trends,
     query_youtube_api,
     LongRunningFunctionTool(query_web),
     LongRunningFunctionTool(analyze_youtube_videos),

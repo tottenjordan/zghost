@@ -9,6 +9,10 @@ import os
 import uuid
 from google.cloud import storage
 
+from google import genai
+
+client = genai.Client()
+
 
 def generate_image(prompt: str, tool_context: "ToolContext", number_of_images: int = 1):
     """Generates an image based on the prompt.
