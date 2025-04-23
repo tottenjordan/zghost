@@ -13,7 +13,7 @@ from .common_agents.image_generator.agent import image_generation_agent
 from google.adk.tools import google_search
 
 from .common_agents.trend_assisstant.agent import trends_and_insights_agent
-from tools import call_brief_generation_agent
+from .tools import call_brief_generation_agent
 
 root_agent = Agent(
     model="gemini-2.0-flash-exp",
