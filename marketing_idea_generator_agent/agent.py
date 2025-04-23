@@ -25,7 +25,7 @@ root_agent = Agent(
         """
     ),
     sub_agents=[
-        # brief_data_generation_agent,
+        brief_data_generation_agent,
         create_new_ideas_agent,
         image_generation_agent,
         trends_and_insights_agent,
@@ -33,7 +33,7 @@ root_agent = Agent(
     tools=[
         # google_search,
         load_artifacts,
-        call_brief_generation_agent
+        # call_brief_generation_agent
     ],
     generate_content_config=types.GenerateContentConfig(
         temperature=0.01, 
