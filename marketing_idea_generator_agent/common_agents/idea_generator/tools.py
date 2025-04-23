@@ -14,9 +14,7 @@ import asyncio
 import aiohttp
 import os
 import pandas as pd
-import requests
 import trafilatura
-from requests.exceptions import RequestException
 from google.genai import types
 from google import genai
 
@@ -28,7 +26,7 @@ import googleapiclient.discovery
 # import googleapiclient.errors
 from google.cloud import secretmanager
 
-from typing import Optional, AsyncGenerator
+from typing import Optional
 import os
 
 # clients

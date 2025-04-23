@@ -91,7 +91,6 @@ def download_blob(bucket_name, source_blob_name):
 def generate_video(
     prompt: str,
     tool_context: "ToolContext",
-    duration_seconds: int,
     number_of_videos: int = 1,
     aspect_ratio: str = "16:9",
     negative_prompt: str = "",
@@ -101,7 +100,6 @@ def generate_video(
     Args:
         prompt (str): The prompt to generate the video from.
         tool_context (ToolContext): The tool context.
-        duration_seconds (int): How long the video should be in seconds
         number_of_videos (int, optional): The number of videos to generate. Defaults to 1.
         aspect_ratio (str, optional): The aspect ratio of the video. Defaults to "16:9".
         negative_prompt (str, optional): The negative prompt to use. Defaults to "".
@@ -117,7 +115,6 @@ def generate_video(
         number_of_videos=number_of_videos,
         output_gcs_uri=os.environ.get("BUCKET"),
         negative_prompt=negative_prompt,
-        duration_seconds=duration_seconds,
     )
     if existing_image_filename is not "":
         gcs_location = f"{os.environ.get('BUCKET')}/{existing_image_filename}"

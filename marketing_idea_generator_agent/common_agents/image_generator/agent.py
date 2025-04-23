@@ -14,10 +14,10 @@ from google.genai import types
 
 image_generation_agent = Agent(
     model="gemini-2.0-flash-001",
-    name="image_generation_agent",
+    name="image_and_video_generation_agent",
     instruction=image_generation_instructions + video_generation_tips,
     tools=[
-        LongRunningFunctionTool(generate_image),
+        generate_image,
         LongRunningFunctionTool(generate_video),
         load_artifacts,
     ],

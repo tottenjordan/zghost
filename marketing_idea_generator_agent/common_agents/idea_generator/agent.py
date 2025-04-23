@@ -19,7 +19,7 @@ tools = [
     # extract_main_text_from_url,
     LongRunningFunctionTool(analyze_youtube_videos),
     query_youtube_api,
-    LongRunningFunctionTool(query_web),
+    query_web,
 ]
 create_new_ideas_agent = Agent(
     model="gemini-2.0-flash-001",
