@@ -13,7 +13,7 @@ from google.genai import types
 
 
 image_generation_agent = Agent(
-    model="gemini-2.0-flash-001",
+    model="gemini-2.0-flash",
     name="image_generation_agent",
     instruction=image_generation_instructions + video_generation_tips,
     tools=[

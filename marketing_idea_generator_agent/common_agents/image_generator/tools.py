@@ -1,6 +1,6 @@
 from google.adk import Agent
 from google.adk.tools import ToolContext
-from google.genai import Client
+
 from google.genai import types
 from google.genai.types import GenerateVideosConfig
 from google.genai import types
@@ -8,9 +8,6 @@ import time
 import os
 import uuid
 from google.cloud import storage
-
-# Only Vertex AI supports image generation for now.
-client = Client()
 
 
 def generate_image(prompt: str, tool_context: "ToolContext", number_of_images: int = 1):
@@ -150,6 +147,3 @@ def generate_video(
                 types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
             )
         return f"The location for this video is here: {filename}.mp4"
-
-
-
