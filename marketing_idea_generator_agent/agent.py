@@ -24,10 +24,8 @@ from typing import Optional
 def brief_callback_function(
     callback_context: CallbackContext
 ) -> Optional[types.Content]:
-    marketing_brief = callback_context.state.get("marketing_brief")
-    if marketing_brief:
-        pass
-    else:
+    marketing_brief = callback_context.state.get("campaign_brief", None)
+    if marketing_brief is None:
         callback_context.state["campaign_brief"] = {"brief": "not yet populated"}
     return None
 
