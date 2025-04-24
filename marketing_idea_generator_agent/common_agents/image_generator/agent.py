@@ -17,7 +17,7 @@ image_generation_agent = Agent(
     + image_generation_instructions
     + video_generation_tips,
     tools=[
-        LongRunningFunctionTool(generate_image),
+        generate_image,
         LongRunningFunctionTool(generate_video),
         load_artifacts,
     ],

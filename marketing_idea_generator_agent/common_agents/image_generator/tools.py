@@ -96,7 +96,7 @@ def generate_video(
     aspect_ratio: str = "16:9",
     negative_prompt: str = "",
     existing_image_filename: str = "",
-) -> str:
+):
     """Generates an image based on the prompt.
     Args:
         prompt (str): The prompt to generate the video from.
@@ -106,7 +106,7 @@ def generate_video(
         negative_prompt (str, optional): The negative prompt to use. Defaults to "".
 
     Returns:
-        str: The location of the video.
+        dict: status dict
 
     Supported aspect ratios are:
         16:9 (landscape) and 9:16 (portrait) are supported.
@@ -143,11 +143,11 @@ def generate_video(
             BUCKET = os.getenv("BUCKET")
             video_bytes = download_blob(
                 BUCKET.replace("gs://", ""),
-                video_uri.replace(BUCKET, "")[1:],
+                video_uri.replace(BUCKET, "")[1:],  # get rid of slash
             )
             print(f"The location for this video is here: {filename}.mp4")
             tool_context.save_artifact(
                 f"{filename}.mp4",
                 types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
             )
-        return f"The location for this video is here: {filename}.mp4"
+        return {"status": "ok"}

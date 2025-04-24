@@ -14,7 +14,7 @@ official_tooling = [google_search]
 tools = [
     get_youtube_trends,
     query_youtube_api,
-    LongRunningFunctionTool(query_web),
+    query_web,
     LongRunningFunctionTool(analyze_youtube_videos),
 ]
 

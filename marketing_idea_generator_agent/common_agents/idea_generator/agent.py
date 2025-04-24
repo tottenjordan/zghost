@@ -15,7 +15,7 @@ official_tooling = [google_search]
 tools = [
     LongRunningFunctionTool(analyze_youtube_videos),
     query_youtube_api,
-    LongRunningFunctionTool(query_web),
+    query_web,
 ]
 create_new_ideas_agent = Agent(
     model="gemini-2.0-flash",
