@@ -15,16 +15,22 @@ from google.adk.agents.callback_context import CallbackContext
 
 
 from .common_agents.trend_assisstant.agent import trends_and_insights_agent
+from google.adk.models import LlmRequest
+
 from .tools import call_brief_generation_agent
+from typing import Optional
 
 
-def brief_callback_function(callback_context: CallbackContext):
-    # this sets a blank brief if not set to prevent errors downstream
+def brief_callback_function(
+    callback_context: CallbackContext
+) -> Optional[types.Content]:
     marketing_brief = callback_context.state.get("marketing_brief")
     if marketing_brief:
         pass
     else:
         callback_context.state["campaign_brief"] = {"brief": "not yet populated"}
+    return None
+
 
 root_agent = Agent(
     model="gemini-2.0-flash-exp",
@@ -47,10 +53,8 @@ root_agent = Agent(
         # call_brief_generation_agent
     ],
     generate_content_config=types.GenerateContentConfig(
-        temperature=0.01, 
+        temperature=0.01,
         # response_modalities=["TEXT", "AUDIO"]
     ),
     before_agent_callback=brief_callback_function,
 )
-
-
