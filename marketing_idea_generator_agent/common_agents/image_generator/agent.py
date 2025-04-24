@@ -1,28 +1,27 @@
 from .tools import generate_image, generate_video
 from google.adk.agents import Agent
 from google.adk.tools import load_artifacts
-from google.adk.tools import ToolContext, LongRunningFunctionTool
+from google.adk.tools import LongRunningFunctionTool
 from .prompts import (
     image_generation_instructions,
     video_generation_tips,
-    # movie_code_generation_example,
+    broad_instructions,
 )
 from google.genai import types
-
-# from google.adk.code_executors.unsafe_local_code_executor import UnsafeLocalCodeExecutor
 
 
 image_generation_agent = Agent(
     model="gemini-2.0-flash",
     name="image_generation_agent",
-    instruction=image_generation_instructions + video_generation_tips,
+    instruction=broad_instructions
+    + image_generation_instructions
+    + video_generation_tips,
     tools=[
         LongRunningFunctionTool(generate_image),
         LongRunningFunctionTool(generate_video),
         load_artifacts,
     ],
     generate_content_config=types.GenerateContentConfig(
-        temperature=1.0,
+        temperature=1.5,
     ),
-    # code_executor=UnsafeLocalCodeExecutor(),
 )

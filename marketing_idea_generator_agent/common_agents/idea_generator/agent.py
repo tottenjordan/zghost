@@ -1,6 +1,7 @@
 from .prompts import (
     create_brief_prompt,
     youtube_url_instructions,
+    broad_instructions,
 )
 from google.genai import types
 from google.adk.agents import Agent
@@ -19,7 +20,7 @@ tools = [
 create_new_ideas_agent = Agent(
     model="gemini-2.0-flash",
     name="create_new_ideas_agent",
-    instruction=create_brief_prompt + youtube_url_instructions,
+    instruction=broad_instructions + create_brief_prompt + youtube_url_instructions,
     tools=tools,
     generate_content_config=types.GenerateContentConfig(
         temperature=1.0,

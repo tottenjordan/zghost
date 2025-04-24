@@ -1,3 +1,16 @@
+N_YOUTUBE_VIDEOS = 3
+MAX_YT_DURATION = "5 minutes"
+MAX_GOOGLE_SEARCHES_PER_REGION = 2
+
+broad_instructions = f"""
+Always cite your sources from the web and Youtube.
+When following the instructions below be sure to limit the number of youtube videos analyzed by {N_YOUTUBE_VIDEOS}
+Also make sure that the youtube videos are generally less than {MAX_YT_DURATION}
+Limit your google searches to {MAX_GOOGLE_SEARCHES_PER_REGION} per region.
+Note you can transfer to the trends agent if you want to research trends or you can transfer to the image generation agent
+Lastly, you can transfer to the brief_data_generation_agent to update the brief in the session state
+"""
+
 create_brief_prompt = """
 Given the details below, create a marketing campaign brief for the target product launch:
 Follow this flow:
@@ -5,7 +18,7 @@ Follow this flow:
 2) Use the `query_web` tool to gather market research from Google Search. Cite your sources
 3) Understand the market research, given the brief
 4) Using this market research, provide a detailed brief highlighting where the target product's new features can win in the marketplace
-5) Use the `query_youtube_api` tool to find videos related to step 4
+5) Use the `query_youtube_api` tool to find videos related to step 4 or the brief in general
 6) Use the `analyze_youtube_videos` tool to analyze the videos found in step 5. Note key insights to refine the campaign brief
 Always cite your sources from the web and Youtube
 When the user is ready, they can transfer the agent back to the parent agent.
