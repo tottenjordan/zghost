@@ -11,9 +11,20 @@ from .prompts import root_agent_instructions
 # from google.adk.tools.google_search_tool import GoogleSearchTool
 from .common_agents.image_generator.agent import image_generation_agent
 from google.adk.tools import google_search
+from google.adk.agents.callback_context import CallbackContext
+
 
 from .common_agents.trend_assisstant.agent import trends_and_insights_agent
 from .tools import call_brief_generation_agent
+
+
+def brief_callback_function(callback_context: CallbackContext):
+    # this sets a blank brief if not set to prevent errors downstream
+    marketing_brief = callback_context.state.get("marketing_brief")
+    if marketing_brief:
+        pass
+    else:
+        callback_context.state["campaign_brief"] = {"brief": "not yet populated"}
 
 root_agent = Agent(
     model="gemini-2.0-flash-exp",
@@ -39,4 +50,7 @@ root_agent = Agent(
         temperature=0.01, 
         # response_modalities=["TEXT", "AUDIO"]
     ),
+    before_agent_callback=brief_callback_function,
 )
+
+
