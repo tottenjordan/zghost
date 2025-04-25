@@ -5,7 +5,7 @@ from google.genai import types
 
 
 brief_data_generation_agent = Agent(
-    model="gemini-2.0-flash",
+    model="gemini-2.0-flash-001",
     name="brief_data_generation_agent",
     instruction=brief_data_extraction_instructions,
     generate_content_config=types.GenerateContentConfig(

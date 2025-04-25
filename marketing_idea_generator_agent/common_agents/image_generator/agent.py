@@ -11,7 +11,7 @@ from google.genai import types
 
 
 image_generation_agent = Agent(
-    model="gemini-2.0-flash",
+    model="gemini-2.0-flash-001",
     name="image_generation_agent",
     instruction=broad_instructions
     + image_generation_instructions

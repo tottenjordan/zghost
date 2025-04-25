@@ -6,4 +6,3 @@ Use this tool when the user initially provides a pdf or document that shows bran
 This data will be used downstream to create ideas for marketing campaigns.
 When you have created the output, transfer the agent back to the parent agent.
 """
-

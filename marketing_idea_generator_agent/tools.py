@@ -12,10 +12,16 @@ from google.adk.tools.agent_tool import AgentTool
 from .common_agents.marketing_brief_data_generator.agent import (
     brief_data_generation_agent,
 )
+from .common_agents.research_generator.agent import (
+    research_generation_agent,
+)
+# from utils import upload_file_to_gcs
+
 from google.genai import types
 from google.genai import Client
 import asyncio
 import aiohttp
+import uuid
 import os
 
 # import requests
@@ -32,13 +38,12 @@ SECRET_ID = (
 SECRET_VERSION = "{}/versions/1".format(SECRET_ID)
 response = sm_client.access_secret_version(request={"name": SECRET_VERSION})
 YOUTUBE_DATA_API_KEY = response.payload.data.decode("UTF-8")
-
-
-# Only Vertex AI supports image generation for now.
-client = Client()
 youtube_client = googleapiclient.discovery.build(
     serviceName="youtube", version="v3", developerKey=YOUTUBE_DATA_API_KEY
 )
+
+# Only Vertex AI supports image generation for now.
+client = Client()
 
 
 async def call_brief_generation_agent(
@@ -50,17 +55,83 @@ async def call_brief_generation_agent(
     file_path: The path to the file to load, this is the pdf brief.
     """
     agent_tool = AgentTool(brief_data_generation_agent)
+    agent_name = tool_context.agent_name
+    print(f"current Agent={agent_name}")
 
-    # artifact_name = tool_context.state.get("temp:doc_artifact_name")
-    # artifact_part = types.Part(text=file_path)
-    # tool_context.save_artifact("brief.pdf", artifact_part)
     artifact_part = types.Part(text=file_path)
-    tool_context.save_artifact("brief.pdf", artifact_part)
+    print(f"artifact_part={artifact_part}")
+
+    # TODO: support user upload artifacts
+    # tool_context.save_artifact("brief.pdf", artifact_part)
+
     brief_output = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
     tool_context.state["campaign_brief"] = brief_output
+    print(f"Set name for `campaign_brief` --> '{brief_output['campaign_name']}'")
     return brief_output
+
+
+async def call_research_generation_agent(
+    # question: str, 
+    tool_context: ToolContext
+):
+    """Tool to call the research generation agent.
+
+    This reads state variables to produce a PDF report
+
+    Args:
+        tool_context: The tool context.
+
+    Returns:
+        dict: Status and the location of the PDF.
+    """
+    filename = uuid.uuid4()
+    agent_tool = AgentTool(research_generation_agent)
+    agent_name = tool_context.agent_name
+    print(f"current Agent={agent_name}")
+
+    # latest_brief = tool_context.state.get("campaign_brief")
+    # if not latest_brief:
+    #     return {"error": "`campaign_brief` not found in state."}
+    # print(f"latest_brief: {latest_brief}")
+
+    _prompt = """
+    Use the `generate_brief_pdf` tool to convert the updated campaign brief, {campaign_brief}, into Markdown format
+    """
+    
+    markdown_string = await agent_tool.run_async(
+        args={"request": _prompt}, tool_context=tool_context
+    )
+    # response = client.models.generate_content(
+    #     model="gemini-2.0-flash-001",
+    #     contents=_prompt,
+    # )
+    # if not response.text:
+    #     return {"status": "generate_content failed"}
+    # print(f"response.text: {response.text}")
+
+    markdown_bytes = markdown_string.encode('utf-8')
+    report_artifact = types.Part.from_bytes(
+        data=markdown_bytes,
+        mime_type="application/pdf"
+    )
+
+    try:
+        # TODO: did this work? or do we need to create a pdf object with `markdown_pdf` or `pdfkit`?
+        version = tool_context.save_artifact(
+            filename=f"{filename}.pdf", 
+            artifact=report_artifact
+        )
+        print(f"Successfully saved artifact '{filename}' as version {version}.")
+        # upload_file_to_gcs(file_path=f"{filename}.pdf", file_data=image_bytes)
+    except ValueError as e:
+        print(f"Error saving artifact: {e}. Is ArtifactService configured?")
+    except Exception as e:
+        # Handle potential storage errors (e.g., GCS permissions)
+        print(f"An unexpected error occurred during artifact save: {e}")
+
+    return {"status": "ok", "filename": f"{filename}.pdf"}
 
 
 # ========================
@@ -400,7 +471,7 @@ def analyze_youtube_videos(
     if "youtube.com" not in youtube_url:
         return "Not a valid youtube URL"
     else:
-        video1 = types.Part.from_uri(
+        video = types.Part.from_uri(
             file_uri=youtube_url,
             mime_type="video/*",
         )
@@ -409,7 +480,7 @@ def analyze_youtube_videos(
         contents = [
             types.Content(
                 role="user",
-                parts=[types.Part.from_text(text=prompt), video1],
+                parts=[types.Part.from_text(text=prompt), video],
             )
         ]
         result = client.models.generate_content(

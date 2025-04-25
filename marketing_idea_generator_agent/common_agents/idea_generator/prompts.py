@@ -1,6 +1,6 @@
 N_YOUTUBE_VIDEOS = 3
-MAX_YT_DURATION = "5 minutes"
-MAX_GOOGLE_SEARCHES_PER_REGION = 2
+MAX_YT_DURATION = "7 minutes"
+MAX_GOOGLE_SEARCHES_PER_REGION = 3
 
 broad_instructions = f"""
 Always cite your sources from the web and Youtube.

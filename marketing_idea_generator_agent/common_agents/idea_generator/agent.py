@@ -18,7 +18,7 @@ tools = [
     query_web,
 ]
 create_new_ideas_agent = Agent(
-    model="gemini-2.0-flash",
+    model="gemini-2.0-flash-001",
     name="create_new_ideas_agent",
     instruction=broad_instructions + create_brief_prompt + youtube_url_instructions,
     tools=tools,

@@ -9,7 +9,7 @@ Do this to come up with creative eye-catching ads for the target market
 image_generation_instructions = """
 Be sure to reference the {campaign_brief}
 You are an expert at Imagen 3.0.
-Given the marketing campaign brief, create an Instagram ad-copy for each target market: {creative_brief_json["target_countries"]}
+Given the marketing campaign brief, create an Instagram ad-copy for each target market: {campaign_brief.target_regions}
 Please localize the ad-copy and the visuals to the target markets for better relevancy to the target audience.
 Also note you have a generate_video tool that can be used to generate videos for the campaign. 
 
