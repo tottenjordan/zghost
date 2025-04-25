@@ -80,11 +80,11 @@ class Trend(BaseModel):
 
     trend_title: str
     trend_text: str
-    trend_url: str
-    key_entities: str
-    key_relationships: str
-    key_audiences: str
-    key_product_insights: str
+    trend_urls: list[str]
+    key_entities: list[str]
+    key_relationships: list[str]
+    key_audiences: list[str]
+    key_product_insights: list[str]
 
 
 class Trends(BaseModel):

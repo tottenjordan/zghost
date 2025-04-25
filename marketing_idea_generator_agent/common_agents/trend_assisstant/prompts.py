@@ -22,6 +22,7 @@ MAX_GOOGLE_SEARCHES_PER_REGION = 3
 
 trends_generation_instructions = """
 Before transferring to any agent, be sure to use the `call_trends_generator_agent` tool to update the list of structured trends to your state.
+Run this tool after every tool response from `query_web` and `analyze_youtube_videos` tools to capture any detailed information
 """
 
 broad_instructions = f"""
@@ -38,12 +39,12 @@ Note how to fill the fields out:
 
     trend_title: str -> Come up with a unique title for the trend
     trend_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
-    trend_url: str -> Get the url from the `query_youtube_api` tool
-    source_text: str -> Get the text from the `query_web` tool or `analyze_youtube_videos` tool
-    key_entities: str -> Develop entities from the source to create a graph (see relations)
-    key_relationships: str -> Create relationships between the key_entities to create a graph
-    key_audiences: str -> Considering the brief, how does this trend intersect with the audience?
-    key_product_insights: str -> Considering the brief, how does this trend intersect with the product?
+    trend_urls: list[str] -> Get the url from the `query_youtube_api` tool
+    source_texts: list[str] -> Get the text from the `query_web` tool or `analyze_youtube_videos` tool
+    key_entities: list[str] -> Develop entities from the source to create a graph (see relations)
+    key_relationships: list[str] -> Create relationships between the key_entities to create a graph
+    key_audiences: list[str] -> Considering the brief, how does this trend intersect with the audience?
+    key_product_insights: list[str] -> Considering the brief, how does this trend intersect with the product?
 """
 
 unified_trends_instructions = broad_instructions + trends_generation_instructions + get_youtube_trends_prompt

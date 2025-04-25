@@ -10,11 +10,11 @@ class Insight(BaseModel):
 
     insight_title: str
     insight_text: str
-    insight_url: str
-    key_entities: str
-    key_relationships: str
-    key_audiences: str
-    key_product_insights: str
+    insight_urls: list[str]
+    key_entities: list[str]
+    key_relationships: list[str]
+    key_audiences: list[str]
+    key_product_insights: list[str]
 
 class Insights(BaseModel):
     "Data model for insights from Google and Youtube research."
