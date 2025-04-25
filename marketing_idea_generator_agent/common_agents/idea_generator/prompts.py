@@ -3,7 +3,7 @@ MAX_YT_DURATION = "7 minutes"
 MAX_GOOGLE_SEARCHES_PER_REGION = 3
 
 insights_generation_instructions = """
-Whenever you find new results that are relevant from the web or youtube, use the call_insights_generation_agent to update the list of insights to the agent's state.
+Before transferring to any agent, be sure to use the `call_insights_generation_agent` tool to update the list of insights to the agent's state.
 """
 
 broad_instructions = f"""

@@ -1,3 +1,7 @@
+trends_generation_instructions = """
+Before transferring to any agent, be sure to use the `call_trends_generator_agent` tool to update the list of structured trends to your state.
+"""
+
 get_youtube_trends_prompt = """
 Follow the steps below to query trending videos from YouTube and prepare them for a marketing analyst to review.
 
@@ -11,4 +15,9 @@ While researching the trends, keep in mind the {campaign_brief}. Use this to fin
 5) Describe the relationships between the key entities described in the previous step
 
 When the user is ready, they can transfer the agent back to the parent agent. 
+"""
+
+trends_generation_prompt = """
+Understand the output of the latest trends from this research and produce structured data output using the call_trends_generator_agent tool
+Note all outputs from the agent run and run this tool to update the session state with trends.
 """

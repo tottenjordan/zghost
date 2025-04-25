@@ -10,7 +10,7 @@ from ...tools import (
     query_web, 
     analyze_youtube_videos
 )
-from .tools import get_youtube_trends
+from .tools import get_youtube_trends, call_trends_generator_agent
 from google.adk.tools import LongRunningFunctionTool
 
 
@@ -20,6 +20,7 @@ tools = [
     query_youtube_api,
     query_web,
     LongRunningFunctionTool(analyze_youtube_videos),
+    call_trends_generator_agent,
 ]
 
 trends_and_insights_agent = Agent(

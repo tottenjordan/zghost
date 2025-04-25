@@ -1,5 +1,11 @@
 # imports
 import os
+from pydantic import BaseModel
+from google.adk.agents import Agent
+from google.genai import types
+from .prompts import trends_generation_prompt
+from google.adk.tools import ToolContext
+from google.adk.tools.agent_tool import AgentTool
 
 import googleapiclient.discovery
 from google.cloud import secretmanager as sm
@@ -25,7 +31,7 @@ def get_youtube_trends(
     Returns a dictionary of videos that match the API request parameters e.g., trending videos
 
     Args:
-        region_code (str): selects a video chart available in the specified region. Values are ISO 3166-1 alpha-2 country codes. 
+        region_code (str): selects a video chart available in the specified region. Values are ISO 3166-1 alpha-2 country codes.
             For example, the region_code for the United Kingdom would be 'GB', whereas 'US' would represent The United States.
         max_results (int): The number of video results to return.
 
@@ -48,7 +54,7 @@ def get_youtube_trends(
 #     max_results: int = 7,
 #     # youtube_client: googleapiclient.discovery.Resource = youtube_client,
 # ) -> dict:
-    
+
 
 # Set up Integration Connectors
 # https://cloud.google.com/integration-connectors/docs/setup-integration-connectors
@@ -64,3 +70,55 @@ def get_youtube_trends(
 #   ...
 #   tools = bigquery_toolset.get_tools()
 # )
+
+
+#### Insights Structured Tool
+
+
+class Trend(BaseModel):
+    "Data model for trends from Google and Youtube research."
+
+    trend_title: str
+    trend_text: str
+    trend_url: str
+    key_entities: str
+    key_relationships: str
+    key_audiences: str
+    key_product_insights: str
+
+
+class Trends(BaseModel):
+    "Data model for trends from Google and Youtube research."
+
+    trends: list[Trend]
+
+
+# we will define an agent here for agent tool to capture insights
+
+
+trends_generator_agent = Agent(
+    model="gemini-2.0-flash",
+    name="trends_generator_agent",
+    instruction=trends_generation_prompt,
+    generate_content_config=types.GenerateContentConfig(
+        temperature=0.1,
+    ),
+    output_schema=Trends,
+    output_key="trends",
+)
+
+
+async def call_trends_generator_agent(question: str, tool_context: ToolContext):
+    """
+    Tool to call the insights generation agent.
+    Question: The question to ask the agent.
+    tool_context: The tool context.
+    """
+
+    agent_tool = AgentTool(trends_generator_agent)
+
+    trends = await agent_tool.run_async(
+        args={"request": question}, tool_context=tool_context
+    )
+    tool_context.state["trends"] = trends
+    return {"status": "ok"}
