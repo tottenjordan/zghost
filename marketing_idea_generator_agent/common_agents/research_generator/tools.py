@@ -23,17 +23,19 @@ def generate_brief_pdf(
     Returns:
         dict: Status and the location of the PDF.
     """
-    # print(f"prompt in `generate_brief_pdf`: {prompt}")
+    print(f"prompt in `generate_brief_pdf`: {prompt}")
 
     filename = uuid.uuid4()
-    response = client.models.generate_content(
-        model="gemini-1.5-flash-002", # "gemini-2.0-flash-001"
-        contents=prompt,
-        # contents="Generate the updated campaign brief in Markdown format",
-    )
-    if not response.text:
-        return {"status": "failed"}
-    markdown_string = response.text
+    # response = client.models.generate_content(
+    #     model="gemini-1.5-flash-002", # "gemini-2.0-flash-001"
+    #     contents=prompt,
+    #     # contents="Generate the updated campaign brief in Markdown format",
+    # )
+    # if not response.text:
+    #     return {"status": "failed"}
+    
+    # markdown_string = response.text
+    markdown_string = prompt
     print(f"markdown_string in `generate_brief_pdf`: {markdown_string}")
     markdown_bytes = markdown_string.encode('utf-8')
     

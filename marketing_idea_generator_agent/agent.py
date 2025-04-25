@@ -20,7 +20,10 @@ from google.adk.agents.callback_context import CallbackContext
 
 from google.adk.models import LlmRequest
 
-# from .tools import call_brief_generation_agent
+from .tools import (
+    call_brief_generation_agent,
+    call_research_generation_agent
+)
 from typing import Optional
 
 def brief_callback_function(
@@ -55,16 +58,18 @@ root_agent = Agent(
         """
     ),
     sub_agents=[
-        brief_data_generation_agent,
         create_new_ideas_agent,
         image_generation_agent,
         trends_and_insights_agent,
+        brief_data_generation_agent,
         research_generation_agent
     ],
     tools=[
         # google_search,
         load_artifacts,
-        # call_brief_generation_agent
+        # call_brief_generation_agent,
+        # call_research_generation_agent
+
     ],
     generate_content_config=types.GenerateContentConfig(
         temperature=0.01,
