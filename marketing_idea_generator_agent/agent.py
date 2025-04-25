@@ -37,10 +37,10 @@ def brief_callback_function(
     marketing_brief = callback_context.state.get("campaign_brief")
     if marketing_brief is None:
         callback_context.state["campaign_brief"] = {"brief": "not yet populated"}
-        return types.Content(
-            parts=[types.Part(text=f"Agent {agent_name} skipped by before_agent_callback due to state (campaign_brief).")],
-            role="model" # Assign model role to the overriding response
-        )
+        # return types.Content(
+        #     parts=[types.Part(text=f"Agent {agent_name} skipped by before_agent_callback due to state (campaign_brief).")],
+        #     role="model" # Assign model role to the overriding response
+        # )
     else:
         return None
 

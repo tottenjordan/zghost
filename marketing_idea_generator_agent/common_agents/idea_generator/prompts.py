@@ -2,14 +2,20 @@ N_YOUTUBE_VIDEOS = 3
 MAX_YT_DURATION = "7 minutes"
 MAX_GOOGLE_SEARCHES_PER_REGION = 3
 
+insights_generation_instructions = """
+Whenever you find new results that are relevant from the web or youtube, use the call_insights_generation_agent to update the list of insights to the agent's state.
+"""
+
 broad_instructions = f"""
 Always cite your sources from the web and Youtube.
 When following the instructions below be sure to limit the number of youtube videos analyzed by {N_YOUTUBE_VIDEOS}
 Also make sure that the youtube videos are generally less than {MAX_YT_DURATION}
 Limit your google searches to {MAX_GOOGLE_SEARCHES_PER_REGION} per region.
+{insights_generation_instructions}
 Note you can transfer to the trends agent if you want to research trends or you can transfer to the image generation agent
 Lastly, you can transfer to the brief_data_generation_agent to update the brief in the session state
 """
+
 
 create_brief_prompt = """
 Given the details below, create a marketing campaign brief for the target product launch:
@@ -43,3 +49,9 @@ How do these videos provide additional marketing insights?
 # 4) Describe the relationships between the key entities described in the previous step
 # When the user is ready, they can transfer the agent back to the parent agent. 
 # """
+
+insights_generation_prompt = """
+Understand the output from the web and youtube research, considering {campaign_brief}
+Use the agent to produce structured output to the insights state.
+"""
+
