@@ -1,15 +1,10 @@
-from .prompts import (
-    get_youtube_trends_prompt,
-)
+from .prompts import unified_trends_instructions
 from google.genai import types
 from google.adk.agents import Agent
+
 # from google.adk.tools import google_search
 
-from ...tools import (
-    query_youtube_api, 
-    query_web, 
-    analyze_youtube_videos
-)
+from ...tools import query_youtube_api, query_web, analyze_youtube_videos
 from .tools import get_youtube_trends, call_trends_generator_agent
 from google.adk.tools import LongRunningFunctionTool
 
@@ -26,7 +21,7 @@ tools = [
 trends_and_insights_agent = Agent(
     model="gemini-2.0-flash-001",
     name="trends_and_insights_agent",
-    instruction=get_youtube_trends_prompt,
+    instruction=unified_trends_instructions,
     tools=tools,
     generate_content_config=types.GenerateContentConfig(
         temperature=1.0,

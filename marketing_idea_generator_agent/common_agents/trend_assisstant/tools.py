@@ -116,9 +116,14 @@ async def call_trends_generator_agent(question: str, tool_context: ToolContext):
     """
 
     agent_tool = AgentTool(trends_generator_agent)
-
+    trends_already_in_state = tool_context.state.get("trends")
+    if trends_already_in_state is not None:
+        question_with_data = question + str(trends_already_in_state)
+    else:
+        question_with_data = question
     trends = await agent_tool.run_async(
-        args={"request": question}, tool_context=tool_context
+        args={"request": question_with_data}, tool_context=tool_context
     )
+
     tool_context.state["trends"] = trends
     return {"status": "ok"}

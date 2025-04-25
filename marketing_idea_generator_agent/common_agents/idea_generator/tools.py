@@ -48,8 +48,13 @@ async def call_insights_generation_agent(
 
     agent_tool = AgentTool(insights_generator_agent)
 
+    insights_already_in_state = tool_context.state.get("insights")
+    if insights_already_in_state is not None:
+        question_with_data = question + str(insights_already_in_state)
+    else:
+        question_with_data = question
     insights = await agent_tool.run_async(
-        args={"request": question}, tool_context=tool_context
+        args={"request": question_with_data}, tool_context=tool_context
     )
     tool_context.state["insights"] = insights
     return {"status": "ok"}
