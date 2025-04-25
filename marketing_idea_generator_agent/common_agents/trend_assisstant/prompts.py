@@ -22,7 +22,6 @@ MAX_GOOGLE_SEARCHES_PER_REGION = 3
 
 trends_generation_instructions = """
 Before transferring to any agent, be sure to use the `call_trends_generator_agent` tool to update the list of structured trends to your state.
-This will ensure that your trends will be saved for use with other agents - this is critical to call this before any transfer
 """
 
 broad_instructions = f"""
