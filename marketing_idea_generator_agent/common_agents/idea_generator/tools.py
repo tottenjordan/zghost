@@ -59,7 +59,5 @@ async def call_insights_generation_agent(question: str, tool_context: ToolContex
     insights = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-    if existing_insights is not None:
-        insights.extend(existing_insights)
     tool_context.state["insights"] = insights
     return {"status": "ok"}
