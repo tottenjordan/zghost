@@ -20,7 +20,7 @@ tools = [
     query_youtube_api,
     query_web,
     LongRunningFunctionTool(analyze_youtube_videos),
-],
+]
 
 trends_and_insights_agent = Agent(
     model="gemini-2.0-flash-001",
