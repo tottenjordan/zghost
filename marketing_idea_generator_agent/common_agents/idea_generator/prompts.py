@@ -63,3 +63,12 @@ How to fill the fields out:
     key_audiences: List[str] -> Considering the brief, how does this insight intersect with the audience?
     key_product_insights: List[str] -> Considering the brief, how does this insight intersect with the product?
 """
+
+
+unified_insights_prompt = (
+    broad_instructions
+    + insights_generation_instructions
+    + broad_instructions
+    + create_brief_prompt
+    + youtube_url_instructions
+)

@@ -1,8 +1,4 @@
-from .prompts import (
-    create_brief_prompt,
-    youtube_url_instructions,
-    broad_instructions,
-)
+from .prompts import unified_insights_prompt
 from google.genai import types
 from google.adk.agents import Agent
 from google.adk.tools import LongRunningFunctionTool
@@ -21,7 +17,7 @@ tools = [
 create_new_ideas_agent = Agent(
     model="gemini-2.0-flash-001",
     name="create_new_ideas_agent",
-    instruction=broad_instructions + create_brief_prompt + youtube_url_instructions,
+    instruction=unified_insights_prompt,
     tools=tools,
     generate_content_config=types.GenerateContentConfig(
         temperature=1.0,

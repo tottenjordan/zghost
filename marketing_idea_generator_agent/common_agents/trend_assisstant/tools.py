@@ -80,11 +80,11 @@ class Trend(BaseModel):
 
     trend_title: str
     trend_text: str
-    trend_urls: list[str]
-    key_entities: list[str]
-    key_relationships: list[str]
-    key_audiences: list[str]
-    key_product_insights: list[str]
+    trend_urls: str
+    key_entities: str
+    key_relationships: str
+    key_audiences: str
+    key_product_insights: str
 
 
 class Trends(BaseModel):
@@ -111,19 +111,25 @@ trends_generator_agent = Agent(
 async def call_trends_generator_agent(question: str, tool_context: ToolContext):
     """
     Tool to call the insights generation agent.
-    Question: The question to ask the agent.
+    Question: The question to ask the agent, use the tool_context to extract the following schema:
+        trend_title: str -> Come up with a unique title for the trend
+        trend_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
+        trend_urls: list[str] -> Get the url from the `query_youtube_api` tool
+        source_texts: list[str] -> Get the text from the `query_web` tool or `analyze_youtube_videos` tool
+        key_entities: list[str] -> Develop entities from the source to create a graph (see relations)
+        key_relationships: list[str] -> Create relationships between the key_entities to create a graph
+        key_audiences: list[str] -> Considering the brief, how does this trend intersect with the audience?
+        key_product_insights: list[str] -> Considering the brief, how does this trend intersect with the product?
     tool_context: The tool context.
     """
 
     agent_tool = AgentTool(trends_generator_agent)
-    trends_already_in_state = tool_context.state.get("trends")
-    if trends_already_in_state is not None:
-        question_with_data = question + str(trends_already_in_state)
-    else:
-        question_with_data = question
-    trends = await agent_tool.run_async(
-        args={"request": question_with_data}, tool_context=tool_context
-    )
+    existing_trends = tool_context.state.get("trends")
 
+    trends = await agent_tool.run_async(
+        args={"request": question}, tool_context=tool_context
+    )
+    if existing_trends is not None:
+        trends.extend(existing_trends)
     tool_context.state["trends"] = trends
     return {"status": "ok"}
