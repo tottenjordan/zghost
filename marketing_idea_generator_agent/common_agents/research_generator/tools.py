@@ -10,7 +10,7 @@ client = genai.Client()
 
 
 def generate_brief_pdf(
-    # prompt: str,
+    prompt: str,
     tool_context: ToolContext,
 ) -> dict:
     """Converts the campaign brief to PDF and saves it to Google Cloud Storage
@@ -27,14 +27,14 @@ def generate_brief_pdf(
 
     filename = uuid.uuid4()
     response = client.models.generate_content(
-        model="gemini-2.0-flash-001",
-        contents="Generate the updated campaign brief in Markdown format",
+        model="gemini-1.5-flash-002", # "gemini-2.0-flash-001"
+        contents=prompt,
+        # contents="Generate the updated campaign brief in Markdown format",
     )
     if not response.text:
         return {"status": "failed"}
     markdown_string = response.text
     print(f"markdown_string in `generate_brief_pdf`: {markdown_string}")
-
     markdown_bytes = markdown_string.encode('utf-8')
     
     tool_context.save_artifact(

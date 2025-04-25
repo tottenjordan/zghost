@@ -1,10 +1,11 @@
 prepare_brief_research_instructions = """
-Use the updated campaign brief to generate a research report. Save this research report as a PDF in Cloud Storage.
+Use this tool when the user wants to generate a research artifact from the updated campaign brief.
 
-When using the `generate_brief_pdf` tool, be sure to reference the updated {campaign_brief}, including:
-  * Marketing campaigns ideas from the `create_new_ideas_agent`
-  * Trending topics, content, and themes from the `trends_and_insights_agent`
+Follow the steps below to generate a research report:
 
-Use this tool when the user wants to generate a research artifact from the updated campaign brief and save it as a PDF in Cloud Storage
-When you have created the output, transfer the agent back to the parent agent.
+1) Convert {campaign_brief} into a string in Markdown format.
+2) Use the `generate_brief_pdf` tool. For the input argument 'prompt', be sure to use the Markdown string created in the previous step.
+3) This tool should save the PDF in Cloud Storage and return the filename
+
+When you have successfully ran the `generate_brief_pdf` tool, transfer the agent back to the parent agent.
 """

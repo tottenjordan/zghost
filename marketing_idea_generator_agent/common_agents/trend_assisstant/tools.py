@@ -18,9 +18,7 @@ youtube_client = googleapiclient.discovery.build(
 
 
 def get_youtube_trends(
-    # part: str = "snippet,contentDetails,statistics",
-    # chart: str = "mostPopular",
-    region_code: str, # = "US",
+    region_code: str,
     max_results: int = 5,
 ) -> dict:
     """
