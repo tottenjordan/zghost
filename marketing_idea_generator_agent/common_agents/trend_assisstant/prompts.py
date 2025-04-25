@@ -20,4 +20,14 @@ When the user is ready, they can transfer the agent back to the parent agent.
 trends_generation_prompt = """
 Understand the output of the latest trends from this research and produce structured data output using the call_trends_generator_agent tool
 Note all outputs from the agent run and run this tool to update the session state with trends.
+Note how to fill the fields out:
+
+    trend_title: str -> Come up with a unique title for the trend
+    trend_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
+    trend_url: str -> Get the url from the `query_youtube_api` tool
+    source_text: str -> Get the text from the `query_web` tool or `analyze_youtube_videos` tool
+    key_entities: str -> Develop entities from the source to create a graph (see relations)
+    key_relationships: str -> Create relationships between the key_entities to create a graph
+    key_audiences: str -> Considering the brief, how does this trend intersect with the audience?
+    key_product_insights: str -> Considering the brief, how does this trend intersect with the product?
 """

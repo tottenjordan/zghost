@@ -47,11 +47,18 @@ How do these videos provide additional marketing insights?
 # 2) Generate a brief sumamry describing what is taking place or being discussed
 # 3) Describe the key entities involved. This could be a person, place, organization or named event. This includes their backgrounds, roles, and any other relevant information
 # 4) Describe the relationships between the key entities described in the previous step
-# When the user is ready, they can transfer the agent back to the parent agent. 
+# When the user is ready, they can transfer the agent back to the parent agent.
 # """
 
 insights_generation_prompt = """
 Understand the output from the web and youtube research, considering {campaign_brief}
 Use the agent to produce structured output to the insights state.
+How to fill the fields out:
+    insight_title: str -> Come up with a unique title for the insight
+    insight_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
+    insight_url: str -> Get the url from the `query_youtube_api` tool or `query_web` tool
+    key_entities: str -> Develop entities from the source to create a graph (see relations)
+    key_relationships: str -> Create relationships between the key_entities to create a graph
+    key_audiences: str -> Considering the brief, how does this insight intersect with the audience?
+    key_product_insights: str -> Considering the brief, how does this insight intersect with the product?
 """
-
