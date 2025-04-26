@@ -59,6 +59,8 @@ async def call_insights_generation_agent(question: str, tool_context: ToolContex
         args={"request": question}, tool_context=tool_context
     )
     if existing_insights is not []:
-        insights["insights"].extend(existing_insights) #TODO: Validate how to keep a history of trends & insights
+        insights["insights"].extend(
+            existing_insights
+        )  # TODO: Validate how to keep a history of trends & insights
     tool_context.state["insights"] = insights["insights"]
     return {"status": "ok"}

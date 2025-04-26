@@ -36,13 +36,21 @@ def generate_brief_pdf(
     
     # markdown_string = response.text
     markdown_string = prompt
-    print(f"markdown_string in `generate_brief_pdf`: {markdown_string}")
     markdown_bytes = markdown_string.encode('utf-8')
+
+    pdf_artifact =types.Part(
+        inline_data=types.Blob(
+            data=markdown_bytes,
+            mime_type="application/pdf"
+        )
+    )
     
     tool_context.save_artifact(
-        f"{filename}.pdf",
-        types.Part.from_bytes(data=markdown_bytes, mime_type="application/pdf"),
+        filename=f"{filename}.pdf",
+        # artifact= types.Part.from_bytes(data=markdown_bytes, mime_type="application/pdf"),
+        artifact=pdf_artifact,
     )
+
     # save the file locally for gcs upload
     upload_pdf_to_gcs(file_path=f"{filename}.pdf", file_data=markdown_bytes)
     return {"status": "ok", "filename": f"{filename}.pdf"}
