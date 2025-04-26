@@ -1,10 +1,14 @@
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
 try:
     # The library is called 'googlesearch', but installed via 'googlesearch-python'
     from googlesearch import search
 
 except ImportError:
-    print("Could not import the 'googlesearch' library.")
-    print("Please install it first using: pip install googlesearch-python")
+    logging.exception("Could not import the 'googlesearch' library.")
+    logging.exception("Please install it first using: pip install googlesearch-python")
     search = None  # Set search to None so the script doesn't crash immediately
 import pandas as pd
 from google.adk.tools import ToolContext
@@ -15,6 +19,7 @@ from .common_agents.marketing_brief_data_generator.agent import (
 from .common_agents.research_generator.agent import (
     research_generation_agent,
 )
+
 # from utils import upload_file_to_gcs
 
 from google.genai import types
@@ -56,10 +61,10 @@ async def call_brief_generation_agent(
     """
     agent_tool = AgentTool(brief_data_generation_agent)
     agent_name = tool_context.agent_name
-    print(f"current Agent={agent_name}")
+    logging.info(f"current Agent={agent_name}")
 
     artifact_part = types.Part(text=file_path)
-    print(f"artifact_part={artifact_part}")
+    logging.info(f"artifact_part={artifact_part}")
 
     # TODO: support user upload artifacts
     # tool_context.save_artifact("brief.pdf", artifact_part)
@@ -68,13 +73,13 @@ async def call_brief_generation_agent(
         args={"request": question}, tool_context=tool_context
     )
     tool_context.state["campaign_brief"] = brief_output
-    print(f"Set name for `campaign_brief` --> '{brief_output['campaign_name']}'")
+    logging.info(f"Set name for `campaign_brief` --> '{brief_output['campaign_name']}'")
     return brief_output
 
 
 async def call_research_generation_agent(
-    # question: str, 
-    tool_context: ToolContext
+    # question: str,
+    tool_context: ToolContext,
 ):
     """Tool to call the research generation agent.
 
@@ -89,17 +94,17 @@ async def call_research_generation_agent(
     filename = uuid.uuid4()
     agent_tool = AgentTool(research_generation_agent)
     agent_name = tool_context.agent_name
-    print(f"current Agent={agent_name}")
+    logging.info(f"current Agent={agent_name}")
 
     # latest_brief = tool_context.state.get("campaign_brief")
     # if not latest_brief:
     #     return {"error": "`campaign_brief` not found in state."}
-    # print(f"latest_brief: {latest_brief}")
+    # logging.info(f"latest_brief: {latest_brief}")
 
     _prompt = """
     Use the `generate_brief_pdf` tool to convert the updated campaign brief, {campaign_brief}, into Markdown format
     """
-    
+
     markdown_string = await agent_tool.run_async(
         args={"request": _prompt}, tool_context=tool_context
     )
@@ -109,27 +114,25 @@ async def call_research_generation_agent(
     # )
     # if not response.text:
     #     return {"status": "generate_content failed"}
-    # print(f"response.text: {response.text}")
+    # logging.info(f"response.text: {response.text}")
 
-    markdown_bytes = markdown_string.encode('utf-8')
+    markdown_bytes = markdown_string.encode("utf-8")
     report_artifact = types.Part.from_bytes(
-        data=markdown_bytes,
-        mime_type="application/pdf"
+        data=markdown_bytes, mime_type="application/pdf"
     )
 
     try:
         # TODO: did this work? or do we need to create a pdf object with `markdown_pdf` or `pdfkit`?
         version = tool_context.save_artifact(
-            filename=f"{filename}.pdf", 
-            artifact=report_artifact
+            filename=f"{filename}.pdf", artifact=report_artifact
         )
-        print(f"Successfully saved artifact '{filename}' as version {version}.")
+        logging.info(f"Successfully saved artifact '{filename}' as version {version}.")
         # upload_file_to_gcs(file_path=f"{filename}.pdf", file_data=image_bytes)
     except ValueError as e:
-        print(f"Error saving artifact: {e}. Is ArtifactService configured?")
+        logging.exception(f"Error saving artifact: {e}. Is ArtifactService configured?")
     except Exception as e:
         # Handle potential storage errors (e.g., GCS permissions)
-        print(f"An unexpected error occurred during artifact save: {e}")
+        logging.exception(f"An unexpected error occurred during artifact save: {e}")
 
     return {"status": "ok", "filename": f"{filename}.pdf"}
 
@@ -158,11 +161,11 @@ def perform_google_search(
               or the library wasn't imported.
     """
     if not search:
-        print("Googlesearch library not available. Cannot perform search.")
+        logging.info("Googlesearch library not available. Cannot perform search.")
         return []
 
     search_results_urls = []
-    print(f"Searching Google for: '{query}' (up to {num_results} results)...")
+    logging.info(f"Searching Google for: '{query}' (up to {num_results} results)...")
     try:
         # The search function returns a generator. We convert it to a list.
         #   [[1](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AWQVqAIt0WzakIytkvxX-NyLXvi8MeY_Lt0gOuYicrDUrmlo-oMJU5YQyD8tzXvLuLEhWcYU9l5rdXcKddjNmU0AEb2_LVzo3sGqCr7_xnWMkqIUtpuW9_rohiniNpWh0CQoxZKz1tXlOg==)]
@@ -173,12 +176,14 @@ def perform_google_search(
         )
         search_results_urls = list(results_generator)
 
-        print(f"Found {len(search_results_urls)} results.")
+        logging.info(f"Found {len(search_results_urls)} results.")
 
     except Exception as e:
-        print(f"An error occurred during the Google search: {e}")
-        print("This might be due to network issues or Google blocking the request.")
-        print("Try increasing the 'pause_time' or searching less frequently.")
+        logging.exception(f"An error occurred during the Google search: {e}")
+        logging.info(
+            "This might be due to network issues or Google blocking the request."
+        )
+        logging.info("Try increasing the 'pause_time' or searching less frequently.")
 
     return search_results_urls
 
@@ -210,7 +215,7 @@ async def extract_main_text_from_url(
     }
 
     extracted_text = None
-    print(f"Attempting to fetch URL: {url}")
+    logging.info(f"Attempting to fetch URL: {url}")
 
     try:
         async with session.get(
@@ -219,7 +224,7 @@ async def extract_main_text_from_url(
             # Raise an HTTPError for bad responses (4xx or 5xx)
             # aiohttp doesn't raise by default like requests, so we check status
             if response.status >= 400:
-                print(f"HTTP Error {response.status} for URL {url}")
+                logging.info(f"HTTP Error {response.status} for URL {url}")
                 # Optionally raise an exception or just return None
                 # response.raise_for_status() # This would raise ClientResponseError
                 return None  # Return None on client/server errors
@@ -227,7 +232,7 @@ async def extract_main_text_from_url(
             # Check content type (optional)
             content_type = response.headers.get("content-type", "").lower()
             if "text/html" not in content_type:
-                print(
+                logging.info(
                     f"Warning: Content-Type for {url} is '{content_type}'. Extraction might be suboptimal."
                 )
 
@@ -235,7 +240,7 @@ async def extract_main_text_from_url(
             html_content = await response.read()
 
             # Run trafilatura extraction (potentially blocking, see note below)
-            print(f"Extracting main content from {url} using trafilatura...")
+            logging.info(f"Extracting main content from {url} using trafilatura...")
             # Note: trafilatura itself is synchronous CPU-bound code.
             # For *very* heavy pages or *many* concurrent tasks on a limited machine,
             # you *might* consider running this part in a thread pool executor too,
@@ -250,7 +255,7 @@ async def extract_main_text_from_url(
             )
 
             if not extracted_text and favour_precision:
-                print(
+                logging.info(
                     f"Precision mode yielded no text for {url}, trying recall mode..."
                 )
                 extracted_text = trafilatura.extract(
@@ -261,7 +266,7 @@ async def extract_main_text_from_url(
                 )
 
             if extracted_text:
-                print(
+                logging.info(
                     f"Successfully extracted content from {url} (approx. {len(extracted_text)} chars)."
                 )
             else:
@@ -270,15 +275,15 @@ async def extract_main_text_from_url(
                     # Try decoding for the check, ignore errors
                     page_text = html_content.decode(errors="ignore")
                     if page_text and len(page_text.strip()) > 0:
-                        print(
+                        logging.info(
                             f"Trafilatura could not extract main content from {url}, though the page was fetched."
                         )
                     else:
-                        print(
+                        logging.info(
                             f"The fetched page {url} appears to have no text content."
                         )
                 except Exception:  # Guard against decoding errors just for the print
-                    print(
+                    logging.exception(
                         f"Trafilatura could not extract main content from {url} (and checking raw text failed)."
                     )
 
@@ -286,14 +291,16 @@ async def extract_main_text_from_url(
 
     except aiohttp.ClientError as e:
         # Handles client-side exceptions like connection errors, timeouts
-        print(f"Aiohttp client error fetching URL {url}: {e}")
+        logging.exception(f"Aiohttp client error fetching URL {url}: {e}")
         extracted_text = None
     except asyncio.TimeoutError:
-        print(f"Timeout error fetching URL {url} after {timeout} seconds.")
+        logging.exception(f"Timeout error fetching URL {url} after {timeout} seconds.")
         extracted_text = None
     except Exception as e:
         # Catch potential unexpected errors during extraction or other issues
-        print(f"An unexpected error occurred for URL {url}: {type(e).__name__} - {e}")
+        logging.exception(
+            f"An unexpected error occurred for URL {url}: {type(e).__name__} - {e}"
+        )
         extracted_text = None
 
     # No yield needed, just return the final result for this URL
@@ -333,14 +340,14 @@ async def query_web(
             perform_google_search, query, num_results, lang, pause_time
         )
     except Exception as e:
-        print(f"Error running Google search in thread: {e}")
+        logging.exception(f"Error running Google search in thread: {e}")
         urls = []
 
     if not urls:
-        print("No URLs found or search failed.")
+        logging.info("No URLs found or search failed.")
         return []
 
-    print(f"\nStarting concurrent scraping for {len(urls)} URLs...")
+    logging.info(f"\nStarting concurrent scraping for {len(urls)} URLs...")
     results = []
     # Create a single aiohttp session to be reused for all requests
     async with aiohttp.ClientSession() as session:
@@ -362,24 +369,24 @@ async def query_web(
         scraped_texts_or_errors = await asyncio.gather(*tasks, return_exceptions=True)
 
     # Step 3: Combine URLs with scraped text (or error indicators)
-    print("\nScraping finished. Processing results...")
+    logging.info("\nScraping finished. Processing results...")
     for i, url in enumerate(urls):
         site_data = {"url": url}
         result = scraped_texts_or_errors[i]
 
         if isinstance(result, Exception):
-            print(f"Failed to scrape {url}: {type(result).__name__} - {result}")
+            logging.info(f"Failed to scrape {url}: {type(result).__name__} - {result}")
             site_data["website_text"] = None  # Indicate failure with None
         elif result is None:
-            print(f"Scraping completed for {url}, but no text was extracted.")
+            logging.info(f"Scraping completed for {url}, but no text was extracted.")
             site_data["website_text"] = None  # Indicate no text extracted with None
         else:
-            print(f"Successfully processed {url}")
+            logging.info(f"Successfully processed {url}")
             site_data["website_text"] = result  # Assign the extracted text
 
         results.append(site_data)
 
-    print(f"\nProcessed {len(results)} URLs.")
+    logging.info(f"\nProcessed {len(results)} URLs.")
     return results
 
 
@@ -391,6 +398,7 @@ async def query_web(
 def query_youtube_api(
     query: str,
     video_duration: str,
+    region_code: str,
     video_order: str = "relevance",
     num_video_results: int = 5,
     max_num_days_ago: int = 30,
@@ -405,7 +413,11 @@ def query_youtube_api(
     Args:
         query (str): The search query.
         video_duration (str): The duration (minutes) of the videos to search for.
-            Must be one of: 'any', 'long', 'medium', 'short', where short=(-inf, 4), medium=[4, 20], long=(20, inf)
+            Must be one of: 'any', 'long', 'medium', 'short', where short=(-inf, 4), 
+            medium=[4, 20], long=(20, inf)
+        region_code (str): selects a video chart available in the specified region. 
+            Values are ISO 3166-1 alpha-2 country codes. For example, the region_code for the United Kingdom would be 'GB', 
+            whereas 'US' would represent The United States.
         video_order (str): The order in which the videos should be returned.
             Must be one of 'date', 'rating', 'relevance', 'title', 'viewCount'
         num_video_results (int): The number of video results to return.
@@ -440,6 +452,7 @@ def query_youtube_api(
         type="video",
         part="id,snippet",
         relevanceLanguage="en",
+        regionCode=region_code,
         q=query,
         videoDuration=video_duration,
         order=video_order,

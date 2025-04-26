@@ -10,6 +10,7 @@ from google.adk.tools.agent_tool import AgentTool
 import googleapiclient.discovery
 from google.cloud import secretmanager as sm
 
+
 # clients
 sm_client = sm.SecretManagerServiceClient()
 SECRET_ID = (
