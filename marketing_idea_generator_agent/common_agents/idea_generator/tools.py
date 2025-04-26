@@ -55,9 +55,10 @@ async def call_insights_generation_agent(question: str, tool_context: ToolContex
 
     agent_tool = AgentTool(insights_generator_agent)
     existing_insights = tool_context.state.get("insights")
-
     insights = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-    tool_context.state["insights"] = insights
+    if existing_insights is not []:
+        insights["insights"].extend(existing_insights) #TODO: Validate how to keep a history of trends & insights
+    tool_context.state["insights"] = insights["insights"]
     return {"status": "ok"}
