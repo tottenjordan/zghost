@@ -131,6 +131,8 @@ async def call_trends_generator_agent(question: str, tool_context: ToolContext):
         args={"request": question}, tool_context=tool_context
     )
     if existing_trends is not []:
-        trends["trends"].extend(existing_trends) #TODO: Validate how to keep a history of trends & insights
+        trends["trends"].extend(
+            existing_trends
+        )  # TODO: Validate how to keep a history of trends & insights
     tool_context.state["trends"] = trends["trends"]
     return {"status": "ok"}

@@ -1,5 +1,4 @@
 import logging
-
 logging.basicConfig(level=logging.INFO)
 
 try:
@@ -61,10 +60,10 @@ async def call_brief_generation_agent(
     """
     agent_tool = AgentTool(brief_data_generation_agent)
     agent_name = tool_context.agent_name
-    logging.info(f"current Agent={agent_name}")
+    # logging.info(f"Agent={agent_name}")
 
     artifact_part = types.Part(text=file_path)
-    logging.info(f"artifact_part={artifact_part}")
+    # logging.info(f"artifact_part={artifact_part}")
 
     # TODO: support user upload artifacts
     # tool_context.save_artifact("brief.pdf", artifact_part)
@@ -94,27 +93,16 @@ async def call_research_generation_agent(
     filename = uuid.uuid4()
     agent_tool = AgentTool(research_generation_agent)
     agent_name = tool_context.agent_name
-    logging.info(f"current Agent={agent_name}")
-
-    # latest_brief = tool_context.state.get("campaign_brief")
-    # if not latest_brief:
-    #     return {"error": "`campaign_brief` not found in state."}
-    # logging.info(f"latest_brief: {latest_brief}")
+    logging.info(f"Agent={agent_name}")
 
     _prompt = """
-    Use the `generate_brief_pdf` tool to convert the updated campaign brief, {campaign_brief}, into Markdown format
+    Using {campaign_brief}, into Markdown format
     """
 
     markdown_string = await agent_tool.run_async(
         args={"request": _prompt}, tool_context=tool_context
     )
-    # response = client.models.generate_content(
-    #     model="gemini-2.0-flash-001",
-    #     contents=_prompt,
-    # )
-    # if not response.text:
-    #     return {"status": "generate_content failed"}
-    # logging.info(f"response.text: {response.text}")
+
 
     markdown_bytes = markdown_string.encode("utf-8")
     report_artifact = types.Part.from_bytes(
