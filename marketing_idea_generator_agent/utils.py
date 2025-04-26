@@ -1,4 +1,7 @@
 import os
+import logging
+logging.basicConfig(level=logging.INFO)
+
 from google.cloud import storage
 from typing import Optional
 from google.adk.agents.callback_context import CallbackContext
@@ -40,8 +43,8 @@ def brief_callback_function(
     agent_name = callback_context.agent_name
     invocation_id = callback_context.invocation_id
     current_state = callback_context.state.to_dict()
-    print(f"\n[Callback] Entering agent: {agent_name} (Inv: {invocation_id})")
-    print(f"[Callback] Current State: {current_state}")
+    logging.info(f"\n[Callback] Entering agent: {agent_name} (Inv: {invocation_id})")
+    logging.info(f"[Callback] Current State: {current_state}")
 
     # Check the condition in session state dictionary
     marketing_brief = callback_context.state.get("campaign_brief")
