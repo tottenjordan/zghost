@@ -73,9 +73,7 @@ def get_youtube_trends(
 # )
 
 
-#### Insights Structured Tool
-
-
+# Trends Structured Tool
 class Trend(BaseModel):
     "Data model for trends from Google and Youtube research."
 
@@ -94,11 +92,9 @@ class Trends(BaseModel):
     trends: list[Trend]
 
 
-# we will define an agent here for agent tool to capture insights
-
-
+# agent tool to capture trends
 trends_generator_agent = Agent(
-    model="gemini-2.0-flash",
+    model="gemini-2.0-flash-001",
     name="trends_generator_agent",
     instruction=trends_generation_prompt,
     generate_content_config=types.GenerateContentConfig(

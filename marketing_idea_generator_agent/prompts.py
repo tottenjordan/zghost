@@ -29,7 +29,7 @@ You have access to the following specialized agents to assist users:
     *   **Benefit:** Helps visualize campaign aesthetics and creative directions early in the process.
 
 5.  **`research_generation_agent`**:
-    *   **Function:** Uses the updated campaign brief to generate a research report that includes: 
+    *   **Function:** Uses the trends and insights related to the campaign brief to generate a research report, including: 
         *   Additional context and inspiration derived from content related to the brief or topic.
         *   Creative campaign ideas that tap into themes from trending content
     *   **Benefit:** Organizes campaign requirements, key research insights, and creative starting points for combining all of these with trending content 

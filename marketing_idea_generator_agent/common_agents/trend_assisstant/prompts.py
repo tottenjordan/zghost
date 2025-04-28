@@ -1,7 +1,18 @@
 N_YOUTUBE_VIDEOS = 3
-MAX_YT_DURATION = "7 minutes"
+MAX_YT_DURATION = "5 minutes"
 MAX_GOOGLE_SEARCHES_PER_REGION = 3
 
+broad_instructions = f"""
+Always cite your sources from the web and Youtube
+Limit your google searches to {MAX_GOOGLE_SEARCHES_PER_REGION} per region.
+Restrict the number of youtube videos analyzed by {N_YOUTUBE_VIDEOS}
+Also make sure that the youtube videos are generally less than {MAX_YT_DURATION}    
+"""
+
+trends_generation_instructions = """
+Before transferring to any agent, be sure to use the `call_trends_generator_agent` tool to update the list of structured trends to your state.
+Run this tool after every tool response from `query_web` and `analyze_youtube_videos` tools to capture any detailed information
+"""
 
 get_youtube_trends_prompt = """
 Follow the steps below to query trending videos from YouTube and prepare them for a marketing analyst to review.
@@ -13,23 +24,7 @@ While researching the trends, keep in mind the {campaign_brief}. Use this to fin
 4) Use the `query_web` tool to do additional research and confirm findings via google search. Describe the key entities involved. This could be a person, place, organization or named event. This includes their backgrounds, roles, and any other relevant information
 5) Describe the relationships between the key entities described in the previous step
 
-When the user is ready, they can transfer the agent back to the parent agent. 
-"""
-
-N_YOUTUBE_VIDEOS = 3
-MAX_YT_DURATION = "7 minutes"
-MAX_GOOGLE_SEARCHES_PER_REGION = 3
-
-trends_generation_instructions = """
-Before transferring to any agent, be sure to use the `call_trends_generator_agent` tool to update the list of structured trends to your state.
-Run this tool after every tool response from `query_web` and `analyze_youtube_videos` tools to capture any detailed information
-"""
-
-broad_instructions = f"""
-Always cite your sources from the web and Youtube
-Limit your google searches to {MAX_GOOGLE_SEARCHES_PER_REGION} per region.
-Restrict the number of youtube videos analyzed by {N_YOUTUBE_VIDEOS}
-Also make sure that the youtube videos are generally less than {MAX_YT_DURATION}    
+Once complete, ask the user what they would like to do next.
 """
 
 trends_generation_prompt = """
@@ -47,4 +42,6 @@ Note how to fill the fields out:
     key_product_insights: list[str] -> Considering the brief, how does this trend intersect with the product?
 """
 
-unified_trends_instructions = broad_instructions + trends_generation_instructions + get_youtube_trends_prompt
+unified_trends_instructions = (
+    broad_instructions + get_youtube_trends_prompt + trends_generation_instructions
+)

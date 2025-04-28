@@ -24,11 +24,9 @@ class Insights(BaseModel):
     insights: list[Insight]
 
 
-# we will define an agent here for agent tool to capture insights
-
-
+# agent tool to capture insights
 insights_generator_agent = Agent(
-    model="gemini-2.0-flash",
+    model="gemini-2.0-flash-001",
     name="insights_generator_agent",
     instruction=insights_generation_prompt,
     generate_content_config=types.GenerateContentConfig(

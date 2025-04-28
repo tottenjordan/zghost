@@ -20,14 +20,14 @@ from google.adk.agents.callback_context import CallbackContext
 
 from google.adk.models import LlmRequest
 
-from .tools import call_brief_generation_agent, call_research_generation_agent
+# from .tools import call_brief_generation_agent
 from typing import Optional
 
 from .utils import brief_callback_function
 
 
 root_agent = Agent(
-    model="gemini-2.0-flash-exp",
+    model="gemini-2.0-flash-001",
     name="marketing_idea_generator_agent",
     instruction=root_agent_instructions,
     global_instruction=(
@@ -46,11 +46,10 @@ root_agent = Agent(
         # google_search,
         load_artifacts,
         # call_brief_generation_agent,
-        # call_research_generation_agent
     ],
     generate_content_config=types.GenerateContentConfig(
         temperature=0.01,
-        # response_modalities=["TEXT", "AUDIO"]
+        response_modalities=["TEXT"],
     ),
     after_agent_callback=brief_callback_function,
 )

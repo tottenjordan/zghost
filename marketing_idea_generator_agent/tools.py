@@ -75,56 +75,6 @@ async def call_brief_generation_agent(
     logging.info(f"Set name for `campaign_brief` --> '{brief_output['campaign_name']}'")
     return brief_output
 
-
-async def call_research_generation_agent(
-    # question: str,
-    tool_context: ToolContext,
-):
-    """Tool to call the research generation agent.
-
-    This reads state variables to produce a PDF report
-
-    Args:
-        tool_context: The tool context.
-
-    Returns:
-        dict: Status and the location of the PDF.
-    """
-    filename = uuid.uuid4()
-    agent_tool = AgentTool(research_generation_agent)
-    agent_name = tool_context.agent_name
-    logging.info(f"Agent={agent_name}")
-
-    _prompt = """
-    Using {campaign_brief}, into Markdown format
-    """
-
-    markdown_string = await agent_tool.run_async(
-        args={"request": _prompt}, tool_context=tool_context
-    )
-
-
-    markdown_bytes = markdown_string.encode("utf-8")
-    report_artifact = types.Part.from_bytes(
-        data=markdown_bytes, mime_type="application/pdf"
-    )
-
-    try:
-        # TODO: did this work? or do we need to create a pdf object with `markdown_pdf` or `pdfkit`?
-        version = tool_context.save_artifact(
-            filename=f"{filename}.pdf", artifact=report_artifact
-        )
-        logging.info(f"Successfully saved artifact '{filename}' as version {version}.")
-        # upload_file_to_gcs(file_path=f"{filename}.pdf", file_data=image_bytes)
-    except ValueError as e:
-        logging.exception(f"Error saving artifact: {e}. Is ArtifactService configured?")
-    except Exception as e:
-        # Handle potential storage errors (e.g., GCS permissions)
-        logging.exception(f"An unexpected error occurred during artifact save: {e}")
-
-    return {"status": "ok", "filename": f"{filename}.pdf"}
-
-
 # ========================
 # search tools
 # ========================
