@@ -1,7 +1,7 @@
 from google.adk.agents import Agent
 from google.genai import types
 
-from .tools import generate_brief_pdf
+from .tools import generate_research_pdf
 from .prompts import prepare_brief_research_instructions
 
 research_generation_agent = Agent(
@@ -9,7 +9,7 @@ research_generation_agent = Agent(
     name="research_generation_agent",
     instruction=prepare_brief_research_instructions,
     tools=[
-        generate_brief_pdf,
+        generate_research_pdf,
     ],
     generate_content_config=types.GenerateContentConfig(
         temperature=0.1,
