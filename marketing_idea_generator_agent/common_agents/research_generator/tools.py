@@ -31,7 +31,7 @@ def generate_research_pdf(
         dict: Status and the location of the PDF.
     """
     logging.info(f"markdown_string in `generate_research_pdf`: {markdown_string}")
-
+    DIR = f"files/{EXPERIMENT}"
     filename = uuid.uuid4()
     filepath = f"{filename}.pdf"
 

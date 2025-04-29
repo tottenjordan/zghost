@@ -49,7 +49,7 @@ def get_youtube_trends(
     trend_response = request.execute()
     return trend_response
 
-
+## TODO: create tool for gathering Search trends from BigQuery public dataset
 # def get_search_trends(
 #     region_code: str = "US",
 #     max_results: int = 7,

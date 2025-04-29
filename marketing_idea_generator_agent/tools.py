@@ -60,10 +60,7 @@ async def call_brief_generation_agent(
     """
     agent_tool = AgentTool(brief_data_generation_agent)
     agent_name = tool_context.agent_name
-    # logging.info(f"Agent={agent_name}")
-
     artifact_part = types.Part(text=file_path)
-    # logging.info(f"artifact_part={artifact_part}")
 
     # TODO: support user upload artifacts
     # tool_context.save_artifact("brief.pdf", artifact_part)
@@ -72,7 +69,6 @@ async def call_brief_generation_agent(
         args={"request": question}, tool_context=tool_context
     )
     tool_context.state["campaign_brief"] = brief_output
-    logging.info(f"Set name for `campaign_brief` --> '{brief_output['campaign_name']}'")
     return brief_output
 
 # ========================
