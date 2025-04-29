@@ -70,6 +70,7 @@ gcloud services enable artifactregistry.googleapis.com \
     storage-component.googleapis.com  \
     eventarc.googleapis.com \
     serviceusage.googleapis.com \
+    secretmanager.googleapis.com \
     aiplatform.googleapis.com
 ```
 </details>
@@ -97,7 +98,7 @@ adk deploy cloud_run --help
 
 1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
 
-2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api`
+2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api`. See [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version) or step-by-step guidance
 
 </details>
 
