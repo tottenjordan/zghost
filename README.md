@@ -4,19 +4,18 @@
 
 ## Key Features
 - Build LLM-based agents with [models supported in Vertex AI's Model Garden](https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/available-models)
-- Ingest campaign brief outlining things like target audience, target regions, campaign objectives, product details, media strategy, etc.
-- Perform targeted searches across Google Search and YouTube to gather initial inspiration, competitor insights, and relevant content
-- Explore trends in Google Search and YouTube
+- Ingest campaign brief outlining things like target audience, regions, campaign objectives, product details, etc.
+- Perform targeted searches across Google Search and YouTube to gather inspiration, competitor insights, and related content
+- Explore trends in Google Search and YouTube (e.g, Shorts)
 - Brainstorm campaign concepts, taglines, messaging angles, etc.
 - Draft ad creatives (e.g., image and video) based on campaign themes or specific prompts
+- Compile trends, insights, and campaign research into a comprehensive report
 
-# How to use this repo
+## How to use this repo
 
-## Setup
+Clone this repo and follow the steps below to get started
 
-**TODO:** add instructions for enabling GCP APIs
-
-Clone this repo and follow the steps below to create your virtual environment and install necessary packages:
+### Setup
 
 <details>
   <summary>Create & activate virtual environment</summary>
@@ -59,19 +58,33 @@ BUCKET=gs://YOUR_GCS_BUCKET_NAME
 ```
 </details>
 
+
 <details>
-  <summary>launching the ADK dev UI</summary>
+  <summary>Enable Google cloud APIs</summary>
+
+```bash
+gcloud services enable artifactregistry.googleapis.com \
+    bigquery.googleapis.com \
+    logging.googleapis.com \
+    run.googleapis.com \
+    storage-component.googleapis.com  \
+    eventarc.googleapis.com \
+    serviceusage.googleapis.com \
+    aiplatform.googleapis.com
+```
+</details>
+
+### Running locally
+
+After completing the one-time setup instructions, run the below command to launch the ADK's interactive dev UI:
 
 ```bash
 adk web .
 ```
-
 open the localhost to interact with your agents
 
-</details>
 
-
-## Deploying
+### Deploying
 
 ```bash
 adk deploy cloud_run --help
@@ -80,37 +93,38 @@ adk deploy cloud_run --help
 ## YouTube Data API v3
 
 <details>
-  <summary>Create an API key</summary>
+  <summary>Create and store API key</summary>
 
-See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
+1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
 
-Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api`
+2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api`
 
 </details>
 
+**Example usage**
 
-*Example usage:*
-
-1. REST API:
+REST API:
 
 > `GET https://www.googleapis.com/youtube/v3/videos?part=id&chart=mostPopular&regionCode=FR&key={YOUR_API_KEY}`
 
-2. HTTP requests with `Python`
+HTTP requests with `Python`
 
 *config discovery client..*
 
 ```python
-    youtube = googleapiclient.discovery.build(
-        serviceName=API_SERVICE_NAME, 
-        version=API_VERSION, 
-        developerKey=YOUTUBE_DATA_API_KEY
-    )
+import googleapiclient.discovery
+
+youtube_client = googleapiclient.discovery.build(
+    serviceName="youtube", 
+    version="v3", 
+    developerKey=YOUTUBE_DATA_API_KEY
+)
 ```
 
 **Videos: list** - `Returns a list of videos that match the API request parameters`
 
 ```python
-    request = youtube.videos().list(
+    request = youtube_client.videos().list(
         part="snippet,contentDetails,statistics",
         chart="mostPopular",
         regionCode="US"
@@ -121,7 +135,7 @@ Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/d
 **Search: list** -`Returns a collection of search results that match the query parameters specified in the API request`
 
 ```python
-    yt_data_api_request = youtube.search().list(
+    yt_data_api_request = youtube_client.search().list(
         part="id,snippet",
         type="video",
         q=TARGET_QUERY,
