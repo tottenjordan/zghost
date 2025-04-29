@@ -24,55 +24,6 @@ youtube_client = googleapiclient.discovery.build(
 )
 
 
-def get_youtube_trends(
-    region_code: str,
-    max_results: int = 5,
-) -> dict:
-    """
-    Returns a dictionary of videos that match the API request parameters e.g., trending videos
-
-    Args:
-        region_code (str): selects a video chart available in the specified region. Values are ISO 3166-1 alpha-2 country codes.
-            For example, the region_code for the United Kingdom would be 'GB', whereas 'US' would represent The United States.
-        max_results (int): The number of video results to return.
-
-    Returns:
-        dict: The response from the YouTube Data API.
-    """
-
-    request = youtube_client.videos().list(
-        part="snippet,contentDetails,statistics",
-        chart="mostPopular",
-        regionCode=region_code,
-        maxResults=max_results,
-    )
-    trend_response = request.execute()
-    return trend_response
-
-## TODO: create tool for gathering Search trends from BigQuery public dataset
-# def get_search_trends(
-#     region_code: str = "US",
-#     max_results: int = 7,
-#     # youtube_client: googleapiclient.discovery.Resource = youtube_client,
-# ) -> dict:
-
-
-# Set up Integration Connectors
-# https://cloud.google.com/integration-connectors/docs/setup-integration-connectors
-
-# bigquery_toolset = ApplicationIntegrationToolset(
-#     project="your-gcp-project-id",
-#     location="your-gcp-project-location",
-#     connection="your-connection-name",
-#     entity_operations=["table_name": ["LIST"]],
-# )
-
-# agent = LlmAgent(
-#   ...
-#   tools = bigquery_toolset.get_tools()
-# )
-
-
 # Trends Structured Tool
 class Trend(BaseModel):
     "Data model for trends from Google and Youtube research."
@@ -111,12 +62,12 @@ async def call_trends_generator_agent(question: str, tool_context: ToolContext):
     Question: The question to ask the agent, use the tool_context to extract the following schema:
         trend_title: str -> Come up with a unique title for the trend
         trend_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
-        trend_urls: list[str] -> Get the url from the `query_youtube_api` tool
-        source_texts: list[str] -> Get the text from the `query_web` tool or `analyze_youtube_videos` tool
-        key_entities: list[str] -> Develop entities from the source to create a graph (see relations)
-        key_relationships: list[str] -> Create relationships between the key_entities to create a graph
-        key_audiences: list[str] -> Considering the brief, how does this trend intersect with the audience?
-        key_product_insights: list[str] -> Considering the brief, how does this trend intersect with the product?
+        trend_urls: str -> Get the url from the `query_youtube_api` tool
+        source_texts: str -> Get the text from the `query_web` tool or `analyze_youtube_videos` tool
+        key_entities: str -> Develop entities from the source to create a graph (see relations)
+        key_relationships: str -> Create relationships between the key_entities to create a graph
+        key_audiences: str -> Considering the brief, how does this trend intersect with the audience?
+        key_product_insights: str -> Considering the brief, how does this trend intersect with the product?
     tool_context: The tool context.
     """
 
@@ -132,3 +83,53 @@ async def call_trends_generator_agent(question: str, tool_context: ToolContext):
         )  # TODO: Validate how to keep a history of trends & insights
     tool_context.state["trends"] = trends["trends"]
     return {"status": "ok"}
+
+
+def get_youtube_trends(
+    region_code: str,
+    max_results: int = 5,
+) -> dict:
+    """
+    Returns a dictionary of videos that match the API request parameters e.g., trending videos
+
+    Args:
+        region_code (str): selects a video chart available in the specified region. Values are ISO 3166-1 alpha-2 country codes.
+            For example, the region_code for the United Kingdom would be 'GB', whereas 'US' would represent The United States.
+        max_results (int): The number of video results to return.
+
+    Returns:
+        dict: The response from the YouTube Data API.
+    """
+
+    request = youtube_client.videos().list(
+        part="snippet,contentDetails,statistics",
+        chart="mostPopular",
+        regionCode=region_code,
+        maxResults=max_results,
+    )
+    trend_response = request.execute()
+    return trend_response
+
+
+## TODO: create tool for gathering Search trends from BigQuery public dataset
+# def get_search_trends(
+#     region_code: str = "US",
+#     max_results: int = 7,
+#     # youtube_client: googleapiclient.discovery.Resource = youtube_client,
+# ) -> dict:
+
+
+# Set up Integration Connectors
+# https://cloud.google.com/integration-connectors/docs/setup-integration-connectors
+
+# bigquery_toolset = ApplicationIntegrationToolset(
+#     project="your-gcp-project-id",
+#     location="your-gcp-project-location",
+#     connection="your-connection-name",
+#     entity_operations=["table_name": ["LIST"]],
+# )
+
+# agent = LlmAgent(
+#   ...
+#   tools = bigquery_toolset.get_tools()
+# )

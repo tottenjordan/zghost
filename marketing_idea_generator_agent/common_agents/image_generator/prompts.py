@@ -1,8 +1,8 @@
 broad_instructions = """
-Make sure you utilize the information gathered from the research from:
-  * The idea generator agent
-  * The trend assistant agent
-Try to use the intersections of these concepts and the brief
+Make sure you utilize the information gathered from the research:
+  * Include {insights} from the `create_new_ideas_agent` agent
+  * Include {trends} from the `trends_and_insights_agent` agent
+Try to use the intersections of concepts from {trends} and the {campaign_brief}
 Do this to come up with creative eye-catching ads for the target market
 """
 
@@ -11,7 +11,7 @@ Be sure to reference the {campaign_brief}
 You are an expert at Imagen 3.0.
 Given the marketing campaign brief, create an Instagram ad-copy for each target market: {campaign_brief.target_regions}
 Please localize the ad-copy and the visuals to the target markets for better relevancy to the target audience.
-Also note you have a generate_video tool that can be used to generate videos for the campaign. 
+Also note you have a `generate_video` tool that can be used to generate videos for the campaign. 
 
 When loading videos, you can only load one at a time.
 """

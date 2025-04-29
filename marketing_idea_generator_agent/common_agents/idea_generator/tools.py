@@ -39,15 +39,15 @@ insights_generator_agent = Agent(
 
 async def call_insights_generation_agent(question: str, tool_context: ToolContext):
     """
-    Tool to call the insights generation agent.
+    Tool to call the insights generation agent. Use this tool to update the list of insights in the agent's state.
     Question: The question to ask the agent, use the tool_context to extract the following schema:
         insight_title: str -> Come up with a unique title for the insight
         insight_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
-        insight_urls: List[str] -> Get the url from the `query_youtube_api` tool or `query_web` tool
-        key_entities: List[str] -> Develop entities from the source to create a graph (see relations)
-        key_relationships: List[str] -> Create relationships between the key_entities to create a graph
-        key_audiences: List[str] -> Considering the brief, how does this insight intersect with the audience?
-        key_product_insights: List[str] -> Considering the brief, how does this insight intersect with the product?
+        insight_urls: str -> Get the url from the `query_youtube_api` tool or `query_web` tool
+        key_entities: str -> Develop entities from the source to create a graph (see relations)
+        key_relationships: str -> Create relationships between the key_entities to create a graph
+        key_audiences: str -> Considering the brief, how does this insight intersect with the audience?
+        key_product_insights: str -> Considering the brief, how does this insight intersect with the product?
     tool_context: The tool context.
     """
 
