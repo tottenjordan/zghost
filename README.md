@@ -205,7 +205,7 @@ lsof -i :8000
 adk deploy cloud_run --help
 ```
 
-# Video walkthrough
+### Video walkthrough
 
 > TODO: embed screencast demonstrating basic functionality and intended user journey
 
@@ -224,7 +224,7 @@ adk deploy cloud_run --help
 
 **Example usage**
 
-*ability to search `terms` only or combine with the `site:` operator*
+1. *ability to search `terms` only or combine with the `site:` operator*
 
 ```python
 from googlesearch import search
@@ -253,14 +253,11 @@ results_generator = search(
 
 search_results_urls = list(results_generator)
 search_results_urls[0]
-```
-*output:*
 
-```python
-'https://www.reddit.com/r/WidespreadPanic/'
+>>> 'https://www.reddit.com/r/WidespreadPanic/'
 ```
 
-*Setting `advanced=True` returns list of `SearchResult` objects (title, url, description)*
+2. *Setting `advanced=True` returns list of `SearchResult` objects (title, url, description)*
 
 ```python
 results_generator = search(
@@ -280,15 +277,15 @@ for result in search_results:
   result_list.append(site_entry)
 
 result_list[0]
-```
-*output:*
 
-```python
-SearchResult(
-  url="https://www.reddit.com/r/jambands/comments/1e6hjl9/widespread_panic_appreciation_thread/", 
-  title="Widespread Panic Appreciation Thread : r/jambands - Reddit",
-  description= "Jul 18, 2024  ·  In a jam band world of the goofy, wookie, entitled and sometimes creepy ass fans, panic's fans remain undefeated..."
-)
+>>> SearchResult(
+      url="https://www.reddit.com/r/jambands/comments/1e6hjl9/widespread_panic_appreciation_thread/", 
+      title="Widespread Panic Appreciation Thread : r/jambands - Reddit",
+      description="""
+      Jul 18,2024·In a jam band world of the goofy, wookie, entitled and sometimes creepy-ass fans, 
+      panic's fans remain undefeated...
+      """,
+    )
 ```
 
 
@@ -301,7 +298,7 @@ SearchResult(
 
 **Example usage**
 
-*Can only search `terms`; **cannot combine** with the `site:` operator*
+1. *Can only search `terms`; **cannot combine** with the `site:` operator*
 
 ```python
 from GoogleNews import GoogleNews
