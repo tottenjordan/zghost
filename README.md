@@ -253,8 +253,11 @@ results_generator = search(
 
 search_results_urls = list(results_generator)
 search_results_urls[0]
+```
+*returns URL string:*
 
->>> 'https://www.reddit.com/r/WidespreadPanic/'
+```python
+'https://www.reddit.com/r/WidespreadPanic/'
 ```
 
 2. *Setting `advanced=True` returns list of `SearchResult` objects (title, url, description)*
@@ -270,22 +273,16 @@ results_generator = search(
     advanced=True, # returns list of SearchResult
 )
 search_results = list(results_generator)
+search_results[0]
+```
+*returns `SearchResult` object:*
 
-result_list = []
-for result in search_results:
-  site_entry = result.url, result.title, result.description.rstrip().lstrip()
-  result_list.append(site_entry)
-
-result_list[0]
-
->>> SearchResult(
-      url="https://www.reddit.com/r/jambands/comments/1e6hjl9/widespread_panic_appreciation_thread/", 
-      title="Widespread Panic Appreciation Thread : r/jambands - Reddit",
-      description="""
-      Jul 18,2024·In a jam band world of the goofy, wookie, entitled and sometimes creepy-ass fans, 
-      panic's fans remain undefeated...
-      """,
-    )
+```python
+SearchResult(
+  url="https://www.reddit.com/r/jambands/comments/1e6hjl9/widespread_panic_appreciation_thread/", 
+  title="Widespread Panic Appreciation Thread : r/jambands - Reddit",
+  description="Jul 18,2024·In a jam band world of the goofy, wookie, entitled and sometimes creepy-ass fans, panic's fans remain undefeated..."
+)
 ```
 
 

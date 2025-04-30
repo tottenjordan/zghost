@@ -10,8 +10,8 @@ class MarketingCampaignBrief(BaseModel):
     target_regions: list[str]
     campaign_objectives: list[str]
     media_strategy: list[str]
-    timeline: str
-    performance_metrics: list[str]
+    # timeline: str
+    # performance_metrics: list[str]
     key_insights: list[str]
     campaign_brief_highlights: list[str]
 

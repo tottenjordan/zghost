@@ -1,8 +1,9 @@
 import os
 import uuid
-import base64
+import shutil
 import logging
-from typing import Union, Optional
+
+# from typing import Union, Optional
 from markdown_pdf import MarkdownPdf, Section
 
 from google.adk.tools import ToolContext
@@ -12,7 +13,7 @@ from google import genai
 logging.basicConfig(level=logging.INFO)
 client = genai.Client()
 
-from ...utils import upload_file_to_gcs
+# from ...utils import upload_file_to_gcs
 
 
 def generate_research_pdf(
@@ -32,9 +33,14 @@ def generate_research_pdf(
     """
     logging.info(f"markdown_string in `generate_research_pdf`: {markdown_string}")
 
-    # TODO: jt to add mkdirs for storage and remove dirs at the end
+    # create local dir to save PDF file
+    DIR = f"files/research"
+    if not os.path.exists(DIR):
+        os.makedirs(DIR)
+
     filename = uuid.uuid4()
-    filepath = f"{filename}.pdf"
+    filename = str(filename)[:8]
+    filepath = f"{DIR}/report_{filename}.pdf"
 
     pdf = MarkdownPdf(toc_level=0)
     pdf.add_section(Section(f" {markdown_string}\n", toc=False))
@@ -50,6 +56,7 @@ def generate_research_pdf(
     )
     artifact_filename = "generated_report.pdf"
 
+    # save artifact
     try:
         version = tool_context.save_artifact(
             filename=artifact_filename, artifact=document_part
@@ -67,6 +74,14 @@ def generate_research_pdf(
     # gcs_blob_path = upload_file_to_gcs(
     #     file_path=filepath, file_data=document_bytes, content_type="application/pdf"
     # )
-    # logging.info(f"Saved PDF to: {gcs_blob_path}")
 
-    return {"status": "ok", "filename": filepath}
+    # delete locally saved pdf_report
+    try:
+        shutil.rmtree(DIR)
+        logging.info(f"Directory '{DIR}' and its contents removed successfully")
+    except FileNotFoundError:
+        logging.exception(f"Directory '{DIR}' not found")
+    except OSError as e:
+        logging.exception(f"Error removing directory '{DIR}': {e}")
+
+    return {"status": "ok", "filename": artifact_filename}

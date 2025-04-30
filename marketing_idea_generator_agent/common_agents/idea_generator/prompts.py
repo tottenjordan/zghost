@@ -1,35 +1,31 @@
 N_YOUTUBE_VIDEOS = 3
-TARGET_YT_DURATION = "5 minutes"
+TARGET_YT_DURATION = "7 minutes"
 MAX_YT_DURATION = "10 minutes"
 MAX_GOOGLE_SEARCHES_PER_REGION = 3
 
 broad_instructions = f"""
-Use this tool to 
-Always cite your sources from the web and YouTube.
+Use this agent when the user wants to conduct market research for insights related to the campaign brief.
 When following the instructions below be sure to limit the number of YouTube videos analyzed to {N_YOUTUBE_VIDEOS}
 Also make sure that the YouTube videos are generally less than {TARGET_YT_DURATION}. If a video is longer than {MAX_YT_DURATION}, skip it  
 Limit your google searches to {MAX_GOOGLE_SEARCHES_PER_REGION} per region.
 """
 
 create_brief_prompt = """
-Do research to better understand the marketing campaign brief and target product: {campaign_brief.target_product}
+Conduct research to better understand the marketing campaign brief and target product: {campaign_brief.target_product}
 
-Your goal is to generate structured insights that adhere to {insights}
+Your goal is to generate structured insights to populate {insights}
 
 Follow this flow:
-1) Read the sample {campaign_brief}; note the {campaign_brief.campaign_objectives} and {campaign_brief.target_audience}.
-2) Use the `query_web` tool to gather market research from Google Search.
-3) Think about how this market research relates to topics described in the {campaign_brief}.
-4) Using this market research, provide a detailed brief highlighting where the {campaign_brief.target_product} can win in the marketplace. Cite your sources!
-5) Use the `call_insights_generation_agent` tool to update the list of structured {insights} in the session state.
-6) Pick the top three insights and use the `query_youtube_api` tool to find videos related to these insights. Come up with really good search queries related to the insights.
-7) Use the `analyze_youtube_videos` tool to analyze the videos found in the previous step. Note key insights fom your research hat will later be used to refine the campaign brief
-8) Use the `call_insights_generation_agent` tool to add key insights from YouTube to the structured {insights} in the session state.
+1) Read the provided {campaign_brief} and note the {campaign_brief.campaign_objectives}.
+2) Use the `query_web` tool to peform a Google Search for insights related to the target audiences: {campaign_brief.target_audience}.
+3) Use the `query_web` tool to peform a Google Search for insights related to the target product: {campaign_brief.target_product}.
+4) Create a detailed brief highlighting features of {campaign_brief.target_product} that are likely to resonate with {campaign_brief.target_audience}.
+5) Use the `call_insights_generation_agent` tool to add each insight to the structured {insights} in the session state.
+6) Pick the top three insights and use the `query_youtube_api` tool to find videos related to these insights.
+7) Use the `analyze_youtube_videos` tool to analyze the videos found in the previous step. Note key insights fom your research that will later be used to refine the campaign brief
+8) Use the `call_insights_generation_agent` tool to add each insight from YouTube to the structured {insights} in the session state.
 
 Always cite your sources from the web and YouTube.
-
-For each insight, be sure to use the `call_insights_generation_agent` tool to update the list of structured {insights} in the session state.
-Lastly, once the insights are updated, transfer back to the parent agent.
 """
 
 youtube_url_instructions = """
@@ -40,6 +36,7 @@ Here is an example path to the videoID: query_youtube_api_response["items"]["id"
 
 insights_generation_instructions = """
 Before transferring to any agent, be sure to use the `call_insights_generation_agent` tool to update the list of structured {insights} in the session state.
+Lastly, once the insights are updated, you can transfer back to the parent agent.
 """
 
 insights_generation_prompt = """
