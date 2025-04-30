@@ -19,6 +19,7 @@ trafilatura = "^2.0.0"
 pandas = "^2.2.3"
 aiohttp = "^3.11.16"
 markdown-pdf = "^1.7"
+googlenews = "^1.6.15"
 
 
 

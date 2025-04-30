@@ -199,12 +199,146 @@ kill -9 :8000
 lsof -i :8000
 ```
 
-
 ### Deploying
 
 ```bash
 adk deploy cloud_run --help
 ```
+
+# Video walkthrough
+
+> TODO: embed screencast demonstrating basic functionality and intended user journey
+
+# Tools
+
+> TODO: describe supported tools
+
+## Google Search
+
+> `googlesearch-python` is a Python library for searching Google
+
+*References*
+* [pypi project](https://pypi.org/project/googlesearch-python/)
+* for `region` argument, see [country codes](https://developers.google.com/custom-search/docs/json_api_reference#countryCodes)
+* see [this GitHub repo](https://github.com/Nv7-GitHub/googlesearch) for more examples
+
+**Example usage**
+
+*ability to search `terms` only or combine with the `site:` operator*
+
+```python
+from googlesearch import search
+search_results_urls = []
+
+# Google Search "widespread panic"
+target_topic = "widespread panic"
+
+# Google Search Reddit for content related to "widespread panic"
+query = "site:reddit.com" + " " + target_topic
+
+lang = "en"
+region = "us"
+pause_time = 2.0
+num_results = 10
+
+results_generator = search(
+    term=query, # query | target_topic
+    lang=lang,
+    region=region,
+    num_results=num_results, 
+    sleep_interval=pause_time,
+    unique=True,
+    advanced=False, # returns list of URLs
+)
+
+search_results_urls = list(results_generator)
+search_results_urls[0]
+```
+*output:*
+
+```python
+'https://www.reddit.com/r/WidespreadPanic/'
+```
+
+*Setting `advanced=True` returns list of `SearchResult` objects (title, url, description)*
+
+```python
+results_generator = search(
+    term=query,
+    lang=lang,
+    region=region,
+    num_results=num_results, 
+    sleep_interval=pause_time,
+    unique=True,
+    advanced=True, # returns list of SearchResult
+)
+search_results = list(results_generator)
+
+result_list = []
+for result in search_results:
+  site_entry = result.url, result.title, result.description.rstrip().lstrip()
+  result_list.append(site_entry)
+
+result_list[0]
+```
+*output:*
+
+```python
+SearchResult(
+  url="https://www.reddit.com/r/jambands/comments/1e6hjl9/widespread_panic_appreciation_thread/", 
+  title="Widespread Panic Appreciation Thread : r/jambands - Reddit",
+  description= "Jul 18, 2024  ·  In a jam band world of the goofy, wookie, entitled and sometimes creepy ass fans, panic's fans remain undefeated..."
+)
+```
+
+
+## Google News
+
+> `GoogleNews` is a Python library for searching [Google News](https://news.google.com/)
+
+*References*
+* [pypi project](https://pypi.org/project/GoogleNews/)
+
+**Example usage**
+
+*Can only search `terms`; **cannot combine** with the `site:` operator*
+
+```python
+from GoogleNews import GoogleNews
+googlenews = GoogleNews()
+
+# initialize 
+googlenews = GoogleNews(
+    lang='en', 
+    region='US',
+    # period='7d',
+    # start='02/01/2020',
+    # end='02/28/2020',
+    # encode='utf-8',
+)
+
+# enable throw exception
+googlenews.enableException(True)
+
+# can only search terms
+query = "widespread panic"
+
+# set topic/query for news
+news_wsp = googlenews.get_news(query)
+
+# get the news results dictionary
+news_wsp_results = googlenews.results(sort=True) # order the results in cronologically reversed order
+
+# get URLs only
+news_wsp_links = googlenews.get_links()
+
+# get article titles only
+news_wsp_titles = googlenews.get_texts()
+
+# clear result list before doing another search with the same object
+googlenews.clear()
+```
+
 
 ## YouTube Data API v3
 
