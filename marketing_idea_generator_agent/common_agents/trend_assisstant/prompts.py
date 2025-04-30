@@ -13,12 +13,12 @@ Always cite your sources from the web and Youtube
 
 get_youtube_trends_prompt = """
 Follow the steps below to understand key themes from trending content on YouTube. 
-These themes don't have to be directly related to {campaign_brief.target_product}. We just want the themes for future brainstorming exercises.
+These themes don't have to be directly related to {campaign_guide.target_product}. We just want the themes for future brainstorming exercises.
 
 1) Use the `get_youtube_trends` tool to query the YouTube Data API for trending videos in each target market. Start with "Shorts" and expand to longer videos if necessary.
 2) Find each video's URL in the response entry titled: "videoURL". Use the `analyze_youtube_videos` tool to analyze each video and understand what is being discussed.
-3) Using the output from the previous step, generate a concise summary describing what is taking place or being discussed. Be sure to explain if you think this trend will resonate with the {campaign_brief.target_audience}.
-4) For each trending video, suggest how it could possibly relate to the {campaign_brief.target_product} in a marketing campaign.
+3) Using the output from the previous step, generate a concise summary describing what is taking place or being discussed. Be sure to explain if you think this trend will resonate with the {campaign_guide.target_audience}.
+4) For each trending video, suggest how it could possibly relate to the {campaign_guide.target_product} in a marketing campaign.
 5) Use the `call_trends_generator_agent` tool to add any trends from YouTube to the structured {trends} in the session state.
 
 Lastly, after calling the `call_trends_generator_agent` tool, transfer back to the parent agent
@@ -39,8 +39,8 @@ Note how to fill the fields out:
     source_texts: str -> Get the text from the `query_web` tool or `analyze_youtube_videos` tool
     key_entities: str -> Develop entities from the source to create a graph (see relations)
     key_relationships: str -> Create relationships between the key_entities to create a graph
-    key_audiences: str -> Considering the brief, how does this trend intersect with the audience?
-    key_product_insights: str -> Considering the brief, how does this trend intersect with the product?
+    key_audiences: str -> Considering the guide, how does this trend intersect with the audience?
+    key_product_insights: str -> Considering the guide, how does this trend intersect with the product?
 """
 
 unified_trends_instructions = (

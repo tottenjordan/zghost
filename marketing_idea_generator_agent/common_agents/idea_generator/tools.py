@@ -46,8 +46,8 @@ async def call_insights_generation_agent(question: str, tool_context: ToolContex
         insight_urls: str -> Get the url from the `query_youtube_api` tool or `query_web` tool
         key_entities: str -> Develop entities from the source to create a graph (see relations)
         key_relationships: str -> Create relationships between the key_entities to create a graph
-        key_audiences: str -> Considering the brief, how does this insight intersect with the audience?
-        key_product_insights: str -> Considering the brief, how does this insight intersect with the product?
+        key_audiences: str -> Considering the guide, how does this insight intersect with the audience?
+        key_product_insights: str -> Considering the guide, how does this insight intersect with the product?
     tool_context: The tool context.
     """
 

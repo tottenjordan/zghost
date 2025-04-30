@@ -64,8 +64,8 @@ async def call_trends_generator_agent(question: str, tool_context: ToolContext):
         source_texts: str -> Get the text from the `query_web` tool or `analyze_youtube_videos` tool
         key_entities: str -> Develop entities from the source to create a graph (see relations)
         key_relationships: str -> Create relationships between the key_entities to create a graph
-        key_audiences: str -> Considering the brief, how does this trend intersect with the audience?
-        key_product_insights: str -> Considering the brief, how does this trend intersect with the product?
+        key_audiences: str -> Considering the guide, how does this trend intersect with the audience?
+        key_product_insights: str -> Considering the guide, how does this trend intersect with the product?
     tool_context: The tool context.
     """
 

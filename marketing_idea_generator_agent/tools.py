@@ -26,10 +26,9 @@ from google.adk.tools.agent_tool import AgentTool
 from google.cloud import secretmanager as sm
 import googleapiclient.discovery
 
-from .common_agents.marketing_brief_data_generator.agent import (
-    brief_data_generation_agent,
+from .common_agents.marketing_guide_data_generator.agent import (
+    campaign_guide_data_generation_agent,
 )
-
 
 # clients
 sm_client = sm.SecretManagerServiceClient()
@@ -45,26 +44,26 @@ youtube_client = googleapiclient.discovery.build(
 client = Client()
 
 
-async def call_brief_generation_agent(
+async def call_guide_generation_agent(
     question: str, tool_context: ToolContext, file_path: str
 ):
-    """Tool to call the brief data generation agent.
+    """Tool to call the campaign guide data generation agent.
     Question: The question to ask the agent.
     tool_context: The tool context.
-    file_path: The path to the file to load, this is the pdf brief.
+    file_path: The path to the file to load, this is the pdf report.
     """
-    agent_tool = AgentTool(brief_data_generation_agent)
+    agent_tool = AgentTool(campaign_guide_data_generation_agent)
     agent_name = tool_context.agent_name
     artifact_part = types.Part(text=file_path)
 
     # TODO: support user upload artifacts
-    # tool_context.save_artifact("brief.pdf", artifact_part)
+    # tool_context.save_artifact("campaign_guide.pdf", artifact_part)
 
-    brief_output = await agent_tool.run_async(
+    campaign_guide_output = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-    tool_context.state["campaign_brief"] = brief_output
-    return brief_output
+    tool_context.state["campaign_guide"] = campaign_guide_output
+    return campaign_guide_output
 
 
 # ========================

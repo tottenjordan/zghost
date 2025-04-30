@@ -1,15 +1,27 @@
 broad_instructions = """
 Make sure you utilize the information gathered from the research:
-  * Include {insights} from the `create_new_ideas_agent` agent
-  * Include {trends} from the `trends_and_insights_agent` agent
-Try to use the intersections of concepts from {trends} and the {campaign_brief}
+  * Include `insights` from the `create_new_ideas_agent` agent:
+
+  {insights}
+
+  * Include `trends` from the `trends_and_insights_agent` agent:
+
+  {trends}
+
+Try to use the intersections of concepts from the `trends` and the `campaign_guide`. 
+It's OK if a trend is not directly related to the campaign guide. 
+Just be sure to clarify when a trend is either a broader cultural trends vs a trend directly related to the campaign guide.
+If a trend is a broader cultural trend, think of creative ways to combine it's themes with the target product: {campaign_guide.target_product}
 Do this to come up with creative eye-catching ads for the target market
 """
 
 image_generation_instructions = """
-Be sure to reference the {campaign_brief}
+Be sure to reference the marketing campaign guide:
+
+{campaign_guide}
+
 You are an expert at Imagen 3.0.
-Given the marketing campaign brief, create an Instagram ad-copy for each target market: {campaign_brief.target_regions}
+Given the marketing campaign guide, create an Instagram ad-copy for each target market: {campaign_guide.target_regions}
 Please localize the ad-copy and the visuals to the target markets for better relevancy to the target audience.
 Also note you have a `generate_video` tool that can be used to generate videos for the campaign. 
 
@@ -17,7 +29,10 @@ When loading videos, you can only load one at a time.
 """
 
 video_generation_tips = """
-Be sure to reference the {campaign_brief}
+Be sure to reference the marketing campaign guide:
+
+{campaign_guide}
+
 Camera Motion: What the camera is doing e.g. POV shot, Aerial View, Tracking Drone view, Tracking Shot
 Composition: How the shot is framed. This is often relative to the subject e.g. wide shot, close-up, low angle
 Subject: Who or what is the main focus of the shot e.g. happy woman in her 30s
@@ -31,7 +46,7 @@ Cinematic effects: e.g. double exposure, projected, glitch camera effect
 movie_code_generation_example = """
 # Guidelines
 
-  **Objective:** Assist the user in creating a feature-length edited video per the prompt and brief.**
+  **Objective:** Assist the user in creating a feature-length edited video per the prompt and guide.**
   Reaching that goal can involve multiple steps. When you need to generate code, you **don't** need to solve the goal in one go. Only generate the next step at a time.
 
   **Trustworthiness:** Always include the code in your response. Put it at the end in the section "Code:". This will ensure trust in your output.

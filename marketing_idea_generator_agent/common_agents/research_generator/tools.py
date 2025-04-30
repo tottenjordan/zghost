@@ -25,7 +25,7 @@ def generate_research_pdf(
     Make sure the PDF is formatted correctly with human readable characters.
 
     Args:
-        markdown_string: a string in Markdown format that clearly presents the session state: {campaign_brief}, {trends}, and {insights}
+        markdown_string: a string in Markdown format that clearly presents the session state: `campaign_guide`, `trends`, and `insights`
         tool_context (ToolContext): The tool context.
 
     Returns:

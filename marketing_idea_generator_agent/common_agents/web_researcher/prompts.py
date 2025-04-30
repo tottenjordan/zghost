@@ -1,22 +1,22 @@
 MAX_GOOGLE_SEARCHES_PER_REGION = 3
 
 broad_instructions = f"""
-Use this agent when the user wants to use Google Search to conduct web research for topics related to the campaign brief.
+Use this agent when the user wants to use Google Search to conduct web research for topics related to the campaign guide.
 
-Your goal is to better understand aspects of the marketing campaign brief, such as the product, target audience, 
+Your goal is to better understand aspects of the marketing campaign guide, such as the product, target audience, 
 
 Limit your google searches to {MAX_GOOGLE_SEARCHES_PER_REGION} per region. 
 """
 
 search_target_product_prompt = """
-Conduct research to better understand the marketing campaign brief and target product: {campaign_brief.target_product}
+Conduct research to better understand the marketing campaign guide and target product: {campaign_guide.target_product}
 
 Your goal is to generate structured product insights that adhere to the {product_insights}
 
-1) Read the provided {campaign_brief} and note the {campaign_brief.campaign_objectives} and {campaign_brief.target_audience}
-2) Use the `query_web` tool to peform a Google Search for insights related to the target product: {campaign_brief.target_product}.
-3) What’s relevant, distinctive or helpful about the {campaign_brief.target_product} or brand?
-4) Explain why this product insight will resonate with the target audience, {campaign_brief.target_audience}.
+1) Read the provided {campaign_guide} and note the {campaign_guide.campaign_objectives} and {campaign_guide.target_audience}
+2) Use the `query_web` tool to peform a Google Search for insights related to the target product: {campaign_guide.target_product}.
+3) What’s relevant, distinctive or helpful about the {campaign_guide.target_product} or brand?
+4) Explain why this product insight will resonate with the target audience, {campaign_guide.target_audience}.
 5) Identify which product features best relate to this product insight
 6) Suggest how marketers could make a culturally relevant advertisement related to this product insight
 7) Determine any messaging angles, themes, or taglines that would help promote the target product amongst the target audience
@@ -28,7 +28,7 @@ Lastly, once the insights are updated, you can transfer back to the parent agent
 """
 
 product_insights_generation_prompt = """
-Understand the output from the web research, considering  {campaign_brief}.
+Understand the output from the web research, considering  {campaign_guide}.
 Use the agent to produce structured output to the {product_insights} state.
 How to fill the fields out:
     insight_title: str -> Come up with a unique title for the insight

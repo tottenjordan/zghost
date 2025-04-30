@@ -31,12 +31,12 @@ def upload_file_to_gcs(
     return f"gs://{gcs_bucket}/{os.path.basename(file_path)}"
 
 
-def brief_callback_function(
+def campaign_callback_function(
     callback_context: CallbackContext,
 ) -> Optional[types.Content]:
     """
     This sets default values for:
-        *   campaign_brief
+        *   campaign_guide
         *   trends
         *   insights
     """
@@ -48,15 +48,15 @@ def brief_callback_function(
     logging.info(f"[Callback] Current State: {current_state}")
 
     # Check the condition in session state dictionary
-    marketing_brief = callback_context.state.get("campaign_brief")
+    campaign_guide = callback_context.state.get("campaign_guide")
     trends = callback_context.state.get("trends")
     insights = callback_context.state.get("insights")
     product_insights = callback_context.state.get("product_insights")
     return_content = None  # placeholder for optional returned parts
-    if marketing_brief is None:
-        return_content = "campaign_brief"
-        callback_context.state["campaign_brief"] = {
-            "campaign_brief": "not yet populated"
+    if campaign_guide is None:
+        return_content = "campaign_guide"
+        callback_context.state["campaign_guide"] = {
+            "campaign_guide": "not yet populated"
         }
 
     if trends is None:
