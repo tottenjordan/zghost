@@ -13,9 +13,9 @@
 
 ## How to use this repo
 
-Clone this repo and follow the steps below to get started
+*Clone this repo and follow the steps below to get started*
 
-### Setup
+### One-time Setup
 
 <details>
   <summary>Create & activate virtual environment</summary>
@@ -30,34 +30,19 @@ source .venv/bin/activate
 </details>
 
 <details>
-  <summary>Install packages and create kernel to run notebooks</summary>
+  <summary>Install packages</summary>
+
+*Optionally install `ipykernel` to run/test in notebooks*
 
 ```bash
 pip install pipx
 pip install -U poetry ipykernel packaging
-
-export ENV_NAME=py312_venv
-python3 -m ipykernel install --user --name $ENV_NAME --display-name $ENV_NAME
 
 poetry install
 
 poetry env use 3.12
 ```
 </details>
-
-<details>
-  <summary>Create and populate an `.env` file</summary>
-
-```bash
-GOOGLE_GENAI_USE_VERTEXAI=1
-GOOGLE_CLOUD_PROJECT=YOUR_GCP_PROJECT_ID
-GOOGLE_CLOUD_PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER
-GOOGLE_CLOUD_LOCATION=us-central1
-GOOGLE_API_KEY=None
-BUCKET=gs://YOUR_GCS_BUCKET_NAME
-```
-</details>
-
 
 <details>
   <summary>Enable Google cloud APIs</summary>
@@ -75,9 +60,70 @@ gcloud services enable artifactregistry.googleapis.com \
 ```
 </details>
 
+
+<details>
+  <summary>Optionally, create notebook kernels</summary>
+
+*create kernel with required packages for notebooks hosted locally or in [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction)* 
+
+**hosted locally**
+
+```
+export ENV_NAME=py312_venv
+python3 -m ipykernel install --user --name $ENV_NAME --display-name $ENV_NAME
+```
+
+**hosted in Vertex AI Workbench**
+
+*run this in notebook instance terminal window*
+
+```bash
+export ENV_NAME=py312_venv
+DL_ANACONDA_ENV_HOME="${DL_ANACONDA_HOME}/envs/$ENV_NAME"
+echo $DL_ANACONDA_ENV_HOME
+
+python3 -m ipykernel install --prefix "${DL_ANACONDA_ENV_HOME}" --name $ENV_NAME --display-name $ENV_NAME
+```
+</details>
+
+<details>
+  <summary>Create and populate an `.env` file</summary>
+
+```bash
+touch .env
+```
+
+*edit `.env` file with your values:*
+
+```bash
+GOOGLE_GENAI_USE_VERTEXAI=1
+GOOGLE_CLOUD_PROJECT=YOUR_GCP_PROJECT_ID
+GOOGLE_CLOUD_PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER # e.g., 1234756
+GOOGLE_CLOUD_LOCATION=YOUR_LOCATION # e.g., us-central1
+YT_SECRET_MNGR_NAME=YOUR_SECRET_NAME # e.g., yt-data-api
+BUCKET=gs://YOUR_GCS_BUCKET_NAME # create a GCS bucket
+GOOGLE_API_KEY=None # Optional
+```
+
+*read and execute `.env` file:*
+
+```bash
+source .env
+```
+
+*create Cloud Storage bucket:*
+
+```bash
+gcloud storage buckets create gs://BUCKET_NAME --location=BUCKET_LOCATION
+```
+</details>
+
+
 ### Running locally
 
-After completing the one-time setup instructions, run the below command to launch the ADK's interactive dev UI:
+After completing the one-time setup instructions, run the below commands to launch the ADK's interactive dev UI:
+
+if haven't already: `source .venv/bin/activate`
 
 ```bash
 adk web .
