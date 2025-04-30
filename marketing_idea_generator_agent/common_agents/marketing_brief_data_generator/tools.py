@@ -5,6 +5,7 @@ class MarketingCampaignBrief(BaseModel):
     "Data model for marketing campaign brief."
 
     campaign_name: str
+    band: str
     target_product: str
     target_audience: str
     target_regions: list[str]

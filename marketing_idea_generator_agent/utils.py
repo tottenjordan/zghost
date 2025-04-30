@@ -1,5 +1,6 @@
 import os
 import logging
+
 logging.basicConfig(level=logging.INFO)
 
 from google.cloud import storage
@@ -50,35 +51,44 @@ def brief_callback_function(
     marketing_brief = callback_context.state.get("campaign_brief")
     trends = callback_context.state.get("trends")
     insights = callback_context.state.get("insights")
-    return_content = None #placeholder for optional returned parts
+    product_insights = callback_context.state.get("product_insights")
+    return_content = None  # placeholder for optional returned parts
     if marketing_brief is None:
         return_content = "campaign_brief"
-        callback_context.state["campaign_brief"] = {"campaign_brief": "not yet populated"}
-
+        callback_context.state["campaign_brief"] = {
+            "campaign_brief": "not yet populated"
+        }
 
     if trends is None:
         callback_context.state["trends"] = {"trends": []}
         if return_content is None:
             return_content = "trends"
         else:
-            return_content+=", trends"
+            return_content += ", trends"
 
     if insights is None:
         callback_context.state["insights"] = {"insights": []}
         if return_content is None:
             return_content = "insights"
         else:
-            return_content+=", insights"
+            return_content += ", insights"
+
+    if product_insights is None:
+        callback_context.state["product_insights"] = {"product_insights": []}
+        if return_content is None:
+            return_content = "product_insights"
+        else:
+            return_content += ", product_insights"
 
     if return_content is not None:
         return types.Content(
-                parts=[
-                    types.Part(
-                        text=f"Agent {agent_name} setting default values for state variables: {return_content}."
-                    )
-                ],
-                role="model",  # Assign model role to the overriding response
-            )
+            parts=[
+                types.Part(
+                    text=f"Agent {agent_name} setting default values for state variables: {return_content}."
+                )
+            ],
+            role="model",  # Assign model role to the overriding response
+        )
 
     else:
         return None
