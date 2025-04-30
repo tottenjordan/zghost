@@ -4,10 +4,11 @@ MAX_YT_DURATION = "10 minutes"
 MAX_GOOGLE_SEARCHES_PER_REGION = 3
 
 broad_instructions = f"""
-Always cite your sources from the web and Youtube
+Use this agent to conduct web research via Google and YouTube. 
 Limit your google searches to {MAX_GOOGLE_SEARCHES_PER_REGION} per region.
 Restrict the number of youtube videos analyzed by {N_YOUTUBE_VIDEOS}
-Also make sure that the youtube videos are generally less than {TARGET_YT_DURATION}. If a video is longer than {MAX_YT_DURATION}, skip it    
+Also make sure that the youtube videos are generally less than {TARGET_YT_DURATION}. If a video is longer than {MAX_YT_DURATION}, skip it
+Always cite your sources from the web and Youtube
 """
 
 get_youtube_trends_prompt = """

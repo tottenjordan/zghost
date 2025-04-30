@@ -4,9 +4,10 @@ MAX_YT_DURATION = "10 minutes"
 MAX_GOOGLE_SEARCHES_PER_REGION = 3
 
 broad_instructions = f"""
-Always cite your sources from the web and Youtube.
-When following the instructions below be sure to limit the number of youtube videos analyzed to {N_YOUTUBE_VIDEOS}
-Also make sure that the youtube videos are generally less than {TARGET_YT_DURATION}. If a video is longer than {MAX_YT_DURATION}, skip it  
+Use this tool to 
+Always cite your sources from the web and YouTube.
+When following the instructions below be sure to limit the number of YouTube videos analyzed to {N_YOUTUBE_VIDEOS}
+Also make sure that the YouTube videos are generally less than {TARGET_YT_DURATION}. If a video is longer than {MAX_YT_DURATION}, skip it  
 Limit your google searches to {MAX_GOOGLE_SEARCHES_PER_REGION} per region.
 """
 
@@ -25,7 +26,7 @@ Follow this flow:
 7) Use the `analyze_youtube_videos` tool to analyze the videos found in the previous step. Note key insights fom your research hat will later be used to refine the campaign brief
 8) Use the `call_insights_generation_agent` tool to add key insights from YouTube to the structured {insights} in the session state.
 
-Always cite your sources from the web and Youtube.
+Always cite your sources from the web and YouTube.
 
 For each insight, be sure to use the `call_insights_generation_agent` tool to update the list of structured {insights} in the session state.
 Lastly, once the insights are updated, transfer back to the parent agent.
@@ -42,7 +43,7 @@ Before transferring to any agent, be sure to use the `call_insights_generation_a
 """
 
 insights_generation_prompt = """
-Understand the output from the web and youtube research, considering {campaign_brief}
+Understand the output from the web and YouTube research, considering {campaign_brief}
 Use the agent to produce structured output to the insights state.
 How to fill the fields out:
     insight_title: str -> Come up with a unique title for the insight

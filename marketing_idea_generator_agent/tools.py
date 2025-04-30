@@ -1,4 +1,7 @@
+import os
+import uuid
 import logging
+
 logging.basicConfig(level=logging.INFO)
 
 try:
@@ -9,36 +12,28 @@ except ImportError:
     logging.exception("Could not import the 'googlesearch' library.")
     logging.exception("Please install it first using: pip install googlesearch-python")
     search = None  # Set search to None so the script doesn't crash immediately
-import pandas as pd
-from google.adk.tools import ToolContext
-from google.adk.tools.agent_tool import AgentTool
-from .common_agents.marketing_brief_data_generator.agent import (
-    brief_data_generation_agent,
-)
-from .common_agents.research_generator.agent import (
-    research_generation_agent,
-)
 
-# from utils import upload_file_to_gcs
+import asyncio
+import aiohttp
+import trafilatura
+import pandas as pd
+from typing import Optional  # , AsyncGenerator
 
 from google.genai import types
 from google.genai import Client
-import asyncio
-import aiohttp
-import uuid
-import os
-
-# import requests
-import trafilatura
-from typing import Optional  # , AsyncGenerator
-import googleapiclient.discovery
+from google.adk.tools import ToolContext
+from google.adk.tools.agent_tool import AgentTool
 from google.cloud import secretmanager as sm
+import googleapiclient.discovery
+
+from .common_agents.marketing_brief_data_generator.agent import (
+    brief_data_generation_agent,
+)
+
 
 # clients
 sm_client = sm.SecretManagerServiceClient()
-SECRET_ID = (
-    f'projects/{os.environ.get("GOOGLE_CLOUD_PROJECT_NUMBER")}/secrets/yt-data-api'
-)
+SECRET_ID = f'projects/{os.environ.get("GOOGLE_CLOUD_PROJECT_NUMBER")}/secrets/{os.environ.get("YT_SECRET_MNGR_NAME")}'  # yt-data-api
 SECRET_VERSION = "{}/versions/1".format(SECRET_ID)
 response = sm_client.access_secret_version(request={"name": SECRET_VERSION})
 YOUTUBE_DATA_API_KEY = response.payload.data.decode("UTF-8")
@@ -70,6 +65,7 @@ async def call_brief_generation_agent(
     )
     tool_context.state["campaign_brief"] = brief_output
     return brief_output
+
 
 # ========================
 # search tools
@@ -347,10 +343,10 @@ def query_youtube_api(
     Args:
         query (str): The search query.
         video_duration (str): The duration (minutes) of the videos to search for.
-            Must be one of: 'any', 'long', 'medium', 'short', where short=(-inf, 4), 
+            Must be one of: 'any', 'long', 'medium', 'short', where short=(-inf, 4),
             medium=[4, 20], long=(20, inf)
-        region_code (str): selects a video chart available in the specified region. 
-            Values are ISO 3166-1 alpha-2 country codes. For example, the region_code for the United Kingdom would be 'GB', 
+        region_code (str): selects a video chart available in the specified region.
+            Values are ISO 3166-1 alpha-2 country codes. For example, the region_code for the United Kingdom would be 'GB',
             whereas 'US' would represent The United States.
         video_order (str): The order in which the videos should be returned.
             Must be one of 'date', 'rating', 'relevance', 'title', 'viewCount'
