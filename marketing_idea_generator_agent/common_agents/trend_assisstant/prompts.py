@@ -44,7 +44,7 @@ Note how to fill the fields out:
 """
 
 unified_trends_instructions = (
-    broad_instructions 
-    + get_youtube_trends_prompt 
+    broad_instructions
+    + get_youtube_trends_prompt
     # + trends_generation_instructions
 )

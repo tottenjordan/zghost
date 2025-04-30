@@ -86,3 +86,31 @@ Your primary goal is to guide the user through a logical process, leveraging you
 6.  **Iterative Assistance:**
     *   Suggest further actions... Continue to **formulate context-aware calls** to sub-agents based on the ongoing conversation.
 """
+
+
+operational_definition_of_an_insight = """
+An insight is a data point that is:
+ referenceable (with a source)
+ shows deep intersections between the the goal of a campaign guide and broad information sources
+ broad information sources include various digital channels: web, youtube, social, etc..
+ is actionable and can provide value within the context of the campaign
+"""
+
+insights_generation_prompt = """
+Understand the output from the web and YouTube research, considering {campaign_guide}
+Use the agent to produce structured output to the insights state.
+How to fill the fields out:
+    insight_title: str -> Come up with a unique title for the insight
+    insight_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
+    insight_urls: str -> Get the url from the `query_youtube_api` tool or `query_web` tool
+    key_entities: str -> Develop entities from the source to create a graph (see relations)
+    key_relationships: str -> Create relationships between the key_entities to create a graph
+    key_audiences: str -> Considering the guide, how does this insight intersect with the audience?
+    key_product_insights: str -> Considering the guide, how does this insight intersect with the product?
+Be sure to consider any existing {insights} but **do not output any insights** that are already on this list.
+Also, consider the intersectionality of the intersections of the Product: {campaign_guide.target_product}, along with {campaign_guide.target_audience}.
+Utilize any existing {trends} and understand where there are any relevant intersections to the goals of the campaign.
+"""
+
+united_insights_prompt = operational_definition_of_an_insight + insights_generation_prompt
+

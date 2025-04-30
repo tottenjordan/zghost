@@ -37,19 +37,6 @@ Before transferring to any agent, be sure to use the `call_insights_generation_a
 Lastly, once the insights are updated, you can transfer back to the parent agent.
 """
 
-insights_generation_prompt = """
-Understand the output from the web and YouTube research, considering {campaign_guide}
-Use the agent to produce structured output to the insights state.
-How to fill the fields out:
-    insight_title: str -> Come up with a unique title for the insight
-    insight_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
-    insight_urls: str -> Get the url from the `query_youtube_api` tool or `query_web` tool
-    key_entities: str -> Develop entities from the source to create a graph (see relations)
-    key_relationships: str -> Create relationships between the key_entities to create a graph
-    key_audiences: str -> Considering the guide, how does this insight intersect with the audience?
-    key_product_insights: str -> Considering the guide, how does this insight intersect with the product?
-"""
-
 
 unified_insights_prompt = (
     broad_instructions
