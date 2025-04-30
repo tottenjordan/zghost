@@ -175,7 +175,7 @@ echo $BUCKET
 adk web .
 ```
 
-4. To start interacting with your agents, open the provided `localhost` link (e.g., `http://0.0.0.0:8000`)
+4. To start interacting with your agents, open the provided `localhost` link (e.g., `http://localhost:8000`) and select an agent from the drop-down (top left)
 
 ```bash
 INFO:     Started server process [750453]
@@ -191,7 +191,7 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 ```
 
-5. *Note: if port in use, find any processes listening to port `:8000`, kill them, then return to step (3):
+5. *Note: if port in use, find any processes listening to port `:8000`, kill them, then return to step (3):*
 
 ```bash
 lsof -i :8000
