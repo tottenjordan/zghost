@@ -1,6 +1,7 @@
 broad_instructions = """
 Make sure you utilize the information gathered from the research:
-  * Include `insights` from the `create_new_ideas_agent` agent:
+
+  * Include `insights` from the `web_researcher_agent` agent:
 
   {insights}
 
@@ -12,7 +13,8 @@ Try to use the intersections of concepts from the `trends` and the `campaign_gui
 It's OK if a trend is not directly related to the campaign guide. 
 Just be sure to clarify when a trend is either a broader cultural trends vs a trend directly related to the campaign guide.
 If a trend is a broader cultural trend, think of creative ways to combine it's themes with the target product: {campaign_guide.target_product}
-Do this to come up with creative eye-catching ads for the target market
+Do this to come up with creative eye-catching ads for the target market.
+
 """
 
 image_generation_instructions = """
@@ -26,6 +28,7 @@ Please localize the ad-copy and the visuals to the target markets for better rel
 Also note you have a `generate_video` tool that can be used to generate videos for the campaign. 
 
 When loading videos, you can only load one at a time.
+
 """
 
 video_generation_tips = """
@@ -42,6 +45,12 @@ Ambiance & Emotions: How the color and light contribute to the scene  (blue tone
 Styles: Overall aesthetic. Consider using specific film style keywords e.g. horror film, film noir or animated styles e.g. 3D cartoon style render
 Cinematic effects: e.g. double exposure, projected, glitch camera effect
 """
+
+unified_image_video_instructions = (
+    broad_instructions
+    + image_generation_instructions
+    + video_generation_tips
+)
 
 movie_code_generation_example = """
 # Guidelines

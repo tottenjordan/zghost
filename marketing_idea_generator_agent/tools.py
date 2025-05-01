@@ -329,8 +329,8 @@ async def query_web(
 
 def query_youtube_api(
     query: str,
-    video_duration: str,
     region_code: str,
+    video_duration: str,
     video_order: str = "relevance",
     num_video_results: int = 5,
     max_num_days_ago: int = 30,

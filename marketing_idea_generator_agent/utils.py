@@ -51,7 +51,7 @@ def campaign_callback_function(
     campaign_guide = callback_context.state.get("campaign_guide")
     trends = callback_context.state.get("trends")
     insights = callback_context.state.get("insights")
-    product_insights = callback_context.state.get("product_insights")
+    # product_insights = callback_context.state.get("product_insights")
     return_content = None  # placeholder for optional returned parts
     if campaign_guide is None:
         return_content = "campaign_guide"
@@ -73,12 +73,12 @@ def campaign_callback_function(
         else:
             return_content += ", insights"
 
-    if product_insights is None:
-        callback_context.state["product_insights"] = {"product_insights": []}
-        if return_content is None:
-            return_content = "product_insights"
-        else:
-            return_content += ", product_insights"
+    # if product_insights is None:
+    #     callback_context.state["product_insights"] = {"product_insights": []}
+    #     if return_content is None:
+    #         return_content = "product_insights"
+    #     else:
+    #         return_content += ", product_insights"
 
     if return_content is not None:
         return types.Content(

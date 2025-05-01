@@ -16,10 +16,7 @@ from .common_agents.marketing_guide_data_generator.agent import (
 from .common_agents.research_generator.agent import (
     research_generation_agent,
 )
-from .common_agents.web_researcher.agent import (
-    web_researcher_agent,
-)
-from .common_agents.idea_generator.agent import create_new_ideas_agent
+from .common_agents.web_researcher.agent import web_researcher_agent
 from .common_agents.trend_assisstant.agent import trends_and_insights_agent
 from .common_agents.image_generator.agent import image_generation_agent
 from .prompts import root_agent_instructions
@@ -38,12 +35,11 @@ root_agent = Agent(
         """
     ),
     sub_agents=[
-        create_new_ideas_agent,
+        web_researcher_agent,
         image_generation_agent,
         trends_and_insights_agent,
         campaign_guide_data_generation_agent,
         research_generation_agent,
-        web_researcher_agent,
     ],
     tools=[
         # google_search,

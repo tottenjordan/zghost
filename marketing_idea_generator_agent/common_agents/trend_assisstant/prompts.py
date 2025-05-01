@@ -1,25 +1,23 @@
-N_YOUTUBE_VIDEOS = 3
+N_YOUTUBE_TREND_VIDEOS = 5
 TARGET_YT_DURATION = "5 minutes"
 MAX_YT_DURATION = "10 minutes"
-MAX_GOOGLE_SEARCHES_PER_REGION = 3
 
 broad_instructions = f"""
 Use this agent when the user wants to find trending content on YouTube.
-Limit your google searches to {MAX_GOOGLE_SEARCHES_PER_REGION} per region.
-Restrict the number of youtube videos analyzed by {N_YOUTUBE_VIDEOS}
-Also make sure that the youtube videos are generally less than {TARGET_YT_DURATION}. If a video is longer than {MAX_YT_DURATION}, skip it
+Make sure that the duration of the YouTube videos you analyze are generally less than {TARGET_YT_DURATION}. If a video is longer than {MAX_YT_DURATION}, skip it.
+By the end of your analysis you should have anaylzed {N_YOUTUBE_TREND_VIDEOS} videos in total.
 Always cite your sources from the web and Youtube
 """
 
 get_youtube_trends_prompt = """
 Follow the steps below to understand key themes from trending content on YouTube. 
-These themes don't have to be directly related to {campaign_guide.target_product}. We just want the themes for future brainstorming exercises.
+Remember: these themes don't have to be directly related to {campaign_guide.target_product}. We just want the themes for future brainstorming exercises.
 
 1) Use the `get_youtube_trends` tool to query the YouTube Data API for trending videos in each target market. Start with "Shorts" and expand to longer videos if necessary.
 2) Find each video's URL in the response entry titled: "videoURL". Use the `analyze_youtube_videos` tool to analyze each video and understand what is being discussed.
 3) Using the output from the previous step, generate a concise summary describing what is taking place or being discussed. Be sure to explain if you think this trend will resonate with the {campaign_guide.target_audience}.
 4) For each trending video, suggest how it could possibly relate to the {campaign_guide.target_product} in a marketing campaign.
-5) Use the `call_trends_generator_agent` tool to add any trends from YouTube to the structured {trends} in the session state.
+5) Use the `call_trends_generator_agent` tool to add any trends from YouTube to the structured `trends` in the session state.
 
 Lastly, after calling the `call_trends_generator_agent` tool, transfer back to the parent agent
 """
