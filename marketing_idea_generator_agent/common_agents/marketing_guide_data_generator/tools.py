@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 # MarketingCampaignBrief
 class MarketingCampaignGuide(BaseModel):
     "Data model for marketing campaign guide."
@@ -11,10 +12,9 @@ class MarketingCampaignGuide(BaseModel):
     target_regions: list[str]
     campaign_objectives: list[str]
     media_strategy: list[str]
-    # timeline: str
-    # performance_metrics: list[str]
     key_insights: list[str]
     campaign_highlights: list[str]
+
 
 # get_marketing_brief
 async def get_marketing_guide(guide_file_path: str, gcs_bucket: str) -> str:

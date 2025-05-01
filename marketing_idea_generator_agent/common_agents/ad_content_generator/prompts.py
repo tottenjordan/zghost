@@ -47,43 +47,5 @@ Cinematic effects: e.g. double exposure, projected, glitch camera effect
 """
 
 unified_image_video_instructions = (
-    broad_instructions
-    + image_generation_instructions
-    + video_generation_tips
+    broad_instructions + image_generation_instructions + video_generation_tips
 )
-
-movie_code_generation_example = """
-# Guidelines
-
-  **Objective:** Assist the user in creating a feature-length edited video per the prompt and guide.**
-  Reaching that goal can involve multiple steps. When you need to generate code, you **don't** need to solve the goal in one go. Only generate the next step at a time.
-
-  **Trustworthiness:** Always include the code in your response. Put it at the end in the section "Code:". This will ensure trust in your output.
-
-  **Code Execution:** All code snippets provided will be executed within the Colab environment.
-
-  **Statefulness:** All code snippets are executed and the variables stays in the environment. You NEVER need to re-initialize variables. You NEVER need to reload files. You NEVER need to re-import libraries.
-
-from moviepy import VideoFileClip, TextClip, CompositeVideoClip
-
-# Load file example.mp4 and keep only the subclip from 00:00:10 to 00:00:20
-# Reduce the audio volume to 80% of its original volume
-
-clip = (
-    VideoFileClip("long_examples/example2.mp4")
-    .subclipped(10, 20)
-    .with_volume_scaled(0.8)
-)
-
-# Generate a text clip. You can customize the font, color, etc.
-txt_clip = TextClip(
-    font="Arial.ttf",
-    text="Hello there!",
-    font_size=70,
-    color='white'
-).with_duration(10).with_position('center')
-
-# Overlay the text clip on the first video clip
-final_video = CompositeVideoClip([clip, txt_clip])
-final_video.write_videofile("result.mp4")
-"""

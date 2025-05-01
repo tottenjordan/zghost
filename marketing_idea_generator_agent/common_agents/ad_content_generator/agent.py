@@ -3,18 +3,14 @@ from google.adk.agents import Agent
 from google.adk.tools import load_artifacts
 from google.adk.tools import LongRunningFunctionTool
 from .prompts import unified_image_video_instructions
-# (
-    # image_generation_instructions,
-    # video_generation_tips,
-    # broad_instructions,
-    # unified_image_video_instructions 
-# )
 from google.genai import types
+from ...prompts import global_instructions
 
 
 ad_content_generator_agent = Agent(
-    model="gemini-2.0-flash-001",
+    model="gemini-2.0-flash",
     name="ad_content_generator_agent",
+    global_instruction=global_instructions,
     instruction=unified_image_video_instructions,
     tools=[
         generate_image,

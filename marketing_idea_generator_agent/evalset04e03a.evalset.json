@@ -172,5 +172,153 @@
       "app_name": "marketing_idea_generator_agent",
       "user_id": "user"
     }
+  },
+  {
+    "name": "dog_food",
+    "data": [
+      {
+        "query": "hello",
+        "expected_tool_use": [],
+        "expected_intermediate_agent_responses": [
+          {
+            "author": "marketing_idea_generator_agent",
+            "text": "Hello! I'm here to help you with your marketing campaign. To get started, do you have a marketing campaign guide you can share with me? It could be a URL, a PDF, or even just the text of the guide.\n\nFor example, you could say:\n\n*   \"I have a campaign guide here: [URL]\"\n*   \"I've uploaded the campaign guide PDF.\"\n*   \"Here's the text of my campaign guide: [paste text]\"\n\nIf you don't have a guide yet, we can still explore some general marketing ideas. Just let me know what you'd like to focus on!\n"
+          }
+        ],
+        "reference": "Agent marketing_idea_generator_agent setting default values for state variables: campaign_guide, trends, insights."
+      },
+      {
+        "query": "let's find some general marketing ideas for dog food in the US",
+        "expected_tool_use": [],
+        "expected_intermediate_agent_responses": [],
+        "reference": "Okay! I can definitely help with that. I suggest we start by using the `web_researcher_agent` to perform a Google search and gather some initial inspiration and context for marketing dog food in the US. Does that sound good?\n"
+      },
+      {
+        "query": "ok",
+        "expected_tool_use": [
+          {
+            "tool_name": "transfer_to_agent",
+            "tool_input": {
+              "agent_name": "web_researcher_agent"
+            }
+          },
+          {
+            "tool_name": "call_insights_generation_agent",
+            "tool_input": {
+              "question": "Create a placeholder for the campaign guide because it has not been provided."
+            }
+          },
+          {
+            "tool_name": "query_web",
+            "tool_input": {
+              "query": "marketing dog food US",
+              "num_results": 3
+            }
+          },
+          {
+            "tool_name": "query_youtube_api",
+            "tool_input": {
+              "num_video_results": 3,
+              "region_code": "US",
+              "video_duration": "short",
+              "query": "dog food marketing US"
+            }
+          },
+          {
+            "tool_name": "analyze_youtube_videos",
+            "tool_input": {
+              "prompt": "What are the key messages, tones, or themes in this video related to dog food marketing?",
+              "youtube_url": "https://www.youtube.com/watch?v=PAv3-SlawOQ"
+            }
+          },
+          {
+            "tool_name": "analyze_youtube_videos",
+            "tool_input": {
+              "prompt": "What are the key messages, tones, or themes in this video related to dog food marketing?",
+              "youtube_url": "https://www.youtube.com/watch?v=nsRFr15UysE"
+            }
+          },
+          {
+            "tool_name": "analyze_youtube_videos",
+            "tool_input": {
+              "prompt": "What are the key messages, tones, or themes in this video related to dog food marketing?",
+              "youtube_url": "https://www.youtube.com/watch?v=r-WjtUlDsZQ"
+            }
+          },
+          {
+            "tool_name": "call_insights_generation_agent",
+            "tool_input": {
+              "question": "insight_title: Growing Demand for Premium and Natural Dog Food\ninsight_text: The US dog food market is seeing a growing demand for premium, natural, and organic options, driven by the humanization of pets and increased focus on pet health and wellness. Pet owners are looking for high-quality ingredients, grain-free options, and products without artificial additives.\ninsight_urls: https://www.custommarketinsights.com/report/us-dog-food-market/, https://www.promodo.com/blog/6-success-driven-pet-food-marketing-ideas\nkey_entities: dog food, premium, natural, organic, pet health, pet wellness\nkey_relationships: premium/natural/organic dog food improves pet health and wellness; pet humanization drives demand for better dog food\nkey_audiences: health-conscious pet owners, pet owners who consider pets as family members\nkey_product_insights: Highlight natural ingredients, grain-free options, and health benefits in marketing materials."
+            }
+          },
+          {
+            "tool_name": "call_insights_generation_agent",
+            "tool_input": {
+              "question": "insight_title: E-commerce and Local SEO are Crucial\ninsight_text: E-commerce and direct-to-consumer channels are expanding, making online presence crucial. Local SEO helps connect with nearby pet owners by optimizing online presence with local keywords, accurate business details, and encouraging customer reviews.\ninsight_urls: https://www.promodo.com/blog/6-success-driven-pet-food-marketing-ideas\nkey_entities: e-commerce, local SEO, online presence, pet owners, local keywords, customer reviews\nkey_relationships: e-commerce facilitates wider reach; local SEO enhances local discoverability; online presence builds brand awareness\nkey_audiences: pet owners who shop online, local pet owners\nkey_product_insights: Focus on online marketing, offer online purchasing options, optimize for local search."
+            }
+          },
+          {
+            "tool_name": "call_insights_generation_agent",
+            "tool_input": {
+              "question": "insight_title: Community Engagement and Social Responsibility\ninsight_text: Partnering with local nonprofits and engaging in community initiatives can build trust and loyalty. Pet owners are increasingly socially and environmentally conscious, and appreciate brands that demonstrate social responsibility.\ninsight_urls: https://www.promodo.com/blog/6-success-driven-pet-food-marketing-ideas, https://www.youtube.com/watch?v=nsRFr15UysE\nkey_entities: community engagement, social responsibility, nonprofits, brand loyalty, pet owners\nkey_relationships: community engagement fosters brand loyalty; social responsibility appeals to conscious consumers; brand values align with consumer values\nkey_audiences: socially conscious pet owners, local communities\nkey_product_insights: Highlight charitable partnerships, promote sustainable practices, engage in community events."
+            }
+          },
+          {
+            "tool_name": "call_insights_generation_agent",
+            "tool_input": {
+              "question": "insight_title: Packaging Innovation for Wet Pet Food\ninsight_text: Retort spout pouches offer convenience, cost-effectiveness, and quality advantages over traditional tin cans for wet pet food. They are easy to carry, safe, durable, and customizable, enhancing brand appeal.\ninsight_urls: https://www.youtube.com/watch?v=PAv3-SlawOQ\nkey_entities: retort spout pouches, wet pet food, packaging, convenience, cost-effectiveness, quality\nkey_relationships: retort pouches improve packaging quality and convenience; packaging enhances brand appeal; better packaging attracts consumers\nkey_audiences: pet food manufacturers, consumers of wet pet food\nkey_product_insights: Consider innovative packaging solutions to stand out on shelves and improve consumer experience."
+            }
+          },
+          {
+            "tool_name": "call_insights_generation_agent",
+            "tool_input": {
+              "question": "insight_title: Content Personalization and Education\ninsight_text: Content should address the specific needs of pets based on size, breed, age, and health conditions. Providing valuable advice, recipes, and personalized pet care solutions can attract and retain customers.\ninsight_urls: https://www.promodo.com/blog/6-success-driven-pet-food-marketing-ideas\nkey_entities: personalized content, pet needs, size, breed, age, health, recipes, pet care solutions\nkey_relationships: personalized content caters to individual pet needs; valuable advice attracts pet owners; educational resources build brand trust\nkey_audiences: pet owners seeking tailored solutions, pet owners seeking information and guidance\nkey_product_insights: Offer customized diet recommendations, create informative content, provide expert advice."
+            }
+          },
+          {
+            "tool_name": "transfer_to_agent",
+            "tool_input": {
+              "agent_name": "marketing_idea_generator_agent"
+            }
+          }
+        ],
+        "expected_intermediate_agent_responses": [
+          {
+            "author": "marketing_idea_generator_agent",
+            "text": "Great! I will now call the `web_researcher_agent` with the task to perform a Google search. I'll provide it with the key search terms \"marketing dog food US\" and the goal to gather initial inspiration and relevant examples.\n"
+          },
+          {
+            "author": "web_researcher_agent",
+            "text": "Okay, I'm on it. First, I need to create a placeholder for the campaign guide.\n"
+          },
+          {
+            "author": "web_researcher_agent",
+            "text": "Now I will conduct research to better understand the marketing campaign guide and target product: dog food.\n\nMy goal is to generate structured insights that answer questions like:\n\n- What\u2019s relevant, distinctive, or helpful about dog food or dog food brands?\n- Which product features would the target audience best resonate with?\n- How could marketers make a culturally relevant advertisement related to product insights\n\nHere are the steps I will take:\n\n1) Since a marketing campaign guide was not provided, I will move on to the next step.\n\n2) The campaign objectives are: to find general marketing ideas for dog food in the US. The target audience is: US dog owners.\n\n3) I will use the `query_web` tool to perform a Google Search for insights related to the target product: dog food.\n4) I will use the `query_youtube_api` tool to find videos related to the target product: dog food, and target audiences.\n5) I will use the `analyze_youtube_videos` tool to understand the videos found in the previous step and note key insights from my research that will later be used to produce a detailed marketing campaign brief\n\nNow, let's begin!\n"
+          },
+          {
+            "author": "web_researcher_agent",
+            "text": "Okay, I have the YouTube video IDs. Now I will analyze the videos.\n"
+          },
+          {
+            "author": "web_researcher_agent",
+            "text": "Okay, I have analyzed the YouTube videos and gathered insights from the web search. Now I will consolidate the insights and use the `call_insights_generation_agent` tool to update the list of structured insights in the session state.\n"
+          },
+          {
+            "author": "web_researcher_agent",
+            "text": "I have now updated the insights. I will now transfer back to the parent agent.\n"
+          }
+        ],
+        "reference": "Okay, great! The `web_researcher_agent` has provided some valuable insights. Here's a summary of the key findings:\n\n*   **Growing Demand for Premium and Natural Dog Food:** Consumers are increasingly seeking high-quality, natural, and organic options.\n*   **E-commerce and Local SEO are Crucial:** Online presence and local search optimization are essential for reaching pet owners.\n*   **Community Engagement and Social Responsibility:** Partnering with nonprofits and demonstrating social responsibility builds trust.\n*   **Packaging Innovation for Wet Pet Food:** Innovative packaging like retort spout pouches can enhance brand appeal.\n*   **Content Personalization and Education:** Tailoring content to specific pet needs and providing valuable advice attracts customers.\n\nNow that we have these insights, what would you like to do next? Here are a few options:\n\nA)  **Explore the latest general trends** in marketing and consumer behavior to see how they might apply to dog food. (using `trends_and_insights_agent`)\nB)  **Brainstorm some creative campaign ideas** based on these insights. (using `web_researcher_agent`)\nC)  **Generate some visual concepts** for an ad campaign focusing on natural ingredients. (using `ad_content_generator_agent`)\nD)  **Create a research report** combining the campaign requirements, key research insights, and creative starting points for combining all of these with trending content (using `research_generation_agent`)\n\nLet me know what you'd like to do!\n"
+      }
+    ],
+    "initial_session": {
+      "state": {
+        "campaign_guide": "",
+        "insights": "",
+        "trends": ""
+      },
+      "app_name": "marketing_idea_generator_agent",
+      "user_id": "user"
+    }
   }
 ]

@@ -7,7 +7,6 @@ broad_instructions = f"""
 Use this agent when the user wants to conduct market research to gather insights related to the marketing campaign guide.
 When following the instructions below be sure to limit the number of YouTube videos analyzed to {N_YOUTUBE_VIDEOS}
 Also make sure that the YouTube videos are generally less than {TARGET_YT_DURATION}. If a video is longer than {MAX_YT_DURATION}, skip it
-
 """
 
 # Limit your google searches to {MAX_GOOGLE_SEARCHES_PER_REGION} per region.
@@ -46,25 +45,6 @@ Here is an example path to the videoID: query_youtube_api_response["items"]["id"
 insights_generation_instructions = """
 Before transferring to any agent, be sure to use the `call_insights_generation_agent` tool to update the list of structured `insights` in the session state.
 Lastly, once the insights are updated, you can transfer back to the parent agent.
-"""
-
-insights_generation_prompt = """
-Understand the output from the web and YouTube research, considering the marketing campaign guide:
-
-{campaign_guide}
-
-Use the agent to produce structured output to the insights state.
-How to fill the fields out:
-    insight_title: str -> Come up with a unique title for the insight
-    insight_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
-    insight_urls: str -> Get the url from the `query_youtube_api` tool or `query_web` tool
-    key_entities: str -> Develop entities from the source to create a graph (see relations)
-    key_relationships: str -> Create relationships between the key_entities to create a graph
-    key_audiences: str -> Considering the guide, how does this insight intersect with the audience?
-    key_product_insights: str -> Considering the guide, how does this insight intersect with the product?
-Be sure to consider any existing {insights} but **do not output any insights** that are already on this list.
-Also, consider the intersectionality of the intersections of the Product: {campaign_guide.target_product}, along with {campaign_guide.target_audience}.
-Utilize any existing {trends} and understand where there are any relevant intersections to the goals of the campaign.
 """
 
 

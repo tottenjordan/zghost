@@ -1,11 +1,9 @@
 from .prompts import unified_trends_instructions
 from google.genai import types
 from google.adk.agents import Agent
-
-# from google.adk.tools import google_search
+from ...prompts import global_instructions
 
 from ...tools import (
-    # call_insights_generation_agent,
     query_youtube_api,
     query_web,
     analyze_youtube_videos,
@@ -25,8 +23,9 @@ tools = [
 ]
 
 trends_and_insights_agent = Agent(
-    model="gemini-2.0-flash-001",
+    model="gemini-2.0-flash",
     name="trends_and_insights_agent",
+    global_instruction=global_instructions,
     instruction=unified_trends_instructions,
     tools=tools,
     generate_content_config=types.GenerateContentConfig(
