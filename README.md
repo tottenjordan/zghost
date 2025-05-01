@@ -156,8 +156,8 @@ BUCKET=gs://YOUR_GCS_BUCKET_NAME # create a GCS bucket
 *copy `.env` file to `root_agent` dir:*
 
 ```bash
-cp .env marketing_idea_generator_agent/.env
-cat marketing_idea_generator_agent/.env
+cp .env trends_and_insights_agent/.env
+cat trends_and_insights_agent/.env
 ```
 
 *read and execute `.env` file:*
