@@ -2,3 +2,6 @@
 /google-cloud-cli-linux-x86_64.tar.gz
 /google-cloud-sdk
 *.pyc
+*.env
+**/__pycache__/
+__pycache__/
