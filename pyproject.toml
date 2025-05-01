@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "marketing_idea_generator_agent"
+name = "trends_and_insights_agent"
 version = "0.1.0"
 description = ""
 authors = ["Jeremy Wortz <jwortz@google.com>"]
