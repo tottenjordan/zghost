@@ -404,10 +404,11 @@ def analyze_youtube_videos(
     youtube_url: str,
 ) -> str:
     """
-    Analyzes youtube videos from a list of search results.
+    Analyzes youtube videos given a prompt and the video's URL
+    
     Args:
         prompt (str): The prompt to use for the analysis.
-        search_results_urls (list[str]): The list of urls to check for youtube.com
+        youtube_url (str): The url to check for youtube.com
     Returns:
         Results from the youtube video analysis prompt.
     """
