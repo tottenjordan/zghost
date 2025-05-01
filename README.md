@@ -38,10 +38,8 @@ When interacting with the agent users can:
 - Broad research on new marketing ideas, leveraging web searching tools
 - Generate new images based on insights from web searching or trend tool use
 
-<video width="420" controls>
-  <source src="./TIA_trailer.mp4" type="video/mp4">
-</video>
-
+<video width="420" controls source src="./TIA_trailer.mp4" type="video/mp4" />
+∂∂∂
 ## How to use this repo
 
 1. Clone this repo (to local or Vertex AI Workbench Instance)
