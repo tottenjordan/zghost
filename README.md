@@ -2,7 +2,7 @@
 
 > *building multi-agent systems with Google's [Agent Development Kit](https://google.github.io/adk-docs/) (ADK)*
 
-## About Trends & Insights Agent
+## About
 
 Trends & Insights Agent is an advanced marketing tool built upon the foundation of Retail, CPG, and Google’s AI marketing tooling best practices. This version represents a significant leap forward, bringing enhanced capabilities with Google’s new [Agent Development Kit (ADK)](https://google.github.io/adk-docs/)
 
