@@ -35,6 +35,9 @@ Note how to fill the fields out:
     key_relationships: str -> Create relationships between the key_entities to create a graph
     key_audiences: str -> Considering the guide, how does this trend intersect with the audience?
     key_product_insights: str -> Considering the guide, how does this trend intersect with the product?
+Be sure to consider any existing {trends} but **do not output any insights** that are already on this list.
+Also, consider the intersectionality of the intersections of the Product: {campaign_guide.target_product}, along with {campaign_guide.target_audience}.
+Utilize any existing {insights} and understand where there are any relevant intersections to the goals of the campaign.
 """
 
 unified_trends_instructions = broad_instructions + get_youtube_trends_prompt

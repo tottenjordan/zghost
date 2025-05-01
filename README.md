@@ -2,6 +2,23 @@
 
 > *building multi-agent systems with Google's [Agent Development Kit](https://google.github.io/adk-docs/) (ADK)*
 
+## About Trends & Insights Agent
+
+Trends & Insights Agent is an advanced marketing tool built upon the foundation of Retail, CPG, and Google’s AI marketing tooling best practices. This version represents a significant leap forward, bringing enhanced capabilities with Google’s new [Agent Development Kit (ADK)](https://google.github.io/adk-docs/)
+
+**What Trends & Insights Can Do:**
+
+-   **Streamline the Marketing Process:** From initial inspiration and competitive analysis to final creative drafts and reporting, TIA streamlines every step of the marketing workflow, making it easier to ideate, execute, and analyze campaigns, **significantly improving marketing use case velocity**.
+-   **Leverage Advanced AI:** Utilizing cutting-edge LLM-based agents, Trends & Insights Agent empowers users to generate refined marketing briefs, draft ad creatives, and compile comprehensive report. These agents are powered by the diverse range of models available in Vertex AI's Model Garden.
+-   **Deep Integration with Google Ecosystem:** Seamlessly gather real-time insights from Google Search trends, YouTube trends, using guardrails from your own internal campaign guidelines. This ensures marketing strategies are data-driven and culturally relevant.
+
+
+**Rooted in Alphabet's/Google's Marketing Practices:**
+
+-   **Act on Real-Time Insights:** Tap into the pulse of current trends and audience interests, ensuring that campaigns are always timely and relevant.
+-   **Maintain Brand Consistency:** Ingest campaign guidelines to ensure all creative and messaging aligns with established brand voice and objectives.
+-   **Optimize for Performance:** Leverage data-driven insights to refine strategies and maximize the impact of marketing efforts.
+
 ## Key Features
 
 - Build LLM-based agents with [models supported in Vertex AI's Model Garden](https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/available-models)
@@ -11,6 +28,19 @@
 - Generate refined marketing brief that includes e.g., campaign concepts, taglines, messaging angles, key insights, etc.
 - Draft ad creatives (e.g., image and video) based on campaign themes or specific prompts
 - Compile trends, insights, and campaign research into a comprehensive report
+
+
+## Example usage
+
+When interacting with the agent users can:
+- Upload a PDF and get structured data outputs
+- Query for general trends that are popular in various locations
+- Broad research on new marketing ideas, leveraging web searching tools
+- Generate new images based on insights from web searching or trend tool use
+
+<video width="420" controls>
+  <source src="TIA_trailer.mp4" type="video/mp4">
+</video>
 
 ## How to use this repo
 
