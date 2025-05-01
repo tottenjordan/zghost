@@ -39,7 +39,7 @@ When interacting with the agent users can:
 - Generate new images based on insights from web searching or trend tool use
 
 <video width="420" controls>
-  <source src="TIA_trailer.mp4" type="video/mp4">
+  <source src="./TIA_trailer.mp4" type="video/mp4">
 </video>
 
 ## How to use this repo
