@@ -10,7 +10,7 @@ Also make sure that the YouTube videos are generally less than {TARGET_YT_DURATI
 
 """
 
-# Limit your google searches to {MAX_GOOGLE_SEARCHES_PER_REGION} per region. 
+# Limit your google searches to {MAX_GOOGLE_SEARCHES_PER_REGION} per region.
 
 search_research_insights_prompt = """
 Following the steps below to conduct research and better understand the marketing campaign guide and target product: {campaign_guide.target_product}
@@ -31,7 +31,7 @@ Follow these steps:
 
 {campaign_guide.target_audience}
 
-3) Use the `query_web` tool to peform a Google Search for insights related to the target product: {campaign_guide.target_product}.
+3) Use the `query_web` tool to perform a Google Search for insights related to the target product: {campaign_guide.target_product}.
 4) Use the `query_youtube_api` tool to find videos related to the target product: {campaign_guide.target_product}, and target audiences
 5) Use the `analyze_youtube_videos` tool to understand the videos found in the previous step and note key insights from your research that will later be used to produce a detailed marketing campaign brief
 

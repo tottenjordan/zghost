@@ -41,8 +41,4 @@ Note how to fill the fields out:
     key_product_insights: str -> Considering the guide, how does this trend intersect with the product?
 """
 
-unified_trends_instructions = (
-    broad_instructions
-    + get_youtube_trends_prompt
-    # + trends_generation_instructions
-)
+unified_trends_instructions = broad_instructions + get_youtube_trends_prompt

@@ -12,9 +12,9 @@ from .prompts import unified_image_video_instructions
 from google.genai import types
 
 
-image_generation_agent = Agent(
+ad_content_generator_agent = Agent(
     model="gemini-2.0-flash-001",
-    name="image_generation_agent",
+    name="ad_content_generator_agent",
     instruction=unified_image_video_instructions,
     tools=[
         generate_image,
