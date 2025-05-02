@@ -16,6 +16,7 @@ client = genai.Client()
 
 def generate_image(prompt: str, tool_context: ToolContext, number_of_images: int = 1):
     """Generates an image based on the prompt.
+    
     Args:
         prompt (str): The prompt to generate the image from.
         tool_context (ToolContext): The tool context.
@@ -97,7 +98,8 @@ def generate_video(
     negative_prompt: str = "",
     existing_image_filename: str = "",
 ):
-    """Generates an image based on the prompt.
+    """Generates a video based on the prompt.
+
     Args:
         prompt (str): The prompt to generate the video from.
         tool_context (ToolContext): The tool context.

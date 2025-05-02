@@ -1,12 +1,13 @@
-N_YOUTUBE_TREND_VIDEOS = 5
+N_YOUTUBE_TREND_VIDEOS = 3
 TARGET_YT_DURATION = "5 minutes"
-MAX_YT_DURATION = "10 minutes"
+MAX_YT_DURATION = "7 minutes"
 
 broad_instructions = f"""
 Use this agent when the user wants to find trending content on YouTube.
 Make sure that the duration of the YouTube videos you analyze are generally less than {TARGET_YT_DURATION}. If a video is longer than {MAX_YT_DURATION}, skip it.
 By the end of your analysis you should have analyzed {N_YOUTUBE_TREND_VIDEOS} videos in total.
-Always cite your sources from the web and Youtube
+Always cite your sources from the web and Youtube.
+
 """
 
 get_youtube_trends_prompt = """
@@ -19,7 +20,8 @@ Remember: these themes don't have to be directly related to {campaign_guide.targ
 4) For each trending video, suggest how it could possibly relate to the {campaign_guide.target_product} in a marketing campaign.
 5) Use the `call_trends_generator_agent` tool to add any trends from YouTube to the structured `trends` in the session state.
 
-Lastly, after calling the `call_trends_generator_agent` tool, transfer back to the parent agent
+Lastly, after calling the `call_trends_generator_agent` tool, transfer back to the parent agent.
+
 """
 
 trends_generation_prompt = """

@@ -56,7 +56,8 @@ trends_generator_agent = Agent(
 
 async def call_trends_generator_agent(question: str, tool_context: ToolContext):
     """
-    Tool to call the insights generation agent.
+    Tool to call the trends generation agent.
+
     Question: The question to ask the agent, use the tool_context to extract the following schema:
         trend_title: str -> Come up with a unique title for the trend
         trend_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
@@ -86,6 +87,7 @@ def get_youtube_trends(
     max_results: int = 5,
 ) -> dict:
     """
+    Makes request to YouTube Data API for most popular videos in a given region.
     Returns a dictionary of videos that match the API request parameters e.g., trending videos
 
     Args:
