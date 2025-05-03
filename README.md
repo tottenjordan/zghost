@@ -423,3 +423,17 @@ youtube_client = googleapiclient.discovery.build(
 ```
  
 </details>
+
+## CI And Testing
+
+Using `pytest`, users can test for tool coverage as well as Agent evaluations.
+
+More detail on agent evaluations [can be found here](https://google.github.io/adk-docs/evaluate/#2-pytest-run-tests-programmatically), along with how to run a `pytest` eval.
+
+#### Running `pytest`
+
+From the project root, run:
+
+```bash
+pytest tests/*.py
+```

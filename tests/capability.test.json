@@ -1,0 +1,13 @@
+[
+    {
+        "query": "What can you do?",
+        "expected_tool_use": [],
+        "expected_intermediate_agent_responses": [
+            {
+                "author": "marketing_idea_generator_agent",
+                "text": "Hello! I'm your AI Marketing Research & Strategy Assistant. I can help you develop comprehensive marketing campaigns by providing insights, creative ideas, and trend analysis.\n\nTo get started, do you have a marketing campaign guide you can share? It could be a URL, a PDF, or even just the text of the guide.\n\nFor example, you could say:\n\n*   \"I have a campaign guide at [URL].\"\n*   \"Here's the text of my campaign guide: [paste text here].\"\n*   \"I want to create a campaign for [product/service] targeting [target audience] with a budget of [budget].\"\n\nOnce I have your guide, I can extract the key information and then use my other tools to help you brainstorm ideas, research trends, and even generate ad content!\n"
+            }
+        ],
+        "reference": "Agent marketing_idea_generator_agent setting default values for state variables: campaign_guide, trends, insights."
+    }
+]
