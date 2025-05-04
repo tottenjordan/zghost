@@ -4,9 +4,16 @@
         "googleapiclient",
         "googlesearch",
         "imagen",
+        "ipykernel",
+        "jambands",
         "KHTML",
         "MNGR",
+        "pipx",
         "secretmanager",
-        "trafilatura"
+        "trafilatura",
+        "Uvicorn",
+        "vertexai",
+        "virtualenv",
+        "wortz"
     ]
 }

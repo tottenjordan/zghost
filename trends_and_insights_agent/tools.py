@@ -35,7 +35,7 @@ from .common_agents.marketing_guide_data_generator.agent import (
 
 # clients
 sm_client = sm.SecretManagerServiceClient()
-SECRET_ID = f'projects/{os.environ.get("GOOGLE_CLOUD_PROJECT_NUMBER")}/secrets/{os.environ.get("YT_SECRET_MNGR_NAME")}'  # yt-data-api
+SECRET_ID = f'projects/{os.environ["GOOGLE_CLOUD_PROJECT_NUMBER"]}/secrets/{os.environ["YT_SECRET_MNGR_NAME"]}'  # yt-data-api
 SECRET_VERSION = "{}/versions/1".format(SECRET_ID)
 response = sm_client.access_secret_version(request={"name": SECRET_VERSION})
 YOUTUBE_DATA_API_KEY = response.payload.data.decode("UTF-8")

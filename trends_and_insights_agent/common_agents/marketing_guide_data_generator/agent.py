@@ -1,8 +1,8 @@
 from google.adk.agents import Agent
 from .prompts import guide_data_extraction_instructions
 from .tools import (
-    # get_marketing_guide, 
-    MarketingCampaignGuide
+    # get_marketing_guide,
+    MarketingCampaignGuide,
 )
 from google.genai import types
 from ...prompts import global_instructions

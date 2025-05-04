@@ -437,3 +437,12 @@ From the project root, run:
 ```bash
 pytest tests/*.py
 ```
+
+## Deployment
+
+The agent can be deployed in a couple of different ways
+
+1. Agent Engine
+   * Here's an end-to-end guide on deploying
+   * Be sure to first run the `setup_ae_sm_access.sh` script to give Agent Engine access to Secret Manager
+2. Cloud Run
