@@ -46,6 +46,13 @@ Styles: Overall aesthetic. Consider using specific film style keywords e.g. horr
 Cinematic effects: e.g. double exposure, projected, glitch camera effect
 """
 
+safety_instructions = """
+Please make sure the generated prompts for image and video generation adheres to Google's AI safety standards.
+"""
+
 unified_image_video_instructions = (
-    broad_instructions + image_generation_instructions + video_generation_tips
+    broad_instructions
+    + image_generation_instructions
+    + video_generation_tips
+    + safety_instructions
 )
