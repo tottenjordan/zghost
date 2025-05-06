@@ -7,8 +7,7 @@ readme = "README.md"
 package-mode = true 
 
 [tool.poetry.dependencies]
-python = "^3.12"
-ipython = "^9.1.0"
+python = ">=3.11,<4.0"
 jupyter = "^1.1.1"
 google-genai = "^1.10.0"
 pillow = "^11.1.0"
@@ -21,6 +20,7 @@ aiohttp = "^3.11.16"
 markdown-pdf = "^1.7"
 googlenews = "^1.6.15"
 pytest = "^8.3.5"
+ipython = "^9.2.0"
 
 
 
