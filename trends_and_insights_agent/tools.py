@@ -50,10 +50,13 @@ client = Client()
 async def call_guide_generation_agent(
     question: str, tool_context: ToolContext, file_path: str
 ):
-    """Tool to call the campaign guide data generation agent.
-    Question: The question to ask the agent.
-    tool_context: The tool context.
-    file_path: The path to the file to load, this is the pdf report.
+    """
+    Tool to call the campaign guide data generation agent.
+    
+    Args:
+        Question: The question to ask the agent.
+        tool_context: The tool context.
+        file_path: The path to the file to load, this is the pdf report.
     """
     agent_tool = AgentTool(campaign_guide_data_generation_agent)
     agent_name = tool_context.agent_name
