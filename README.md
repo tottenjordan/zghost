@@ -38,10 +38,6 @@ When interacting with the agent users can:
 - Broad research on new marketing ideas, leveraging web searching tools
 - Generate new images based on insights from web searching or trend tool use
 
-<video width="420" controls>
-  <source src="https://github.com/tottenjordan/zghost/raw/refs/heads/main/TIA_trailer.mp4" type="video/mp4">
-</video>
-
 ## How to use this repo
 
 1. Clone this repo (to local or Vertex AI Workbench Instance)
@@ -202,7 +198,7 @@ echo $BUCKET
 3. launch the adk developer UI
 
 ```bash
-adk web .
+adk web
 ```
 
 4. To start interacting with your agents, open the provided `localhost` link (e.g., `http://localhost:8000`) and select an agent from the drop-down (top left)
@@ -237,11 +233,11 @@ adk deploy cloud_run --help
 
 ### Video walkthrough
 
-> TODO: embed screencast demonstrating basic functionality and intended user journey
+[![TIA Video Demo](media/vid_demo_teaser.png)](https://www.youtube.com/watch?v=rDqFdTJfsFA "TIA Video Demo")
 
 # Tools
 
-> TODO: describe supported tools
+![Tool and Agent Architecture](media/agent_tool_arch.png)
 
 ## Google Search
 
