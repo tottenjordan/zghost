@@ -46,7 +46,7 @@ def generate_image(prompt: str, tool_context: ToolContext, number_of_images: int
 
 
 def upload_file_to_gcs(
-    file_path: str, file_data: bytes, gcs_bucket: str = os.environ.get("BUCKET")
+    file_path: str, file_data: bytes, gcs_bucket: str = os.environ["BUCKET"]
 ):
     """
     Uploads a file to a GCS bucket.
@@ -116,11 +116,11 @@ def generate_video(
     gen_config = GenerateVideosConfig(
         aspect_ratio=aspect_ratio,
         number_of_videos=number_of_videos,
-        output_gcs_uri=os.environ.get("BUCKET"),
+        output_gcs_uri=os.environ["BUCKET"],
         negative_prompt=negative_prompt,
     )
     if existing_image_filename is not "":
-        gcs_location = f"{os.environ.get('BUCKET')}/{existing_image_filename}"
+        gcs_location = f"{os.environ['BUCKET']}/{existing_image_filename}"
         existing_image = types.Image(gcs_uri=gcs_location, mime_type="image/png")
         operation = client.models.generate_videos(
             model="veo-2.0-generate-001",

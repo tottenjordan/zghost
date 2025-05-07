@@ -11,7 +11,7 @@ from ...tools import (
 
 from .tools import get_youtube_trends, call_trends_generator_agent
 from google.adk.tools import LongRunningFunctionTool
-
+from ...utils import MODEL
 
 # official_tooling = [google_search]
 tools = [
@@ -23,7 +23,7 @@ tools = [
 ]
 
 trends_and_insights_agent = Agent(
-    model="gemini-2.0-flash",
+    model=MODEL,
     name="trends_and_insights_agent",
     global_instruction=global_instructions,
     instruction=unified_trends_instructions,

@@ -6,6 +6,7 @@ from google.genai import types
 from .prompts import trends_generation_prompt
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
+import logging
 
 import googleapiclient.discovery
 from google.cloud import secretmanager as sm
@@ -13,7 +14,7 @@ from google.cloud import secretmanager as sm
 
 # clients
 sm_client = sm.SecretManagerServiceClient()
-SECRET_ID = f'projects/{os.environ.get("GOOGLE_CLOUD_PROJECT_NUMBER")}/secrets/{os.environ.get("YT_SECRET_MNGR_NAME")}'  # yt-data-api
+SECRET_ID = f'projects/{os.environ["GOOGLE_CLOUD_PROJECT_NUMBER"]}/secrets/{os.environ["YT_SECRET_MNGR_NAME"]}'  # yt-data-api
 SECRET_VERSION = "{}/versions/1".format(SECRET_ID)
 response = sm_client.access_secret_version(request={"name": SECRET_VERSION})
 YOUTUBE_DATA_API_KEY = response.payload.data.decode("UTF-8")
@@ -76,8 +77,10 @@ async def call_trends_generator_agent(question: str, tool_context: ToolContext):
     trends = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-    if existing_trends is not {'trends': []}:
-        trends["trends"].extend(existing_trends)
+    logging.info(f"Trends: {trends}")
+    logging.info(f"Existing trends: {existing_trends}")
+    if existing_trends is not {"trends": []}:
+        trends["trends"].extend(existing_trends["trends"])
     tool_context.state["trends"] = trends
     return {"status": "ok"}
 

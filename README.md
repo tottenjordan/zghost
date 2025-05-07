@@ -146,7 +146,7 @@ nano .env
 ```bash
 GOOGLE_GENAI_USE_VERTEXAI=1
 GOOGLE_CLOUD_PROJECT=YOUR_GCP_PROJECT_ID
-GOOGLE_CLOUD_PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER # e.g., 1234756
+PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER # e.g., 1234756
 GOOGLE_CLOUD_LOCATION=YOUR_LOCATION # e.g., us-central1
 YT_SECRET_MNGR_NAME=YOUR_SECRET_NAME # e.g., yt-data-api
 GOOGLE_API_KEY=None # Optional
@@ -423,3 +423,50 @@ youtube_client = googleapiclient.discovery.build(
 ```
  
 </details>
+
+## CI And Testing
+
+Using `pytest`, users can test for tool coverage as well as Agent evaluations.
+
+More detail on agent evaluations [can be found here](https://google.github.io/adk-docs/evaluate/#2-pytest-run-tests-programmatically), along with how to run a `pytest` eval.
+
+#### Running `pytest`
+
+From the project root, run:
+
+```bash
+pytest tests/*.py
+```
+
+## Deployment
+
+The agent can be deployed in a couple of different ways
+
+1. Agent Engine
+   * Here's an end-to-end guide on deploying
+   * Be sure to first run the `setup_ae_sm_access.sh` script to give Agent Engine access to Secret Manager
+   * Run the [deployment guide](.notebooks/deployment_guide.ipynb) to deploy the agent
+2. Cloud Run
+   * Run `deploy_to_cloud_run.sh`
+   * Note this runs unit tests prior to deploying
+
+Script for Cloud Run:
+
+```bash
+#!/bin/bash
+source trends_and_insights_agent/.env
+
+# run unit tests before deploying
+pytest tests/*.py
+
+# write requirements.txt to the agent folder
+poetry export --without-hashes --format=requirements.txt >   trends_and_insights_agent/requirements.txt
+
+#deploy to cloud run
+adk deploy cloud_run \
+  --project=$GOOGLE_CLOUD_PROJECT \
+  --region=$GOOGLE_CLOUD_LOCATION \
+  --service_name='trends-and-insights-agent' \
+  --with_ui \
+  trends_and_insights_agent/
+```

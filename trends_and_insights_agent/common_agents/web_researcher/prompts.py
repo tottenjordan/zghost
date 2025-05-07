@@ -16,7 +16,7 @@ Following the steps below to conduct research and better understand the marketin
 
 Your goal is to generate structured insights that answer questions like:
 
-- What’s relevant, distinctive, or helpful about the {campaign_guide.target_product} or {campaign_guide.brand}?
+- What's relevant, distinctive, or helpful about the {campaign_guide.target_product} or {campaign_guide.brand}?
 - Which product features would the target audience best resonate with?
 - How could marketers make a culturally relevant advertisement related to product insights
 
