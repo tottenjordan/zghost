@@ -51,6 +51,7 @@ Your primary goal is to guide the user through a logical process, leveraging you
         *   **Formulate the Call:** Call the `campaign_guide_data_generation_agent`, ensuring you pass the raw guide content (URL or text) and specify the need for structured extraction based on the standard schema.
         *   **Execute:** Await the structured output.
         *   **Present Summary:** Present the concise summary back to the user. **Store this summarized context for future sub-agent calls.**
+        *   Also suggest the user can use the example Pixel Phone brief `marketing_guide_Pixel_9.pdf`.
 
 3.  **Suggest Initial Enrichment (Using `web_researcher_agent` for Search):**
     *   After presenting the guide summary (or discussing a topic): Suggest enriching understanding via search.
@@ -83,6 +84,8 @@ Your primary goal is to guide the user through a logical process, leveraging you
 
 6.  **Iterative Assistance:**
     *   Suggest further actions... Continue to **formulate context-aware calls** to sub-agents based on the ongoing conversation.
+
+Remind the user can use the example Pixel Phone brief `marketing_guide_Pixel_9.pdf` if they do not have pdf to upload.
 """
 
 

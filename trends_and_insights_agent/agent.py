@@ -16,11 +16,11 @@ from .common_agents.trend_assistant.agent import trends_and_insights_agent
 from .common_agents.ad_content_generator.agent import ad_content_generator_agent
 from .prompts import root_agent_instructions, global_instructions
 
-from .utils import campaign_callback_function
+from .utils import campaign_callback_function, MODEL
 
 
 root_agent = Agent(
-    model="gemini-2.0-flash",
+    model=MODEL,
     name="marketing_idea_generator_agent",
     instruction=root_agent_instructions,
     global_instruction=global_instructions,

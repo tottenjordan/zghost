@@ -6,7 +6,6 @@ MAX_YT_DURATION = "7 minutes"
 broad_instructions = f"""
 Use this agent when the user wants to find trending content on YouTube.
 When you display trending videos to the user. Be sure to display the top {N_YOUTUBE_TREND_VIDEOS} trending videos from YouTube.
-
 """
 
 get_youtube_trends_prompt = """

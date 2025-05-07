@@ -6,6 +6,7 @@ from google.genai import types
 from .prompts import trends_generation_prompt
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
+import logging
 
 import googleapiclient.discovery
 from google.cloud import secretmanager as sm
@@ -76,6 +77,8 @@ async def call_trends_generator_agent(question: str, tool_context: ToolContext):
     trends = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
+    logging.info(f"Trends: {trends}")
+    logging.info(f"Existing trends: {existing_trends}")
     if existing_trends is not {"trends": []}:
         trends["trends"].extend(existing_trends["trends"])
     tool_context.state["trends"] = trends

@@ -10,6 +10,7 @@ from ...tools import (
     query_web,
     analyze_youtube_videos,
 )
+from ...utils import MODEL
 
 tools = [
     LongRunningFunctionTool(analyze_youtube_videos),
@@ -18,7 +19,7 @@ tools = [
     call_insights_generation_agent,
 ]
 web_researcher_agent = Agent(
-    model="gemini-2.0-flash-001",
+    model=MODEL,
     name="web_researcher_agent",
     global_instruction=global_instructions,
     instruction=unified_insights_prompt,

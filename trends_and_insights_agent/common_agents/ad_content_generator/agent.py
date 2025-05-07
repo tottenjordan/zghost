@@ -5,10 +5,11 @@ from google.adk.tools import LongRunningFunctionTool
 from .prompts import unified_image_video_instructions
 from google.genai import types
 from ...prompts import global_instructions
+from ...utils import MODEL
 
 
 ad_content_generator_agent = Agent(
-    model="gemini-2.0-flash",
+    model=MODEL,
     name="ad_content_generator_agent",
     global_instruction=global_instructions,
     instruction=unified_image_video_instructions,

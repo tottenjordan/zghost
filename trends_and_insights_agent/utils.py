@@ -8,6 +8,7 @@ from typing import Optional
 from google.adk.agents.callback_context import CallbackContext
 from google.genai import types
 
+MODEL = 'gemini-2.0-flash'
 
 def upload_file_to_gcs(
     file_path: str,
