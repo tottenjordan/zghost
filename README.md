@@ -221,7 +221,7 @@ INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 
 ```bash
 lsof -i :8000
-kill -9 :8000
+kill -9 $PID
 lsof -i :8000
 ```
 

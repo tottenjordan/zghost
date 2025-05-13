@@ -8,7 +8,7 @@ from typing import Optional
 from google.adk.agents.callback_context import CallbackContext
 from google.genai import types
 
-MODEL = 'gemini-2.0-flash'
+MODEL = 'gemini-2.0-flash-001'
 
 def upload_file_to_gcs(
     file_path: str,
@@ -52,7 +52,6 @@ def campaign_callback_function(
     campaign_guide = callback_context.state.get("campaign_guide")
     trends = callback_context.state.get("trends")
     insights = callback_context.state.get("insights")
-    # product_insights = callback_context.state.get("product_insights")
     return_content = None  # placeholder for optional returned parts
     if campaign_guide is None:
         return_content = "campaign_guide"
@@ -73,13 +72,6 @@ def campaign_callback_function(
             return_content = "insights"
         else:
             return_content += ", insights"
-
-    # if product_insights is None:
-    #     callback_context.state["product_insights"] = {"product_insights": []}
-    #     if return_content is None:
-    #         return_content = "product_insights"
-    #     else:
-    #         return_content += ", product_insights"
 
     if return_content is not None:
         return types.Content(
