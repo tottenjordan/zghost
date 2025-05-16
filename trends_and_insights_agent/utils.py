@@ -38,8 +38,11 @@ def campaign_callback_function(
     """
     This sets default values for:
         *   campaign_guide
-        *   trends
+        *   search_trends
+        *   yt_trends
         *   insights
+        *   target_search_trends
+        *   target_yt_trends
     """
 
     agent_name = callback_context.agent_name
@@ -49,9 +52,13 @@ def campaign_callback_function(
     logging.info(f"[Callback] Current State: {current_state}")
 
     # Check the condition in session state dictionary
-    campaign_guide = callback_context.state.get("campaign_guide")
-    trends = callback_context.state.get("trends")
+    yt_trends = callback_context.state.get("yt_trends")
+    search_trends = callback_context.state.get("search_trends")
+    target_yt_trends = callback_context.state.get("target_yt_trends")
+    target_search_trends = callback_context.state.get("target_search_trends")
     insights = callback_context.state.get("insights")
+    campaign_guide = callback_context.state.get("campaign_guide")
+
     return_content = None  # placeholder for optional returned parts
     if campaign_guide is None:
         return_content = "campaign_guide"
@@ -59,12 +66,19 @@ def campaign_callback_function(
             "campaign_guide": "not yet populated"
         }
 
-    if trends is None:
-        callback_context.state["trends"] = {"trends": []}
+    if search_trends is None:
+        callback_context.state["search_trends"] = {"search_trends": []}
         if return_content is None:
-            return_content = "trends"
+            return_content = "search_trends"
         else:
-            return_content += ", trends"
+            return_content += ", search_trends"
+
+    if yt_trends is None:
+        callback_context.state["yt_trends"] = {"yt_trends": []}
+        if return_content is None:
+            return_content = "yt_trends"
+        else:
+            return_content += ", yt_trends"
 
     if insights is None:
         callback_context.state["insights"] = {"insights": []}
@@ -72,6 +86,20 @@ def campaign_callback_function(
             return_content = "insights"
         else:
             return_content += ", insights"
+
+    if target_search_trends is None:
+        callback_context.state["target_search_trends"] = {"target_search_trends": []}
+        if return_content is None:
+            return_content = "target_search_trends"
+        else:
+            return_content += ", target_search_trends"
+
+    if target_yt_trends is None:
+        callback_context.state["target_yt_trends"] = {"target_yt_trends": []}
+        if return_content is None:
+            return_content = "target_yt_trends"
+        else:
+            return_content += ", target_yt_trends"
 
     if return_content is not None:
         return types.Content(

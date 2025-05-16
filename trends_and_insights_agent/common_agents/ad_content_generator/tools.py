@@ -119,7 +119,7 @@ def generate_video(
         output_gcs_uri=os.environ["BUCKET"],
         negative_prompt=negative_prompt,
     )
-    if existing_image_filename is not "":
+    if existing_image_filename != "":
         gcs_location = f"{os.environ['BUCKET']}/{existing_image_filename}"
         existing_image = types.Image(gcs_uri=gcs_location, mime_type="image/png")
         operation = client.models.generate_videos(

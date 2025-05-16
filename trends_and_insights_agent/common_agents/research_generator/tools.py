@@ -3,7 +3,6 @@ import uuid
 import shutil
 import logging
 
-# from typing import Union, Optional
 from markdown_pdf import MarkdownPdf, Section
 
 from google.adk.tools import ToolContext
@@ -12,8 +11,6 @@ from google import genai
 
 logging.basicConfig(level=logging.INFO)
 client = genai.Client()
-
-# from ...utils import upload_file_to_gcs
 
 
 def generate_research_pdf(
@@ -25,7 +22,7 @@ def generate_research_pdf(
     Make sure the PDF is formatted correctly with human readable characters.
 
     Args:
-        markdown_string: a string in Markdown format that clearly presents the session state: `campaign_guide`, `trends`, and `insights`
+        markdown_string: a string in Markdown format that clearly presents the session state: `campaign_guide`, `search_trends`, `yt_trends`, and `insights`
         tool_context (ToolContext): The tool context.
 
     Returns:

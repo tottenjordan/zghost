@@ -81,9 +81,11 @@ poetry env use 3.12
 
 
 <details>
-  <summary>Enable Google cloud APIs</summary>
+  <summary>Authenticate and Enable Google Cloud APIs</summary>
 
 ```bash
+gcloud auth application-default login
+
 gcloud services enable artifactregistry.googleapis.com \
     bigquery.googleapis.com \
     logging.googleapis.com \
@@ -94,6 +96,16 @@ gcloud services enable artifactregistry.googleapis.com \
     secretmanager.googleapis.com \
     aiplatform.googleapis.com
 ```
+
+</details>
+
+
+<details>
+  <summary>Create and store YouTube API key</summary>
+
+1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
+
+2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (if you choose a different name, pass this to the `YT_SECRET_MNGR_NAME` in your `.env` file). See [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version) or step-by-step guidance
 
 </details>
 

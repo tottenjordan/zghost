@@ -1,19 +1,19 @@
 from pydantic import BaseModel
 
 
-# MarketingCampaignBrief
-class MarketingCampaignGuide(BaseModel):
-    "Data model for marketing campaign guide."
+# # MarketingCampaignBrief
+# class MarketingCampaignGuide(BaseModel):
+#     "Data model for marketing campaign guide."
 
-    campaign_name: str
-    brand: str
-    target_product: str
-    target_audience: str
-    target_regions: list[str]
-    campaign_objectives: list[str]
-    media_strategy: list[str]
-    key_insights: list[str]
-    campaign_highlights: list[str]
+#     campaign_name: str
+#     brand: str
+#     target_product: str
+#     target_audience: str
+#     target_regions: list[str]
+#     campaign_objectives: list[str]
+#     media_strategy: list[str]
+#     key_insights: list[str]
+#     campaign_highlights: list[str]
 
 
 # get_marketing_brief

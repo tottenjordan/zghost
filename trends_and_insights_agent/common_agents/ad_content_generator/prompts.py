@@ -1,15 +1,11 @@
 broad_instructions = """
 Make sure you utilize the information gathered from the research:
 
-  * Include `insights` from the `web_researcher_agent` agent:
+  * Include `insights` from the `web_researcher_agent` agent
 
-  {insights}
+  * Include `search_trends` and `yt_trends` from the `trends_and_insights_agent` agent
 
-  * Include `trends` from the `trends_and_insights_agent` agent:
-
-  {trends}
-
-Try to use the intersections of concepts from the `trends` and the `campaign_guide`. 
+Try to find the intersections of concepts from the `campaign_guide`, context from the `search_trends`, and themes from the `yt_trends` 
 It's OK if a trend is not directly related to the campaign guide. 
 Just be sure to clarify when a trend is either a broader cultural trends vs a trend directly related to the campaign guide.
 If a trend is a broader cultural trend, think of creative ways to combine it's themes with the target product: {campaign_guide.target_product}
@@ -18,9 +14,7 @@ Do this to come up with creative eye-catching ads for the target market.
 """
 
 image_generation_instructions = """
-Be sure to reference the marketing campaign guide:
-
-{campaign_guide}
+Be sure to reference the marketing `campaign_guide`
 
 You are an expert at Imagen 3.0.
 Given the marketing campaign guide, create an Instagram ad-copy for each target market: {campaign_guide.target_regions}
@@ -32,9 +26,7 @@ When loading videos, you can only load one at a time.
 """
 
 video_generation_tips = """
-Be sure to reference the marketing campaign guide:
-
-{campaign_guide}
+Be sure to reference the marketing `campaign_guide`:
 
 Camera Motion: What the camera is doing e.g. POV shot, Aerial View, Tracking Drone view, Tracking Shot
 Composition: How the shot is framed. This is often relative to the subject e.g. wide shot, close-up, low angle
