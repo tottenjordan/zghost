@@ -1,5 +1,48 @@
 # Guided Search with Google and YouTube
 
+This document shows different ways to use the underlying Google Search libraries and YouTube APIs. To simplifiy initial onboarding, we've made some of these parameters configurable only to the user :angel:  / developer :neckbeard: , as opposed to giving the LLM-based agents... *total control* :smiling_imp:
+
+For example, consider the below function we could use as a tool for getting trending videos from YouTube:
+
+```python
+def get_youtube_trends(region_code: str, max_results: int = 5,) -> dict:
+    """
+    Makes request to YouTube Data API for most popular videos in a given region.
+    Returns a dictionary of videos that match the API request parameters e.g., trending videos
+
+    Args:
+        region_code (str): selects a video chart available in the specified region. Values are ISO 3166-1 alpha-2 country codes.
+            For example, the region_code for the United Kingdom would be 'GB', whereas 'US' would represent The United States.
+        max_results (int): The number of video results to return.
+
+    Returns:
+        dict: The response from the YouTube Data API.
+    """
+
+    request = youtube_client.videos().list(
+        part="snippet,contentDetails,statistics",
+        chart="mostPopular",
+        regionCode=region_code,
+        maxResults=max_results,
+    )
+    trend_response = request.execute()
+    return trend_response
+```
+
+**We're giving the LLM-based agent the ability to change the `region_code` and `max_results`. Why?**
+* This allows the agent to easily make seperate API calls, each for a different region. 
+* It could also change the number of results based off some user interaction e.g., :information_desk_person: "actually can I see the top 50 trending videos?"
+   
+   > Having a clear and informative doc strings goes a long way here! 
+
+**We've hard-coded the `chart` and `part` parameters. Why?**
+* We don't need the agent to do all the things the API can do. It just needs to focus on the *trending videos* --> `"mostPopular"`
+* We want it to always return the `"snippet,contentDetails,statistics"`
+
+  > We're mitigating some risk of it deviating too far from our expectations... mainly because we're more interested in how it deviates from other expectations :wink: 
+
+
+
 ## Google Search
 
 `googlesearch-python` is a Python library for searching Google
