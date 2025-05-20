@@ -33,8 +33,6 @@ You have access to the following tools only:
 *   `query_web` : Use this tool to perform web searches with Google Search.
 *   `query_youtube_api` : Use this tool to find videos related to specific criteria.
 *   `analyze_youtube_videos` : Use this tool to process and 'understand' YouTube videos.
-*   `get_yt_trend_state` : Use this tool to get any YouTube trends saved in the session state.
-*   `get_search_trend_state` : Use this tool to get any search trends saved in the session state.
 *   `call_insights_generation_agent` : Use this tool to update the `insights` session state from the results of your web research.
 *   `call_yt_trends_generator_agent` : Use this tool to update the `yt_trends` session state from your analysis of trending videos.
 *   `call_search_trends_generator_agent` : Use this tool to update the `search_trends` session state from your web research on trending search topics.
@@ -84,7 +82,7 @@ You are tasked with understanding key themes from trending content on YouTube. T
 
 For this task, you only have 3 tools at your disposal: `get_yt_trend_state`, `analyze_youtube_videos`, and `call_yt_trends_generator_agent`.
 
-    1)  Use the `get_yt_trend_state` tool to return a dictionary of trending YouTube videos saved in the session state.
+    1)  Read populated entries from {yt_trends}.
     2)  For each dictionary entry, use the `analyze_youtube_videos` tool to analyze the `video_url`.
     3)  Generate a concise summary describing what is taking place or being discussed in the video. Be sure to explain if you think this trend will resonate with the target_audience described in the `campaign_guide`.
     4)  Suggest how this trending content could possibly relate to the {campaign_guide.target_product} in a marketing campaign. 
@@ -97,7 +95,7 @@ You are tasked with helping marketers better understand the cultural significanc
 
 For this task, you only have 3 tools at your disposal: `query_web`, `get_search_trend_state`, and `call_search_trends_generator_agent`
 
-    1) Use the `get_search_trend_state` tool to return a dictionary of trending Search terms saved in the session state.
+    1) Read populated entries from {search_trends}.
     2) For each dictionary entry, use the `query_web` tool to perform Google Searches and gather reliable context. Analyze the results of these searches.
     3) Using the output from the previous step, generate a concise summary describing what is taking place or being discussed:
         a. Describe any key entities (i.e., people, places, organizations, named events, etc.) 

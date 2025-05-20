@@ -3,6 +3,7 @@
         "genai",
         "googleapiclient",
         "googlesearch",
+        "gtrends",
         "imagen",
         "ipykernel",
         "jambands",

@@ -23,7 +23,7 @@ You have access to the following tools only:
 As you access different sets of trends and display them to the user, keep in mind the following: 
 *   When you display trending topics from Google Search to the user, be sure to display the top {N_SEARCH_TREND_TOPICS} topics. This is all that's available for Search Trends.
 *   When you display trending videos from YouTube to the user, be sure to display the top {N_YOUTUBE_TREND_VIDEOS} videos at first. However, we have more flexibility with YouTube Trends:
-        a. Inform the user you can retreive additional trending videos upon request. 
+        a. Inform the user you can retrieve additional trending videos upon request. 
         b. If they want to see more trending videos, you'll need to adjust the 'max_results' in the `get_youtube_trends` function call.
 *   Also remember, you are not gathering insight or conducting web research for the trends. You are just displaying the available trends and capturing the user's selection.
 
@@ -36,7 +36,7 @@ For the Search Trends, you only have two tools at your disposal: `get_daily_gtre
 Your goal is to help the user understand the top trending terms on Google Search for the current week:
 
 - **Retrieve and Display Search Trends:** Use the `get_daily_gtrends` tool to extract the latest Search Trends. This tool produces a formatted markdown table. Display this markdown table to the user **in markdown format**.
-- **Gather User Selection(s):** Work with the user to understand which trending topic(s) they'd like to proceed with. Clearly state the user can choose one or more topics. Do not proceed to the next step unil the user has selected at least one topic.
+- **Gather User Selection(s):** Work with the user to understand which trending topic(s) they'd like to proceed with. Clearly state the user can choose one or more topics. Do not proceed to the next step until the user has selected at least one topic.
 - **Update Session State:** Use the `call_target_search_trend_agent` tool to update the session state with the `term`, `rank`, and `refresh_date` from the user-selected Search Trend(s) provided in the previous step.
 
 Once this user journey is complete, inform the user you will now switch to displaying YouTube Trends.
@@ -48,10 +48,10 @@ For the YouTube Trends, you only have two tools at your disposal: `get_youtube_t
 Your goal is to help the user understand the top trending videos on YouTube for a given region:
 
 - **Retrieve and Display YouTube Trends:** Use the `get_youtube_trends` tool to extract the top trending videos on YouTube for a given target region. Display each trending video's title, duration, and URL to the user.
-- **Gather User Selection(s):** Ask the user which trending video(s) to proceed with. They can choose more than one trending video if they prefer. Also remind them you can retreive additional trending videos upon request. Don't proceed to the next step until the user has selected at least one trending video.
+- **Gather User Selection(s):** Ask the user which trending video(s) to proceed with. They can choose more than one trending video if they prefer. Also remind them you can retrieve additional trending videos upon request. Don't proceed to the next step until the user has selected at least one trending video.
 - **Update Session State:** For each user-selected video from the previous step, use the `call_target_yt_trend_agent` tool to populate the `target_yt_trends` session state.
 
-Once thes steps are complete and the session state is updated, reconfirm the selected trends with the user. If the user is satisfied, transfer to the root agent.
+Once these steps are complete and the session state is updated, reconfirm the selected trends with the user. If the user is satisfied, transfer to the root agent.
 """
 
 unified_target_trend_instructions = (
