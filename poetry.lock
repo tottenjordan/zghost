@@ -973,13 +973,13 @@ files = [
 
 [[package]]
 name = "google-adk"
-version = "0.3.0"
+version = "1.0.0"
 description = "Agent Development Kit"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "google_adk-0.3.0-py3-none-any.whl", hash = "sha256:98ea263b9804f687656355f306be921d451f1479fe18d0fd8ec0c3429e0b9662"},
-    {file = "google_adk-0.3.0.tar.gz", hash = "sha256:3f1c24a49edf92d146fd8a7f2b48b287e4ab82d5db98ed7cf1c3455307e22b8a"},
+    {file = "google_adk-1.0.0-py3-none-any.whl", hash = "sha256:b9409c87cf01cbeb6de31a7b2892556501ddb075642139d1b9762c7c714ef1d4"},
+    {file = "google_adk-1.0.0.tar.gz", hash = "sha256:9a9efadd93c86031ebae44646f01abc347a3ed28079e94989d54c0cb77e68872"},
 ]
 
 [package.dependencies]
@@ -991,7 +991,7 @@ google-cloud-aiplatform = ">=1.87.0"
 google-cloud-secret-manager = ">=2.22.0"
 google-cloud-speech = ">=2.30.0"
 google-cloud-storage = ">=2.18.0,<3.0.0"
-google-genai = ">=1.11.0"
+google-genai = ">=1.14.0"
 graphviz = ">=0.20.2"
 mcp = {version = ">=1.5.0", markers = "python_version >= \"3.10\""}
 opentelemetry-api = ">=1.31.0"
@@ -1005,10 +1005,10 @@ tzlocal = ">=5.3"
 uvicorn = ">=0.34.0"
 
 [package.extras]
-dev = ["flit (>=3.10.0)", "isort (>=6.0.0)", "pyink (>=24.10.0)", "pylint (>=2.6.0)"]
+dev = ["flit (>=3.10.0)", "isort (>=6.0.0)", "mypy (>=1.15.0)", "pyink (>=24.10.0)", "pylint (>=2.6.0)"]
 docs = ["autodoc_pydantic", "furo", "myst-parser", "sphinx", "sphinx-autodoc-typehints", "sphinx-rtd-theme"]
 eval = ["google-cloud-aiplatform[evaluation] (>=1.87.0)", "pandas (>=2.2.3)", "tabulate (>=0.9.0)"]
-extensions = ["anthropic (>=0.43.0)", "beautifulsoup4 (>=3.2.2)", "crewai[tools]", "docker (>=7.0.0)", "langgraph (>=0.2.60)", "litellm (>=1.63.11)", "llama-index-readers-file (>=0.4.0)", "lxml (>=5.3.0)"]
+extensions = ["anthropic (>=0.43.0)", "beautifulsoup4 (>=3.2.2)", "crewai[tools]", "docker (>=7.0.0)", "langgraph (>=0.2.60)", "litellm (>=1.63.11)", "llama-index-readers-file (>=0.4.0)", "lxml (>=5.3.0)", "toolbox-core (>=0.1.0)"]
 test = ["anthropic (>=0.43.0)", "langchain-community (>=0.3.17)", "langgraph (>=0.2.60)", "litellm (>=1.63.11)", "llama-index-readers-file (>=0.4.0)", "pytest (>=8.3.4)", "pytest-asyncio (>=0.25.0)", "pytest-mock (>=3.14.0)", "pytest-xdist (>=3.6.1)"]
 
 [[package]]
@@ -5272,4 +5272,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<4.0"
-content-hash = "88763bdd49dd5fcffb94c07339a4ab2450e2df5af971bd1a1474478d6f385e38"
+content-hash = "d68e63e6725a03dd0895c541918a7b3cb51bee8e32689d872cab40bb543259f2"

@@ -15,7 +15,7 @@ ad_content_generator_agent = Agent(
     instruction=unified_image_video_instructions,
     tools=[
         generate_image,
-        LongRunningFunctionTool(generate_video),
+        generate_video,
         load_artifacts,
     ],
     generate_content_config=types.GenerateContentConfig(

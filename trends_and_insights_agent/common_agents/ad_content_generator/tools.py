@@ -14,7 +14,7 @@ from google import genai
 client = genai.Client()
 
 
-def generate_image(prompt: str, tool_context: ToolContext, number_of_images: int = 1):
+async def generate_image(prompt: str, tool_context: ToolContext, number_of_images: int = 1):
     """Generates an image based on the prompt.
     
     Args:
@@ -36,7 +36,7 @@ def generate_image(prompt: str, tool_context: ToolContext, number_of_images: int
     for image_results in response.generated_images:
         image_bytes = image_results.image.image_bytes
         filename = uuid.uuid4()
-        tool_context.save_artifact(
+        await tool_context.save_artifact(
             f"{filename}.png",
             types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
         )
@@ -90,7 +90,7 @@ def download_blob(bucket_name, source_blob_name):
     return blob.download_as_bytes()
 
 
-def generate_video(
+async def generate_video(
     prompt: str,
     tool_context: "ToolContext",
     number_of_videos: int = 1,
@@ -148,7 +148,7 @@ def generate_video(
                 video_uri.replace(BUCKET, "")[1:],  # get rid of slash
             )
             print(f"The location for this video is here: {filename}.mp4")
-            tool_context.save_artifact(
+            await tool_context.save_artifact(
                 f"{filename}.mp4",
                 types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
             )

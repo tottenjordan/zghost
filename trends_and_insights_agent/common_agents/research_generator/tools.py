@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 client = genai.Client()
 
 
-def generate_research_pdf(
+async def generate_research_pdf(
     markdown_string: str,
     tool_context: ToolContext,
 ) -> dict:
@@ -55,7 +55,7 @@ def generate_research_pdf(
 
     # save artifact
     try:
-        version = tool_context.save_artifact(
+        version = await tool_context.save_artifact(
             filename=artifact_filename, artifact=document_part
         )
         logging.info(
@@ -67,12 +67,6 @@ def generate_research_pdf(
         # Handle potential storage errors (e.g., GCS permissions)
         logging.exception(f"An unexpected error occurred during artifact save: {e}")
 
-    # # upload local file to GCS
-    # gcs_blob_path = upload_file_to_gcs(
-    #     file_path=filepath, file_data=document_bytes, content_type="application/pdf"
-    # )
-
-    # delete locally saved pdf_report
     try:
         shutil.rmtree(DIR)
         logging.info(f"Directory '{DIR}' and its contents removed successfully")
