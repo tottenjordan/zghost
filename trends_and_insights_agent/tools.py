@@ -482,7 +482,7 @@ async def call_insights_generation_agent(question: str, tool_context: ToolContex
 
 def get_search_trend_state(tool_context: ToolContext) -> dict:
     """
-    Inspect session state and retreive any stored trends under `target_search_trends`
+    Inspect session state and retrieve any stored trends under `target_search_trends`
     Args:
         tool_context: The ADK tool context.
 
@@ -501,7 +501,7 @@ def get_search_trend_state(tool_context: ToolContext) -> dict:
 
 def get_yt_trend_state(tool_context: ToolContext) -> dict:
     """
-    Inspect session state and retreive any stored trends under `target_yt_trends`
+    Inspect session state and retrieve any stored trends under `target_yt_trends`
     Args:
         tool_context: The ADK tool context.
 

@@ -27,7 +27,7 @@ async def generate_image(prompt: str, tool_context: ToolContext, number_of_image
 
     """
     response = client.models.generate_images(
-        model="imagen-3.0-generate-002",
+        model="imagen-4.0-generate-preview-05-20",
         prompt=prompt,
         config={"number_of_images": number_of_images},
     )

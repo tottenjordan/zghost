@@ -1,4 +1,4 @@
-"""Common data schema and types for the Trends & Insghts Agent"""
+"""Common data schema and types for the Trends & Insights Agent"""
 
 from typing import Optional, Union
 

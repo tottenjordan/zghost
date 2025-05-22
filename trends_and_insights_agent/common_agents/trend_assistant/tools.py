@@ -208,7 +208,7 @@ def get_gtrends_max_date() -> str:
 
 def get_daily_gtrends() -> str:
     """
-    Retreives the top 25 Google Search Trends (term, rank, refresh_date) from a BigQuery table.
+    Retrieves the top 25 Google Search Trends (term, rank, refresh_date) from a BigQuery table.
 
     Returns:
         str: a markdown table containing the Google Search Trends.

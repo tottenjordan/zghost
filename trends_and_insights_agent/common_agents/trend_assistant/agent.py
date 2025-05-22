@@ -1,5 +1,5 @@
 """
-Seperating duties for "trending content" vs "trending search topics":
+Separating duties for "trending content" vs "trending search topics":
 > Search Trends provide insights into what the world is searching for
 > YouTube Trends showcase videos that are broadly interesting and capture what's happening on YouTube and in the world
 > YouTube trends are about engagement with video content, while Google Search trends are about search behavior
