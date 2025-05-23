@@ -1,12 +1,19 @@
 # Trend & Insight Agents
 
-> *building multi-agent systems with Google's [Agent Development Kit](https://google.github.io/adk-docs/) (ADK)*
+> a multi-agent system finding the intersection between product, trend, and audience
+
+<details>
+  <summary>trends-2-creatives</summary>
+
+<img src='media/deep-fried-trends.jpeg' width="700"/>
+
+</details>
 
 ## About
 
 Trends & Insights Agent is an advanced marketing tool built upon the foundation of Retail, CPG, and Google’s AI marketing tooling best practices. This version represents a significant leap forward, bringing enhanced capabilities with Google’s new [Agent Development Kit (ADK)](https://google.github.io/adk-docs/)
 
-**What Trends & Insights Can Do:**
+**What the Trends & Insights Agent can do:**
 
 -   **Streamline the Marketing Process:** From initial inspiration and competitive analysis to final creative drafts and reporting, TIA streamlines every step of the marketing workflow, making it easier to ideate, execute, and analyze campaigns, **significantly improving marketing use case velocity**.
 -   **Leverage Advanced AI:** Utilizing cutting-edge LLM-based agents, Trends & Insights Agent empowers users to generate refined marketing briefs, draft ad creatives, and compile comprehensive report. These agents are powered by the diverse range of models available in Vertex AI's Model Garden.
@@ -22,26 +29,53 @@ Trends & Insights Agent is an advanced marketing tool built upon the foundation 
 ## Key Features
 
 - Build LLM-based agents with [models supported in Vertex AI's Model Garden](https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/available-models)
-- Ingest campaign guidelines outlining e.g., target audience, regions of interest, campaign objectives, product details, etc.
 - Gather related content from Google Search and [YouTube](https://developers.google.com/youtube/v3/docs/search) for initial inspiration, competitor insights
-- Explore trending Search terms and [trending YouTube videos](https://developers.google.com/youtube/v3/docs/videos/list)
-- Generate refined marketing brief that includes e.g., campaign concepts, taglines, messaging angles, key insights, etc.
-- Draft ad creatives (e.g., image and video) based on campaign themes or specific prompts
+- Explore [trending Search terms](https://cloud.google.com/blog/products/data-analytics/top-25-google-search-terms-now-in-bigquery?e=48754805) and [trending YouTube videos](https://developers.google.com/youtube/v3/docs/videos/list)
+- Draft ad creatives (e.g., image and video) based on trends, campaign themes, or specific prompts
 - Compile trends, insights, and campaign research into a comprehensive report
 
 
 ## Example usage
 
-When interacting with the agent users can:
-- Upload a PDF and get structured data outputs
-- Query for general trends that are popular in various locations
-- Broad research on new marketing ideas, leveraging web searching tools
-- Generate new images based on insights from web searching or trend tool use
+<details>
+  <summary>Example interaction</summary>
+
+#### copy/paste these prompts to go from trends to creatives in less than 10 mins
+
+**[entry point]** 
+
+> *"Use this marketing campaign guide to plan and conduct research for potential campaign briefs"* + (manually upload a `campaign_guide` (PDF) or use [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf))
+
+**[campaign research]** 
+
+> *"Do some research on topics described in the campaign guide"*
+
+**[trends]** 
+
+> *"Let’s explore trends"* 
+
+    --> agent displays Search Trends and Trending Videos
+
+    --> user manually selects trending Search Terms and YouTube videos of interest
+
+**[trend research]** 
+
+> *Let’s analyze the selected YouTube video(s) and gather context to understand why they are trending and how we can incorporate similar themes into our campaign*
+
+> *Let’s gather context for the trending search terms from Google Search*
+
+**[creative gen]** 
+
+> *Let's generate ad content.*
+
+</details>
+
 
 ## How to use this repo
 
 1. Clone this repo (to local or Vertex AI Workbench Instance)
 2. Open a terminal and run below commands
+
 
 ### One-time setup
 
