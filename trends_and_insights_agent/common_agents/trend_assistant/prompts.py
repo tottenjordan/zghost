@@ -1,4 +1,4 @@
-N_YOUTUBE_TREND_VIDEOS = 25
+N_YOUTUBE_TREND_VIDEOS = 40
 N_SEARCH_TREND_TOPICS = 25
 TARGET_YT_DURATION = "5 minutes"
 MAX_YT_DURATION = "7 minutes"
@@ -51,7 +51,7 @@ Your goal is to help the user understand the top trending videos on YouTube for 
 - **Gather User Selection(s):** Ask the user which trending video(s) to proceed with. They can choose more than one trending video if they prefer. Also remind them you can retrieve additional trending videos upon request. Don't proceed to the next step until the user has selected at least one trending video.
 - **Update Session State:** For each user-selected video from the previous step, use the `call_target_yt_trend_agent` tool to populate the `target_yt_trends` session state.
 
-Once these steps are complete and the session state is updated, reconfirm the selected trends with the user. If the user is satisfied, transfer to the root agent.
+Once these steps are complete and the session state is updated, transfer to the root agent.
 """
 
 unified_target_trend_instructions = (

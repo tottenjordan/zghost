@@ -444,15 +444,15 @@ insights_generator_agent = Agent(
 
 async def call_insights_generation_agent(question: str, tool_context: ToolContext):
     """
-    Tool to call the insights generation agent. Use this tool to update the list of insights in the agent's state.
+    Tool to call the `insights_generator_agent` agent. Use this tool to update `insights` in the session state.
 
     Args:
         Question: The question to ask the agent, use the tool_context to extract the following schema:
-            insight_title: str -> Come up with a unique title for the insight
-            insight_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
-            insight_urls: str -> Get the url from the `query_youtube_api` tool or `query_web` tool
-            key_entities: str -> Develop entities from the source to create a graph (see relations)
-            key_relationships: str -> Create relationships between the key_entities to create a graph
+            insight_title: str -> Come up with a unique title for the insight.
+            insight_text: str -> Generate a summary of the insight from the web research.
+            insight_urls: str -> Get the url(s) used to generate the insight.
+            key_entities: str -> Extract any key entities discussed in the gathered context.
+            key_relationships: str -> Describe the relationships between the Key Entities you have identified.
             key_audiences: str -> Considering the guide, how does this insight intersect with the audience?
             key_product_insights: str -> Considering the guide, how does this insight intersect with the product?
         tool_context: The tool context.
@@ -536,16 +536,16 @@ yt_trends_generator_agent = Agent(
 async def call_yt_trends_generator_agent(question: str, tool_context: ToolContext):
     """
     Tool to call the `yt_trends_generator_agent` agent.
-    This tool checks the session state for any trends in `target_yt_trends`, and updates `yt_trends` for each new trend
+    This tool checks the session state for any trends in `target_yt_trends`, and for each new trend, updates `yt_trends` in the session state.
 
     Args:
         Question: The question to ask the agent, use the tool_context to extract the following schema:
             video_title: str -> Get the video's title from its entry in `target_yt_trends`
             trend_urls: str -> Get the URL from its entry in `target_yt_trends`
-            trend_text: str -> Use the `analyze_youtube_videos` tool to generate a summary of the trend.
+            trend_text: str -> Use the `analyze_youtube_videos` tool to generate a summary of the trending video. What are the main themes?
             key_entities: str -> Extract any key entities present in the trending video (e.g., people, places, things).
             key_relationships: str -> Describe any relationships between the key entities.
-            key_audiences: str -> How will this trend resonate with our target audience(s)?
+            key_audiences: str -> How will the themes in this trending video resonate with our target audience(s)?
             key_product_insights: str -> Suggest how this trend could possibly intersect with the `target_product`.
         tool_context: The ADK tool context.
     """
@@ -583,15 +583,15 @@ search_trends_generator_agent = Agent(
 
 async def call_search_trends_generator_agent(question: str, tool_context: ToolContext):
     """
-    Tool to call the `search_trends_generator_agent` agent. Use this tool to update the list of `search_trends` in the agent's state.
+    This tool calls `search_trends_generator_agent` to check the session state for any trends in `target_search_trends`, and for each new trend updates `search_trends` in the session state.
 
     Args:
         Question: The question to ask the agent, use the tool_context to extract the following schema:
             trend_title: str -> Come up with a unique title to represent the trend. Structure this title so it begins with the exact words from the 'trending topic` followed by a colon and a witty catch-phrase.
-            trend_text: str -> Summarize text from the `query_web` tool: What happened with the trending topic and what is being discussed?
+            trend_text: str -> Generate a summary describing what happened with the trending topic and what is being discussed.
             trend_urls: str -> List any url(s) that provided reliable context.
-            key_entities: str -> Extract any Key Entities discussed in the gathered context
-            key_relationships: str -> Describe the relationships between the Key Entities you have identified
+            key_entities: str -> Extract any key entities discussed in the gathered context.
+            key_relationships: str -> Describe the relationships between the key entities you have identified.
             key_audiences: str -> How will this trend resonate with our target audience(s), `campaign_guide.target_audience`?
             key_product_insights: str -> Suggest how this trend could possibly intersect with the target product: `campaign_guide.target_product`
         tool_context: The ADK tool context.

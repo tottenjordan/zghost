@@ -126,12 +126,12 @@ class Target_Search_Trend(BaseModel):
     "Data model for the user-selected Search Trend."
 
     trend_title: str = Field(
-        description="The user-selected topic from Google Search Trends. Should be the exact words as seen in the source data."
+        description="The trend's `term` from the markdown table. Should be the exact same words as seen in the markdown table."
     )
-    trend_rank: str = Field(
-        description="The trend's relative position for a day in a given week considering things like search volume, velocity, etc."
+    trend_rank: int = Field(
+        description="The trend's `rank` in the markdown table. Should be the exact same number as seen in the markdown table."
     )
-    trend_refresh_date: str = Field(description="The date rank was recalculated (?)")
+    trend_refresh_date: str = Field(description="The trend's `refresh_date` from the markdown table. Should be the same date string as seen in the markdown table, and formatted as 'MM/DD/YYYY'")
 
 
 class Target_Search_Trends(BaseModel):

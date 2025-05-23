@@ -84,7 +84,7 @@ Your primary goal is to guide the user through a logical process, leveraging you
 
 4.  **Capability Showcase & Guided Next Steps:**
     *   After enrichment (or if skipped): Guide the user by showcasing other tools.
-    *   Example prompts (listing capabilities A, B, C, D)...
+    *   Example prompts (listing capabilities A, B, C, D)... 
 
 5.  **Execute User Request & Tool Routing:**
     *   Based on the user's selection:
@@ -106,34 +106,32 @@ Your primary goal is to guide the user through a logical process, leveraging you
 """
 
 
-operational_definition_of_an_insight = """
-An insight is a data point that is:
- referenceable (with a source)
- shows deep intersections between the the goal of a campaign guide and broad information sources
- broad information sources include various digital channels: web, youtube, social, etc..
- is actionable and can provide value within the context of the campaign
-"""
-
 insights_generation_prompt = """
-Understand the output from the web and YouTube research, considering the `campaign_guide`
-Use the agent to produce structured output to the `insights` session state.
+Use this tool to capture key insights about concepts from the `campaign_guide` and produce structured data output using the `call_insights_generation_agent` tool.
+Note all outputs from the agent and run this tool to update `insights` in the session state.
 
-How to fill the fields out:
+For each key insight from your weba and YouTube research, fill out the following fields per the instructions:
+
     insight_title: str -> Come up with a unique title for the insight
-    insight_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
-    insight_urls: str -> Get the url from the `query_youtube_api` tool or `query_web` tool
-    key_entities: str -> Extract any Key Entities discussed in the gathered context
-    key_relationships: str -> Describe the relationships between the Key Entities you have identified
+    insight_text: str -> Generate a summary of the insight from the web research.
+    insight_urls: str -> Get the url(s) used to generate the insight.
+    key_entities: str -> Extract any key entities discussed in the gathered context.
+    key_relationships: str -> Describe the relationships between the Key Entities you have identified.
     key_audiences: str -> Considering the guide, how does this insight intersect with the audience?
     key_product_insights: str -> Considering the guide, how does this insight intersect with the product?
 
-Be sure to consider any existing {insights} but **do not output any insights** that are already on this list.
-Also, consider the intersectionality of the insight, target product (e.g., {campaign_guide.target_product}), and target audiences: {campaign_guide.target_audience}.
 """
-# Utilize any existing {yt_trends} or {search_trends} and understand where there are any relevant intersections to the goals of the campaign.
+
+operational_definition_of_an_insight = """
+Keep in mind: an insight is a data point that is:
+  - referenceable (with a source)
+  - shows deep intersections between the the goal of a campaign guide and broad information sources
+  - is actionable and can provide value within the context of the campaign
+
+"""
 
 united_insights_prompt = (
-    operational_definition_of_an_insight + insights_generation_prompt
+    insights_generation_prompt + operational_definition_of_an_insight
 )
 
 
@@ -144,7 +142,7 @@ Note how to fill the fields out:
 
     video_title: str -> Get the video's title from its entry in `target_yt_trends`.
     trend_urls: str -> Get the URL from its entry in `target_yt_trends`
-    trend_text: str -> Use the `analyze_youtube_videos` tool to generate a summary of the trend.
+    trend_text: str -> Use the `analyze_youtube_videos` tool to generate a summary of the trending video. What are the main themes?
     key_entities: str -> Extract any key entities present in the trending video (e.g., people, places, things).
     key_relationships: str -> Describe any relationships between the key entities.
     key_audiences: str -> How will this trend resonate with our target audience(s)?
@@ -152,7 +150,6 @@ Note how to fill the fields out:
 
 Be sure to consider any existing {yt_trends} but **do not output any `yt_trends``** that are already on this list.
 """
-# Also, consider the intersectionality of the `target_product`, along with the target audiences.
 
 
 search_trends_generation_prompt = """
@@ -161,7 +158,7 @@ Understand why this topic or set of terms is trending. Produce structured data o
 Note how to fill the fields out:
 
     trend_title: str -> Come up with a unique title to represent the trend. Structure this title so it begins with the exact words from the 'trending topic` followed by a colon and a witty catch-phrase.
-    trend_text: str -> Summarize text from the `query_web` tool: What happened with the trending topic and what is being discussed?
+    trend_text: str -> Generate a summary describing what happened with the trending topic and what is being discussed.
     trend_urls: str -> List any url(s) that provided reliable context.
     key_entities: str -> Extract any key entities discussed in the gathered context.
     key_relationships: str -> Describe the relationships between the key entities you have identified.

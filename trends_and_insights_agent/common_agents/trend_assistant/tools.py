@@ -58,7 +58,7 @@ bq_client = bigquery.Client(project=BQ_PROJECT)
 # YouTube Trends
 # ========================
 TARGET_YT_TREND_PROMPT = """
-Use this tool to capture the user-selected YouTube content and produce structured data output using the `call_yt_trends_generator_agent` tool
+Use this tool to capture the user-selected YouTube content and produce structured data output using the `call_target_yt_trend_agent` tool
 Note all outputs from the agent and run this tool to update the session state for `target_yt_trends`.
 
 For each trending video, fill out the following fields per the instructions:
@@ -146,8 +146,8 @@ Note all outputs from the agent and run this tool to update the session state fo
 
 For each user-selected trending topic, fill out the following fields per the instructions:
 
-    trend_title: str -> The trend's `term` in the markdown table. Should be the exact same words as seen in the markdown table.
-    trend_rank: str -> The trend's `rank` in the markdown table. Should be the exact same number as seen in the markdown table.
+    trend_title: str -> The trend's `term` from the markdown table. Should be the exact same words as seen in the markdown table.
+    trend_rank: int -> The trend's `rank` in the markdown table. Should be the exact same number as seen in the markdown table.
     trend_refresh_date: str -> The trend's `refresh_date` from the markdown table. Should be the same date string as seen in the markdown table, and formatted as 'MM/DD/YYYY'
 """
 # agent tool to capture Search trends
@@ -172,9 +172,9 @@ async def call_target_search_trend_agent(question: str, tool_context: ToolContex
 
     Args:
         Question: The question to ask the agent, use the tool_context to extract the following schema:
-            trend_title: str -> The trending topic in Google Search. From the search trends displayed to the user, this should match the selected trend's `term`
-            trend_rank: str -> The trend's most recent relative ranking for the current week. From the search trends displayed to the user, this should match the selected trend's `rank`
-            trend_refresh_date: str -> The date rank was recalculated. From the search trends displayed to the user, this should match the selected trend's `refresh_date`
+            trend_title: str -> The trend's `term` from the markdown table. Should be the exact same words as seen in the markdown table.
+            trend_rank: int -> The trend's `rank` in the markdown table. Should be the exact same number as seen in the markdown table.
+            trend_refresh_date: str -> The trend's `refresh_date` from the markdown table. Should be the same date string as seen in the markdown table, and formatted as 'MM/DD/YYYY'
         tool_context: The tool context.
     """
     agent_tool = AgentTool(target_search_trends_generator_agent)
@@ -241,13 +241,3 @@ def get_daily_gtrends() -> str:
 
     # return print(df_t.to_markdown(index=False))
     # return {"markdown_string": df_t.to_markdown(index=False)}
-
-
-# def gtrends_to_markdown(trends_df: pd.DataFrame) -> str:
-#     """
-#     Convert dataframe of Google Trends to a Markdown string.
-
-#     Returns:
-#         str: A string representing the Google Search Trends in a Markdown table format.
-#     """
-#     return tabulate(trends_df, headers="keys", tablefmt="pipe", showindex=False)
