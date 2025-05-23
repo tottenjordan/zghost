@@ -8,7 +8,9 @@ from typing import Optional
 from google.adk.agents.callback_context import CallbackContext
 from google.genai import types
 
-MODEL = 'gemini-2.5-flash-preview-05-20'
+# MODEL = 'gemini-2.5-flash-preview-05-20'
+MODEL = "gemini-2.0-flash-001"
+
 
 def upload_file_to_gcs(
     file_path: str,

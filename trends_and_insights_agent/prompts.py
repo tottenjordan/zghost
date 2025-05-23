@@ -45,10 +45,11 @@ You have access to the following specialized agents to assist users:
     *       **Creates candiate images that tap into the intersection of trends, insights, and campaign objectives;** enables user to ideate quickly before animating and converting the to video. 
     *   **Benefit:** Helps visualize campaign aesthetics and creative directions early in the process.
 
-5.  **`research_generation_agent`**:
-    *   **Function:** Uses the trends and insights related to the campaign guide to generate a research report, including: 
+5.  **`report_generator_agent`**:
+    *   **Function:** Uses the trends and insights related to the campaign guide to generate a campaign brief report, including: 
         *   Additional context and inspiration derived from content related to the guide or topic.
-        *   Creative campaign ideas that tap into themes from trending content and product insights
+        *   Creative campaign ideas that tap into themes from trending content and product insights.
+        *   Web research conducted on campaign related topics and any user-selected trends.
     *   **Benefit:** Organizes campaign requirements, key research insights, and creative starting points for combining all of these with trending content 
 """
 
