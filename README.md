@@ -11,16 +11,16 @@
 
 ## About
 
-Trends & Insights Agent is an advanced marketing tool built upon the foundation of Retail, CPG, and Google’s AI marketing tooling best practices. This version represents a significant leap forward, bringing enhanced capabilities with Google’s new [Agent Development Kit (ADK)](https://google.github.io/adk-docs/)
+The Trend & Insight Agent is a marketing tool for developing data-driven and culturally relevant marketing strategies. Built with Google’s [Agent Development Kit (ADK)](https://google.github.io/adk-docs/), this multi-agent system helps users generate ad creatives from trending themes found in Google Search and YouTube.
 
-**What the Trends & Insights Agent can do:**
+**What does it do?**
 
--   **Streamline the Marketing Process:** From initial inspiration and competitive analysis to final creative drafts and reporting, TIA streamlines every step of the marketing workflow, making it easier to ideate, execute, and analyze campaigns, **significantly improving marketing use case velocity**.
--   **Leverage Advanced AI:** Utilizing cutting-edge LLM-based agents, Trends & Insights Agent empowers users to generate refined marketing briefs, draft ad creatives, and compile comprehensive report. These agents are powered by the diverse range of models available in Vertex AI's Model Garden.
--   **Deep Integration with Google Ecosystem:** Seamlessly gather real-time insights from Google Search trends, YouTube trends, using guardrails from your own internal campaign guidelines. This ensures marketing strategies are data-driven and culturally relevant.
+-   **Streamline the Marketing Process:** From initial inspiration and competitive analysis to creative drafts and reporting, TIA improves marketing use case velocity by making it easier to ideate, execute, and analyze campaigns
+-   **Leverage Advanced AI:** With LLM-based agents, users generate refined marketing briefs, draft ad creatives, and compile comprehensive reports. These agents are powered by the diverse range of models available in [Vertex AI's Model Garden](https://console.cloud.google.com/vertex-ai/model-garden)
+-   **Deep Integration with Google Ecosystem:** Gather real-time insights from trends in Google Search and YouTube, using guardrails from your own internal campaign guidelines. This ensures marketing strategies are data-driven and culturally relevant.
 
 
-**Rooted in Alphabet's/Google's Marketing Practices:**
+**Marketing best practices**
 
 -   **Act on Real-Time Insights:** Tap into the pulse of current trends and audience interests, ensuring that campaigns are always timely and relevant.
 -   **Maintain Brand Consistency:** Ingest campaign guidelines to ensure all creative and messaging aligns with established brand voice and objectives.
