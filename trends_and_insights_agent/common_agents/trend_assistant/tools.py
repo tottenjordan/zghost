@@ -200,7 +200,8 @@ def get_gtrends_max_date() -> str:
     query = f"""
         SELECT 
          MAX(refresh_date) as max_date
-        FROM `{BQ_PROJECT}.{BQ_DATASET}.top_terms`
+        -- FROM `{BQ_PROJECT}.{BQ_DATASET}.top_terms`
+        FROM `bigquery-public-data.google_trends.top_terms`
     """
     max_date = bq_client.query(query).to_dataframe()
     return max_date.iloc[0][0].strftime("%m/%d/%Y")
@@ -224,7 +225,8 @@ def get_daily_gtrends() -> str:
           term,
           refresh_date,
           ARRAY_AGG(STRUCT(rank,week) ORDER BY week DESC LIMIT 1) x
-        FROM `{BQ_PROJECT}.{BQ_DATASET}.top_terms`
+        -- FROM `{BQ_PROJECT}.{BQ_DATASET}.top_terms`
+        FROM `bigquery-public-data.google_trends.top_terms`
         WHERE refresh_date = PARSE_DATE('%m/%d/%Y',  '{max_date}')
         GROUP BY term, refresh_date
         ORDER BY (SELECT rank FROM UNNEST(x))
