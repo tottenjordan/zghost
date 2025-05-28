@@ -115,8 +115,6 @@ pip install pipx
 pip install -U poetry packaging ipykernel
 
 poetry install
-
-poetry env use 3.12
 ```
 
 </details>
@@ -179,6 +177,18 @@ python3 -m ipykernel install --prefix "${DL_ANACONDA_ENV_HOME}" --name $ENV_NAME
 *In either option, open a notebook file and select your kernel (top right). Should see `$ENV_NAME` as an available kernel* 
 
 </details>
+
+## Create a Youtube API and store to Secret Manager
+
+<details>
+  <summary>Create and store API key</summary>
+
+1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
+
+2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api`. See [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version) or step-by-step guidance
+
+</details>
+
 
 
 <details>
@@ -252,7 +262,7 @@ echo $BUCKET
 3. launch the adk developer UI
 
 ```bash
-adk web
+poetry run adk web
 ```
 
 4. To start interacting with your agents, open the provided `localhost` link (e.g., `http://localhost:8000`) and select an agent from the drop-down (top left)

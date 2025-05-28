@@ -16,16 +16,7 @@ from google.cloud import bigquery
 
 # from google.cloud import secretmanager as sm
 
-from ...shared_libraries.types import (
-    YT_Trend,
-    YT_Trends,
-    Search_Trend,
-    Search_Trends,
-    Target_YT_Trend,
-    Target_YT_Trends,
-    Target_Search_Trend,
-    Target_Search_Trends,
-)
+
 from ...utils import MODEL
 from ...secrets import access_secret_version
 
@@ -54,59 +45,27 @@ BQ_DATASET = "google_trends_copy"  # os.environ["BQ_DATASET"]
 bq_client = bigquery.Client(project=BQ_PROJECT)
 
 
-# ========================
-# YouTube Trends
-# ========================
-TARGET_YT_TREND_PROMPT = """
-Use this tool to capture the user-selected YouTube content and produce structured data output using the `call_target_yt_trend_agent` tool
-Note all outputs from the agent and run this tool to update the session state for `target_yt_trends`.
-
-For each trending video, fill out the following fields per the instructions:
-
-    video_title: str -> The title of the user-selected video from YouTube Trends.
-    video_duration: str -> The user-selected video's duration.
-    video_url: str -> The user-selected video's URL.
-"""
-# agent tool to capture user-selected YT trends
-target_yt_trends_generator_agent = Agent(
-    model=MODEL,
-    name="target_yt_trends_generator_agent",
-    instruction=TARGET_YT_TREND_PROMPT,
-    disallow_transfer_to_parent=True,
-    disallow_transfer_to_peers=True,
-    generate_content_config=types.GenerateContentConfig(
-        temperature=0.1,
-    ),
-    output_schema=Target_YT_Trends,
-    output_key="target_yt_trends",
-)
-
-
-async def call_target_yt_trend_agent(question: str, tool_context: ToolContext):
+async def save_yt_trends_to_session_state(selected_trends: dict, tool_context: ToolContext):
     """
-    Tool to call the `target_yt_trends_generator_agent` agent and update the `target_yt_trends` in the session state.
+    Tool to save `selected_trends` to the `target_yt_trends` in the session state.
     Use this tool after the user has selected trending YouTube content to target for the campaign.
 
     Args:
-        Question: The question to ask the agent, use the tool_context to extract the following schema:
+        selected_trends: dict -> The selected trends from the markdown table.
             video_title: str -> The title of the user-selected video from YouTube Trends.
             video_duration: str -> The user-selected video's duration.
             video_url: str -> The user-selected video's URL.
         tool_context: The tool context.
     """
-    agent_tool = AgentTool(target_yt_trends_generator_agent)
+
     existing_target_yt_trends = tool_context.state.get("target_yt_trends")
-    target_yt_trends = await agent_tool.run_async(
-        args={"request": question}, tool_context=tool_context
-    )
-    logging.info(f"Target_Search_Trends: {target_yt_trends}")
+
+    logging.info(f"Target_Search_Trends: {selected_trends}")
     logging.info(f"Existing target_yt_trends: {existing_target_yt_trends}")
 
     if existing_target_yt_trends is not {"target_yt_trends": []}:
-        target_yt_trends["target_yt_trends"].extend(
-            existing_target_yt_trends["target_yt_trends"]
-        )
-    tool_context.state["target_yt_trends"] = target_yt_trends
+        existing_target_yt_trends["target_yt_trends"].append(selected_trends)
+    tool_context.state["target_yt_trends"] = existing_target_yt_trends
     return {"status": "ok"}
 
 
@@ -137,35 +96,7 @@ def get_youtube_trends(
     return trend_response
 
 
-# ==============================
-# Google Search Trends
-# ==============================
-TARGET_SEARCH_TREND_PROMPT = """
-Use this tool to capture the user-selected Search Trends and produce structured data output using the `call_target_search_trend_agent` tool.
-Note all outputs from the agent and run this tool to update the session state for `target_search_trends`.
-
-For each user-selected trending topic, fill out the following fields per the instructions:
-
-    trend_title: str -> The trend's `term` from the markdown table. Should be the exact same words as seen in the markdown table.
-    trend_rank: int -> The trend's `rank` in the markdown table. Should be the exact same number as seen in the markdown table.
-    trend_refresh_date: str -> The trend's `refresh_date` from the markdown table. Should be the same date string as seen in the markdown table, and formatted as 'MM/DD/YYYY'
-"""
-# agent tool to capture Search trends
-target_search_trends_generator_agent = Agent(
-    model=MODEL,
-    name="target_search_trends_generator_agent",
-    instruction=TARGET_SEARCH_TREND_PROMPT,
-    disallow_transfer_to_parent=True,
-    disallow_transfer_to_peers=True,
-    generate_content_config=types.GenerateContentConfig(
-        temperature=0.1,
-    ),
-    output_schema=Target_Search_Trends,
-    output_key="target_search_trends",
-)
-
-
-async def call_target_search_trend_agent(question: str, tool_context: ToolContext):
+async def save_search_trends_to_session_state(new_trends: dict, tool_context: ToolContext):
     """
     Tool to call the `target_search_trends_generator_agent` agent and update the `target_search_trends` in the session state.
     Use this tool after the user has selected a Trending Search topic to target for the campaign.
@@ -177,19 +108,14 @@ async def call_target_search_trend_agent(question: str, tool_context: ToolContex
             trend_refresh_date: str -> The trend's `refresh_date` from the markdown table. Should be the same date string as seen in the markdown table, and formatted as 'MM/DD/YYYY'
         tool_context: The tool context.
     """
-    agent_tool = AgentTool(target_search_trends_generator_agent)
     existing_target_search_trends = tool_context.state.get("target_search_trends")
-    target_search_trends = await agent_tool.run_async(
-        args={"request": question}, tool_context=tool_context
-    )
-    logging.info(f"Target_Search_Trends: {target_search_trends}")
+
+    logging.info(f"Target_Search_Trends: {new_trends}")
     logging.info(f"Existing target_search_trends: {existing_target_search_trends}")
 
     if existing_target_search_trends is not {"target_search_trends": []}:
-        target_search_trends["target_search_trends"].extend(
-            existing_target_search_trends["target_search_trends"]
-        )
-    tool_context.state["target_search_trends"] = target_search_trends
+        existing_target_search_trends["target_search_trends"].append(new_trends)
+    tool_context.state["target_search_trends"] = existing_target_search_trends
     return {"status": "ok"}
 
 

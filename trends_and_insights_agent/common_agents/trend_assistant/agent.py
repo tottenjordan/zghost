@@ -15,8 +15,8 @@ from ...utils import MODEL
 from .tools import (
     get_daily_gtrends,
     get_youtube_trends,
-    call_target_yt_trend_agent,
-    call_target_search_trend_agent,
+    save_yt_trends_to_session_state,
+    save_search_trends_to_session_state,
 )
 from .prompts import unified_target_trend_instructions
 
@@ -24,8 +24,8 @@ from .prompts import unified_target_trend_instructions
 tools = [
     get_daily_gtrends,
     get_youtube_trends,
-    call_target_yt_trend_agent,
-    call_target_search_trend_agent,
+    save_yt_trends_to_session_state,
+    save_search_trends_to_session_state,
 ]
 
 trends_and_insights_agent = Agent(

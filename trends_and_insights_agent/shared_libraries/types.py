@@ -76,20 +76,6 @@ class Insights(BaseModel):
 # ==========================
 # YouTube Trends
 # ==========================
-class Target_YT_Trend(BaseModel):
-    "Data model for the user-selected trending content from YouTube."
-
-    video_title: str = Field(
-        description="The title of the user-selected video from YouTube Trends."
-    )
-    video_duration: str = Field(description="video duration.")
-    video_url: str = Field(description="URL for video")
-
-
-class Target_YT_Trends(BaseModel):
-    "Data model for multiple user-selected trending content from YouTube."
-
-    target_yt_trends: list[Target_YT_Trend]
 
 
 class YT_Trend(BaseModel):
@@ -122,22 +108,6 @@ class YT_Trends(BaseModel):
 # ==============================
 # Google Search Trends
 # ==============================
-class Target_Search_Trend(BaseModel):
-    "Data model for the user-selected Search Trend."
-
-    trend_title: str = Field(
-        description="The trend's `term` from the markdown table. Should be the exact same words as seen in the markdown table."
-    )
-    trend_rank: int = Field(
-        description="The trend's `rank` in the markdown table. Should be the exact same number as seen in the markdown table."
-    )
-    trend_refresh_date: str = Field(description="The trend's `refresh_date` from the markdown table. Should be the same date string as seen in the markdown table, and formatted as 'MM/DD/YYYY'")
-
-
-class Target_Search_Trends(BaseModel):
-    "Data model for multiple user-selected Search Trends."
-
-    target_search_trends: list[Target_Search_Trend]
 
 
 class Search_Trend(BaseModel):
