@@ -37,6 +37,14 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 
 ## Example usage
 
+1. ingest PDF campaign brief defining target audience, product, region, media strategy, brand voice, etc. 
+2. conduct web research to gather insight about these concepts
+3. select trending term(s) from Google Search
+4. select trending video(s) from YouTube
+5. conduct web research to understand the contex of each trend
+6. generate camapign concepts that resonate with the target audience, while tapping into themes from the trends & insights
+7. from these campaign concepts, generate image and video creatives, ad copy, and social media captions
+
 <details>
   <summary>Example interaction</summary>
 
