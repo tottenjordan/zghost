@@ -96,6 +96,9 @@ async def generate_video(
         time.sleep(15)
         operation = client.operations.get(operation)
         print(operation)
+    
+    if operation.error:
+        return {"status": f"failed due to error: {operation.error}"}
 
     if operation.response:
 

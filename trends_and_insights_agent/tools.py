@@ -38,6 +38,10 @@ from .prompts import (
     search_trends_generation_prompt,
 )
 
+from .common_agents.marketing_guide_data_generator.agent import (
+    campaign_guide_data_generation_agent,
+)
+
 
 # ========================
 # clients
@@ -607,4 +611,28 @@ async def call_search_trends_generator_agent(question: str, tool_context: ToolCo
     if existing_search_trends is not {"search_trends": []}:
         search_trends["search_trends"].extend(existing_search_trends["search_trends"])
     tool_context.state["search_trends"] = search_trends
+    return {"status": "ok"}
+
+
+async def call_campaign_guide_agent(question: str, tool_context: ToolContext):
+    """
+    Tool to call the `campaign_guide_data_generation_agent` agent.
+    Use this tool when instructions call for `campaign_guide_data_generation_agent` use.
+
+    Args:
+        Question: The question to ask the agent.
+          Example:  Extract and structure the information from the
+          marketing_guide_Pixel_9.pdf document, focusing on objectives,
+          target audience, KPIs, and budget.
+          The Agent will produce structured output for the `campaign_guide` session state object.
+        tool_context: The ADK tool context.
+    """
+
+    # Check for hallucinations or if there is not enough context to feed the LLM:
+    if len(question) < 42:
+        return {"status": f"error, need more context, input: {question}"}
+
+    agent_tool = AgentTool(campaign_guide_data_generation_agent)
+
+    await agent_tool.run_async(args={"request": question}, tool_context=tool_context)
     return {"status": "ok"}
