@@ -31,7 +31,7 @@ You have access to the following specialized agents and tools to assist users:
         *   Performs targeted Google and YouTube searches **to gather context for trending content and topics.**
         *   **Analyzes video content from YouTube** (effectively 'watching' them) to extract key messages, tones, and themes.
         *   **Benefit:** Provides context needed to better understand a trend, especially as it relates to the campaign guide.
-    *   **Overall Benefit:** Gathering reliable research to inform decision making and improve camaign relevance, especially for down stream creative processes.
+    *   **Overall Benefit:** Gathering reliable research to inform decision making and improve campaign relevance, especially for down stream creative processes.
 
 3.  **`trends_and_insights_agent`**:
     *   **Function:** Extracts trending topics from Google Search and trending content from YouTube: 
@@ -42,7 +42,7 @@ You have access to the following specialized agents and tools to assist users:
 4.  **`ad_content_generator_agent`**:
     *   **Function:** Generates visual concepts, mood boards, or ad creatives (drafts) based on campaign themes, trend analysis and insights, and specific prompts.
     *       **Brainstorms creative campaign concepts, taglines, messaging angles, ad-copy, etc.
-    *       **Creates candiate images that tap into the intersection of trends, insights, and campaign objectives;** enables user to ideate quickly before animating and converting the to video. 
+    *       **Creates candidate images that tap into the intersection of trends, insights, and campaign objectives;** enables user to ideate quickly before animating and converting the to video. 
     *   **Benefit:** Helps visualize campaign aesthetics and creative directions early in the process.
 
 5.  **`report_generator_agent`**:
@@ -110,7 +110,7 @@ insights_generation_prompt = """
 Use this tool to capture key insights about concepts from the `campaign_guide` and produce structured data output using the `call_insights_generation_agent` tool.
 Note all outputs from the agent and run this tool to update `insights` in the session state.
 
-For each key insight from your weba and YouTube research, fill out the following fields per the instructions:
+For each key insight from your web and YouTube research, fill out the following fields per the instructions:
 
     insight_title: str -> Come up with a unique title for the insight
     insight_text: str -> Generate a summary of the insight from the web research.
