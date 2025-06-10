@@ -14,7 +14,7 @@ from ...utils import download_blob, upload_file_to_gcs
 client = genai.Client()
 
 IMAGE_MODEL = "imagen-4.0-generate-preview-05-20"  # "imagen-3.0-generate-002"
-VIDEO_MODEL = "veo-2.0-generate-001"
+VIDEO_MODEL = "veo-2.0-generate-001"  # veo-3.0-generate-preview
 
 
 async def generate_image(
@@ -96,7 +96,7 @@ async def generate_video(
         time.sleep(15)
         operation = client.operations.get(operation)
         print(operation)
-    
+
     if operation.error:
         return {"status": f"failed due to error: {operation.error}"}
 

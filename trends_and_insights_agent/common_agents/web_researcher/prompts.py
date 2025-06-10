@@ -57,7 +57,7 @@ Your goal is to **generate structured `insights`** that help marketers create re
 For this task, you only have four tools at your disposal: `query_web`, `query_youtube_api`, `analyze_youtube_videos`, and `call_insights_generation_agent`.
 
 Follow these steps to conduct research and generate insights:
-    1)   Use the `query_web` tool to perform a Google Search for insights related to the target product. For each key finding, use the `call_insights_generation_agent` tool to update the list of structured `insights` in the session state.
+    1)   Use the `query_web` tool to perform a Google Search for insights related to the target product.
     2)   Use the `query_youtube_api` tool to find videos related to the target product and target audiences.
     3)   Use the `analyze_youtube_videos` tool to understand the videos found in the previous step and note key insights from your research. 
     4)   Use the `call_insights_generation_agent` tool to update the list of structured `insights` in the session state.
@@ -97,6 +97,7 @@ Your goal is to understand the cultural significance of the trending Search topi
 When this is complete, transfer back to the parent agent.
 </ANALYZE_GTRENDS>
 """
+# For each key finding, use the `call_insights_generation_agent` tool to update the list of structured `insights` in the session state.
 # These themes don't have to be directly related to the `campaign_guide.target_product`. We just want the themes for future brainstorming exercises.
 
 
@@ -108,4 +109,3 @@ Finally, once the supported user journey is complete, transfer back to the paren
 unified_web_research_prompt = (
     web_efficiency_guidance + broad_instructions + final_web_research_instruct
 )
-

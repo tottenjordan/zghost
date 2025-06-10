@@ -633,6 +633,12 @@ async def call_campaign_guide_agent(question: str, tool_context: ToolContext):
         return {"status": f"error, need more context, input: {question}"}
 
     agent_tool = AgentTool(campaign_guide_data_generation_agent)
-
     await agent_tool.run_async(args={"request": question}, tool_context=tool_context)
+
+    # # TODO: try similar
+    # guide_state = await agent_tool.run_async(
+    #     args={"request": question}, tool_context=tool_context
+    # )
+    # tool_context.state["campaign_guide"] = guide_state
+
     return {"status": "ok"}
