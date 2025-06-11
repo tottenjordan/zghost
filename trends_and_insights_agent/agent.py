@@ -29,7 +29,7 @@ root_agent = Agent(
         report_generator_agent,  # generates a final research brief report
     ],
     tools=[
-        load_artifacts,
+        # load_artifacts,
         call_campaign_guide_agent
     ],
     generate_content_config=types.GenerateContentConfig(

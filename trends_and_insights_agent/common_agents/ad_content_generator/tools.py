@@ -8,6 +8,7 @@ from google.genai.types import GenerateVideosConfig
 from google.adk import Agent
 from google.adk.tools import ToolContext
 from google.cloud import storage
+from utils import IMAGE_MODEL, VIDEO_MODEL
 
 from ...utils import download_blob, upload_file_to_gcs
 
@@ -28,7 +29,7 @@ async def generate_image(
         number_of_images (int, optional): The number of images to generate. Defaults to 1.
 
     Returns:
-        dict: Status and the location of the image.
+        dict: Status and the location of the image artifact file.
 
     """
     response = client.models.generate_images(
@@ -115,4 +116,4 @@ async def generate_video(
                 f"{filename}.mp4",
                 types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
             )
-        return {"status": "ok"}
+        return {"status": "ok", "video_filename": f"{filename}.mp4"}

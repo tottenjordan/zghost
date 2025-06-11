@@ -31,7 +31,6 @@ tools = [
 trends_and_insights_agent = Agent(
     model=MODEL,
     name="trends_and_insights_agent",
-    global_instruction=global_instructions,
     instruction=unified_target_trend_instructions,
     tools=tools,
     generate_content_config=types.GenerateContentConfig(

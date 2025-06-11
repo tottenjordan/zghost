@@ -32,7 +32,6 @@ tools = [
 web_researcher_agent = Agent(
     model=MODEL,
     name="web_researcher_agent",
-    global_instruction=global_instructions,
     instruction=unified_web_research_prompt,
     tools=tools,
     generate_content_config=types.GenerateContentConfig(
