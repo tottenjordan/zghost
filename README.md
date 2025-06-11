@@ -48,33 +48,44 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 <details>
   <summary>Example interaction</summary>
 
-#### copy/paste these prompts to go from trends to creatives in less than 10 mins
+---
+
+
+*In the ADK dev UI, copy/paste these prompts to go from trends to creatives in ~5 mins*
 
 **[entry point]** 
 
-> *"Use this marketing campaign guide to plan and conduct research for potential campaign briefs"* + (manually upload a `campaign_guide` (PDF) or use [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf))
+++ manually upload a `campaign_guide` (PDF) or use [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf)
+
+> [user]: *Use this marketing campaign guide to plan and conduct research for potential campaign briefs*
 
 **[campaign research]** 
 
-> *"Do some research on topics described in the campaign guide"*
+> [user]: *Do some research on topics described in the campaign guide. Use Google Search to gather insights on several topics to better understand the campaign.*
 
 **[trends]** 
 
-> *"Let’s explore trends"* 
+> [user]: *Let’s explore trends* 
 
-    --> agent displays Search Trends and Trending Videos
+    --> (agent displays Search Trends and Trending Videos)
 
-    --> user manually selects trending Search Terms and YouTube videos of interest
+    --> (user manually selects trending Search Terms and YouTube videos of interest)
 
 **[trend research]** 
 
-> *Let’s analyze the selected YouTube video(s) and gather context to understand why they are trending and how we can incorporate similar themes into our campaign*
+> [user]: *Let’s analyze the selected YouTube video(s) and gather context to understand why they are trending and how we can incorporate similar themes into our campaign*
 
-> *Let’s gather context for the trending search terms from Google Search*
+    --> (agent analyzes video, searches web, and stores results in session state)
+
+> [user]: *Let’s gather context for the trending search terms from Google Search*
+
+    --> (agent generates queries related to selected terms, searches web, and stores results in session state)
 
 **[creative gen]** 
 
-> *Let's generate ad content.*
+> [user]: *Let's generate ad content*
+
+*see sub-agent's instructions here: [ad_content_generator/prompts.py](trends_and_insights_agent/common_agents/ad_content_generator/prompts.py)*
 
 </details>
 
@@ -82,7 +93,18 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 ## How to use this repo
 
 1. Clone this repo (to local or Vertex AI Workbench Instance)
-2. Open a terminal and run below commands
+2. Create and store YouTube API key
+3. Open terminal, run commands under **One-time setup**
+4. Run commands under **Start a session**
+
+
+### Create and store YouTube API key
+
+1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
+
+2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (see `YT_SECRET_MNGR_NAME` in `.env` file)
+
+   > For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
 
 
 ### One-time setup
@@ -97,9 +119,7 @@ git clone https://github.com/tottenjordan/zghost.git
 ```bash
 sudo apt-get install virtualenv python3-venv python3-pip
 
-python3 -m venv .venv
-
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 ```
 
 </details>
@@ -141,17 +161,7 @@ gcloud services enable artifactregistry.googleapis.com \
 
 
 <details>
-  <summary>Create and store YouTube API key</summary>
-
-1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
-
-2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (if you choose a different name, pass this to the `YT_SECRET_MNGR_NAME` in your `.env` file). See [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version) or step-by-step guidance
-
-</details>
-
-
-<details>
-  <summary>Optionally, create notebook kernels</summary>
+  <summary>Optionally, create notebook kernel</summary>
 
 *create kernel with required packages for notebooks hosted locally or in [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction)* 
 
@@ -178,49 +188,36 @@ python3 -m ipykernel install --prefix "${DL_ANACONDA_ENV_HOME}" --name $ENV_NAME
 
 </details>
 
-## Create a Youtube API and store to Secret Manager
-
-<details>
-  <summary>Create and store API key</summary>
-
-1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
-
-2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api`. See [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version) or step-by-step guidance
-
-</details>
-
-
 
 <details>
   <summary>Create and populate `.env` file(s)</summary>
 
-*create `.env` file for `root_agent`:*
+*(1) create `.env` file for `root_agent`:*
 
 ```bash
 touch .env
 nano .env
 ```
 
-*edit variables as needed:*
+*(2) edit variables as needed:*
 
 ```bash
 GOOGLE_GENAI_USE_VERTEXAI=1
 GOOGLE_CLOUD_PROJECT=YOUR_GCP_PROJECT_ID
-PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER # e.g., 1234756
+GOOGLE_CLOUD_PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER # e.g., 1234756
 GOOGLE_CLOUD_LOCATION=YOUR_LOCATION # e.g., us-central1
-YT_SECRET_MNGR_NAME=YOUR_SECRET_NAME # e.g., yt-data-api
-GOOGLE_API_KEY=None # Optional
 BUCKET=gs://YOUR_GCS_BUCKET_NAME # create a GCS bucket
+YT_SECRET_MNGR_NAME=YOUR_SECRET_NAME # e.g., yt-data-api
 ```
 
-*copy `.env` file to `root_agent` dir:*
+*(3) copy `.env` file to `root_agent` dir:*
 
 ```bash
 cp .env trends_and_insights_agent/.env
 cat trends_and_insights_agent/.env
 ```
 
-*read and execute `.env` file:*
+*(4) read and execute `.env` file:*
 
 ```bash
 source .env
@@ -245,7 +242,7 @@ gcloud storage buckets create gs://$BUCKET --location=$GOOGLE_CLOUD_LOCATION
 </details>
 
 
-### Running locally
+### Start a session
 
 When starting a new session (e.g., after a new code commit, package update/add, etc.):
 
