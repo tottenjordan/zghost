@@ -8,9 +8,9 @@ from google.genai.types import GenerateVideosConfig
 from google.adk import Agent
 from google.adk.tools import ToolContext
 from google.cloud import storage
-from utils import IMAGE_MODEL, VIDEO_MODEL
 
-from ...utils import download_blob, upload_file_to_gcs
+from ...utils import download_blob, upload_file_to_gcs, IMAGE_MODEL, VIDEO_MODEL
+
 
 client = genai.Client()
 
