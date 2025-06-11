@@ -45,7 +45,9 @@ BQ_DATASET = "google_trends_copy"  # os.environ["BQ_DATASET"]
 bq_client = bigquery.Client(project=BQ_PROJECT)
 
 
-async def save_yt_trends_to_session_state(selected_trends: dict, tool_context: ToolContext):
+async def save_yt_trends_to_session_state(
+    selected_trends: dict, tool_context: ToolContext
+):
     """
     Tool to save `selected_trends` to the `target_yt_trends` in the session state.
     Use this tool after the user has selected trending YouTube content to target for the campaign.
@@ -96,7 +98,9 @@ def get_youtube_trends(
     return trend_response
 
 
-async def save_search_trends_to_session_state(new_trends: dict, tool_context: ToolContext):
+async def save_search_trends_to_session_state(
+    new_trends: dict, tool_context: ToolContext
+):
     """
     Tool to call the `target_search_trends_generator_agent` agent and update the `target_search_trends` in the session state.
     Use this tool after the user has selected a Trending Search topic to target for the campaign.

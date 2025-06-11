@@ -8,7 +8,6 @@ from ...utils import MODEL
 from .prompts import guide_data_extraction_instructions
 
 
-# brief_data_generation_agent
 campaign_guide_data_generation_agent = Agent(
     model=MODEL,
     name="campaign_guide_data_generation_agent",

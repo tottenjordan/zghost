@@ -620,11 +620,16 @@ async def call_campaign_guide_agent(question: str, tool_context: ToolContext):
     Use this tool when instructions call for `campaign_guide_data_generation_agent` use.
 
     Args:
-        Question: The question to ask the agent.
-          Example:  Extract and structure the information from the
-          marketing_guide_Pixel_9.pdf document, focusing on objectives,
-          target audience, KPIs, and budget.
-          The Agent will produce structured output for the `campaign_guide` session state object.
+        question: The question to ask the agent, use the tool_context to extract the following schema:
+            campaign_name: str -> given name of campaign; could be title of uploaded `campaign_guide`
+            brand: str -> target product's brand
+            target_product: str -> the subject of the marketing campaign objectives
+            target_audience: str -> specific group(s) we intended to reach. Typically described with demographic, psychographic, and behavioral profile of the ideal customer or user
+            target_regions: str -> specific cities and/or countries we intend to reach
+            campaign_objectives: str -> goals that define what the marketing campaign plans to achieve
+            media_strategy: str -> media channels or formats the campaign intends to use to reach the target audience(s)
+            key_insights: str -> referencable data points that shows intersection between goals and broad information sources
+            campaign_highlights: str -> aspects of product, brand, event, etc. the campaign wishes to highlight e.g., key selling points or competitive advantages of the target product
         tool_context: The ADK tool context.
     """
 
@@ -633,12 +638,8 @@ async def call_campaign_guide_agent(question: str, tool_context: ToolContext):
         return {"status": f"error, need more context, input: {question}"}
 
     agent_tool = AgentTool(campaign_guide_data_generation_agent)
-    await agent_tool.run_async(args={"request": question}, tool_context=tool_context)
-
-    # # TODO: try similar
-    # guide_state = await agent_tool.run_async(
-    #     args={"request": question}, tool_context=tool_context
-    # )
-    # tool_context.state["campaign_guide"] = guide_state
-
+    campaign_guide_state = await agent_tool.run_async(
+        args={"request": question}, tool_context=tool_context
+    )
+    tool_context.state["campaign_guide"] = campaign_guide_state
     return {"status": "ok"}

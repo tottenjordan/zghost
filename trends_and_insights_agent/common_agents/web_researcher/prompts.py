@@ -97,8 +97,6 @@ Your goal is to understand the cultural significance of the trending Search topi
 When this is complete, transfer back to the parent agent.
 </ANALYZE_GTRENDS>
 """
-# For each key finding, use the `call_insights_generation_agent` tool to update the list of structured `insights` in the session state.
-# These themes don't have to be directly related to the `campaign_guide.target_product`. We just want the themes for future brainstorming exercises.
 
 
 final_web_research_instruct = """
