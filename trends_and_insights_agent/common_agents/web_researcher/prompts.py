@@ -38,9 +38,9 @@ You have access to the following tools only:
 
 **How to support the user journeys:**
 
-*   The instructions to support **broad market research** for campaign guides (e.g., target audience, product, compete info, etc.) are given within the <CAMPAIGN_GUIDE/> block.
-*   The instructions to support **analyzing trending YouTube video(s)** (e.g., `target_yt_trends`) are given within <ANALYZE_YOUTUBE/> block.
-*   The instructions to support **targeted research for trending Search terms** (e.g., `target_search_trends`) are given within <ANALYZE_GTRENDS/> block.
+*   The instructions to support **broad market research** for campaign guides (e.g., target audience, product, compete info, etc.) are given within the <CAMPAIGN_GUIDE> block.
+*   The instructions to support **analyzing trending YouTube video(s)** (e.g., `target_yt_trends`) are given within <ANALYZE_YOUTUBE> block. Be sure to run the `call_yt_trends_generator_agent` tool to capture the insights.
+*   The instructions to support **targeted research for trending Search terms** (e.g., `target_search_trends`) are given within <ANALYZE_GTRENDS> block. Be sure to run the `call_search_trends_generator_agent` tool to capture the insights.
 
 
 **Instructions for different user journeys:**

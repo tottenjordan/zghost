@@ -14,10 +14,6 @@ from ...utils import download_blob, upload_file_to_gcs, IMAGE_MODEL, VIDEO_MODEL
 
 client = genai.Client()
 
-IMAGE_MODEL = "imagen-4.0-generate-preview-05-20"  # "imagen-3.0-generate-002"
-VIDEO_MODEL = "veo-2.0-generate-001"  # veo-3.0-generate-preview
-
-
 async def generate_image(
     prompt: str, tool_context: ToolContext, number_of_images: int = 1
 ):
