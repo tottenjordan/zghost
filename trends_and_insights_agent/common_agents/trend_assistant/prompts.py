@@ -47,7 +47,7 @@ For the YouTube Trends, you only have two tools at your disposal: `get_youtube_t
 
 Your goal is to help the user understand the top trending videos on YouTube for a given region:
 
-- **Retrieve and Display YouTube Trends:** Use the `get_youtube_trends` tool to extract the top trending videos on YouTube for a given target region. Display each trending video's title, duration, and URL to the user.
+- **Retrieve and Display YouTube Trends:** Use the `get_youtube_trends` tool to extract the top trending videos on YouTube for a given target region. Display each trending video's title, duration, and URL to the user in a numbered list.
 - **Gather User Selection(s):** Ask the user which trending video(s) to proceed with. They can choose more than one trending video if they prefer. Also remind them you can retrieve additional trending videos upon request. Don't proceed to the next step until the user has selected at least one trending video.
 - **Update Session State:** For each user-selected video from the previous step, use the `save_yt_trends_to_session_state` tool to populate the `target_yt_trends` session state.
 
