@@ -3,7 +3,6 @@ import uuid
 import shutil
 import logging
 
-# from typing import Union, Optional
 from markdown_pdf import MarkdownPdf, Section
 
 from google.adk.tools import ToolContext
@@ -13,10 +12,8 @@ from google import genai
 logging.basicConfig(level=logging.INFO)
 client = genai.Client()
 
-# from ...utils import upload_file_to_gcs
 
-
-def generate_research_pdf(
+async def generate_research_pdf(
     markdown_string: str,
     tool_context: ToolContext,
 ) -> dict:
@@ -25,7 +22,7 @@ def generate_research_pdf(
     Make sure the PDF is formatted correctly with human readable characters.
 
     Args:
-        markdown_string: a string in Markdown format that clearly presents the session state: `campaign_guide`, `trends`, and `insights`
+        markdown_string: a string in Markdown format that clearly presents the session state: `campaign_guide`, `search_trends`, `yt_trends`, and `insights`
         tool_context (ToolContext): The tool context.
 
     Returns:
@@ -58,7 +55,7 @@ def generate_research_pdf(
 
     # save artifact
     try:
-        version = tool_context.save_artifact(
+        version = await tool_context.save_artifact(
             filename=artifact_filename, artifact=document_part
         )
         logging.info(
@@ -70,12 +67,6 @@ def generate_research_pdf(
         # Handle potential storage errors (e.g., GCS permissions)
         logging.exception(f"An unexpected error occurred during artifact save: {e}")
 
-    # # upload local file to GCS
-    # gcs_blob_path = upload_file_to_gcs(
-    #     file_path=filepath, file_data=document_bytes, content_type="application/pdf"
-    # )
-
-    # delete locally saved pdf_report
     try:
         shutil.rmtree(DIR)
         logging.info(f"Directory '{DIR}' and its contents removed successfully")

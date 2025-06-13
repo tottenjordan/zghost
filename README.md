@@ -1,19 +1,26 @@
 # Trend & Insight Agents
 
-> *building multi-agent systems with Google's [Agent Development Kit](https://google.github.io/adk-docs/) (ADK)*
+> a multi-agent system finding the intersection between product, trend, and audience
+
+<details>
+  <summary>trends-2-creatives</summary>
+
+<img src='media/deep-fried-trends.jpeg' width="700"/>
+
+</details>
 
 ## About
 
-Trends & Insights Agent is an advanced marketing tool built upon the foundation of Retail, CPG, and Google’s AI marketing tooling best practices. This version represents a significant leap forward, bringing enhanced capabilities with Google’s new [Agent Development Kit (ADK)](https://google.github.io/adk-docs/)
+The Trend & Insight Agent is a marketing tool for developing data-driven and culturally relevant marketing strategies. Built with Google’s [Agent Development Kit (ADK)](https://google.github.io/adk-docs/), this multi-agent system helps users generate ad creatives from trending themes found in Google Search and YouTube.
 
-**What Trends & Insights Can Do:**
+**What does it do?**
 
--   **Streamline the Marketing Process:** From initial inspiration and competitive analysis to final creative drafts and reporting, TIA streamlines every step of the marketing workflow, making it easier to ideate, execute, and analyze campaigns, **significantly improving marketing use case velocity**.
--   **Leverage Advanced AI:** Utilizing cutting-edge LLM-based agents, Trends & Insights Agent empowers users to generate refined marketing briefs, draft ad creatives, and compile comprehensive report. These agents are powered by the diverse range of models available in Vertex AI's Model Garden.
--   **Deep Integration with Google Ecosystem:** Seamlessly gather real-time insights from Google Search trends, YouTube trends, using guardrails from your own internal campaign guidelines. This ensures marketing strategies are data-driven and culturally relevant.
+-   **Streamline the Marketing Process:** From initial inspiration and competitive analysis to creative drafts and reporting, TIA improves marketing use case velocity by making it easier to ideate, execute, and analyze campaigns
+-   **Leverage Advanced AI:** With LLM-based agents, users generate refined marketing briefs, draft ad creatives, and compile comprehensive reports. These agents are powered by the diverse range of models available in [Vertex AI's Model Garden](https://console.cloud.google.com/vertex-ai/model-garden)
+-   **Deep Integration with Google Ecosystem:** Gather real-time insights from trends in Google Search and YouTube, using guardrails from your own internal campaign guidelines. This ensures marketing strategies are data-driven and culturally relevant.
 
 
-**Rooted in Alphabet's/Google's Marketing Practices:**
+**Marketing best practices**
 
 -   **Act on Real-Time Insights:** Tap into the pulse of current trends and audience interests, ensuring that campaigns are always timely and relevant.
 -   **Maintain Brand Consistency:** Ingest campaign guidelines to ensure all creative and messaging aligns with established brand voice and objectives.
@@ -22,26 +29,83 @@ Trends & Insights Agent is an advanced marketing tool built upon the foundation 
 ## Key Features
 
 - Build LLM-based agents with [models supported in Vertex AI's Model Garden](https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/available-models)
-- Ingest campaign guidelines outlining e.g., target audience, regions of interest, campaign objectives, product details, etc.
 - Gather related content from Google Search and [YouTube](https://developers.google.com/youtube/v3/docs/search) for initial inspiration, competitor insights
-- Explore trending Search terms and [trending YouTube videos](https://developers.google.com/youtube/v3/docs/videos/list)
-- Generate refined marketing brief that includes e.g., campaign concepts, taglines, messaging angles, key insights, etc.
-- Draft ad creatives (e.g., image and video) based on campaign themes or specific prompts
+- Explore [trending Search terms](https://cloud.google.com/blog/products/data-analytics/top-25-google-search-terms-now-in-bigquery?e=48754805) and [trending YouTube videos](https://developers.google.com/youtube/v3/docs/videos/list)
+- Draft ad creatives (e.g., image and video) based on trends, campaign themes, or specific prompts
 - Compile trends, insights, and campaign research into a comprehensive report
 
 
 ## Example usage
 
-When interacting with the agent users can:
-- Upload a PDF and get structured data outputs
-- Query for general trends that are popular in various locations
-- Broad research on new marketing ideas, leveraging web searching tools
-- Generate new images based on insights from web searching or trend tool use
+1. ingest PDF campaign brief defining target audience, product, region, media strategy, brand voice, etc. 
+2. conduct web research to gather insight about these concepts
+3. select trending term(s) from Google Search
+4. select trending video(s) from YouTube
+5. conduct web research to understand the contex of each trend
+6. generate camapign concepts that resonate with the target audience, while tapping into themes from the trends & insights
+7. from these campaign concepts, generate image and video creatives, ad copy, and social media captions
+
+<details>
+  <summary>Example interaction</summary>
+
+---
+
+
+*In the ADK dev UI, copy/paste these prompts to go from trends to creatives in ~5 mins*
+
+**[entry point]** 
+
+++ manually upload a `campaign_guide` (PDF) or use [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf)
+
+> [user]: *Use this marketing campaign guide to plan and conduct research for potential campaign briefs*
+
+**[campaign research]** 
+
+> [user]: *Do some research on topics described in the campaign guide. Use Google Search to gather insights on several topics to better understand the campaign.*
+
+**[trends]** 
+
+> [user]: *Let’s explore trends* 
+
+    --> (agent displays Search Trends and Trending Videos)
+
+    --> (user manually selects trending Search Terms and YouTube videos of interest)
+
+**[trend research]** 
+
+> [user]: *Let’s analyze the selected YouTube video(s) and gather context to understand why they are trending and how we can incorporate similar themes into our campaign*
+
+    --> (agent analyzes video, searches web, and stores results in session state)
+
+> [user]: *Let’s gather context for the trending search terms from Google Search*
+
+    --> (agent generates queries related to selected terms, searches web, and stores results in session state)
+
+**[creative gen]** 
+
+> [user]: *Let's generate ad content*
+
+*see sub-agent's instructions here: [ad_content_generator/prompts.py](trends_and_insights_agent/common_agents/ad_content_generator/prompts.py)*
+
+</details>
+
 
 ## How to use this repo
 
 1. Clone this repo (to local or Vertex AI Workbench Instance)
-2. Open a terminal and run below commands
+2. Create and store YouTube API key
+3. Open terminal, run commands under **One-time setup**
+4. Run commands under **Start a session**
+
+
+### Create and store YouTube API key
+
+1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
+
+2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (see `YT_SECRET_MNGR_NAME` in `.env` file)
+
+   > For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
+
 
 ### One-time setup
 
@@ -55,9 +119,7 @@ git clone https://github.com/tottenjordan/zghost.git
 ```bash
 sudo apt-get install virtualenv python3-venv python3-pip
 
-python3 -m venv .venv
-
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 ```
 
 </details>
@@ -73,17 +135,17 @@ pip install pipx
 pip install -U poetry packaging ipykernel
 
 poetry install
-
-poetry env use 3.12
 ```
 
 </details>
 
 
 <details>
-  <summary>Enable Google cloud APIs</summary>
+  <summary>Authenticate and Enable Google Cloud APIs</summary>
 
 ```bash
+gcloud auth application-default login
+
 gcloud services enable artifactregistry.googleapis.com \
     bigquery.googleapis.com \
     logging.googleapis.com \
@@ -99,7 +161,7 @@ gcloud services enable artifactregistry.googleapis.com \
 
 
 <details>
-  <summary>Optionally, create notebook kernels</summary>
+  <summary>Optionally, create notebook kernel</summary>
 
 *create kernel with required packages for notebooks hosted locally or in [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction)* 
 
@@ -130,33 +192,32 @@ python3 -m ipykernel install --prefix "${DL_ANACONDA_ENV_HOME}" --name $ENV_NAME
 <details>
   <summary>Create and populate `.env` file(s)</summary>
 
-*create `.env` file for `root_agent`:*
+*(1) create `.env` file for `root_agent`:*
 
 ```bash
 touch .env
 nano .env
 ```
 
-*edit variables as needed:*
+*(2) edit variables as needed:*
 
 ```bash
 GOOGLE_GENAI_USE_VERTEXAI=1
 GOOGLE_CLOUD_PROJECT=YOUR_GCP_PROJECT_ID
-PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER # e.g., 1234756
+GOOGLE_CLOUD_PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER # e.g., 1234756
 GOOGLE_CLOUD_LOCATION=YOUR_LOCATION # e.g., us-central1
-YT_SECRET_MNGR_NAME=YOUR_SECRET_NAME # e.g., yt-data-api
-GOOGLE_API_KEY=None # Optional
 BUCKET=gs://YOUR_GCS_BUCKET_NAME # create a GCS bucket
+YT_SECRET_MNGR_NAME=YOUR_SECRET_NAME # e.g., yt-data-api
 ```
 
-*copy `.env` file to `root_agent` dir:*
+*(3) copy `.env` file to `root_agent` dir:*
 
 ```bash
 cp .env trends_and_insights_agent/.env
 cat trends_and_insights_agent/.env
 ```
 
-*read and execute `.env` file:*
+*(4) read and execute `.env` file:*
 
 ```bash
 source .env
@@ -181,7 +242,7 @@ gcloud storage buckets create gs://$BUCKET --location=$GOOGLE_CLOUD_LOCATION
 </details>
 
 
-### Running locally
+### Start a session
 
 When starting a new session (e.g., after a new code commit, package update/add, etc.):
 
@@ -198,7 +259,7 @@ echo $BUCKET
 3. launch the adk developer UI
 
 ```bash
-adk web
+poetry run adk web
 ```
 
 4. To start interacting with your agents, open the provided `localhost` link (e.g., `http://localhost:8000`) and select an agent from the drop-down (top left)

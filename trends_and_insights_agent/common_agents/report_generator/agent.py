@@ -6,10 +6,10 @@ from .prompts import prepare_research_report_instructions
 from ...prompts import global_instructions
 from ...utils import MODEL
 
-
-research_generation_agent = Agent(
+# research_generation_agent
+report_generator_agent = Agent(
     model=MODEL,
-    name="research_generation_agent",
+    name="report_generator_agent",
     global_instruction=global_instructions,
     instruction=prepare_research_report_instructions,
     tools=[

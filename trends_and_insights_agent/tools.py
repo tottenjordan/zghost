@@ -1,9 +1,6 @@
 import os
-import uuid
+
 import logging
-from .prompts import united_insights_prompt
-from pydantic import BaseModel
-from google.adk.agents import Agent
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,54 +19,46 @@ import trafilatura
 import pandas as pd
 from typing import Optional  # , AsyncGenerator
 
+from pydantic import BaseModel
 from google.genai import types
 from google.genai import Client
+from google.adk.agents import Agent
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
+
 from google.cloud import secretmanager as sm
 import googleapiclient.discovery
+
+from .utils import MODEL
+from .secrets import access_secret_version
+from .shared_libraries.types import Insights, YT_Trends, Search_Trends
+from .prompts import (
+    united_insights_prompt,
+    yt_trends_generation_prompt,
+    search_trends_generation_prompt,
+)
 
 from .common_agents.marketing_guide_data_generator.agent import (
     campaign_guide_data_generation_agent,
 )
 
+
+# ========================
 # clients
-sm_client = sm.SecretManagerServiceClient()
-SECRET_ID = f'projects/{os.environ["GOOGLE_CLOUD_PROJECT_NUMBER"]}/secrets/{os.environ["YT_SECRET_MNGR_NAME"]}'  # yt-data-api
-SECRET_VERSION = "{}/versions/1".format(SECRET_ID)
-response = sm_client.access_secret_version(request={"name": SECRET_VERSION})
-YOUTUBE_DATA_API_KEY = response.payload.data.decode("UTF-8")
+# ========================
+try:
+    yt_secret_id = os.environ["YT_SECRET_MNGR_NAME"]
+except KeyError:
+    raise Exception("YT_SECRET_MNGR_NAME environment variable not set")
+
+# youtube client
+YOUTUBE_DATA_API_KEY = access_secret_version(secret_id=yt_secret_id, version_id="1")
 youtube_client = googleapiclient.discovery.build(
     serviceName="youtube", version="v3", developerKey=YOUTUBE_DATA_API_KEY
 )
 
-# Only Vertex AI supports image generation for now.
+# google genai client
 client = Client()
-
-
-async def call_guide_generation_agent(
-    question: str, tool_context: ToolContext, file_path: str
-):
-    """
-    Tool to call the campaign guide data generation agent.
-    
-    Args:
-        Question: The question to ask the agent.
-        tool_context: The tool context.
-        file_path: The path to the file to load, this is the pdf report.
-    """
-    agent_tool = AgentTool(campaign_guide_data_generation_agent)
-    agent_name = tool_context.agent_name
-    artifact_part = types.Part(text=file_path)
-
-    # TODO: support user upload artifacts
-    # tool_context.save_artifact("campaign_guide.pdf", artifact_part)
-
-    campaign_guide_output = await agent_tool.run_async(
-        args={"request": question}, tool_context=tool_context
-    )
-    tool_context.state["campaign_guide"] = campaign_guide_output
-    return campaign_guide_output
 
 
 # ========================
@@ -325,11 +314,9 @@ async def query_web(
     return results
 
 
-###
-# YT
-###
-
-
+# ========================
+# YouTube tools
+# ========================
 def query_youtube_api(
     query: str,
     region_code: str,
@@ -408,7 +395,7 @@ def analyze_youtube_videos(
 ) -> str:
     """
     Analyzes youtube videos given a prompt and the video's URL
-    
+
     Args:
         prompt (str): The prompt to use for the analysis.
         youtube_url (str): The url to check for youtube.com
@@ -424,7 +411,6 @@ def analyze_youtube_videos(
             mime_type="video/*",
         )
 
-        model = "gemini-2.0-flash-001"
         contents = [
             types.Content(
                 role="user",
@@ -432,39 +418,26 @@ def analyze_youtube_videos(
             )
         ]
         result = client.models.generate_content(
-            model=model,
+            model=MODEL,
             contents=contents,
             config=types.GenerateContentConfig(
-                temperature=0.1,
                 # system_instruction=youtube_analysis_prompt,
+                temperature=0.1,
             ),
         )
         return result.text
 
 
-class Insight(BaseModel):
-    "Data model for insights from Google and Youtube research."
-
-    insight_title: str
-    insight_text: str
-    insight_urls: str
-    key_entities: str
-    key_relationships: str
-    key_audiences: str
-    key_product_insights: str
-
-
-class Insights(BaseModel):
-    "Data model for insights from Google and Youtube research."
-
-    insights: list[Insight]
-
-
+# ========================
+# Insight Generation
+# ========================
 # agent tool to capture insights
 insights_generator_agent = Agent(
-    model="gemini-2.0-flash-001",
+    model=MODEL,
     name="insights_generator_agent",
     instruction=united_insights_prompt,
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
     generate_content_config=types.GenerateContentConfig(
         temperature=0.1,
     ),
@@ -475,18 +448,19 @@ insights_generator_agent = Agent(
 
 async def call_insights_generation_agent(question: str, tool_context: ToolContext):
     """
-    Tool to call the insights generation agent. Use this tool to update the list of insights in the agent's state.
-    Question: The question to ask the agent, use the tool_context to extract the following schema:
-        insight_title: str -> Come up with a unique title for the insight
-        insight_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
-        insight_urls: str -> Get the url from the `query_youtube_api` tool or `query_web` tool
-        key_entities: str -> Develop entities from the source to create a graph (see relations)
-        key_relationships: str -> Create relationships between the key_entities to create a graph
-        key_audiences: str -> Considering the guide, how does this insight intersect with the audience?
-        key_product_insights: str -> Considering the guide, how does this insight intersect with the product?
-    tool_context: The tool context.
-    """
+    Tool to call the `insights_generator_agent` agent. Use this tool to update `insights` in the session state.
 
+    Args:
+        Question: The question to ask the agent, use the tool_context to extract the following schema:
+            insight_title: str -> Come up with a unique title for the insight.
+            insight_text: str -> Generate a summary of the insight from the web research.
+            insight_urls: str -> Get the url(s) used to generate the insight.
+            key_entities: str -> Extract any key entities discussed in the gathered context.
+            key_relationships: str -> Describe the relationships between the Key Entities you have identified.
+            key_audiences: str -> Considering the guide, how does this insight intersect with the audience?
+            key_product_insights: str -> Considering the guide, how does this insight intersect with the product?
+        tool_context: The tool context.
+    """
     agent_tool = AgentTool(insights_generator_agent)
     existing_insights = tool_context.state.get("insights")
     insights = await agent_tool.run_async(
@@ -494,10 +468,178 @@ async def call_insights_generation_agent(question: str, tool_context: ToolContex
     )
     logging.info(f"Insights: {insights}")
     logging.info(f"Existing insights: {existing_insights}")
-    if existing_insights is not {'insights': []}:
-        insights["insights"].extend(
-            existing_insights["insights"]
-        )  # TODO: Validate how to keep a history of trends & insights
+
+    if existing_insights is not {"insights": []}:
+        insights["insights"].extend(existing_insights["insights"])
     logging.info(f"Final insights: {insights}")
+
     tool_context.state["insights"] = insights
+    return {"status": "ok"}
+
+
+# # ========================
+# # Trend Generation
+# # ========================
+# # *   target_search_trends
+# # *   target_yt_trends
+
+
+def get_search_trend_state(tool_context: ToolContext) -> dict:
+    """
+    Inspect session state and retrieve any stored trends under `target_search_trends`
+    Args:
+        tool_context: The ADK tool context.
+
+    Returns:
+        dict: trends from the session state
+    """
+    dict_oh_dicts = {}
+    target_search_trends = tool_context.state["target_search_trends"]
+    if target_search_trends == {"target_search_trends": []}:
+        logging.info(f"`target_search_trends` not populated yet")
+    else:
+        logging.info(f"target_search_trends: {target_search_trends}")
+        dict_oh_dicts["target_search_trends"] = target_search_trends
+    return dict_oh_dicts
+
+
+def get_yt_trend_state(tool_context: ToolContext) -> dict:
+    """
+    Inspect session state and retrieve any stored trends under `target_yt_trends`
+    Args:
+        tool_context: The ADK tool context.
+
+    Returns:
+        dict: trends from the session state
+    """
+    dict_oh_dicts = {}
+    target_yt_trends = tool_context.state["target_yt_trends"]
+    if target_yt_trends == {"target_yt_trends": []}:
+        logging.info(f"`target_yt_trends` not found in state")
+    else:
+        logging.info(f"target_yt_trends: {target_yt_trends}")
+        dict_oh_dicts["target_yt_trends"] = target_yt_trends
+    return dict_oh_dicts
+
+
+# agent tool to capture YouTube trends
+yt_trends_generator_agent = Agent(
+    model=MODEL,
+    name="yt_trends_generator_agent",
+    instruction=yt_trends_generation_prompt,
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
+    generate_content_config=types.GenerateContentConfig(
+        temperature=0.1,
+    ),
+    output_schema=YT_Trends,
+    output_key="yt_trends",
+)
+
+
+async def call_yt_trends_generator_agent(question: str, tool_context: ToolContext):
+    """
+    Tool to call the `yt_trends_generator_agent` agent.
+    This tool checks the session state for any trends in `target_yt_trends`, and for each new trend, updates `yt_trends` in the session state.
+
+    Args:
+        Question: The question to ask the agent, use the tool_context to extract the following schema:
+            video_title: str -> Get the video's title from its entry in `target_yt_trends`
+            trend_urls: str -> Get the URL from its entry in `target_yt_trends`
+            trend_text: str -> Use the `analyze_youtube_videos` tool to generate a summary of the trending video. What are the main themes?
+            key_entities: str -> Extract any key entities present in the trending video (e.g., people, places, things).
+            key_relationships: str -> Describe any relationships between the key entities.
+            key_audiences: str -> How will the themes in this trending video resonate with our target audience(s)?
+            key_product_insights: str -> Suggest how this trend could possibly intersect with the `target_product`.
+        tool_context: The ADK tool context.
+    """
+
+    agent_tool = AgentTool(yt_trends_generator_agent)
+    existing_yt_trends = tool_context.state.get("yt_trends")
+
+    yt_trends = await agent_tool.run_async(
+        args={"request": question}, tool_context=tool_context
+    )
+    logging.info(f"YT_Trends: {yt_trends}")
+    logging.info(f"Existing trends: {existing_yt_trends}")
+
+    if existing_yt_trends is not {"yt_trends": []}:
+        yt_trends["yt_trends"].extend(existing_yt_trends["yt_trends"])
+
+    tool_context.state["yt_trends"] = yt_trends
+    return {"status": "ok"}
+
+
+# agent tool to capture Search trends
+search_trends_generator_agent = Agent(
+    model=MODEL,
+    name="search_trends_generator_agent",
+    instruction=search_trends_generation_prompt,
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
+    generate_content_config=types.GenerateContentConfig(
+        temperature=0.1,
+    ),
+    output_schema=Search_Trends,
+    output_key="search_trends",
+)
+
+
+async def call_search_trends_generator_agent(question: str, tool_context: ToolContext):
+    """
+    This tool calls `search_trends_generator_agent` to check the session state for any trends in `target_search_trends`, and for each new trend updates `search_trends` in the session state.
+
+    Args:
+        Question: The question to ask the agent, use the tool_context to extract the following schema:
+            trend_title: str -> Come up with a unique title to represent the trend. Structure this title so it begins with the exact words from the 'trending topic` followed by a colon and a witty catch-phrase.
+            trend_text: str -> Generate a summary describing what happened with the trending topic and what is being discussed.
+            trend_urls: str -> List any url(s) that provided reliable context.
+            key_entities: str -> Extract any key entities discussed in the gathered context.
+            key_relationships: str -> Describe the relationships between the key entities you have identified.
+            key_audiences: str -> How will this trend resonate with our target audience(s), `campaign_guide.target_audience`?
+            key_product_insights: str -> Suggest how this trend could possibly intersect with the target product: `campaign_guide.target_product`
+        tool_context: The ADK tool context.
+    """
+    agent_tool = AgentTool(search_trends_generator_agent)
+    existing_search_trends = tool_context.state.get("search_trends")
+    search_trends = await agent_tool.run_async(
+        args={"request": question}, tool_context=tool_context
+    )
+    logging.info(f"Search_Trends: {search_trends}")
+    logging.info(f"Existing search_trends: {existing_search_trends}")
+
+    if existing_search_trends is not {"search_trends": []}:
+        search_trends["search_trends"].extend(existing_search_trends["search_trends"])
+    tool_context.state["search_trends"] = search_trends
+    return {"status": "ok"}
+
+
+async def call_campaign_guide_agent(question: str, tool_context: ToolContext):
+    """
+    Tool to call the `campaign_guide_data_generation_agent` agent.
+    Use this tool when instructions call for `campaign_guide_data_generation_agent` use.
+
+    Args:
+        question: The question to ask the agent, use the tool_context to extract the following schema:
+            campaign_name: str -> given name of campaign; could be title of uploaded `campaign_guide`
+            brand: str -> target product's brand
+            target_product: str -> the subject of the marketing campaign objectives
+            target_audience: str -> specific group(s) we intended to reach. Typically described with demographic, psychographic, and behavioral profile of the ideal customer or user
+            target_regions: str -> specific cities and/or countries we intend to reach
+            campaign_objectives: str -> goals that define what the marketing campaign plans to achieve
+            media_strategy: str -> media channels or formats the campaign intends to use to reach the target audience(s)
+            key_insights: str -> referencable data points that shows intersection between goals and broad information sources
+            campaign_highlights: str -> aspects of product, brand, event, etc. the campaign wishes to highlight e.g., key selling points or competitive advantages of the target product
+        tool_context: The ADK tool context.
+    """
+
+    # Check for hallucinations or if there is not enough context to feed the LLM:
+    if len(question) < 42:
+        return {"status": f"error, need more context, input: {question}"}
+
+    agent_tool = AgentTool(campaign_guide_data_generation_agent)
+    campaign_guide_state = await agent_tool.run_async(
+        args={"request": question}, tool_context=tool_context
+    )
+    tool_context.state["campaign_guide"] = campaign_guide_state
     return {"status": "ok"}

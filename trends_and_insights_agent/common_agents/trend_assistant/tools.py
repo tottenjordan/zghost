@@ -1,87 +1,73 @@
 # imports
 import os
-from pydantic import BaseModel
-from google.adk.agents import Agent
+import logging
+import tabulate
+import pandas as pd
+from typing import Any
+from pydantic import BaseModel, Field
+
 from google.genai import types
-from .prompts import trends_generation_prompt
+from google.adk.agents import Agent
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
-import logging
 
 import googleapiclient.discovery
-from google.cloud import secretmanager as sm
+from google.cloud import bigquery
+
+# from google.cloud import secretmanager as sm
 
 
+from ...utils import MODEL
+from ...secrets import access_secret_version
+
+# from .prompts import (
+#     # trends_generation_prompt,
+#     # search_trends_generation_prompt,
+#     # yt_trends_generation_prompt,
+# )
+
+# ========================
 # clients
-sm_client = sm.SecretManagerServiceClient()
-SECRET_ID = f'projects/{os.environ["GOOGLE_CLOUD_PROJECT_NUMBER"]}/secrets/{os.environ["YT_SECRET_MNGR_NAME"]}'  # yt-data-api
-SECRET_VERSION = "{}/versions/1".format(SECRET_ID)
-response = sm_client.access_secret_version(request={"name": SECRET_VERSION})
-YOUTUBE_DATA_API_KEY = response.payload.data.decode("UTF-8")
+# ========================
+try:
+    yt_secret_id = os.environ["YT_SECRET_MNGR_NAME"]
+except KeyError:
+    raise Exception("YT_SECRET_MNGR_NAME environment variable not set")
+
+# youtube client
+YOUTUBE_DATA_API_KEY = access_secret_version(secret_id=yt_secret_id, version_id="1")
 youtube_client = googleapiclient.discovery.build(
     serviceName="youtube", version="v3", developerKey=YOUTUBE_DATA_API_KEY
 )
+# bigquery client # TODO: add to .env
+BQ_PROJECT = os.environ["GOOGLE_CLOUD_PROJECT"]
+BQ_DATASET = "google_trends_copy"  # os.environ["BQ_DATASET"]
+bq_client = bigquery.Client(project=BQ_PROJECT)
 
 
-# Trends Structured Tool
-class Trend(BaseModel):
-    "Data model for trends from Google and Youtube research."
-
-    trend_title: str
-    trend_text: str
-    trend_urls: str
-    key_entities: str
-    key_relationships: str
-    key_audiences: str
-    key_product_insights: str
-
-
-class Trends(BaseModel):
-    "Data model for trends from Google and Youtube research."
-
-    trends: list[Trend]
-
-
-# agent tool to capture trends
-trends_generator_agent = Agent(
-    model="gemini-2.0-flash-001",
-    name="trends_generator_agent",
-    instruction=trends_generation_prompt,
-    generate_content_config=types.GenerateContentConfig(
-        temperature=0.1,
-    ),
-    output_schema=Trends,
-    output_key="trends",
-)
-
-
-async def call_trends_generator_agent(question: str, tool_context: ToolContext):
+async def save_yt_trends_to_session_state(
+    selected_trends: dict, tool_context: ToolContext
+):
     """
-    Tool to call the trends generation agent.
+    Tool to save `selected_trends` to the `target_yt_trends` in the session state.
+    Use this tool after the user has selected trending YouTube content to target for the campaign.
 
-    Question: The question to ask the agent, use the tool_context to extract the following schema:
-        trend_title: str -> Come up with a unique title for the trend
-        trend_text: str -> Get the text from the `analyze_youtube_videos` tool or `query_web` tool
-        trend_urls: str -> Get the url from the `query_youtube_api` tool
-        source_texts: str -> Get the text from the `query_web` tool or `analyze_youtube_videos` tool
-        key_entities: str -> Develop entities from the source to create a graph (see relations)
-        key_relationships: str -> Create relationships between the key_entities to create a graph
-        key_audiences: str -> Considering the guide, how does this trend intersect with the audience?
-        key_product_insights: str -> Considering the guide, how does this trend intersect with the product?
-    tool_context: The tool context.
+    Args:
+        selected_trends: dict -> The selected trends from the markdown table.
+            video_title: str -> The title of the user-selected video from YouTube Trends.
+            video_duration: str -> The user-selected video's duration.
+            video_url: str -> The user-selected video's URL.
+        tool_context: The tool context.
     """
 
-    agent_tool = AgentTool(trends_generator_agent)
-    existing_trends = tool_context.state.get("trends")
+    existing_target_yt_trends = tool_context.state.get("target_yt_trends")
 
-    trends = await agent_tool.run_async(
-        args={"request": question}, tool_context=tool_context
-    )
-    logging.info(f"Trends: {trends}")
-    logging.info(f"Existing trends: {existing_trends}")
-    if existing_trends is not {"trends": []}:
-        trends["trends"].extend(existing_trends["trends"])
-    tool_context.state["trends"] = trends
+    logging.info(f"Target_Search_Trends: {selected_trends}")
+    logging.info(f"Existing target_yt_trends: {existing_target_yt_trends}")
+
+    if existing_target_yt_trends is not {"target_yt_trends": []}:
+        existing_target_yt_trends["target_yt_trends"].append(selected_trends)
+    tool_context.state["target_yt_trends"] = existing_target_yt_trends
     return {"status": "ok"}
 
 
@@ -112,25 +98,78 @@ def get_youtube_trends(
     return trend_response
 
 
-## TODO: create tool for gathering Search trends from BigQuery public dataset
-# def get_search_trends(
-#     region_code: str = "US",
-#     max_results: int = 7,
-#     # youtube_client: googleapiclient.discovery.Resource = youtube_client,
-# ) -> dict:
+async def save_search_trends_to_session_state(
+    new_trends: dict, tool_context: ToolContext
+):
+    """
+    Tool to call the `target_search_trends_generator_agent` agent and update the `target_search_trends` in the session state.
+    Use this tool after the user has selected a Trending Search topic to target for the campaign.
+
+    Args:
+        Question: The question to ask the agent, use the tool_context to extract the following schema:
+            trend_title: str -> The trend's `term` from the markdown table. Should be the exact same words as seen in the markdown table.
+            trend_rank: int -> The trend's `rank` in the markdown table. Should be the exact same number as seen in the markdown table.
+            trend_refresh_date: str -> The trend's `refresh_date` from the markdown table. Should be the same date string as seen in the markdown table, and formatted as 'MM/DD/YYYY'
+        tool_context: The tool context.
+    """
+    existing_target_search_trends = tool_context.state.get("target_search_trends")
+
+    logging.info(f"Target_Search_Trends: {new_trends}")
+    logging.info(f"Existing target_search_trends: {existing_target_search_trends}")
+
+    if existing_target_search_trends is not {"target_search_trends": []}:
+        existing_target_search_trends["target_search_trends"].append(new_trends)
+    tool_context.state["target_search_trends"] = existing_target_search_trends
+    return {"status": "ok"}
 
 
-# Set up Integration Connectors
-# https://cloud.google.com/integration-connectors/docs/setup-integration-connectors
+# ==============================
+# Google Search Trends (context)
+# =============================
+def get_gtrends_max_date() -> str:
+    query = f"""
+        SELECT 
+         MAX(refresh_date) as max_date
+        -- FROM `{BQ_PROJECT}.{BQ_DATASET}.top_terms`
+        FROM `bigquery-public-data.google_trends.top_terms`
+    """
+    max_date = bq_client.query(query).to_dataframe()
+    return max_date.iloc[0][0].strftime("%m/%d/%Y")
 
-# bigquery_toolset = ApplicationIntegrationToolset(
-#     project="your-gcp-project-id",
-#     location="your-gcp-project-location",
-#     connection="your-connection-name",
-#     entity_operations=["table_name": ["LIST"]],
-# )
 
-# agent = LlmAgent(
-#   ...
-#   tools = bigquery_toolset.get_tools()
-# )
+def get_daily_gtrends() -> str:
+    """
+    Retrieves the top 25 Google Search Trends (term, rank, refresh_date) from a BigQuery table.
+
+    Returns:
+        str: a markdown table containing the Google Search Trends.
+             The table includes columns for 'term', 'rank', and 'refresh_date'.
+             Returns 25 terms ordered by their rank (ascending order) for the current week.
+    """
+    # get latest refresh date
+    max_date = get_gtrends_max_date()
+    logging.info(f"max_date in trends_assistant: {max_date}")
+
+    query = f"""
+        SELECT
+          term,
+          refresh_date,
+          ARRAY_AGG(STRUCT(rank,week) ORDER BY week DESC LIMIT 1) x
+        -- FROM `{BQ_PROJECT}.{BQ_DATASET}.top_terms`
+        FROM `bigquery-public-data.google_trends.top_terms`
+        WHERE refresh_date = PARSE_DATE('%m/%d/%Y',  '{max_date}')
+        GROUP BY term, refresh_date
+        ORDER BY (SELECT rank FROM UNNEST(x))
+        """
+    df_t = bq_client.query(query).to_dataframe()
+    df_t.index += 1
+    df_t["rank"] = df_t.index
+    df_t = df_t.drop("x", axis=1)
+    new_order = ["term", "rank", "refresh_date"]
+    df_t = df_t[new_order]
+    markdown_string = df_t.to_markdown(index=True)
+
+    return f"""# Google Search Trends: \n{markdown_string}"""
+
+    # return print(df_t.to_markdown(index=False))
+    # return {"markdown_string": df_t.to_markdown(index=False)}
