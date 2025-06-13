@@ -62,7 +62,7 @@ Follow these steps to conduct research and generate insights:
     3)   Use the `analyze_youtube_videos` tool to understand the videos found in the previous step and note key insights from your research. 
     4)   Use the `call_insights_generation_agent` tool to update the list of structured `insights` in the session state.
 
-When this is complete, transfer back to the parent agent.
+When this is complete, transfer back to the root agent.
 </CAMPAIGN_GUIDE>
 
 <ANALYZE_YOUTUBE> 
@@ -76,7 +76,7 @@ Your goal is to understand key themes from the video content:
     - **Generate trend insights:** Generate trend context that includes a concise summary describing what is taking place or being discussed in the video. Be sure to explain if you think this trend will resonate with the target_audience described in the `campaign_guide`.
     - **Update Session State:** Use the `call_yt_trends_generator_agent` tool to store this trend context in the `yt_trends` session state.
 
-When this is complete, transfer back to the parent agent.
+When this is complete, transfer back to the root agent.
 </ANALYZE_YOUTUBE>
 
 <ANALYZE_GTRENDS>
@@ -94,13 +94,13 @@ Your goal is to understand the cultural significance of the trending Search topi
         d. Suggest how this trending content could possibly relate to the {campaign_guide.target_product} in a marketing campaign. 
     - **Update Session State:** Use the `call_search_trends_generator_agent` tool to store this trend context in the `search_trends` session state. 
 
-When this is complete, transfer back to the parent agent.
+When this is complete, transfer back to the root agent.
 </ANALYZE_GTRENDS>
 """
 
 
 final_web_research_instruct = """
-Finally, once the supported user journey is complete, transfer back to the parent agent.
+Finally, once the supported user journey is complete, transfer back to the root agent.
 """
 
 

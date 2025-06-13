@@ -101,11 +101,9 @@ Your primary goal is to guide the user through a logical process, leveraging you
         *   **Execute:** Call the sub-agent with the formulated, context-rich prompt/parameters.
         *   Present the results clearly to the user.
 
-6.  **Iterative Assistance:**
-    *   Suggest further actions... Continue to **formulate context-aware calls** to sub-agents based on the ongoing conversation.
-
 """
-
+# 6.  **Iterative Assistance:**
+#     *   Suggest further actions... Continue to **formulate context-aware calls** to sub-agents based on the ongoing conversation.
 
 insights_generation_prompt = """
 Use this tool to capture key insights about concepts from the `campaign_guide` and produce structured data output using the `call_insights_generation_agent` tool.

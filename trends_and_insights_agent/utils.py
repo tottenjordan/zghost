@@ -8,11 +8,11 @@ from typing import Optional
 from google.adk.agents.callback_context import CallbackContext
 from google.genai import types
 
-MODEL = 'gemini-2.5-flash-preview-05-20'
-# MODEL = "gemini-2.0-flash-001"
-# MODEL = "gemini-2.5-pro-preview-06-05"
+
+MODEL = "gemini-2.0-flash-001"  # "gemini-2.5-flash-preview-05-20" "gemini-2.5-pro-preview-06-05"
 IMAGE_MODEL = "imagen-4.0-generate-preview-05-20"  # "imagen-3.0-generate-002"
 VIDEO_MODEL = "veo-2.0-generate-001"  # veo-3.0-generate-preview
+
 
 def upload_file_to_gcs(
     file_path: str,
