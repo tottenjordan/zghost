@@ -14,30 +14,14 @@ from ...tools import (
     call_yt_trends_generator_agent,
     call_search_trends_generator_agent,
 )
-from .prompts import AUTO_UNIFIED_RESEARCH_PROMPT  # , unified_web_research_prompt
-
-
-# tools = [
-#     query_web,
-#     query_youtube_api,
-#     LongRunningFunctionTool(analyze_youtube_videos),
-#     call_insights_generation_agent,
-#     call_yt_trends_generator_agent,
-#     call_search_trends_generator_agent,
-# ]
-# web_researcher_agent = Agent(
-#     model=MODEL,
-#     name="web_researcher_agent",
-#     instruction=AUTO_UNIFIED_RESEARCH_PROMPT,  # unified_web_research_prompt,
-#     tools=tools,
-#     generate_content_config=types.GenerateContentConfig(
-#         temperature=1.0,
-#     ),
-# )
+from .prompts import (
+    AUTO_UNIFIED_RESEARCH_PROMPT,
+    web_efficiency_guidance,
+)
 
 
 # ========================
-# paralell researchers
+# parallel researchers
 # ========================
 
 # Researcher 1: campaign insights
@@ -65,7 +49,7 @@ Follow these steps to conduct research and generate insights:
 researcher_agent_1 = Agent(
     name="CampaignInsightsResearcher",
     model=MODEL,
-    instruction=_PAR_INSIGHT_PROMPT,
+    instruction=web_efficiency_guidance + _PAR_INSIGHT_PROMPT,
     tools=[
         query_web,
         query_youtube_api,
@@ -98,7 +82,7 @@ Your goal is to understand key themes from the video content:
 researcher_agent_2 = Agent(
     name="YT_TrendsResearcher",
     model=MODEL,
-    instruction=_PAR_YT_TREND_PROMPT,
+    instruction=web_efficiency_guidance + _PAR_YT_TREND_PROMPT,
     tools=[
         query_web,
         LongRunningFunctionTool(analyze_youtube_videos),
@@ -132,7 +116,7 @@ Your goal is to understand the cultural significance of the trending Search topi
 researcher_agent_3 = Agent(
     name="GS_TrendsResearcher",
     model=MODEL,
-    instruction=_PAR_GS_TREND_PROMPT,
+    instruction=web_efficiency_guidance + _PAR_GS_TREND_PROMPT,
     tools=[
         query_web,
         call_search_trends_generator_agent,
@@ -152,3 +136,25 @@ parallel_research_agent = ParallelAgent(
 )
 
 web_researcher_agent = parallel_research_agent
+
+
+# ========================
+# prompt-driven researchers
+# ========================
+# tools = [
+#     query_web,
+#     query_youtube_api,
+#     LongRunningFunctionTool(analyze_youtube_videos),
+#     call_insights_generation_agent,
+#     call_yt_trends_generator_agent,
+#     call_search_trends_generator_agent,
+# ]
+# web_researcher_agent = Agent(
+#     model=MODEL,
+#     name="web_researcher_agent",
+#     instruction=AUTO_UNIFIED_RESEARCH_PROMPT,  # unified_web_research_prompt,
+#     tools=tools,
+#     generate_content_config=types.GenerateContentConfig(
+#         temperature=1.0,
+#     ),
+# )

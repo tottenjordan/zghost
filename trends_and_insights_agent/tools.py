@@ -17,7 +17,7 @@ import asyncio
 import aiohttp
 import trafilatura
 import pandas as pd
-from typing import Optional  # , AsyncGenerator
+from typing import Optional
 
 from pydantic import BaseModel
 from google.genai import types
@@ -466,8 +466,8 @@ async def call_insights_generation_agent(question: str, tool_context: ToolContex
     insights = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-    logging.info(f"Insights: {insights}")
-    logging.info(f"Existing insights: {existing_insights}")
+    # logging.info(f"Insights: {insights}")
+    # logging.info(f"Existing insights: {existing_insights}")
 
     if existing_insights is not {"insights": []}:
         insights["insights"].extend(existing_insights["insights"])
@@ -560,8 +560,8 @@ async def call_yt_trends_generator_agent(question: str, tool_context: ToolContex
     yt_trends = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-    logging.info(f"YT_Trends: {yt_trends}")
-    logging.info(f"Existing trends: {existing_yt_trends}")
+    # logging.info(f"YT_Trends: {yt_trends}")
+    # logging.info(f"Existing trends: {existing_yt_trends}")
 
     if existing_yt_trends is not {"yt_trends": []}:
         yt_trends["yt_trends"].extend(existing_yt_trends["yt_trends"])
@@ -605,8 +605,8 @@ async def call_search_trends_generator_agent(question: str, tool_context: ToolCo
     search_trends = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-    logging.info(f"Search_Trends: {search_trends}")
-    logging.info(f"Existing search_trends: {existing_search_trends}")
+    # logging.info(f"Search_Trends: {search_trends}")
+    # logging.info(f"Existing search_trends: {existing_search_trends}")
 
     if existing_search_trends is not {"search_trends": []}:
         search_trends["search_trends"].extend(existing_search_trends["search_trends"])

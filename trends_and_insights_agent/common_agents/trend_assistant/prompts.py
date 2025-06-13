@@ -16,20 +16,19 @@ AUTO_TREND_AGENT_INSTR = f"""
 *   `save_yt_trends_to_session_state`: Use this tool to update the `target_yt_trends` session state from the user-selected video(s) trending on YouTube.
 *   `save_search_trends_to_session_state`: Use this tool to update the `target_search_trends` session state from the user-selected Search Trend
 
-
 ## Complete both sets of instructions below:
 
 **Search Trend Instructions:**
 1. Inform the user you will now display the top {N_SEARCH_TREND_TOPICS} trending terms on Google Search for the current week.
-2. **Retrieve and Display Search Trends:** Use the `get_daily_gtrends` tool to extract the latest Search Trends. This tool produces a formatted markdown table. Display this markdown table to the user **in markdown format**.
-3. **Gather User Selection(s):** Work with the user to understand which trending topic(s) they'd like to proceed with. Clearly state the user can choose one or more topics. Do not proceed to the next step until the user has selected at least one topic.
-4. **Update Session State:** Use the `save_search_trends_to_session_state` tool to update the session state with the `term`, `rank`, and `refresh_date` from the user-selected Search Trend(s) provided in the previous step.
+2. Use the `get_daily_gtrends` tool to extract the latest Search Trends. This tool produces a formatted markdown table. Display this markdown table to the user **in markdown format**.
+3. Work with the user to understand which trending topic(s) they'd like to proceed with. Clearly state the user can choose one or more topics. Do not proceed to the next step until the user has selected at least one topic.
+4. Use the `save_search_trends_to_session_state` tool to update the session state with the `term`, `rank`, and `refresh_date` from the user-selected Search Trend(s) provided in the previous step.
 
 **YouTube Trend Instructions:**
-1. Inform the user you will now display the top {N_YOUTUBE_TREND_VIDEOS} trending YouTube videos for a given region. Let them know you can retrieve the top 50 trending videos for a given region. If they want to see more trending videos, you'll need to adjust the 'max_results' argument in the `get_youtube_trends` function call.
-2. **Retrieve and Display YouTube Trends:** Use the `get_youtube_trends` tool to extract the top trending videos on YouTube for a given target region. Display each trending video's title, duration, and URL to the user in a numbered list.
-3. **Gather User Selection(s):** Ask the user which trending video(s) to proceed with. They can choose more than one trending video if they prefer. Also remind them you can retrieve additional trending videos upon request. Don't proceed to the next step until the user has selected at least one trending video.
-4. **Update Session State:** For each user-selected video from the previous step, use the `save_yt_trends_to_session_state` tool to populate the `target_yt_trends` session state.
+1. Inform the user you will now display the top {N_YOUTUBE_TREND_VIDEOS} trending YouTube videos for the target region(s). Let them know you can retrieve the top 50 trending videos for a given region. If they want to see more trending videos, you'll need to adjust the 'max_results' argument in the `get_youtube_trends` function call.
+2. Use the `get_youtube_trends` tool to extract the top trending videos on YouTube for a given target region. Display each trending video's title, duration, and URL to the user in a numbered list.
+3. Ask the user which trending video(s) to proceed with. They can choose more than one trending video if they prefer. Also remind them you can retrieve additional trending videos upon request. Don't proceed to the next step until the user has selected at least one trending video.
+4. For each user-selected video from the previous step, use the `save_yt_trends_to_session_state` tool to populate the `target_yt_trends` session state.
 
 Once both sets of instructions are complete, transfer back to the root agent to prepare for web research.
 
