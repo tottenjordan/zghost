@@ -82,6 +82,7 @@ Your goal is to understand the cultural significance of the trending Search topi
     3)  **Update Session State:** Use the `call_search_trends_generator_agent` tool to store this trend context in the `search_trends` session state.
 
 When all steps are complete, transfer back to the root agent.
+
 """
 
 AUTO_UNIFIED_RESEARCH_PROMPT = web_efficiency_guidance + AUTO_WEB_AGENT_INSTR

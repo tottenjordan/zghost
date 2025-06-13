@@ -1,6 +1,6 @@
 """Prompt for trend assistant sub-agent"""
 
-N_YOUTUBE_TREND_VIDEOS = 30
+N_YOUTUBE_TREND_VIDEOS = 50
 N_SEARCH_TREND_TOPICS = 25
 TARGET_YT_DURATION = "5 minutes"
 MAX_YT_DURATION = "7 minutes"
@@ -30,7 +30,7 @@ AUTO_TREND_AGENT_INSTR = f"""
 3. Ask the user which trending video(s) to proceed with. They can choose more than one trending video if they prefer. Also remind them you can retrieve additional trending videos upon request. Don't proceed to the next step until the user has selected at least one trending video.
 4. For each user-selected video from the previous step, use the `save_yt_trends_to_session_state` tool to populate the `target_yt_trends` session state.
 
-Once both sets of instructions are complete, transfer back to the root agent to prepare for web research.
+Once both sets of instructions are complete, transfer back to the root agent.
 
 """
 

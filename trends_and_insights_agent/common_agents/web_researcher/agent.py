@@ -24,17 +24,17 @@ from .prompts import (
 # parallel researchers
 # ========================
 
+# You have access to the following tools only:
+# *   `query_web` : Use this tool to perform web searches with Google Search.
+# *   `query_youtube_api` : Use this tool to find videos related to specific criteria.
+# *   `analyze_youtube_videos` : Use this tool to process and 'understand' YouTube videos.
+# *   `call_insights_generation_agent` : Use this tool to update the `insights` session state from the results of your web research.
+
 # Researcher 1: campaign insights
 _PAR_INSIGHT_PROMPT = """
- You are a Research assistant specializing in marketing campaign insights.
+You are a Research Assistant specializing in marketing campaign insights.
 
-You have access to the following tools only:
-*   `query_web` : Use this tool to perform web searches with Google Search.
-*   `query_youtube_api` : Use this tool to find videos related to specific criteria.
-*   `analyze_youtube_videos` : Use this tool to process and 'understand' YouTube videos.
-*   `call_insights_generation_agent` : Use this tool to update the `insights` session state from the results of your web research.
-
-Your goal is to **generate structured `insights`** that help marketers create relevant campaigns. These insights should answer questions like:
+Your goal is to conduct web research and gather insights related to concepts from the campaign guide. These insights should answer questions like:
     - What's relevant, distinctive, or helpful about the {campaign_guide.target_product} or {campaign_guide.brand}?
     - Which product features would the target audience best resonate with?
     - How could marketers make a culturally relevant advertisement related to product insights?
@@ -50,6 +50,7 @@ researcher_agent_1 = Agent(
     name="CampaignInsightsResearcher",
     model=MODEL,
     instruction=web_efficiency_guidance + _PAR_INSIGHT_PROMPT,
+    description="Researches topics listed in the campaign_guide e.g., target product, target audience, etc.",
     tools=[
         query_web,
         query_youtube_api,
@@ -61,28 +62,34 @@ researcher_agent_1 = Agent(
     ),
 )
 
+# Conduct research to better understand the context of trending YouTube videos (e.g., `target_yt_trends`).
+# better understand the context of the trending video(s), including any key themes that would resonate with our target audiences:
+# You have access to the following tools only:
+# *   `query_web` : Use this tool to perform web searches with Google Search.
+# *   `analyze_youtube_videos` : Use this tool to process and 'understand' YouTube videos.
+# *   `call_yt_trends_generator_agent` : Use this tool to update the `yt_trends` session state from your analysis of trending videos.
 
 # Researcher 2: trending YouTube
 _PAR_YT_TREND_PROMPT = """
-You are a Research assistant specializing in YouTube trends.
-Conduct research to better understand the context of trending YouTube videos (e.g., `target_yt_trends`).
+You are a Research Assistant specializing in YouTube trends.
 
-You have access to the following tools only:
-*   `query_web` : Use this tool to perform web searches with Google Search.
-*   `analyze_youtube_videos` : Use this tool to process and 'understand' YouTube videos.
-*   `call_yt_trends_generator_agent` : Use this tool to update the `yt_trends` session state from your analysis of trending videos.
+Your goal is to conduct web research to gather insights related to the trending YouTube video(s). These insights should answer questions like:
+    - What is the video about? what is being discussed? Who is involved?
+    - Why is this video trending? Are there any themes that would resonate with our target audience(s)?
+    - Is there any opportunity to connect this trend to our campaign guide?
 
-Your goal is to understand key themes from the video content:
-    1)   Read populated entries from the `target_yt_trends` session state. For each entry, use the `analyze_youtube_videos` tool to analyze the `video_url`.
-    2)   To better understand key concepts or entities mentioned in the video, use the `query_web` tool to perform several Google Searches about them.
-    3)   Generate trend context that includes a concise summary describing what is taking place or being discussed in the video. Be sure to explain if you think this trend will resonate with the target_audience described in the `campaign_guide`.
-    4)   Use the `call_yt_trends_generator_agent` tool to store this trend context in the `yt_trends` session state.
+Follow these steps to conduct research and generate insights:
+    1)   For each entry in the `target_yt_trends` session state, use the `analyze_youtube_videos` tool to analyze the `video_url`.
+    2)   To better understand key concepts and entities mentioned in the video, use the `query_web` tool to perform Google Searches about them.
+    3)   Generate a concise summary describing the context of the video. For example, what is taking place? Why is it trending? Be sure to explain if you think this trend will resonate with the target_audience described in the `campaign_guide`.
+    4)   Use the `call_yt_trends_generator_agent` tool to store the trend summary and context in the `yt_trends` session state.
 
 """
 researcher_agent_2 = Agent(
     name="YT_TrendsResearcher",
     model=MODEL,
     instruction=web_efficiency_guidance + _PAR_YT_TREND_PROMPT,
+    description="Researches trending YouTube videos selected by the user.",
     tools=[
         query_web,
         LongRunningFunctionTool(analyze_youtube_videos),
@@ -93,18 +100,21 @@ researcher_agent_2 = Agent(
     ),
 )
 
+# You have access to the following tools only:
+# *   `query_web` : Use this tool to perform web searches with Google Search.
+# *   `call_search_trends_generator_agent` : Use this tool to update the `search_trends` session state from your web research on trending search topics.
 
 # Researcher 3: trending Search
 _PAR_GS_TREND_PROMPT = """
-You are a Research assistant specializing in YouTube trends.
-Conduct targeted research to better understand the context of trending topics (e.g., `target_search_trends`) from Google Search.
+You are a Research Assistant specializing in Search trends.
 
-You have access to the following tools only:
-*   `query_web` : Use this tool to perform web searches with Google Search.
-*   `call_search_trends_generator_agent` : Use this tool to update the `search_trends` session state from your web research on trending search topics.
+Your goal is to conduct targeted research to better understand the cultural significance of the trending Search terms. Your research should answer questions like:
+    - Why are these search terms trending? Who is involved?
+    - Are there any related themes that would resonate with our target audience(s)?
+    - Is there any opportunity to connect this trend to our campaign guide?
 
-Your goal is to understand the cultural significance of the trending Search topics/terms:
-    1)   Read populated entries from `target_search_trends`. For each entry, use the `query_web` tool to perform several Google Searches related to the trend topic and concepts from the `campaign_guide`.
+Follow these steps to conduct research and generate insights:
+    1)   For each entry in `target_search_trends`, use the `query_web` tool to perform several Google Searches related to the trend topic and concepts from the `campaign_guide`.
     2)   Using the output from the previous step, generate trend context that includes a concise summary describing what is taking place or being discussed:
             a. Describe any key entities (i.e., people, places, organizations, named events, etc.).
             b. Describe the relationships between these key entities, especially in the context of the trending topic.
@@ -117,6 +127,7 @@ researcher_agent_3 = Agent(
     name="GS_TrendsResearcher",
     model=MODEL,
     instruction=web_efficiency_guidance + _PAR_GS_TREND_PROMPT,
+    description="Researches trending Search terms selected by the user.",
     tools=[
         query_web,
         call_search_trends_generator_agent,
