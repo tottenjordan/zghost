@@ -31,7 +31,7 @@ AUTO_TREND_AGENT_INSTR = f"""
 3. **Gather User Selection(s):** Ask the user which trending video(s) to proceed with. They can choose more than one trending video if they prefer. Also remind them you can retrieve additional trending videos upon request. Don't proceed to the next step until the user has selected at least one trending video.
 4. **Update Session State:** For each user-selected video from the previous step, use the `save_yt_trends_to_session_state` tool to populate the `target_yt_trends` session state.
 
-Once both sets of instructions are complete, transfer back to the root agent.
+Once both sets of instructions are complete, transfer back to the root agent to prepare for web research.
 
 """
 
