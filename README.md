@@ -290,6 +290,7 @@ lsof -i :8000
 
 [![TIA Video Demo](media/vid_demo_teaser.png)](https://www.youtube.com/watch?v=rDqFdTJfsFA "TIA Video Demo")
 
+
 # Tools
 
 ![Tool and Agent Architecture](media/agent_tool_arch.png)
