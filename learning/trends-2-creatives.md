@@ -8,6 +8,12 @@ example output for research report, generated image and video creatives that int
 
 # Marketing Campaign Brief: Google Pixel 9 - "Surreal Moments, Seamlessly Shared"
 
+
+<p align="center" width="100%">
+    <img width="27%" src="../media/phil_still_legos.png">
+</p>
+
+
 ## 1. Campaign Guide Summary
 
 *   **Campaign Name:** Marketing Campaign Guide for Google's Pixel 9
@@ -69,7 +75,7 @@ example output for research report, generated image and video creatives that int
 *   **URLs:** [https://www.youtube.com/watch?v=p7q8NnVlbVY](https://www.youtube.com/watch?v=p7q8NnVlbVY)
 
 
-[![LEGO Railway](../media/lego_railway_thumb.png)](https://www.youtube.com/watch?v=p7q8NnVlbVY "I Built a Giant LEGO Railway for my Pets")
+[![LEGO Railway](../media/lego_railway_thumb_v2.png)](https://www.youtube.com/watch?v=p7q8NnVlbVY "I Built a Giant LEGO Railway for my Pets")
 
 
 
