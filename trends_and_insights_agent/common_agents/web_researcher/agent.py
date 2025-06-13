@@ -10,21 +10,17 @@ from ...tools import (
     query_web,
     query_youtube_api,
     analyze_youtube_videos,
-    # get_yt_trend_state,
-    # get_search_trend_state,
     call_insights_generation_agent,
     call_yt_trends_generator_agent,
     call_search_trends_generator_agent,
 )
-from .prompts import unified_web_research_prompt
+from .prompts import AUTO_UNIFIED_RESEARCH_PROMPT  # , unified_web_research_prompt
 
 
 tools = [
     query_web,
     query_youtube_api,
     LongRunningFunctionTool(analyze_youtube_videos),
-    # get_yt_trend_state,
-    # get_search_trend_state,
     call_insights_generation_agent,
     call_yt_trends_generator_agent,
     call_search_trends_generator_agent,
@@ -32,7 +28,7 @@ tools = [
 web_researcher_agent = Agent(
     model=MODEL,
     name="web_researcher_agent",
-    instruction=unified_web_research_prompt,
+    instruction=AUTO_UNIFIED_RESEARCH_PROMPT,  # unified_web_research_prompt,
     tools=tools,
     generate_content_config=types.GenerateContentConfig(
         temperature=1.0,

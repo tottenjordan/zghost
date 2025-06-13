@@ -18,7 +18,7 @@ from .tools import (
     save_yt_trends_to_session_state,
     save_search_trends_to_session_state,
 )
-from .prompts import unified_target_trend_instructions
+from .prompts import AUTO_TREND_AGENT_INSTR  # , unified_target_trend_instructions
 
 
 tools = [
@@ -31,7 +31,7 @@ tools = [
 trends_and_insights_agent = Agent(
     model=MODEL,
     name="trends_and_insights_agent",
-    instruction=unified_target_trend_instructions,
+    instruction=AUTO_TREND_AGENT_INSTR,  # unified_target_trend_instructions,
     tools=tools,
     generate_content_config=types.GenerateContentConfig(
         temperature=1.0,
