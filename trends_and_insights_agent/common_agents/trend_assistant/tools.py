@@ -20,11 +20,6 @@ from google.cloud import bigquery
 from ...utils import MODEL
 from ...secrets import access_secret_version
 
-# from .prompts import (
-#     # trends_generation_prompt,
-#     # search_trends_generation_prompt,
-#     # yt_trends_generation_prompt,
-# )
 
 # ========================
 # clients
@@ -148,7 +143,7 @@ def get_daily_gtrends() -> str:
     """
     # get latest refresh date
     max_date = get_gtrends_max_date()
-    logging.info(f"max_date in trends_assistant: {max_date}")
+    logging.info(f"\nmax_date in trends_assistant: {max_date}\n")
 
     query = f"""
         SELECT

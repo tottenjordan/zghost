@@ -8,13 +8,18 @@ from .common_agents.marketing_guide_data_generator.agent import (
 from .common_agents.report_generator.agent import (
     report_generator_agent,
 )
-from .common_agents.web_researcher.agent import web_researcher_agent
+from .common_agents.yt_researcher.agent import yt_researcher_agent
+from .common_agents.gs_researcher.agent import gs_researcher_agent
+from .common_agents.campaign_researcher.agent import campaign_researcher_agent
 from .common_agents.trend_assistant.agent import trends_and_insights_agent
 from .common_agents.ad_content_generator.agent import ad_content_generator_agent
+
+# from .common_agents.web_researcher.agent import web_researcher_agent
+
 from .tools import call_campaign_guide_agent
 from .utils import campaign_callback_function, MODEL
 from .prompts import (
-    global_instructions,
+    GLOBAL_INSTR,
     AUTO_ROOT_AGENT_INSTR,
 )
 
@@ -22,18 +27,22 @@ from .prompts import (
 root_agent = Agent(
     model=MODEL,
     name="marketing_idea_generator_agent",
+    description="A trend and insight assistant using the services of multiple sub-agents",
     instruction=AUTO_ROOT_AGENT_INSTR,
-    global_instruction=global_instructions,
+    global_instruction=GLOBAL_INSTR,
     sub_agents=[
-        # campaign_guide_data_generation_agent,
+        campaign_guide_data_generation_agent,
         trends_and_insights_agent,
-        web_researcher_agent,
         ad_content_generator_agent,
         report_generator_agent,
+        # web_researcher_agent,
+        campaign_researcher_agent,
+        yt_researcher_agent,
+        gs_researcher_agent,
     ],
     tools=[
         # load_artifacts,
-        call_campaign_guide_agent
+        # call_campaign_guide_agent
     ],
     generate_content_config=types.GenerateContentConfig(
         temperature=0.01,
