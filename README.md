@@ -37,55 +37,75 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 
 ## Example usage
 
-1. ingest PDF campaign brief defining target audience, product, region, media strategy, brand voice, etc. 
-2. conduct web research to gather insight about these concepts
-3. select trending term(s) from Google Search
-4. select trending video(s) from YouTube
-5. conduct web research to understand the contex of each trend
-6. generate camapign concepts that resonate with the target audience, while tapping into themes from the trends & insights
-7. from these campaign concepts, generate image and video creatives, ad copy, and social media captions
+1. `user` ingests PDF campaign brief defining target audience, product, region, media strategy, brand voice, etc. 
+2. `user` selects trending term(s) from Google Search
+3. `user` selects trending video(s) from YouTube
+4. `agent` conducts web research to gather insight about concepts in campaign guide
+5. `agent` conducts web research to understand the context of each trend
+6. `agent` generates camapign concepts that resonate with the target audience, while tapping into themes from the trends & insights
+7. `agent` generates image and video creatives, ad copy, and social media captions
+8. `agent` generates research report (PDF)
 
 <details>
   <summary>Example interaction</summary>
 
 ---
 
-
-*In the ADK dev UI, copy/paste these prompts to go from trends to creatives in ~5 mins*
+*In the ADK dev UI, follow these prompts to go from trends to creatives in ~5 mins*
 
 **[entry point]** 
 
+
 ++ manually upload a `campaign_guide` (PDF) or use [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf)
 
-> [user]: *Use this marketing campaign guide to plan and conduct research for potential campaign briefs*
-
-**[campaign research]** 
-
-> [user]: *Do some research on topics described in the campaign guide. Use Google Search to gather insights on several topics to better understand the campaign.*
+```
+> [user]: Use this marketing campaign guide to plan and conduct research for potential campaign briefs
+```
 
 **[trends]** 
 
-> [user]: *Let’s explore trends* 
+```
+> [agent]: [displays Search Trends]
 
-    --> (agent displays Search Trends and Trending Videos)
+> [user]: selects interesting Search trend(s)
 
-    --> (user manually selects trending Search Terms and YouTube videos of interest)
+> [agent]: [displays YouTube Trends]
+
+> [user]: selects interesting YouTube trend(s)
+```
+
+**[campaign research]** 
+
+```
+> [agent]: I'll start by using the `campaign_researcher_agent` to research concepts from the campaign guide.
+```
 
 **[trend research]** 
 
-> [user]: *Let’s analyze the selected YouTube video(s) and gather context to understand why they are trending and how we can incorporate similar themes into our campaign*
+```
+> [agent]: Okay, I have the research insights. Now, let's get some additional context for the trending YouTube video and Search term. I'll start by using the `yt_researcher_agent` to research the trending YouTube video.
 
-    --> (agent analyzes video, searches web, and stores results in session state)
-
-> [user]: *Let’s gather context for the trending search terms from Google Search*
-
-    --> (agent generates queries related to selected terms, searches web, and stores results in session state)
+> [agent]: Now let's get some additional context for the trending Search term. I'll use the `gs_researcher_agent` to research the trending Search term and understand any cultural significance.
+```
 
 **[creative gen]** 
 
-> [user]: *Let's generate ad content*
+Note: this section is configured for **human-in-the-loop** i.e., agent will iterate with user when generating image and video creatives
 
-*see sub-agent's instructions here: [ad_content_generator/prompts.py](trends_and_insights_agent/common_agents/ad_content_generator/prompts.py)*
+```
+> [agent]: Now that I have all the research, I'll use the ad_content_generator_agent to help generate ad creatives based on the campaign themes, trend analysis, web research insights, and specific prompts.
+```
+
+1. Choose from a set of ad copies. Or create new ones from scratch
+2. Edit suggested image prompts for the selected Ad Copy
+3. Edit suggested video prompts for the generated image
+4. Select attention-grabbing captions for the creatives
+
+**[report gen]** 
+
+```
+> [agent]: Okay, we've gathered all the necessary research and generated the ad content. Now, I'll generate a comprehensive report outlining the campaign guide, search trends, YouTube trends, and insights from this session.
+```
 
 </details>
 
