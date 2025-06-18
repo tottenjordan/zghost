@@ -14,8 +14,6 @@ from .common_agents.campaign_researcher.agent import campaign_researcher_agent
 from .common_agents.trend_assistant.agent import trends_and_insights_agent
 from .common_agents.ad_content_generator.agent import ad_content_generator_agent
 
-# from .common_agents.web_researcher.agent import web_researcher_agent
-
 from .tools import call_campaign_guide_agent
 from .utils import campaign_callback_function, MODEL
 from .prompts import (
@@ -35,7 +33,6 @@ root_agent = Agent(
         trends_and_insights_agent,
         ad_content_generator_agent,
         report_generator_agent,
-        # web_researcher_agent,
         campaign_researcher_agent,
         yt_researcher_agent,
         gs_researcher_agent,
