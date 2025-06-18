@@ -17,7 +17,7 @@ import asyncio
 import aiohttp
 import trafilatura
 import pandas as pd
-from typing import Optional  # , AsyncGenerator
+from typing import Optional
 
 from pydantic import BaseModel
 from google.genai import types
@@ -31,7 +31,12 @@ import googleapiclient.discovery
 
 from .utils import MODEL
 from .secrets import access_secret_version
-from .shared_libraries.types import Insights, YT_Trends, Search_Trends
+from .shared_libraries.types import (
+    Insights,
+    YT_Trends,
+    Search_Trends,
+    json_response_config,
+)
 from .prompts import (
     united_insights_prompt,
     yt_trends_generation_prompt,
@@ -319,8 +324,8 @@ async def query_web(
 # ========================
 def query_youtube_api(
     query: str,
-    region_code: str,
     video_duration: str,
+    region_code: str = "US",
     video_order: str = "relevance",
     num_video_results: int = 5,
     max_num_days_ago: int = 30,
@@ -374,7 +379,7 @@ def query_youtube_api(
         type="video",
         part="id,snippet",
         relevanceLanguage="en",
-        regionCode=region_code,
+        regionCode="US",
         q=query,
         videoDuration=video_duration,
         order=video_order,
@@ -463,11 +468,12 @@ async def call_insights_generation_agent(question: str, tool_context: ToolContex
     """
     agent_tool = AgentTool(insights_generator_agent)
     existing_insights = tool_context.state.get("insights")
+
     insights = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-    logging.info(f"Insights: {insights}")
-    logging.info(f"Existing insights: {existing_insights}")
+    # logging.info(f"Insights: {insights}")
+    # logging.info(f"Existing insights: {existing_insights}")
 
     if existing_insights is not {"insights": []}:
         insights["insights"].extend(existing_insights["insights"])
@@ -529,9 +535,10 @@ yt_trends_generator_agent = Agent(
     instruction=yt_trends_generation_prompt,
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
-    generate_content_config=types.GenerateContentConfig(
-        temperature=0.1,
-    ),
+    # generate_content_config=types.GenerateContentConfig(
+    #     temperature=0.1,
+    # ),
+    generate_content_config=json_response_config,
     output_schema=YT_Trends,
     output_key="yt_trends",
 )
@@ -560,8 +567,6 @@ async def call_yt_trends_generator_agent(question: str, tool_context: ToolContex
     yt_trends = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-    logging.info(f"YT_Trends: {yt_trends}")
-    logging.info(f"Existing trends: {existing_yt_trends}")
 
     if existing_yt_trends is not {"yt_trends": []}:
         yt_trends["yt_trends"].extend(existing_yt_trends["yt_trends"])
@@ -577,9 +582,10 @@ search_trends_generator_agent = Agent(
     instruction=search_trends_generation_prompt,
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
-    generate_content_config=types.GenerateContentConfig(
-        temperature=0.1,
-    ),
+    # generate_content_config=types.GenerateContentConfig(
+    #     temperature=0.1,
+    # ),
+    generate_content_config=json_response_config,
     output_schema=Search_Trends,
     output_key="search_trends",
 )
@@ -605,8 +611,6 @@ async def call_search_trends_generator_agent(question: str, tool_context: ToolCo
     search_trends = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-    logging.info(f"Search_Trends: {search_trends}")
-    logging.info(f"Existing search_trends: {existing_search_trends}")
 
     if existing_search_trends is not {"search_trends": []}:
         search_trends["search_trends"].extend(existing_search_trends["search_trends"])
