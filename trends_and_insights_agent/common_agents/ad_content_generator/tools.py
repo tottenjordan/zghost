@@ -14,6 +14,7 @@ from ...utils import download_blob, upload_file_to_gcs, IMAGE_MODEL, VIDEO_MODEL
 
 client = genai.Client()
 
+
 async def generate_image(
     prompt: str, tool_context: ToolContext, number_of_images: int = 1
 ):
