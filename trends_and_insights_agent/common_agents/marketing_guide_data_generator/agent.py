@@ -11,11 +11,10 @@ from google.adk.tools.agent_tool import AgentTool
 from google.adk.models import LlmResponse, LlmRequest
 from google.adk.agents.callback_context import CallbackContext
 
-from ...shared_libraries.types import MarketingCampaignGuide, json_response_config
 from .prompts import GUIDE_DATA_EXTRACT_INSTR, GUIDE_DATA_GEN_INSTR
-from ...utils import MODEL, campaign_callback_function
+from ...shared_libraries import callbacks, schema_types
+from ...utils import MODEL
 
-# from ...tools import call_campaign_guide_agent
 # from ...prompts import GLOBAL_INSTR
 
 
@@ -26,13 +25,12 @@ campaign_guide_data_extract_agent = LlmAgent(
     instruction=GUIDE_DATA_EXTRACT_INSTR,
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
-    generate_content_config=json_response_config,
-    output_schema=MarketingCampaignGuide,
+    generate_content_config=schema_types.json_response_config,
+    output_schema=schema_types.MarketingCampaignGuide,
     output_key="campaign_guide",
-    after_agent_callback=campaign_callback_function,
-    # before_model_callback=simple_before_model_modifier,
+    after_agent_callback=callbacks.campaign_callback_function,
+    # after_tool_callback=callbacks.campaign_callback_function,
 )
-
 
 campaign_guide_data_generation_agent = LlmAgent(
     model=MODEL,
@@ -46,7 +44,15 @@ campaign_guide_data_generation_agent = LlmAgent(
         AgentTool(agent=campaign_guide_data_extract_agent),
         # call_extract_campaign_guide_agent,
     ],
-    # after_agent_callback=save_campaign_guide_to_session_state,
-    # after_tool_callback=simple_after_tool_modifier,  # Assign the callback
-    # before_model_callback=simple_before_model_modifier,  # Assign the function here
+    # before_model_callback=simple_before_model_modifier,
+    # after_tool_callback=callbacks.simple_after_tool_modifier,
+    # after_model_callback=callbacks.simple_after_model_modifier,
+    # after_agent_callback=callbacks.modify_output_after_agent,
 )
+
+"""
+An `invocation` in ADK represents the entire process triggered by a single user query and continues until the agent has finished processing 
+    and has no more events to generate, returning control back to the user. 
+    It's the complete cycle of agent execution in response to a user input.
+    It's a crucial concept for managing the agent's execution, maintaining context, and orchestrating interactions within a session.
+"""

@@ -5,8 +5,9 @@ from google.adk.agents import Agent
 # from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools import LongRunningFunctionTool
 
-# from ...shared_libraries.types import json_response_config
-from ...utils import MODEL, campaign_callback_function
+# from ...shared_libraries.schema_types import json_response_config
+from ...shared_libraries import callbacks
+from ...utils import MODEL
 from ...tools import (
     query_web,
     analyze_youtube_videos,
@@ -25,17 +26,16 @@ _SEQ_YT_TREND_PROMPT = """**Role:** You are a Research Assistant specializing in
 **Available Tools:** You have access to the following tools:
 *   `query_web` : Use this tool to perform web searches with Google Search.
 *   `analyze_youtube_videos` : Use this tool to process and 'understand' YouTube videos.
-*   `call_yt_trends_generator_agent` : Use this tool to update the `yt_trends` session state from your analysis of trending videos.
+*   `call_yt_trends_generator_agent` : Use this tool to update the `yt_trends` session state from your analysis of trending videos. Do not use this tool until **after** you have completed your web research for the trending YouTube videos.
 
 **Instructions:** Follow these steps to complete the task at hand:
 1. For each entry in the `target_yt_trends` session state, use the `analyze_youtube_videos` tool to analyze the `video_url`.
-2. Using the results from the previous step, generate a summary describing the context of the video. For example, what is taking place? Who is involved?
-3. Generate additional web queries to add more context to the summary created in step (2). Use the `query_web` tool to perform these additional Google Searches and gather insights.
-4. For each insight or context gathered in previous steps, call the `call_yt_trends_generator_agent` tool to update the `yt_trends` session state.
-
-Once these steps are complete, transfer back to the root agent.
+2. Use your analysis from the previous step to generate web queries that will help you better understand the trending video's content, as well as the context of why it's trending. Use the `query_web` tool to execute these queries and gather insights.
+3. Given the results from the previous step, generate multiple insights that explain the video and why its trending.
+4. For each insight gathered in the previous steps, call the `call_yt_trends_generator_agent` tool to store this insight in the `yt_trends` session state.
 
 """
+
 
 yt_researcher_agent = Agent(
     name="yt_researcher_agent",
@@ -51,17 +51,5 @@ yt_researcher_agent = Agent(
     generate_content_config=types.GenerateContentConfig(
         temperature=1.0,
     ),
-    after_agent_callback=campaign_callback_function,
+    after_agent_callback=callbacks.campaign_callback_function,
 )
-
-
-# yt_trends_generator_agent = Agent(
-#     model=MODEL,
-#     name="yt_trends_generator_agent",
-#     instruction=yt_trends_generation_prompt,
-#     disallow_transfer_to_parent=True,
-#     disallow_transfer_to_peers=True,
-#     generate_content_config=json_response_config,
-#     output_schema=YT_Trends,
-#     output_key="yt_trends",
-# )

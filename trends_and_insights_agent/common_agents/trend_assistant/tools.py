@@ -16,7 +16,6 @@ from google.cloud import bigquery
 
 # from google.cloud import secretmanager as sm
 
-
 from ...utils import MODEL
 from ...secrets import access_secret_version
 
@@ -42,7 +41,7 @@ bq_client = bigquery.Client(project=BQ_PROJECT)
 
 async def save_yt_trends_to_session_state(
     selected_trends: dict, tool_context: ToolContext
-):
+) -> dict:
     """
     Tool to save `selected_trends` to the `target_yt_trends` in the session state.
     Use this tool after the user has selected trending YouTube content to target for the campaign.
@@ -56,13 +55,13 @@ async def save_yt_trends_to_session_state(
     """
 
     existing_target_yt_trends = tool_context.state.get("target_yt_trends")
-
-    logging.info(f"Target_Search_Trends: {selected_trends}")
-    logging.info(f"Existing target_yt_trends: {existing_target_yt_trends}")
+    # logging.info(f"selected_trends: {selected_trends}")
+    # logging.info(f"Existing target_yt_trends: {existing_target_yt_trends}")
 
     if existing_target_yt_trends is not {"target_yt_trends": []}:
         existing_target_yt_trends["target_yt_trends"].append(selected_trends)
     tool_context.state["target_yt_trends"] = existing_target_yt_trends
+
     return {"status": "ok"}
 
 
@@ -95,7 +94,7 @@ def get_youtube_trends(
 
 async def save_search_trends_to_session_state(
     new_trends: dict, tool_context: ToolContext
-):
+) -> dict:
     """
     Tool to call the `target_search_trends_generator_agent` agent and update the `target_search_trends` in the session state.
     Use this tool after the user has selected a Trending Search topic to target for the campaign.
@@ -108,13 +107,13 @@ async def save_search_trends_to_session_state(
         tool_context: The tool context.
     """
     existing_target_search_trends = tool_context.state.get("target_search_trends")
-
-    logging.info(f"Target_Search_Trends: {new_trends}")
-    logging.info(f"Existing target_search_trends: {existing_target_search_trends}")
+    # logging.info(f"new_trends: {new_trends}")
+    # logging.info(f"Existing target_search_trends: {existing_target_search_trends}")
 
     if existing_target_search_trends is not {"target_search_trends": []}:
         existing_target_search_trends["target_search_trends"].append(new_trends)
     tool_context.state["target_search_trends"] = existing_target_search_trends
+
     return {"status": "ok"}
 
 
@@ -142,8 +141,9 @@ def get_daily_gtrends() -> str:
              Returns 25 terms ordered by their rank (ascending order) for the current week.
     """
     # get latest refresh date
-    max_date = get_gtrends_max_date()
-    logging.info(f"\nmax_date in trends_assistant: {max_date}\n")
+    # max_date = get_gtrends_max_date() # tmp - jet
+    max_date = "06/18/2025"
+    logging.info(f"\n\nmax_date in trends_assistant: {max_date}\n\n")
 
     query = f"""
         SELECT
