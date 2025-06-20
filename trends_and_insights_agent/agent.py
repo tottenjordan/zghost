@@ -14,8 +14,9 @@ from .common_agents.campaign_researcher.agent import campaign_researcher_agent
 from .common_agents.trend_assistant.agent import trends_and_insights_agent
 from .common_agents.ad_content_generator.agent import ad_content_generator_agent
 
+from .shared_libraries import callbacks
 from .tools import call_campaign_guide_agent
-from .utils import campaign_callback_function, MODEL
+from .utils import MODEL
 from .prompts import (
     GLOBAL_INSTR,
     AUTO_ROOT_AGENT_INSTR,
@@ -45,5 +46,5 @@ root_agent = Agent(
         temperature=0.01,
         response_modalities=["TEXT"],
     ),
-    after_agent_callback=campaign_callback_function,
+    after_agent_callback=callbacks.campaign_callback_function,
 )

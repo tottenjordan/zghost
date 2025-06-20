@@ -31,7 +31,7 @@ import googleapiclient.discovery
 
 from .utils import MODEL
 from .secrets import access_secret_version
-from .shared_libraries.types import (
+from .shared_libraries.schema_types import (
     Insights,
     YT_Trends,
     Search_Trends,
@@ -451,7 +451,9 @@ insights_generator_agent = Agent(
 )
 
 
-async def call_insights_generation_agent(question: str, tool_context: ToolContext):
+async def call_insights_generation_agent(
+    question: str, tool_context: ToolContext
+) -> dict:
     """
     Tool to call the `insights_generator_agent` agent. Use this tool to update `insights` in the session state.
 
@@ -544,7 +546,9 @@ yt_trends_generator_agent = Agent(
 )
 
 
-async def call_yt_trends_generator_agent(question: str, tool_context: ToolContext):
+async def call_yt_trends_generator_agent(
+    question: str, tool_context: ToolContext
+) -> dict:
     """
     Tool to call the `yt_trends_generator_agent` agent.
     This tool checks the session state for any trends in `target_yt_trends`, and for each new trend, updates `yt_trends` in the session state.
@@ -591,9 +595,12 @@ search_trends_generator_agent = Agent(
 )
 
 
-async def call_search_trends_generator_agent(question: str, tool_context: ToolContext):
+async def call_search_trends_generator_agent(
+    question: str, tool_context: ToolContext
+) -> dict:
     """
-    This tool calls `search_trends_generator_agent` to check the session state for any trends in `target_search_trends`, and for each new trend updates `search_trends` in the session state.
+    Tool to call `search_trends_generator_agent`.
+    This tool updates the `search_trends` in session state with insights gathered from web research.
 
     Args:
         Question: The question to ask the agent, use the tool_context to extract the following schema:
@@ -608,32 +615,33 @@ async def call_search_trends_generator_agent(question: str, tool_context: ToolCo
     """
     agent_tool = AgentTool(search_trends_generator_agent)
     existing_search_trends = tool_context.state.get("search_trends")
+
     search_trends = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
 
     if existing_search_trends is not {"search_trends": []}:
         search_trends["search_trends"].extend(existing_search_trends["search_trends"])
+
     tool_context.state["search_trends"] = search_trends
     return {"status": "ok"}
 
 
-async def call_campaign_guide_agent(question: str, tool_context: ToolContext):
+async def call_campaign_guide_agent(question: str, tool_context: ToolContext) -> dict:
     """
     Tool to call the `campaign_guide_data_generation_agent` agent.
     Use this tool when instructions call for `campaign_guide_data_generation_agent` use.
 
     Args:
         question: The question to ask the agent, use the tool_context to extract the following schema:
-            campaign_name: str -> given name of campaign; could be title of uploaded `campaign_guide`
-            brand: str -> target product's brand
-            target_product: str -> the subject of the marketing campaign objectives
-            target_audience: str -> specific group(s) we intended to reach. Typically described with demographic, psychographic, and behavioral profile of the ideal customer or user
-            target_regions: str -> specific cities and/or countries we intend to reach
-            campaign_objectives: str -> goals that define what the marketing campaign plans to achieve
-            media_strategy: str -> media channels or formats the campaign intends to use to reach the target audience(s)
-            key_insights: str -> referencable data points that shows intersection between goals and broad information sources
-            campaign_highlights: str -> aspects of product, brand, event, etc. the campaign wishes to highlight e.g., key selling points or competitive advantages of the target product
+            campaign_name: str -> given name of campaign; could be title of uploaded `campaign_guide`.
+            brand: str -> target product's brand.
+            target_product: str -> the subject of the marketing campaign objectives.
+            target_audience: str -> specific group(s) we intended to reach. Typically described with demographic, psychographic, and behavioral profile of the ideal customer or user.
+            target_regions: str -> specific cities and/or countries we intend to reach.
+            campaign_objectives: str -> goals that define what the marketing campaign plans to achieve.
+            media_strategy: str -> media channels or formats the campaign intends to use to reach the target audience.
+            key_selling_points: str -> aspects of the `target_product` that distinguish it from competitors and persuades customers to choose it.
         tool_context: The ADK tool context.
     """
 
