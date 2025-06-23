@@ -470,17 +470,12 @@ async def call_insights_generation_agent(
     """
     agent_tool = AgentTool(insights_generator_agent)
     existing_insights = tool_context.state.get("insights")
-
     insights = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-    # logging.info(f"Insights: {insights}")
-    # logging.info(f"Existing insights: {existing_insights}")
-
     if existing_insights is not {"insights": []}:
         insights["insights"].extend(existing_insights["insights"])
     logging.info(f"Final insights: {insights}")
-
     tool_context.state["insights"] = insights
     return {"status": "ok"}
 
@@ -537,9 +532,6 @@ yt_trends_generator_agent = Agent(
     instruction=yt_trends_generation_prompt,
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
-    # generate_content_config=types.GenerateContentConfig(
-    #     temperature=0.1,
-    # ),
     generate_content_config=json_response_config,
     output_schema=YT_Trends,
     output_key="yt_trends",

@@ -9,9 +9,14 @@ from google.adk.agents.callback_context import CallbackContext
 from google.genai import types
 
 
-MODEL = "gemini-2.0-flash-001"  # "gemini-2.0-flash-001" | "gemini-2.5-flash" | "gemini-2.5-pro-preview-06-05"
-IMAGE_MODEL = "imagen-4.0-fast-generate-preview-06-06"  # "imagen-4.0-ultra-generate-preview-06-06" "imagen-4.0-generate-preview-06-06"
-VIDEO_MODEL = "veo-2.0-generate-001"  # veo-3.0-generate-preview
+# "gemini-2.0-flash-001" | "gemini-2.0-flash-lite-001" | "gemini-2.5-flash-lite-preview-06-17" | "gemini-2.5-flash" | "gemini-2.5-pro-preview-06-05"
+MODEL = "gemini-2.0-flash-001"
+
+# "imagen-4.0-ultra-generate-preview-06-06" "imagen-4.0-generate-preview-06-06"
+IMAGE_MODEL = "imagen-4.0-fast-generate-preview-06-06"
+
+ # veo-3.0-generate-preview
+VIDEO_MODEL = "veo-2.0-generate-001"
 
 
 def download_blob(bucket_name, source_blob_name):

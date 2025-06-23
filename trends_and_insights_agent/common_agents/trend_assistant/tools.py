@@ -142,6 +142,7 @@ def get_daily_gtrends() -> str:
     """
     # get latest refresh date
     max_date = get_gtrends_max_date()
+    # max_date = "06/18/2025" # tmp - debugging
     logging.info(f"\n\nmax_date in trends_assistant: {max_date}\n\n")
 
     query = f"""

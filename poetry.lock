@@ -1071,14 +1071,14 @@ grpcio-gcp = ["grpcio-gcp (>=0.2.2,<1.0.0)"]
 
 [[package]]
 name = "google-api-python-client"
-version = "2.172.0"
+version = "2.173.0"
 description = "Google API Client Library for Python"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "google_api_python_client-2.172.0-py3-none-any.whl", hash = "sha256:9f1b9a268d5dc1228207d246c673d3a09ee211b41a11521d38d9212aeaa43af7"},
-    {file = "google_api_python_client-2.172.0.tar.gz", hash = "sha256:dcb3b7e067154b2aa41f1776cf86584a5739c0ac74e6ff46fc665790dca0e6a6"},
+    {file = "google_api_python_client-2.173.0-py3-none-any.whl", hash = "sha256:16a8e81c772dd116f5c4ee47d83643149e1367dc8fb4f47cb471fbcb5c7d7ac7"},
+    {file = "google_api_python_client-2.173.0.tar.gz", hash = "sha256:b537bc689758f4be3e6f40d59a6c0cd305abafdea91af4bc66ec31d40c08c804"},
 ]
 
 [package.dependencies]
@@ -1472,14 +1472,14 @@ testing = ["pytest"]
 
 [[package]]
 name = "google-genai"
-version = "1.21.0"
+version = "1.21.1"
 description = "GenAI Python SDK"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "google_genai-1.21.0-py3-none-any.whl", hash = "sha256:ea87838d42b657414418a61893edf07e8521ac7a9c7a31dcdefec82e20e06b27"},
-    {file = "google_genai-1.21.0.tar.gz", hash = "sha256:02ec1657839f71d4fe02fb9afcf6d6571a860c767dae6d697a988e682f095d0f"},
+    {file = "google_genai-1.21.1-py3-none-any.whl", hash = "sha256:fa6fa5311f9a757ce65cd528a938a0f309bb3032516015bf5b3022e63b2fc46b"},
+    {file = "google_genai-1.21.1.tar.gz", hash = "sha256:5412fde7f0b39574a4670a9a25e398824a12b3cddd632fdff66d1b9bcfdbfcb4"},
 ]
 
 [package.dependencies]
@@ -5390,4 +5390,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "e539f2f8bcdbef8f6d0e497cd51979913677f343aaee7c314660f48e3d00f636"
+content-hash = "a612b9416fbd4e4ae6c14467c4f0b7650d4307019926812e5eca3fadab0876d4"

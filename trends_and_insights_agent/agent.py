@@ -25,10 +25,10 @@ from .prompts import (
 
 root_agent = Agent(
     model=MODEL,
-    name="marketing_idea_generator_agent",
+    name="root_agent",
     description="A trend and insight assistant using the services of multiple sub-agents",
     instruction=AUTO_ROOT_AGENT_INSTR,
-    global_instruction=GLOBAL_INSTR,
+    # global_instruction=GLOBAL_INSTR,
     sub_agents=[
         campaign_guide_data_generation_agent,
         trends_and_insights_agent,
