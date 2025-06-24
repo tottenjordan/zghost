@@ -53,8 +53,7 @@ async def call_search_trends_generator_agent(
     if existing_search_trends is not {"search_trends": []}:
         search_trends["search_trends"].extend(existing_search_trends["search_trends"])
     tool_context.state["search_trends"] = search_trends
-
-    logging.info(f"Final search_trends: {search_trends}")
+    logging.info(f"\n\n Final `search_trends`: {search_trends} \n\n")
     return {"status": "ok"}
 
 
@@ -76,7 +75,7 @@ _SEQ_GS_TREND_PROMPT = """**Role:** You are a Research Assistant specializing in
 2. Use insights from the results in the previous step to generate a second round of Google Searches that provide more context for the trend (e.g., key entities involved, themes that resonate with target audience, etc.). Use the `query_web` tool to execute these queries.
 3. Given the results from the previous step, generate some insights that help establish a clear understanding for why this topic is trending.
 4. For each insight gathered in the previous steps, call the `call_search_trends_generator_agent` tool to store them in the list of structured `search_trends` in the session state.
-5. Once this is complete, transfer to the `root_agent`.
+5. Confirm with the user before proceeding. Once the user is satisfied, transfer to the `root_agent`.
 
 """
 

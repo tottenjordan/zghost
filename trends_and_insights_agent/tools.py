@@ -321,7 +321,6 @@ async def query_web(
 def query_youtube_api(
     query: str,
     video_duration: str,
-    region_code: str = "US",
     video_order: str = "relevance",
     num_video_results: int = 5,
     max_num_days_ago: int = 30,
@@ -338,9 +337,6 @@ def query_youtube_api(
         video_duration (str): The duration (minutes) of the videos to search for.
             Must be one of: 'any', 'long', 'medium', 'short', where short=(-inf, 4),
             medium=[4, 20], long=(20, inf)
-        region_code (str): selects a video chart available in the specified region.
-            Values are ISO 3166-1 alpha-2 country codes. For example, the region_code for the United Kingdom would be 'GB',
-            whereas 'US' would represent The United States.
         video_order (str): The order in which the videos should be returned.
             Must be one of 'date', 'rating', 'relevance', 'title', 'viewCount'
         num_video_results (int): The number of video results to return.
@@ -388,6 +384,11 @@ def query_youtube_api(
     )
     yt_data_api_response = yt_data_api_request.execute()
     return yt_data_api_response
+
+# region_code: str = "US",
+        # region_code (str): selects a video chart available in the specified region.
+        #     Values are ISO 3166-1 alpha-2 country codes. For example, the region_code for the United Kingdom would be 'GB',
+        #     whereas 'US' would represent The United States.
 
 
 def analyze_youtube_videos(

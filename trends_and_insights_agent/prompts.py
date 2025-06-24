@@ -35,7 +35,6 @@ AUTO_ROOT_AGENT_INSTR = f"""**Role:** You are an Expert AI Marketing Research & 
 1. Call the `campaign_researcher_agent` to conduct research on concepts from the `campaign_guide`.
 2. Then call the `yt_researcher_agent` to gather context and insights for the trending YouTube video(s).
 3. Then call the `gs_researcher_agent` to gather the context of trending Search terms.
-4. After each researcher sub-agent is complete, confirm with the user before proceeding. Once the user is satisfied, transfer to the `root_agent`.
 </Get_Research>
 
 <Generate_Ad_Content>

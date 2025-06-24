@@ -52,8 +52,7 @@ async def call_insights_generation_agent(
     if existing_insights is not {"insights": []}:
         insights["insights"].extend(existing_insights["insights"])
     tool_context.state["insights"] = insights
-
-    logging.info(f"Final insights: {insights}")
+    logging.info(f"\n\n Final `insights`: {insights} \n\n")
     return {"status": "ok"}
 
 
@@ -74,7 +73,7 @@ _SEQ_INSIGHT_PROMPT = """**Role:** You are a Research Assistant specializing in 
 2. Use insights from the results in the previous step to generate a second round of Google Searches that help you better understand key features of the target product, as well as key attributes about the target audience. Use the `query_web` tool to execute these queries.
 3. Given the results from the previous step, generate some insights that help establish a clear foundation for all subsequent research and ideation.
 4. For each insight gathered in the previous steps, use the `call_insights_generation_agent` tool to store them in the list of structured `insights` in the session state.
-5. Once this is complete, transfer to the `root_agent`.
+5. Confirm with the user before proceeding. Once the user is satisfied, transfer to the `root_agent`.
 
 """
 

@@ -50,19 +50,15 @@ async def call_yt_trends_generator_agent(
             key_product_insights: list[str] -> Suggest how this trend could possibly intersect with the `target_product`.
         tool_context: The ADK tool context.
     """
-
     agent_tool = AgentTool(yt_trends_generator_agent)
-
     existing_yt_trends = tool_context.state.get("yt_trends")
     yt_trends = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-
     if existing_yt_trends is not {"yt_trends": []}:
         yt_trends["yt_trends"].extend(existing_yt_trends["yt_trends"])
     tool_context.state["yt_trends"] = yt_trends
-
-    logging.info(f"Final yt_trends: {yt_trends}")
+    logging.info(f"\n\n Final `yt_trends`: {yt_trends} \n\n")
     return {"status": "ok"}
 
 
@@ -84,7 +80,7 @@ _SEQ_YT_TREND_PROMPT = """**Role:** You are a Research Assistant specializing in
 2. Use your analysis from the previous step to create web queries that will help you better understand the trending video's content, as well as the context of why it's trending. Use the `query_web` tool to execute these queries and gather insights.
 3. Given the results from the previous step, generate multiple insights that explain the video and why its trending.
 4. For each insight gathered in the previous steps, call the `call_yt_trends_generator_agent` tool to store this insight in the `yt_trends` session state.
-5. Once this is complete, transfer to the `root_agent`.
+5. Confirm with the user before proceeding. Once the user is satisfied, transfer to the `root_agent`.
 
 """
 
