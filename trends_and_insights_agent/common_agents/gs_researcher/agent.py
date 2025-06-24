@@ -5,8 +5,8 @@ logging.basicConfig(level=logging.INFO)
 
 from google.genai import types
 from google.adk.agents import Agent
-from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
+from google.adk.tools import ToolContext, google_search
 
 from ...shared_libraries import callbacks, schema_types
 from ...prompts import search_trends_generation_prompt
@@ -86,6 +86,7 @@ gs_researcher_agent = Agent(
     description="Conducts web research to provide additional context for trending topics in Google Search",
     tools=[
         query_web,
+        # google_search,
         call_search_trends_generator_agent,
     ],
     generate_content_config=types.GenerateContentConfig(

@@ -5,9 +5,8 @@ logging.basicConfig(level=logging.INFO)
 
 from google.genai import types
 from google.adk.agents import Agent
-from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
-from google.adk.tools import LongRunningFunctionTool
+from google.adk.tools import LongRunningFunctionTool, ToolContext, google_search
 
 from ...shared_libraries import callbacks, schema_types
 from ...prompts import yt_trends_generation_prompt
@@ -91,6 +90,7 @@ yt_researcher_agent = Agent(
     description="Conducts web research specifically to provide additional context for trending YouTube videos.",
     tools=[
         query_web,
+        # google_search,
         LongRunningFunctionTool(analyze_youtube_videos),
         call_yt_trends_generator_agent,
         # AgentTool(agent=yt_trends_generator_agent),
