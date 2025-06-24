@@ -34,7 +34,7 @@ _SEQ_INSIGHT_PROMPT = """**Role:** You are a Research Assistant specializing in 
 1. Use the `query_web` tool to perform Google Searches for several topics described in the `campaign_guide` (e.g., target audience, key selling points, target product, etc.)
 2. Use the insights from the results in the previous step to generate a second round of Google Searches that help you better understand key features of the target product, as well as key attributes about the target audience. Use the `query_web` tool to execute these queries.
 3. Given the results from the previous step, generate some insights that help establish a clear foundation for all subsequent research and ideation.
-4. For each insight gathered in the previous steps, use the `call_insights_generation_agent` tool to update the list of structured `insights` in the session state.
+4. For each insight gathered in the previous steps, use the `call_insights_generation_agent` tool to store them in the list of structured `insights` in the session state.
 
 """
 
@@ -42,7 +42,7 @@ campaign_researcher_agent = Agent(
     name="campaign_researcher_agent",
     model=MODEL,
     instruction=_SEQ_INSIGHT_PROMPT,
-    description="Researches topics described in the `campaign_guide`",
+    description="Conducts web research specifically for product insights related to concepts defined in the `campaign_guide`",
     tools=[
         query_web,
         call_insights_generation_agent,

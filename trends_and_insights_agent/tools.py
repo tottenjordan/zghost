@@ -43,7 +43,7 @@ from .prompts import (
     search_trends_generation_prompt,
 )
 
-from .common_agents.marketing_guide_data_generator.agent import (
+from .common_agents.campaign_guide_data_generation.agent import (
     campaign_guide_data_generation_agent,
 )
 
@@ -461,9 +461,9 @@ async def call_insights_generation_agent(
         Question: The question to ask the agent, use the tool_context to extract the following schema:
             insight_title: str -> Come up with a unique title for the insight.
             insight_text: str -> Generate a summary of the insight from the web research.
-            insight_urls: str -> Get the url(s) used to generate the insight.
-            key_entities: str -> Extract any key entities discussed in the gathered context.
-            key_relationships: str -> Describe the relationships between the Key Entities you have identified.
+            insight_urls: list[str] -> Get the url(s) used to generate the insight.
+            key_entities: list[str] -> Extract any key entities discussed in the gathered context.
+            key_relationships: list[str] -> Describe the relationships between the Key Entities you have identified.
             key_audiences: str -> Considering the guide, how does this insight intersect with the audience?
             key_product_insights: str -> Considering the guide, how does this insight intersect with the product?
         tool_context: The tool context.
@@ -474,8 +474,6 @@ async def call_insights_generation_agent(
     insights = await agent_tool.run_async(
         args={"request": question}, tool_context=tool_context
     )
-    # logging.info(f"Insights: {insights}")
-    # logging.info(f"Existing insights: {existing_insights}")
 
     if existing_insights is not {"insights": []}:
         insights["insights"].extend(existing_insights["insights"])
@@ -556,12 +554,12 @@ async def call_yt_trends_generator_agent(
     Args:
         Question: The question to ask the agent, use the tool_context to extract the following schema:
             video_title: str -> Get the video's title from its entry in `target_yt_trends`
-            trend_urls: str -> Get the URL from its entry in `target_yt_trends`
+            trend_urls: list[str] -> Get the URL from its entry in `target_yt_trends`
             trend_text: str -> Use the `analyze_youtube_videos` tool to generate a summary of the trending video. What are the main themes?
-            key_entities: str -> Extract any key entities present in the trending video (e.g., people, places, things).
-            key_relationships: str -> Describe any relationships between the key entities.
-            key_audiences: str -> How will the themes in this trending video resonate with our target audience(s)?
-            key_product_insights: str -> Suggest how this trend could possibly intersect with the `target_product`.
+            key_entities: list[str] -> Extract any key entities present in the trending video (e.g., people, places, things).
+            key_relationships: list[str] -> Describe any relationships between the key entities.
+            key_audiences: list[str] -> How will the themes in this trending video resonate with our target audience(s)?
+            key_product_insights: list[str] -> Suggest how this trend could possibly intersect with the `target_product`.
         tool_context: The ADK tool context.
     """
 
@@ -606,11 +604,11 @@ async def call_search_trends_generator_agent(
         Question: The question to ask the agent, use the tool_context to extract the following schema:
             trend_title: str -> Come up with a unique title to represent the trend. Structure this title so it begins with the exact words from the 'trending topic` followed by a colon and a witty catch-phrase.
             trend_text: str -> Generate a summary describing what happened with the trending topic and what is being discussed.
-            trend_urls: str -> List any url(s) that provided reliable context.
-            key_entities: str -> Extract any key entities discussed in the gathered context.
-            key_relationships: str -> Describe the relationships between the key entities you have identified.
-            key_audiences: str -> How will this trend resonate with our target audience(s), `campaign_guide.target_audience`?
-            key_product_insights: str -> Suggest how this trend could possibly intersect with the target product: `campaign_guide.target_product`
+            trend_urls: list[str] -> List any url(s) that provided reliable context.
+            key_entities: list[str] -> Extract any key entities discussed in the gathered context.
+            key_relationships: list[str] -> Describe the relationships between the key entities you have identified.
+            key_audiences: list[str] -> How will this trend resonate with our target audience(s), `campaign_guide.target_audience`?
+            key_product_insights: list[str] -> Suggest how this trend could possibly intersect with the target product: `campaign_guide.target_product`
         tool_context: The ADK tool context.
     """
     agent_tool = AgentTool(search_trends_generator_agent)
@@ -637,11 +635,11 @@ async def call_campaign_guide_agent(question: str, tool_context: ToolContext) ->
             campaign_name: str -> given name of campaign; could be title of uploaded `campaign_guide`.
             brand: str -> target product's brand.
             target_product: str -> the subject of the marketing campaign objectives.
-            target_audience: str -> specific group(s) we intended to reach. Typically described with demographic, psychographic, and behavioral profile of the ideal customer or user.
-            target_regions: str -> specific cities and/or countries we intend to reach.
-            campaign_objectives: str -> goals that define what the marketing campaign plans to achieve.
-            media_strategy: str -> media channels or formats the campaign intends to use to reach the target audience.
-            key_selling_points: str -> aspects of the `target_product` that distinguish it from competitors and persuades customers to choose it.
+            target_audience: list[str] -> specific group(s) we intended to reach. Typically described with demographic, psychographic, and behavioral profile of the ideal customer or user.
+            target_regions: list[str] -> specific cities and/or countries we intend to reach.
+            campaign_objectives: list[str] -> goals that define what the marketing campaign plans to achieve.
+            media_strategy: list[str] -> media channels or formats the campaign intends to use to reach the target audience.
+            key_selling_points: list[str] -> aspects of the `target_product` that distinguish it from competitors and persuades customers to choose it.
         tool_context: The ADK tool context.
     """
 

@@ -2,7 +2,7 @@ from google.genai import types
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.tools import load_artifacts
 
-from .common_agents.marketing_guide_data_generator.agent import (
+from .common_agents.campaign_guide_data_generation.agent import (
     campaign_guide_data_generation_agent,
 )
 from .common_agents.report_generator.agent import (
@@ -25,8 +25,8 @@ from .prompts import (
 
 root_agent = Agent(
     model=MODEL,
-    name="marketing_idea_generator_agent",
-    description="A trend and insight assistant using the services of multiple sub-agents",
+    name="root_agent",
+    description="A trend and insight assistant using the services of multiple sub-agents.",
     instruction=AUTO_ROOT_AGENT_INSTR,
     global_instruction=GLOBAL_INSTR,
     sub_agents=[

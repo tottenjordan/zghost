@@ -11,8 +11,8 @@ Be sure to use the schema provided to generate the most detailed summary of the 
 * target_audience: [extract bulleted description]
 * target_regions: [should be explicitly defined]
 * campaign_objectives: [extract bulleted list of objectives]
-* media_strategy: [
-* key_selling_points: [
+* media_strategy: [extract bulleted list of media channels]
+* key_selling_points: [extract bulleted list of features and their description]
 
 This data will be used downstream to create ideas for marketing campaigns briefs.
 """
