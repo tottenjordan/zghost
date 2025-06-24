@@ -145,8 +145,8 @@ def get_daily_gtrends() -> str:
              Returns 25 terms ordered by their rank (ascending order) for the current week.
     """
     # get latest refresh date
-    # max_date = get_gtrends_max_date()
-    max_date = "06/18/2025"
+    max_date = get_gtrends_max_date()
+    # max_date = "06/18/2025"
     logging.info(f"\n\nmax_date in trends_assistant: {max_date}\n\n")
 
     query = f"""
