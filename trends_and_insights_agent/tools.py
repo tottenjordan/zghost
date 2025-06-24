@@ -37,11 +37,7 @@ from .shared_libraries.schema_types import (
     Search_Trends,
     json_response_config,
 )
-from .prompts import (
-    united_insights_prompt,
-    yt_trends_generation_prompt,
-    search_trends_generation_prompt,
-)
+
 
 from .common_agents.campaign_guide_data_generation.agent import (
     campaign_guide_data_generation_agent,
@@ -433,223 +429,36 @@ def analyze_youtube_videos(
         return result.text
 
 
-# ========================
-# Insight Generation
-# ========================
-# agent tool to capture insights
-insights_generator_agent = Agent(
-    model=MODEL,
-    name="insights_generator_agent",
-    instruction=united_insights_prompt,
-    disallow_transfer_to_parent=True,
-    disallow_transfer_to_peers=True,
-    generate_content_config=types.GenerateContentConfig(
-        temperature=0.1,
-    ),
-    output_schema=Insights,
-    output_key="insights",
-)
-
-
-async def call_insights_generation_agent(
-    question: str, tool_context: ToolContext
-) -> dict:
-    """
-    Tool to call the `insights_generator_agent` agent. Use this tool to update `insights` in the session state.
-
-    Args:
-        Question: The question to ask the agent, use the tool_context to extract the following schema:
-            insight_title: str -> Come up with a unique title for the insight.
-            insight_text: str -> Generate a summary of the insight from the web research.
-            insight_urls: list[str] -> Get the url(s) used to generate the insight.
-            key_entities: list[str] -> Extract any key entities discussed in the gathered context.
-            key_relationships: list[str] -> Describe the relationships between the Key Entities you have identified.
-            key_audiences: str -> Considering the guide, how does this insight intersect with the audience?
-            key_product_insights: str -> Considering the guide, how does this insight intersect with the product?
-        tool_context: The tool context.
-    """
-    agent_tool = AgentTool(insights_generator_agent)
-    existing_insights = tool_context.state.get("insights")
-
-    insights = await agent_tool.run_async(
-        args={"request": question}, tool_context=tool_context
-    )
-
-    if existing_insights is not {"insights": []}:
-        insights["insights"].extend(existing_insights["insights"])
-    logging.info(f"Final insights: {insights}")
-
-    tool_context.state["insights"] = insights
-    return {"status": "ok"}
-
-
 # # ========================
-# # Trend Generation
+# # Insight Generation
 # # ========================
-# # *   target_search_trends
-# # *   target_yt_trends
 
 
-def get_search_trend_state(tool_context: ToolContext) -> dict:
-    """
-    Inspect session state and retrieve any stored trends under `target_search_trends`
-    Args:
-        tool_context: The ADK tool context.
+# async def call_campaign_guide_agent(question: str, tool_context: ToolContext) -> dict:
+#     """
+#     Tool to call the `campaign_guide_data_generation_agent` agent.
+#     Use this tool when instructions call for `campaign_guide_data_generation_agent` use.
 
-    Returns:
-        dict: trends from the session state
-    """
-    dict_oh_dicts = {}
-    target_search_trends = tool_context.state["target_search_trends"]
-    if target_search_trends == {"target_search_trends": []}:
-        logging.info(f"`target_search_trends` not populated yet")
-    else:
-        logging.info(f"target_search_trends: {target_search_trends}")
-        dict_oh_dicts["target_search_trends"] = target_search_trends
-    return dict_oh_dicts
+#     Args:
+#         question: The question to ask the agent, use the tool_context to extract the following schema:
+#             campaign_name: str -> given name of campaign; could be title of uploaded `campaign_guide`.
+#             brand: str -> target product's brand.
+#             target_product: str -> the subject of the marketing campaign objectives.
+#             target_audience: list[str] -> specific group(s) we intended to reach. Typically described with demographic, psychographic, and behavioral profile of the ideal customer or user.
+#             target_regions: list[str] -> specific cities and/or countries we intend to reach.
+#             campaign_objectives: list[str] -> goals that define what the marketing campaign plans to achieve.
+#             media_strategy: list[str] -> media channels or formats the campaign intends to use to reach the target audience.
+#             key_selling_points: list[str] -> aspects of the `target_product` that distinguish it from competitors and persuades customers to choose it.
+#         tool_context: The ADK tool context.
+#     """
 
+#     # Check for hallucinations or if there is not enough context to feed the LLM:
+#     if len(question) < 42:
+#         return {"status": f"error, need more context, input: {question}"}
 
-def get_yt_trend_state(tool_context: ToolContext) -> dict:
-    """
-    Inspect session state and retrieve any stored trends under `target_yt_trends`
-    Args:
-        tool_context: The ADK tool context.
-
-    Returns:
-        dict: trends from the session state
-    """
-    dict_oh_dicts = {}
-    target_yt_trends = tool_context.state["target_yt_trends"]
-    if target_yt_trends == {"target_yt_trends": []}:
-        logging.info(f"`target_yt_trends` not found in state")
-    else:
-        logging.info(f"target_yt_trends: {target_yt_trends}")
-        dict_oh_dicts["target_yt_trends"] = target_yt_trends
-    return dict_oh_dicts
-
-
-# agent tool to capture YouTube trends
-yt_trends_generator_agent = Agent(
-    model=MODEL,
-    name="yt_trends_generator_agent",
-    instruction=yt_trends_generation_prompt,
-    disallow_transfer_to_parent=True,
-    disallow_transfer_to_peers=True,
-    # generate_content_config=types.GenerateContentConfig(
-    #     temperature=0.1,
-    # ),
-    generate_content_config=json_response_config,
-    output_schema=YT_Trends,
-    output_key="yt_trends",
-)
-
-
-async def call_yt_trends_generator_agent(
-    question: str, tool_context: ToolContext
-) -> dict:
-    """
-    Tool to call the `yt_trends_generator_agent` agent.
-    This tool checks the session state for any trends in `target_yt_trends`, and for each new trend, updates `yt_trends` in the session state.
-
-    Args:
-        Question: The question to ask the agent, use the tool_context to extract the following schema:
-            video_title: str -> Get the video's title from its entry in `target_yt_trends`
-            trend_urls: list[str] -> Get the URL from its entry in `target_yt_trends`
-            trend_text: str -> Use the `analyze_youtube_videos` tool to generate a summary of the trending video. What are the main themes?
-            key_entities: list[str] -> Extract any key entities present in the trending video (e.g., people, places, things).
-            key_relationships: list[str] -> Describe any relationships between the key entities.
-            key_audiences: list[str] -> How will the themes in this trending video resonate with our target audience(s)?
-            key_product_insights: list[str] -> Suggest how this trend could possibly intersect with the `target_product`.
-        tool_context: The ADK tool context.
-    """
-
-    agent_tool = AgentTool(yt_trends_generator_agent)
-    existing_yt_trends = tool_context.state.get("yt_trends")
-
-    yt_trends = await agent_tool.run_async(
-        args={"request": question}, tool_context=tool_context
-    )
-
-    if existing_yt_trends is not {"yt_trends": []}:
-        yt_trends["yt_trends"].extend(existing_yt_trends["yt_trends"])
-
-    tool_context.state["yt_trends"] = yt_trends
-    return {"status": "ok"}
-
-
-# agent tool to capture Search trends
-search_trends_generator_agent = Agent(
-    model=MODEL,
-    name="search_trends_generator_agent",
-    instruction=search_trends_generation_prompt,
-    disallow_transfer_to_parent=True,
-    disallow_transfer_to_peers=True,
-    # generate_content_config=types.GenerateContentConfig(
-    #     temperature=0.1,
-    # ),
-    generate_content_config=json_response_config,
-    output_schema=Search_Trends,
-    output_key="search_trends",
-)
-
-
-async def call_search_trends_generator_agent(
-    question: str, tool_context: ToolContext
-) -> dict:
-    """
-    Tool to call `search_trends_generator_agent`.
-    This tool updates the `search_trends` in session state with insights gathered from web research.
-
-    Args:
-        Question: The question to ask the agent, use the tool_context to extract the following schema:
-            trend_title: str -> Come up with a unique title to represent the trend. Structure this title so it begins with the exact words from the 'trending topic` followed by a colon and a witty catch-phrase.
-            trend_text: str -> Generate a summary describing what happened with the trending topic and what is being discussed.
-            trend_urls: list[str] -> List any url(s) that provided reliable context.
-            key_entities: list[str] -> Extract any key entities discussed in the gathered context.
-            key_relationships: list[str] -> Describe the relationships between the key entities you have identified.
-            key_audiences: list[str] -> How will this trend resonate with our target audience(s), `campaign_guide.target_audience`?
-            key_product_insights: list[str] -> Suggest how this trend could possibly intersect with the target product: `campaign_guide.target_product`
-        tool_context: The ADK tool context.
-    """
-    agent_tool = AgentTool(search_trends_generator_agent)
-    existing_search_trends = tool_context.state.get("search_trends")
-
-    search_trends = await agent_tool.run_async(
-        args={"request": question}, tool_context=tool_context
-    )
-
-    if existing_search_trends is not {"search_trends": []}:
-        search_trends["search_trends"].extend(existing_search_trends["search_trends"])
-
-    tool_context.state["search_trends"] = search_trends
-    return {"status": "ok"}
-
-
-async def call_campaign_guide_agent(question: str, tool_context: ToolContext) -> dict:
-    """
-    Tool to call the `campaign_guide_data_generation_agent` agent.
-    Use this tool when instructions call for `campaign_guide_data_generation_agent` use.
-
-    Args:
-        question: The question to ask the agent, use the tool_context to extract the following schema:
-            campaign_name: str -> given name of campaign; could be title of uploaded `campaign_guide`.
-            brand: str -> target product's brand.
-            target_product: str -> the subject of the marketing campaign objectives.
-            target_audience: list[str] -> specific group(s) we intended to reach. Typically described with demographic, psychographic, and behavioral profile of the ideal customer or user.
-            target_regions: list[str] -> specific cities and/or countries we intend to reach.
-            campaign_objectives: list[str] -> goals that define what the marketing campaign plans to achieve.
-            media_strategy: list[str] -> media channels or formats the campaign intends to use to reach the target audience.
-            key_selling_points: list[str] -> aspects of the `target_product` that distinguish it from competitors and persuades customers to choose it.
-        tool_context: The ADK tool context.
-    """
-
-    # Check for hallucinations or if there is not enough context to feed the LLM:
-    if len(question) < 42:
-        return {"status": f"error, need more context, input: {question}"}
-
-    agent_tool = AgentTool(campaign_guide_data_generation_agent)
-    campaign_guide_state = await agent_tool.run_async(
-        args={"request": question}, tool_context=tool_context
-    )
-    tool_context.state["campaign_guide"] = campaign_guide_state
-    return {"status": "ok"}
+#     agent_tool = AgentTool(campaign_guide_data_generation_agent)
+#     campaign_guide_state = await agent_tool.run_async(
+#         args={"request": question}, tool_context=tool_context
+#     )
+#     tool_context.state["campaign_guide"] = campaign_guide_state
+#     return {"status": "ok"}

@@ -19,9 +19,9 @@ AUTO_ROOT_AGENT_INSTR = f"""**Role:** You are an Expert AI Marketing Research & 
 
 **Instructions:** Follow these steps to complete your objective:
 1. Complete all steps in the <Gather_Inputs> block to establish a research baseline. Strictly follow all the steps one-by-one. Once this is complete, proceed to the next step.
-2. Complete all steps in the <Get_Research> block.  Strictly follow all the steps one-by-one. Once this is complete, proceed to the next step.
-3. Complete all steps in the <Generate_Ad_Content> block.  Strictly follow all the steps one-by-one. Once this section is complete, proceed to the next step.
-4. Complete all steps in the <Generate_Report> block.  Strictly follow all the steps one-by-one.
+2. Complete all steps in the <Get_Research> block. Strictly follow all the steps one-by-one. Once this is complete, proceed to the next step.
+3. Complete all steps in the <Generate_Ad_Content> block. Strictly follow all the steps one-by-one. Once this section is complete, proceed to the next step.
+4. Complete all steps in the <Generate_Report> block. Strictly follow all the steps one-by-one.
 
 <Gather_Inputs>
 1. Greet the user and request a campaign guide. This campaign guide is required input to move forward. Remind the user that if they don't have a campaign guide, they can use the example campaign guide for Pixel e.g., `marketing_guide_Pixel_9.pdf`
@@ -32,9 +32,9 @@ AUTO_ROOT_AGENT_INSTR = f"""**Role:** You are an Expert AI Marketing Research & 
 </Gather_Inputs>
 
 <Get_Research>
-1. Call the `campaign_researcher_agent` to conduct research on concepts from the `campaign_guide`. Once this is complete, transfer to the `root_agent`.
-2. Then call the `yt_researcher_agent` to gather context and insights for the trending YouTube video(s). Once this is complete, transfer to the `root_agent`.
-3. Then call the `gs_researcher_agent` to gather the context of trending Search terms. Once this is complete, transfer to the `root_agent`.
+1. Call the `campaign_researcher_agent` to conduct research on concepts from the `campaign_guide`.
+2. Then call the `yt_researcher_agent` to gather context and insights for the trending YouTube video(s).
+3. Then call the `gs_researcher_agent` to gather the context of trending Search terms.
 4. After each researcher sub-agent is complete, confirm with the user before proceeding. Once the user is satisfied, transfer to the `root_agent`.
 </Get_Research>
 
@@ -92,12 +92,12 @@ For each key insight from your research, fill out the following fields per the i
     key_product_insights: list[str] -> Suggest how this trend could possibly intersect with the {campaign_guide.target_product}.
 
 """
-# Understand the trending content from this research. Produce structured data output using the `call_yt_trends_generator_agent` tool. 
+# Understand the trending content from this research. Produce structured data output using the `call_yt_trends_generator_agent` tool.
 # Note all outputs from the agent and run this tool to update the session state for `yt_trends`.
 # Be sure to consider any existing {yt_trends} but **do not output any `yt_trends``** that are already in this list.
-    # <yt_trends>
-    # {yt_trends} 
-    # </yt_trends>
+# <yt_trends>
+# {yt_trends}
+# </yt_trends>
 
 
 search_trends_generation_prompt = """Gathers research insights about trending Search terms.
@@ -113,5 +113,5 @@ For each key insight from your web research, fill out the following fields per t
 
 """
 # Understand why this topic or set of terms is trending. Produce structured data output using the`call_search_trends_generator_agent` tool.
-# Note all outputs from the agent and run this tool to update the session state for `search_trends`. 
+# Note all outputs from the agent and run this tool to update the session state for `search_trends`.
 # Be sure to consider any existing `search_trends` but **do not output any `search_trends`** that are already in this list.
