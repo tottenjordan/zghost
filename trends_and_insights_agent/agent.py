@@ -45,5 +45,9 @@ root_agent = Agent(
         temperature=0.01,
         response_modalities=["TEXT"],
     ),
-    after_agent_callback=callbacks.campaign_callback_function,
+    before_agent_callback=[
+        callbacks.campaign_callback_function,
+        # callbacks.before_agent_get_user_file
+    ],
+    # after_agent_callback=callbacks.campaign_callback_function,
 )

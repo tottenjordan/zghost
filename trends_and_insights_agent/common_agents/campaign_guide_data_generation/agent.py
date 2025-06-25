@@ -28,7 +28,7 @@ campaign_guide_data_extract_agent = LlmAgent(
     generate_content_config=schema_types.json_response_config,
     output_schema=schema_types.MarketingCampaignGuide,
     output_key="campaign_guide",
-    after_agent_callback=callbacks.campaign_callback_function,
+    # after_agent_callback=callbacks.modify_output_after_agent,
     # after_tool_callback=callbacks.campaign_callback_function,
 )
 
@@ -44,6 +44,7 @@ campaign_guide_data_generation_agent = LlmAgent(
         AgentTool(agent=campaign_guide_data_extract_agent),
         # call_extract_campaign_guide_agent,
     ],
+    # before_agent_callback=callbacks.before_agent_get_user_file,
     # before_model_callback=simple_before_model_modifier,
     # after_tool_callback=callbacks.simple_after_tool_modifier,
     # after_model_callback=callbacks.simple_after_model_modifier,

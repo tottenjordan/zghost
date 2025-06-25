@@ -38,11 +38,9 @@ from .shared_libraries.schema_types import (
     json_response_config,
 )
 
-
 from .common_agents.campaign_guide_data_generation.agent import (
     campaign_guide_data_generation_agent,
 )
-
 
 # ========================
 # clients

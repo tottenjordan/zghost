@@ -1,4 +1,6 @@
 import os
+import re
+import datetime
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -9,6 +11,7 @@ from google.adk.planners import BuiltInPlanner
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools import ToolContext, google_search
 from google.adk.agents.callback_context import CallbackContext
+from pydantic import BaseModel, Field
 
 from ...shared_libraries import callbacks, schema_types
 from ...prompts import united_insights_prompt
@@ -16,7 +19,30 @@ from ...utils import MODEL
 from ...tools import query_web
 
 
-# Callbacks
+# --- Structured Output Models ---
+class SearchQuery(BaseModel):
+    """Model representing a specific search query for web search."""
+
+    search_query: str = Field(
+        description="A highly specific and targeted query for web search."
+    )
+
+class Feedback(BaseModel):
+    """Model for providing evaluation feedback on research quality."""
+
+    # grade: Literal["pass", "fail"] = Field(
+    #     description="Evaluation result. 'pass' if the research is sufficient, 'fail' if it needs revision."
+    # )
+    comment: str = Field(
+        description="Detailed explanation of the evaluation, highlighting strengths and/or weaknesses of the research."
+    )
+    follow_up_queries: list[SearchQuery] | None = Field(
+        default=None,
+        description="A list of specific, targeted follow-up search queries needed to fix research gaps. This should be null or empty if the grade is 'pass'.",
+    )
+
+
+# --- Callbacks ---
 def collect_research_sources_callback(callback_context: CallbackContext) -> None:
     """Collects and organizes web-based research sources and their supported claims from agent events.
 
@@ -79,13 +105,49 @@ def collect_research_sources_callback(callback_context: CallbackContext) -> None
     callback_context.state["sources"] = sources
 
 
-# Agent Tools
-initial_campaign_planner = Agent(
+def citation_replacement_callback(
+    callback_context: CallbackContext,
+) -> types.Content:
+    """Replaces citation tags in a report with Markdown-formatted links.
+
+    Processes 'final_cited_report' from context state, converting tags like
+    `<cite source="src-N"/>` into hyperlinks using source information from
+    `callback_context.state["sources"]`. Also fixes spacing around punctuation.
+
+    Args:
+        callback_context (CallbackContext): Contains the report and source information.
+
+    Returns:
+        types.Content: The processed report with Markdown citation links.
+    """
+    final_report = callback_context.state.get("final_cited_report", "")
+    sources = callback_context.state.get("sources", {})
+
+    def tag_replacer(match: re.Match) -> str:
+        short_id = match.group(1)
+        if not (source_info := sources.get(short_id)):
+            logging.warning(f"Invalid citation tag found and removed: {match.group(0)}")
+            return ""
+        display_text = source_info.get("title", source_info.get("domain", short_id))
+        return f" [{display_text}]({source_info['url']})"
+
+    processed_report = re.sub(
+        r'<cite\s+source\s*=\s*["\']?\s*(src-\d+)\s*["\']?\s*/>',
+        tag_replacer,
+        final_report,
+    )
+    processed_report = re.sub(r"\s+([.,;:])", r"\1", processed_report)
+    callback_context.state["final_report_with_citations"] = processed_report
+    return types.Content(parts=[types.Part(text=processed_report)])
+
+
+# --- AGENT DEFINITIONS ---
+campaign_web_planner = Agent(
     model=MODEL,
-    name="initial_campaign_planner",
-    description="Generates initial web research queries about concepts described in the campaign guide.",
-    instruction="""
-    You are a research strategist. Your job is to create several queries that help guide the web research. 
+    name="campaign_web_planner",
+    description="Generates initial queries to guide web research about concepts described in the campaign guide.",
+    instruction="""You are a research strategist. 
+    Your job is to create high-level queries that will help marketers better understand concepts in the `campaign_guide`, such as the `target_audience`, `target_product`, and `key_selling_points`.
     
     The queries shoud help answer questions like:
     *  What's relevant, distinctive, or helpful about the {campaign_guide.target_product}?
@@ -93,76 +155,109 @@ initial_campaign_planner = Agent(
     *  Which key selling points would the target audience best resonate with? Why? 
     *  How could marketers make a culturally relevant advertisement related to product insights?
     
-    Your output should just include a numbered list of questions. Nothing else.
+    Your output should just include a numbered list of queries. Nothing else.
     """,
     output_key="inital_campaign_queries",
 )
 
-initial_campaign_search = Agent(
+campaign_web_searcher= Agent(
     model="gemini-2.5-flash",
-    name="initial_campaign_search",
+    name="campaign_web_searcher",
     description="Performs the crucial first pass of web research about the campaign guide.",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""
-    You are a diligent and exhaustive researcher. Your task is to perform the initial web research for concepts described in the campaign guide.
-
-    Execute all queries listed in `inital_campaign_queries` using the 'google_search' tool and synthesize the results into a detailed summary.
-    """,
-    tools=[google_search],
-    output_key="initial_campaign_search_findings",
-    after_agent_callback=collect_research_sources_callback,
-)
-
-initial_campaign_evaluator = Agent(
-    model=MODEL,
-    name="initial_campaign_evaluator",
-    description="Critically evaluates research about the campaign guide and generates follow-up queries.",
-    instruction=f"""
-    You are a diligent and exhaustive researcher. 
-    You are preparing for a second round of web research that helps you better understand the insights gathered during the initial campaign web research. 
-    
-    Read the summary in `initial_campaign_search_findings` and generate a list of queries. 
-    These queries should help you understand:
-    *  They messaging to best reach the target audience 
-    *  Features about the target product that will best resonate with the target audience
-
-    Your output should just include a numbered list of questions. Nothing else.
-    """,
-    output_key="follow_up_queries",
-)
-
-enhanced_campaign_search = Agent(
-    model="gemini-2.5-flash",
-    name="enhanced_campaign_search",
-    description="Executes follow-up searches and integrates new findings.",
-    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
-    instruction="""
-    You are a specialist researcher executing a refinement pass.
-    You are tasked to conduct a second round of web research and gather insights related to the campaign guide, the target audience, and the target product.
-
-    1.  Review the 'initial_campaign_search_findings' state key to understand the initial round of research.
-    2.  Execute EVERY query listed in 'follow_up_queries' using the 'google_search' tool.
-    3.  Synthesize the new findings and COMBINE them with the existing information in 'initial_campaign_search_findings'.
-    4.  Your output MUST be the new, complete, and improved set of research findings.
+    You are a diligent and exhaustive researcher. Your task is to conduct initial web research for concepts described in the campaign guide.
+    Use the 'google_search' tool to execute all queries listed in `inital_campaign_queries`. Synthesize the results into a detailed summary.
     """,
     tools=[google_search],
     output_key="campaign_web_search_insights",
     after_agent_callback=collect_research_sources_callback,
 )
 
+campaign_web_evaluator = Agent(
+    model=MODEL,
+    name="campaign_web_evaluator",
+    description="Critically evaluates research about the campaign guide and generates follow-up queries.",
+    instruction=f"""
+    You are a diligent and exhaustive researcher. 
+    You are reviewing the summary results in `campaign_web_search_insights` from the first round of web research and looking for any gaps or areas that need more clarification. 
+
+    Consider the bigger picture and the intersection of the target product and target audience. Be critical of the completeness of the research.
+
+    If you find significant gaps in depth or coverage, write a detailed comment about what's missing, and generate 5-7 specific follow-up queries to fill those gaps.
+    If the research thoroughly covers the topic, then no comment nor questions are needed.
+
+    Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
+    Your response must be a single, raw JSON object validating against the 'Feedback' schema.
+    """,
+    output_schema=Feedback,
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
+    output_key="campaign_research_evaluation",
+)
+
+enhanced_campaign_searcher = Agent(
+    model="gemini-2.5-flash",
+    name="enhanced_campaign_searcher",
+    description="Executes follow-up searches and integrates new findings.",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(include_thoughts=True)
+    ),
+    instruction="""
+    You are a specialist researcher executing a refinement pass.
+    You are tasked to conduct a second round of web research and gather insights related to the campaign guide, the target audience, and the target product.
+
+    1.  Review the 'campaign_research_evaluation' state key to understand the previous round of research.
+    2.  Execute EVERY query listed in 'follow_up_queries' using the 'google_search' tool.
+    3.  Synthesize the new findings and COMBINE them with the existing information in 'campaign_web_search_insights'.
+    4.  Your output MUST be the new, complete, and improved set of campaign web research insights.
+    """,
+    tools=[google_search],
+    output_key="campaign_web_search_insights",
+    after_agent_callback=collect_research_sources_callback,
+)
+
+campaign_report_composer = Agent(
+    model="gemini-2.5-pro",
+    name="campaign_report_composer",
+    include_contents="none",
+    description="Transforms research data and a markdown outline into a final, cited report.",
+    instruction="""
+    Transform the provided data into a polished, professional, and meticulously cited research report.
+
+    ---
+    ### INPUT DATA
+    *   Research Plan: `{inital_campaign_queries}`
+    *   Research Critiques: `{campaign_research_evaluation}`
+    *   Final Research Findings: `{campaign_web_search_insights}`
+    *   Citation Sources: `{sources}`
+
+    ---
+    ### CRITICAL: Citation System
+    To cite a source, you MUST insert a special citation tag directly after the claim it supports.
+
+    **The only correct format is:** `<cite source="src-ID_NUMBER" />`
+
+    ---
+    ### Final Instructions
+    Generate a comprehensive report using ONLY the `<cite source="src-ID_NUMBER" />` tag system for all citations.
+    Do not include a "References" or "Sources" section; all citations must be in-line.
+    """,
+    output_key="final_cited_report",
+    after_agent_callback=citation_replacement_callback,
+)
 
 campaign_research_pipeline = SequentialAgent(
     name="campaign_research_pipeline",
-    description="Executes multiple rounds of web research rlated to the campaign guide. It performs iterative research, evaluation, and insight generation.",
+    description="Executes a pipeline of web research related to the campaign guide. It performs iterative research, evaluation, and insight generation.",
     sub_agents=[
-        initial_campaign_planner,
-        initial_campaign_search,
-        initial_campaign_evaluator,
-        enhanced_campaign_search,
-        # insights_generator_agent,
+        campaign_web_planner,
+        campaign_web_searcher,
+        campaign_web_evaluator,
+        enhanced_campaign_searcher,
+        campaign_report_composer,
     ],
 )
-
 
 insights_generator_agent = Agent(
     model=MODEL,
@@ -170,12 +265,19 @@ insights_generator_agent = Agent(
     description="Critically evaluates all research about the campaign guide and generates insights.",
     instruction=f"""
     You are a diligent and exhaustive researcher. 
-    You are tasked with generating insights that will help expert marketers better understand the the target audience and the target product.
+    You are tasked with gathering insights from the campaign web research. 
     
-    1.  Review the 'campaign_web_search_insights' state key to understand the completed campaign research.
-    2.  Generate a set of insights to summarize this research.
-
-    Once these two steps are complete, confirm with the user. Once the user confirms, transfer back to the `root_agent`.
+    *Note:* an insight is a data point that: 
+    *   is referenceable (with a source), 
+    *   shows deep intersections between the the goal of a campaign guide and broad information sources,
+    *   and is actionable i.e., provides value within the context of the campaign.
+    
+    ---
+    ### Instructions
+    1.  Review the 'final_cited_report' state key to understand the completed campaign research
+    2.  Generate 5-7 insights that follow this schema:
+    
+    Your response must be a single, raw JSON object validating against the 'Insights' schema.
     """,
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
@@ -183,19 +285,6 @@ insights_generator_agent = Agent(
     output_schema=schema_types.Insights,
     output_key="insights",
 )
-
-# insights_generator_agent = Agent(
-#     model=MODEL,
-#     name="insights_generator_agent",
-#     description="Gathers research insights about concepts described in the campaign guide.",
-#     instruction=united_insights_prompt,
-#     disallow_transfer_to_parent=True,
-#     disallow_transfer_to_peers=True,
-#     generate_content_config=schema_types.json_response_config,
-#     output_schema=schema_types.Insights,
-#     output_key="insights",
-# )
-
 
 async def call_insights_generation_agent(
     question: str, tool_context: ToolContext
@@ -222,46 +311,24 @@ async def call_insights_generation_agent(
     if existing_insights is not {"insights": []}:
         insights["insights"].extend(existing_insights["insights"])
     tool_context.state["insights"] = insights
-    logging.info(f"\n\n Final `insights`: {insights} \n\n")
+    # logging.info(f"\n\n Final `insights`: {insights} \n\n")
     return {"status": "ok"}
 
-
-# # Researcher 1: campaign insights
-# _SEQ_INSIGHT_PROMPT = """**Role:** You are a Research Assistant specializing in marketing campaign insights.
-
-# **Objective:** Your goal is to conduct web research and gather insights related to concepts from the campaign guide. These insights should answer questions like:
-# *  What's relevant, distinctive, or helpful about the {campaign_guide.target_product}?
-# *  Which key selling points would the target audience best resonate with? Why?
-# *  How could marketers make a culturally relevant advertisement related to product insights?
-
-# **Available Tools:** You have access to the following tools:
-# *  `google_search` : Use this tool to perform web searches with Google Search.
-# *  `call_insights_generation_agent` : Use this tool to update the `insights` session state from the results of your web research. Do not use this tool until **after** you have completed your web research for the campaign guide.
-
-# **Instructions:** Follow these steps to complete the task at hand:
-# 1. Use the `google_search` tool to perform Google Searches for several topics described in the `campaign_guide` (e.g., target audience, key selling points, target product, etc.)
-# 2. Use insights from the results in the previous step to generate a second round of Google Searches that help you better understand key features of the target product, as well as key attributes about the target audience. Use the `google_search` tool to execute these queries.
-# 3. Given the results from the previous step, generate some insights that help establish a clear foundation for all subsequent research and ideation.
-# 4. For each insight gathered in the previous steps, use the `call_insights_generation_agent` tool to store them in the list of structured `insights` in the session state.
-# 5. Confirm with the user before proceeding. Once the user is satisfied, transfer to the `root_agent`.
-
-# """
 
 campaign_researcher_agent = Agent(
     name="campaign_researcher_agent",
     model=MODEL,
-    description="Conducts web research specifically for product insights related to concepts defined in the `campaign_guide`",
-    # instruction=_SEQ_INSIGHT_PROMPT,
+    description="Conducts web research specifically for product insights related to concepts defined in the campaign guide",
     instruction="""
     You are a web research planning assistant. Your primary task is to execute a research pipeline that conducts web research related to the campaign guide.
     Do not perform any research yourself. Just execute the research pipeline and update the insights.
 
     Your workflow is:
-    1.  Execute the `campaign_research_pipeline` sub-agent research pipeline.
-    2.  Read the summary in `campaign_web_search_insights`. Generate insights from this research. 
-    3.  For each insight, use the `call_insights_generation_agent` tool to store them in the list of structured `insights` in the session state.
+    1.  Execute the `campaign_research_pipeline` sub-agent.
+    2.  Once the research pipeline is complete, read the summary in `final_cited_report` and generate relevant insights. 
+    3.  For each insight, use the `call_insights_generation_agent` tool to store them in the `insights` state variable.
 
-    Once these steps are complete, confirm with the user. Once the user has confirmed, transfer back to the `root_agent`.
+    Once these steps are complete, confirm with the user. Once the user confirms, transfer back to the `root_agent`.
     """,
     tools=[
         # query_web,
@@ -271,5 +338,7 @@ campaign_researcher_agent = Agent(
     generate_content_config=types.GenerateContentConfig(
         temperature=1.0,
     ),
-    after_agent_callback=callbacks.campaign_callback_function,
+    # after_agent_callback=callbacks.campaign_callback_function,
 )
+
+# Once these two steps are complete, confirm with the user. Once the user confirms, transfer back to the `root_agent`.

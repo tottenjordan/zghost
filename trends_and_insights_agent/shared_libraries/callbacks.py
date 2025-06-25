@@ -11,7 +11,60 @@ from google.adk.tools.base_tool import BaseTool
 from google.adk.models import LlmResponse, LlmRequest
 from google.adk.agents.callback_context import CallbackContext
 
-# from ..utils import GUIDE_URL
+
+# TODO: not saving artifact correctly
+async def before_agent_get_user_file(
+    callback_context: CallbackContext
+) -> Optional[types.Content]:
+    """
+    Checks for user-uploaded file before the agent runs.
+    
+    If file found in user's message, this callback processes it, then 
+    saves it as an artifact: `user_uploaded_campaign_guide`.
+    At this time, we are only accepting campaign guides in PDF format.
+    If no file is found, it returns None, allowing the agent to proceed normally.
+    
+    Returns:
+        dict: confirmation message to the user
+    """
+    parts = []
+    if callback_context.user_content and callback_context.user_content.parts:
+        parts = [p for p in callback_context.user_content.parts if p.inline_data is not None]
+
+    # if no file then continue to agent by returning empty
+    if not parts:
+        return None
+    
+    # if file then save as artifact
+    part = parts[-1]
+    artifact_key = 'user_uploaded_campaign_guide'
+    file_bytes = part.inline_data.data
+    file_type = part.inline_data.mime_type
+
+    # confirm file_type is pdf or png, else let user know the expected type
+    if file_type != 'application/pdf':
+        issue_message = f"The file you provided is of type {file_type} which is not supported here.  Please provide PDF."
+        response = types.Content(
+            parts = [types.Part(text = issue_message)],
+            role = 'model'
+        )
+        return response
+
+    # create & save artifact
+    artifact = types.Part.from_bytes(data = file_bytes, mime_type = "application/pdf")
+    version = await callback_context.save_artifact(filename = artifact_key, artifact = artifact)
+    
+    # Formulate a confirmation message
+    confirmation_message = (
+        f"Successfully processed your uploaded file.\n\n"
+        f"It's now stored as artifact with key: "
+        f"'{artifact_key}' (version: {version}, size: {len(file_bytes)} bytes).\n\n"
+    )
+    response = types.Content(
+        parts = [types.Part(text = confirmation_message)],
+        role = 'model'
+    )
+    return response
 
 
 def campaign_callback_function(
@@ -171,7 +224,6 @@ def simple_after_model_modifier(
     return None
 
 
-# tmp - test callbacks
 def simple_after_tool_modifier(
     tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, tool_response: Dict
 ) -> Optional[Dict]:

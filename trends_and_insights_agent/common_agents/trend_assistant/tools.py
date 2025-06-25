@@ -64,7 +64,7 @@ async def save_yt_trends_to_session_state(
         existing_target_yt_trends["target_yt_trends"].append(selected_trends)
     tool_context.state["target_yt_trends"] = existing_target_yt_trends
 
-    logging.info(f"\n\n final state value: {existing_target_yt_trends} \n\n")
+    # logging.info(f"\n\n final state value: {existing_target_yt_trends} \n\n")
     return {"status": "ok"}
 
 
@@ -117,7 +117,7 @@ async def save_search_trends_to_session_state(
         existing_target_search_trends["target_search_trends"].append(new_trends)
     tool_context.state["target_search_trends"] = existing_target_search_trends
 
-    logging.info(f"\n\n final state value: {existing_target_search_trends} \n\n")
+    # logging.info(f"\n\n final state value: {existing_target_search_trends} \n\n")
     return {"status": "ok"}
 
 
@@ -145,8 +145,8 @@ def get_daily_gtrends() -> str:
              Returns 25 terms ordered by their rank (ascending order) for the current week.
     """
     # get latest refresh date
-    max_date = get_gtrends_max_date()
-    # max_date = "06/18/2025"
+    # max_date = get_gtrends_max_date()
+    max_date = "06/18/2025"
     logging.info(f"\n\nmax_date in trends_assistant: {max_date}\n\n")
 
     query = f"""

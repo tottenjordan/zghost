@@ -1,4 +1,5 @@
 from google.genai import types
+from google.adk.tools.agent_tool import AgentTool
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.tools import LongRunningFunctionTool
 
@@ -9,9 +10,9 @@ from .tools import (
     save_search_trends_to_session_state,
 )
 from .prompts import AUTO_TREND_AGENT_INSTR
+from ...shared_libraries import schema_types
 from ...utils import MODEL
 
-# from ...prompts import GLOBAL_INSTR
 
 tools = [
     get_daily_gtrends,
@@ -19,6 +20,7 @@ tools = [
     save_yt_trends_to_session_state,
     save_search_trends_to_session_state,
 ]
+
 
 trends_and_insights_agent = Agent(
     model=MODEL,
