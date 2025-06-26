@@ -92,12 +92,11 @@ ad_copy_drafter = Agent(
     - Which trend(s) it leverages
     - Brief rationale for target audience appeal
     
-    Your response must be a single, raw JSON object validating against the 'AdCopyDraft' schema.
+    Double check the response is a valid JSON object validating against the 'AdCopyDraft' schema.
     """,
-    # output_schema=AdCopyDraft,
-    output_key="ad_copy_draft",
+    output_schema=AdCopyDraft,
     generate_content_config=types.GenerateContentConfig(
-        temperature=1.5, response_mime_type="application/json"
+        temperature=1.5,
     ),
     disallow_transfer_to_peers=True,
     disallow_transfer_to_parent=True,
@@ -120,13 +119,11 @@ ad_copy_critic = Agent(
     
     Provide detailed rationale for your selections, explaining why these specific copies will perform best.
     
-    Your response must be a single, raw JSON object validating against the 'AdCopyCritique' schema.
+    Double check the response is a valid JSON object validating against the 'AdCopyCritique' schema.
     """,
-    # output_schema=AdCopyCritique,
-    output_key="ad_copy_critique",
-    generate_content_config=types.GenerateContentConfig(
-        temperature=0.7
-    ),
+    input_schema=AdCopyDraft,
+    output_schema=AdCopyCritique,
+    generate_content_config=types.GenerateContentConfig(temperature=0.7),
     disallow_transfer_to_peers=True,
     disallow_transfer_to_parent=True,
 )
@@ -148,7 +145,7 @@ ad_copy_finalizer = Agent(
     Present the final 4-8 ad copies to the user, explaining the unique value of each.
     Ask the user to select which copies they want to proceed with for visual generation.
     """,
-    output_key="final_ad_copies",
+    input_schema=AdCopyCritique,
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
 )
@@ -186,14 +183,10 @@ visual_concept_drafter = Agent(
     - Creative concept explanation
     - Which ad copy it connects to
     
-    Your response must be a single, raw JSON object validating against the 'VisualDraft' schema.
+    Double check the response is a valid JSON object validating against the 'VisualDraft' schema.
     """,
-    # output_schema=VisualDraft,
-    output_key="visual_draft",
-    # tools=[google_search],
-    generate_content_config=types.GenerateContentConfig(
-        temperature=1.5
-    ),
+    output_schema=VisualDraft,
+    generate_content_config=types.GenerateContentConfig(temperature=1.5),
     disallow_transfer_to_peers=True,
     disallow_transfer_to_parent=True,
 )
@@ -216,10 +209,10 @@ visual_concept_critic = Agent(
     Ensure a good mix of images and videos in your selection.
     Provide detailed rationale for your selections.
     
-    Your response must be a single, raw JSON object validating against the 'VisualCritique' schema.
+    Double check the response is a valid JSON object validating against the 'VisualCritique' schema.
     """,
-    # output_schema=VisualCritique,
-    output_key="visual_critique",
+    input_schema=VisualDraft,
+    output_schema=VisualCritique,
     generate_content_config=types.GenerateContentConfig(
         temperature=0.7, response_mime_type="application/json"
     ),
@@ -243,8 +236,8 @@ visual_generator = Agent(
     After generating all visuals, ask the user to confirm their satisfaction.
     Once confirmed, compile all final selections and transfer back to the parent agent.
     """,
+    input_schema=VisualCritique,
     tools=[generate_image, generate_video],
-    output_key="final_visuals",
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
 )
 
@@ -259,44 +252,6 @@ visual_generation_pipeline = SequentialAgent(
         visual_generator,
     ],
 )
-
-
-# --- MAIN ORCHESTRATOR AGENTS ---
-# ad_creative_subagent = Agent(
-#     model="gemini-2.5-flash",
-#     name="ad_creative_subagent",
-#     description="Orchestrate the generation of 4-8 ad copy options through a sequential pipeline",
-#     instruction="""You are orchestrating the ad copy creation process.
-
-#     Execute the `ad_creative_pipeline` to generate ad copies through three stages:
-#     1. Draft (10-15 ideas)
-#     2. Critique (narrow to 4-8)
-#     3. Finalize (polish and present)
-
-#     Once the pipeline completes and the user has selected their preferred copies,
-#     store them in the state and confirm readiness to proceed to visual generation.
-#     """,
-#     sub_agents=[ad_creative_pipeline],
-#     generate_content_config=types.GenerateContentConfig(temperature=1.0),
-# )
-
-
-# image_video_generation_subagent = Agent(
-#     model=MODEL,
-#     name="image_video_generation_subagent",
-#     description="Orchestrate the generation of 4-8 visual options through a sequential pipeline",
-#     instruction="""You are orchestrating the visual content creation process.
-
-#     Using the selected ad copies from the previous agent, execute the `visual_generation_pipeline` to:
-#     1. Draft visual concepts (10-15 ideas)
-#     2. Critique (narrow to 4-8)
-#     3. Generate final visuals
-
-#     Once complete, compile all final assets (copies, visuals, captions) and present a summary to the user.
-#     """,
-#     sub_agents=[visual_generation_pipeline],
-#     generate_content_config=types.GenerateContentConfig(temperature=1.0),
-# )
 
 
 # Main orchestrator agent
