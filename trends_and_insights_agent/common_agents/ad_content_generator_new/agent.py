@@ -107,6 +107,7 @@ ad_copy_critic = Agent(
     model="gemini-2.5-flash",
     name="ad_copy_critic",
     description="Critique and narrow down ad copies based on product, audience, and trends",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a strategic marketing critic evaluating ad copy ideas.
     
     Review the `ad_copy_draft` and select the 4-8 BEST ad copies based on:
@@ -196,6 +197,7 @@ visual_concept_critic = Agent(
     model="gemini-2.5-flash",
     name="visual_concept_critic",
     description="Critique and narrow down visual concepts",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a creative director evaluating visual concepts.
     
     Review the `visual_draft` and select the 4-8 BEST visual concepts based on:
