@@ -7,35 +7,36 @@ from .tools import generate_image, generate_video
 from .prompts import (
     AD_CONTENT_GENERATOR_NEW_INSTR,
     AD_CREATIVE_SUBAGENT_INSTR,
-    IMAGE_VIDEO_GENERATION_SUBAGENT_INSTR
+    IMAGE_VIDEO_GENERATION_SUBAGENT_INSTR,
 )
+from google.adk.planners import BuiltInPlanner
+from google.adk.tools import google_search
 
 
 # --- Structured Output Models ---
 class AdCopyIdea(BaseModel):
     """Model representing a single ad copy idea."""
+
     headline: str = Field(description="The headline of the ad copy")
     body: str = Field(description="The main body text of the ad")
     call_to_action: str = Field(description="The call-to-action text")
     target_trend: str = Field(description="Which trend(s) this copy leverages")
-    rationale: str = Field(description="Why this will resonate with the target audience")
+    rationale: str = Field(
+        description="Why this will resonate with the target audience"
+    )
 
 
 class AdCopyDraft(BaseModel):
     """Model for initial ad copy ideas."""
-    ad_copies: List[AdCopyIdea] = Field(
-        description="List of 10-15 ad copy ideas",
-        min_items=10,
-        max_items=15
-    )
+
+    ad_copies: List[AdCopyIdea] = Field(description="List of 10-15 ad copy ideas")
 
 
 class AdCopyCritique(BaseModel):
     """Model for critiquing ad copy ideas."""
+
     selected_copies: List[AdCopyIdea] = Field(
         description="List of 4-8 best ad copy ideas after critique",
-        min_items=4,
-        max_items=8
     )
     critique_rationale: str = Field(
         description="Explanation of selection criteria and why these copies were chosen"
@@ -44,6 +45,7 @@ class AdCopyCritique(BaseModel):
 
 class VisualConcept(BaseModel):
     """Model representing a visual concept."""
+
     concept_type: str = Field(description="Either 'image' or 'video'")
     prompt: str = Field(description="The generation prompt")
     creative_concept: str = Field(description="Brief explanation of the concept")
@@ -52,19 +54,17 @@ class VisualConcept(BaseModel):
 
 class VisualDraft(BaseModel):
     """Model for initial visual concepts."""
+
     visual_concepts: List[VisualConcept] = Field(
-        description="List of 10-15 visual concepts",
-        min_items=10,
-        max_items=15
+        description="List of 10-15 visual concepts"
     )
 
 
 class VisualCritique(BaseModel):
     """Model for critiquing visual concepts."""
+
     selected_concepts: List[VisualConcept] = Field(
         description="List of 4-8 best visual concepts after critique",
-        min_items=4,
-        max_items=8
     )
     critique_rationale: str = Field(
         description="Explanation of selection criteria and why these visuals were chosen"
@@ -73,9 +73,10 @@ class VisualCritique(BaseModel):
 
 # --- AD CREATIVE SUBAGENTS ---
 ad_copy_drafter = Agent(
-    model=MODEL,
+    model="gemini-2.5-flash",
     name="ad_copy_drafter",
     description="Generate 10-15 initial ad copy ideas based on campaign guidelines and trends",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a creative copywriter generating initial ad copy ideas.
     
     Based on the `campaign_guide`, `search_trends`, and `yt_trends`, generate 10-15 diverse ad copy ideas that:
@@ -91,16 +92,20 @@ ad_copy_drafter = Agent(
     - Which trend(s) it leverages
     - Brief rationale for target audience appeal
     
-    Output a structured list following the AdCopyDraft schema.
+    Your response must be a single, raw JSON object validating against the 'AdCopyDraft' schema.
     """,
-    output_schema=AdCopyDraft,
+    # output_schema=AdCopyDraft,
     output_key="ad_copy_draft",
-    generate_content_config=types.GenerateContentConfig(temperature=1.5),
+    generate_content_config=types.GenerateContentConfig(
+        temperature=1.5, response_mime_type="application/json"
+    ),
+    disallow_transfer_to_peers=True,
+    disallow_transfer_to_parent=True,
 )
 
 
 ad_copy_critic = Agent(
-    model=MODEL,
+    model="gemini-2.5-flash",
     name="ad_copy_critic",
     description="Critique and narrow down ad copies based on product, audience, and trends",
     instruction="""You are a strategic marketing critic evaluating ad copy ideas.
@@ -115,18 +120,23 @@ ad_copy_critic = Agent(
     
     Provide detailed rationale for your selections, explaining why these specific copies will perform best.
     
-    Output following the AdCopyCritique schema.
+    Your response must be a single, raw JSON object validating against the 'AdCopyCritique' schema.
     """,
-    output_schema=AdCopyCritique,
+    # output_schema=AdCopyCritique,
     output_key="ad_copy_critique",
-    generate_content_config=types.GenerateContentConfig(temperature=0.7),
+    generate_content_config=types.GenerateContentConfig(
+        temperature=0.7
+    ),
+    disallow_transfer_to_peers=True,
+    disallow_transfer_to_parent=True,
 )
 
 
 ad_copy_finalizer = Agent(
-    model=MODEL,
+    model="gemini-2.5-flash",
     name="ad_copy_finalizer",
     description="Finalize and polish the selected ad copies",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a senior copywriter finalizing ad campaigns.
     
     Take the selected copies from `ad_copy_critique` and:
@@ -139,6 +149,7 @@ ad_copy_finalizer = Agent(
     Ask the user to select which copies they want to proceed with for visual generation.
     """,
     output_key="final_ad_copies",
+    tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
 )
 
@@ -157,9 +168,10 @@ ad_creative_pipeline = SequentialAgent(
 
 # --- IMAGE/VIDEO GENERATION SUBAGENTS ---
 visual_concept_drafter = Agent(
-    model=MODEL,
+    model="gemini-2.5-flash",
     name="visual_concept_drafter",
     description="Generate 10-15 initial visual concepts for selected ad copies",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a visual creative director generating initial concepts.
     
     Based on the `final_ad_copies` selected by the user, generate 10-15 visual concepts that:
@@ -174,16 +186,21 @@ visual_concept_drafter = Agent(
     - Creative concept explanation
     - Which ad copy it connects to
     
-    Output following the VisualDraft schema.
+    Your response must be a single, raw JSON object validating against the 'VisualDraft' schema.
     """,
-    output_schema=VisualDraft,
+    # output_schema=VisualDraft,
     output_key="visual_draft",
-    generate_content_config=types.GenerateContentConfig(temperature=1.5),
+    # tools=[google_search],
+    generate_content_config=types.GenerateContentConfig(
+        temperature=1.5
+    ),
+    disallow_transfer_to_peers=True,
+    disallow_transfer_to_parent=True,
 )
 
 
 visual_concept_critic = Agent(
-    model=MODEL,
+    model="gemini-2.5-flash",
     name="visual_concept_critic",
     description="Critique and narrow down visual concepts",
     instruction="""You are a creative director evaluating visual concepts.
@@ -199,16 +216,20 @@ visual_concept_critic = Agent(
     Ensure a good mix of images and videos in your selection.
     Provide detailed rationale for your selections.
     
-    Output following the VisualCritique schema.
+    Your response must be a single, raw JSON object validating against the 'VisualCritique' schema.
     """,
-    output_schema=VisualCritique,
+    # output_schema=VisualCritique,
     output_key="visual_critique",
-    generate_content_config=types.GenerateContentConfig(temperature=0.7),
+    generate_content_config=types.GenerateContentConfig(
+        temperature=0.7, response_mime_type="application/json"
+    ),
+    disallow_transfer_to_peers=True,
+    disallow_transfer_to_parent=True,
 )
 
 
 visual_generator = Agent(
-    model=MODEL,
+    model="gemini-2.5-flash",
     name="visual_generator",
     description="Generate final visuals using image and video generation tools",
     instruction="""You are a visual content producer creating final assets.
@@ -241,52 +262,52 @@ visual_generation_pipeline = SequentialAgent(
 
 
 # --- MAIN ORCHESTRATOR AGENTS ---
-ad_creative_subagent = Agent(
-    model=MODEL,
-    name="ad_creative_subagent",
-    description="Orchestrate the generation of 4-8 ad copy options through a sequential pipeline",
-    instruction="""You are orchestrating the ad copy creation process.
-    
-    Execute the `ad_creative_pipeline` to generate ad copies through three stages:
-    1. Draft (10-15 ideas)
-    2. Critique (narrow to 4-8)
-    3. Finalize (polish and present)
-    
-    Once the pipeline completes and the user has selected their preferred copies, 
-    store them in the state and confirm readiness to proceed to visual generation.
-    """,
-    sub_agents=[ad_creative_pipeline],
-    generate_content_config=types.GenerateContentConfig(temperature=1.0),
-)
+# ad_creative_subagent = Agent(
+#     model="gemini-2.5-flash",
+#     name="ad_creative_subagent",
+#     description="Orchestrate the generation of 4-8 ad copy options through a sequential pipeline",
+#     instruction="""You are orchestrating the ad copy creation process.
+
+#     Execute the `ad_creative_pipeline` to generate ad copies through three stages:
+#     1. Draft (10-15 ideas)
+#     2. Critique (narrow to 4-8)
+#     3. Finalize (polish and present)
+
+#     Once the pipeline completes and the user has selected their preferred copies,
+#     store them in the state and confirm readiness to proceed to visual generation.
+#     """,
+#     sub_agents=[ad_creative_pipeline],
+#     generate_content_config=types.GenerateContentConfig(temperature=1.0),
+# )
 
 
-image_video_generation_subagent = Agent(
-    model=MODEL,
-    name="image_video_generation_subagent",
-    description="Orchestrate the generation of 4-8 visual options through a sequential pipeline",
-    instruction="""You are orchestrating the visual content creation process.
-    
-    Using the selected ad copies from the previous agent, execute the `visual_generation_pipeline` to:
-    1. Draft visual concepts (10-15 ideas)
-    2. Critique (narrow to 4-8)
-    3. Generate final visuals
-    
-    Once complete, compile all final assets (copies, visuals, captions) and present a summary to the user.
-    """,
-    sub_agents=[visual_generation_pipeline],
-    generate_content_config=types.GenerateContentConfig(temperature=1.0),
-)
+# image_video_generation_subagent = Agent(
+#     model=MODEL,
+#     name="image_video_generation_subagent",
+#     description="Orchestrate the generation of 4-8 visual options through a sequential pipeline",
+#     instruction="""You are orchestrating the visual content creation process.
+
+#     Using the selected ad copies from the previous agent, execute the `visual_generation_pipeline` to:
+#     1. Draft visual concepts (10-15 ideas)
+#     2. Critique (narrow to 4-8)
+#     3. Generate final visuals
+
+#     Once complete, compile all final assets (copies, visuals, captions) and present a summary to the user.
+#     """,
+#     sub_agents=[visual_generation_pipeline],
+#     generate_content_config=types.GenerateContentConfig(temperature=1.0),
+# )
 
 
 # Main orchestrator agent
 ad_content_generator_new_agent = Agent(
-    model=MODEL,
+    model="gemini-2.5-flash",
     name="ad_content_generator_new_agent",
     description="Orchestrate comprehensive ad campaign creation with multiple copy and visual options",
     instruction=AD_CONTENT_GENERATOR_NEW_INSTR,
     sub_agents=[
-        ad_creative_subagent,
-        image_video_generation_subagent,
+        ad_creative_pipeline,
+        visual_generation_pipeline,
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )
