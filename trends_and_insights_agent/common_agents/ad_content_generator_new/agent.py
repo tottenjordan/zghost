@@ -1,0 +1,292 @@
+from google.adk.agents import Agent, SequentialAgent
+from google.genai import types
+from pydantic import BaseModel, Field
+from typing import List
+from ...utils import MODEL
+from .tools import generate_image, generate_video
+from .prompts import (
+    AD_CONTENT_GENERATOR_NEW_INSTR,
+    AD_CREATIVE_SUBAGENT_INSTR,
+    IMAGE_VIDEO_GENERATION_SUBAGENT_INSTR
+)
+
+
+# --- Structured Output Models ---
+class AdCopyIdea(BaseModel):
+    """Model representing a single ad copy idea."""
+    headline: str = Field(description="The headline of the ad copy")
+    body: str = Field(description="The main body text of the ad")
+    call_to_action: str = Field(description="The call-to-action text")
+    target_trend: str = Field(description="Which trend(s) this copy leverages")
+    rationale: str = Field(description="Why this will resonate with the target audience")
+
+
+class AdCopyDraft(BaseModel):
+    """Model for initial ad copy ideas."""
+    ad_copies: List[AdCopyIdea] = Field(
+        description="List of 10-15 ad copy ideas",
+        min_items=10,
+        max_items=15
+    )
+
+
+class AdCopyCritique(BaseModel):
+    """Model for critiquing ad copy ideas."""
+    selected_copies: List[AdCopyIdea] = Field(
+        description="List of 4-8 best ad copy ideas after critique",
+        min_items=4,
+        max_items=8
+    )
+    critique_rationale: str = Field(
+        description="Explanation of selection criteria and why these copies were chosen"
+    )
+
+
+class VisualConcept(BaseModel):
+    """Model representing a visual concept."""
+    concept_type: str = Field(description="Either 'image' or 'video'")
+    prompt: str = Field(description="The generation prompt")
+    creative_concept: str = Field(description="Brief explanation of the concept")
+    connected_ad_copy: str = Field(description="Which ad copy this visual connects to")
+
+
+class VisualDraft(BaseModel):
+    """Model for initial visual concepts."""
+    visual_concepts: List[VisualConcept] = Field(
+        description="List of 10-15 visual concepts",
+        min_items=10,
+        max_items=15
+    )
+
+
+class VisualCritique(BaseModel):
+    """Model for critiquing visual concepts."""
+    selected_concepts: List[VisualConcept] = Field(
+        description="List of 4-8 best visual concepts after critique",
+        min_items=4,
+        max_items=8
+    )
+    critique_rationale: str = Field(
+        description="Explanation of selection criteria and why these visuals were chosen"
+    )
+
+
+# --- AD CREATIVE SUBAGENTS ---
+ad_copy_drafter = Agent(
+    model=MODEL,
+    name="ad_copy_drafter",
+    description="Generate 10-15 initial ad copy ideas based on campaign guidelines and trends",
+    instruction="""You are a creative copywriter generating initial ad copy ideas.
+    
+    Based on the `campaign_guide`, `search_trends`, and `yt_trends`, generate 10-15 diverse ad copy ideas that:
+    - Incorporate key selling points from the campaign guide
+    - Reference trends from search and/or YouTube
+    - Vary in tone, style, and approach
+    - Are suitable for Instagram/TikTok platforms
+    
+    Each ad copy should include:
+    - Headline (attention-grabbing)
+    - Body text (concise and compelling)
+    - Call-to-action
+    - Which trend(s) it leverages
+    - Brief rationale for target audience appeal
+    
+    Output a structured list following the AdCopyDraft schema.
+    """,
+    output_schema=AdCopyDraft,
+    output_key="ad_copy_draft",
+    generate_content_config=types.GenerateContentConfig(temperature=1.5),
+)
+
+
+ad_copy_critic = Agent(
+    model=MODEL,
+    name="ad_copy_critic",
+    description="Critique and narrow down ad copies based on product, audience, and trends",
+    instruction="""You are a strategic marketing critic evaluating ad copy ideas.
+    
+    Review the `ad_copy_draft` and select the 4-8 BEST ad copies based on:
+    1. Alignment with target audience demographics and psychographics
+    2. Effective use of trending topics that feel authentic
+    3. Clear communication of key selling points
+    4. Platform-appropriate tone and length
+    5. Potential for high engagement
+    6. Brand consistency with campaign guidelines
+    
+    Provide detailed rationale for your selections, explaining why these specific copies will perform best.
+    
+    Output following the AdCopyCritique schema.
+    """,
+    output_schema=AdCopyCritique,
+    output_key="ad_copy_critique",
+    generate_content_config=types.GenerateContentConfig(temperature=0.7),
+)
+
+
+ad_copy_finalizer = Agent(
+    model=MODEL,
+    name="ad_copy_finalizer",
+    description="Finalize and polish the selected ad copies",
+    instruction="""You are a senior copywriter finalizing ad campaigns.
+    
+    Take the selected copies from `ad_copy_critique` and:
+    1. Polish the language for maximum impact
+    2. Ensure platform compliance (character limits, guidelines)
+    3. Add any final creative touches
+    4. Present them in order of recommended priority
+    
+    Present the final 4-8 ad copies to the user, explaining the unique value of each.
+    Ask the user to select which copies they want to proceed with for visual generation.
+    """,
+    output_key="final_ad_copies",
+    generate_content_config=types.GenerateContentConfig(temperature=0.8),
+)
+
+
+# Sequential agent for ad creative generation
+ad_creative_pipeline = SequentialAgent(
+    name="ad_creative_pipeline",
+    description="Generate ad copy through draft, critique, and finalization stages",
+    sub_agents=[
+        ad_copy_drafter,
+        ad_copy_critic,
+        ad_copy_finalizer,
+    ],
+)
+
+
+# --- IMAGE/VIDEO GENERATION SUBAGENTS ---
+visual_concept_drafter = Agent(
+    model=MODEL,
+    name="visual_concept_drafter",
+    description="Generate 10-15 initial visual concepts for selected ad copies",
+    instruction="""You are a visual creative director generating initial concepts.
+    
+    Based on the `final_ad_copies` selected by the user, generate 10-15 visual concepts that:
+    - Include both image and video concepts
+    - Visualize the ad copy messages effectively
+    - Incorporate trending visual styles and themes
+    - Consider platform-specific best practices
+    
+    For each concept, provide:
+    - Type (image or video)
+    - Detailed generation prompt
+    - Creative concept explanation
+    - Which ad copy it connects to
+    
+    Output following the VisualDraft schema.
+    """,
+    output_schema=VisualDraft,
+    output_key="visual_draft",
+    generate_content_config=types.GenerateContentConfig(temperature=1.5),
+)
+
+
+visual_concept_critic = Agent(
+    model=MODEL,
+    name="visual_concept_critic",
+    description="Critique and narrow down visual concepts",
+    instruction="""You are a creative director evaluating visual concepts.
+    
+    Review the `visual_draft` and select the 4-8 BEST visual concepts based on:
+    1. Visual appeal and stopping power for social media
+    2. Alignment with ad copy messaging
+    3. Trend relevance without feeling forced
+    4. Production feasibility with AI generation
+    5. Platform optimization (aspect ratios, duration)
+    6. Diversity of visual approaches
+    
+    Ensure a good mix of images and videos in your selection.
+    Provide detailed rationale for your selections.
+    
+    Output following the VisualCritique schema.
+    """,
+    output_schema=VisualCritique,
+    output_key="visual_critique",
+    generate_content_config=types.GenerateContentConfig(temperature=0.7),
+)
+
+
+visual_generator = Agent(
+    model=MODEL,
+    name="visual_generator",
+    description="Generate final visuals using image and video generation tools",
+    instruction="""You are a visual content producer creating final assets.
+    
+    Take the selected concepts from `visual_critique` and:
+    1. Refine the generation prompts for optimal results
+    2. Generate each visual using the appropriate tool (generate_image or generate_video)
+    3. Present each generated visual to the user
+    4. For each visual, create 2-3 platform-specific caption options
+    
+    After generating all visuals, ask the user to confirm their satisfaction.
+    Once confirmed, compile all final selections and transfer back to the parent agent.
+    """,
+    tools=[generate_image, generate_video],
+    output_key="final_visuals",
+    generate_content_config=types.GenerateContentConfig(temperature=1.2),
+)
+
+
+# Sequential agent for visual generation
+visual_generation_pipeline = SequentialAgent(
+    name="visual_generation_pipeline",
+    description="Generate visuals through draft, critique, and production stages",
+    sub_agents=[
+        visual_concept_drafter,
+        visual_concept_critic,
+        visual_generator,
+    ],
+)
+
+
+# --- MAIN ORCHESTRATOR AGENTS ---
+ad_creative_subagent = Agent(
+    model=MODEL,
+    name="ad_creative_subagent",
+    description="Orchestrate the generation of 4-8 ad copy options through a sequential pipeline",
+    instruction="""You are orchestrating the ad copy creation process.
+    
+    Execute the `ad_creative_pipeline` to generate ad copies through three stages:
+    1. Draft (10-15 ideas)
+    2. Critique (narrow to 4-8)
+    3. Finalize (polish and present)
+    
+    Once the pipeline completes and the user has selected their preferred copies, 
+    store them in the state and confirm readiness to proceed to visual generation.
+    """,
+    sub_agents=[ad_creative_pipeline],
+    generate_content_config=types.GenerateContentConfig(temperature=1.0),
+)
+
+
+image_video_generation_subagent = Agent(
+    model=MODEL,
+    name="image_video_generation_subagent",
+    description="Orchestrate the generation of 4-8 visual options through a sequential pipeline",
+    instruction="""You are orchestrating the visual content creation process.
+    
+    Using the selected ad copies from the previous agent, execute the `visual_generation_pipeline` to:
+    1. Draft visual concepts (10-15 ideas)
+    2. Critique (narrow to 4-8)
+    3. Generate final visuals
+    
+    Once complete, compile all final assets (copies, visuals, captions) and present a summary to the user.
+    """,
+    sub_agents=[visual_generation_pipeline],
+    generate_content_config=types.GenerateContentConfig(temperature=1.0),
+)
+
+
+# Main orchestrator agent
+ad_content_generator_new_agent = Agent(
+    model=MODEL,
+    name="ad_content_generator_new_agent",
+    description="Orchestrate comprehensive ad campaign creation with multiple copy and visual options",
+    instruction=AD_CONTENT_GENERATOR_NEW_INSTR,
+    sub_agents=[
+        ad_creative_subagent,
+        image_video_generation_subagent,
+    ],
+    generate_content_config=types.GenerateContentConfig(temperature=1.0),
+)
