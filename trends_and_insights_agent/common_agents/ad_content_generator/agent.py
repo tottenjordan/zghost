@@ -3,11 +3,12 @@ from google.genai import types
 from pydantic import BaseModel, Field
 from typing import List
 from ...utils import MODEL, IMAGE_MODEL, VIDEO_MODEL
-from .tools import generate_image, generate_video
+from .tools import generate_image, generate_video, concatenate_videos
 from .prompts import (
     AD_CONTENT_GENERATOR_NEW_INSTR,
     AD_CREATIVE_SUBAGENT_INSTR,
     IMAGE_VIDEO_GENERATION_SUBAGENT_INSTR,
+    VEO3_INSTR,
 )
 from google.adk.planners import BuiltInPlanner
 from google.adk.tools import google_search
@@ -132,7 +133,6 @@ ad_copy_critic = Agent(
     
     Provide detailed rationale for your selections, explaining why these specific copies will perform best.
     """,
-    # input_schema=AdCopyDraft,
     output_schema=AdCopyCritique,
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     disallow_transfer_to_peers=True,
@@ -156,7 +156,6 @@ ad_copy_finalizer = Agent(
     Present the final 4-8 ad copies to the user, explaining the unique value of each.
     Ask the user to select which copies they want to proceed with for visual generation.
     """,
-    # input_schema=AdCopyCritique,
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
 )
@@ -182,7 +181,7 @@ visual_concept_drafter = Agent(
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a visual creative director generating initial concepts.
     
-    Based on the `final_ad_copies` selected by the user, generate 10-15 visual concepts that:
+    Based on the `final_ad_copies` selected by the user, generate 4-8 visual concepts that:
     - Include both image and video concepts
     - Visualize the ad copy messages effectively
     - Incorporate trending visual styles and themes
@@ -220,7 +219,6 @@ visual_concept_critic = Agent(
     Ensure a good mix of images and videos in your selection.
     Provide detailed rationale for your selections.
     """,
-    # input_schema=VisualDraft,
     output_schema=VisualCritique,
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     disallow_transfer_to_peers=True,
@@ -239,12 +237,15 @@ visual_generator = Agent(
     2. Generate each visual using the appropriate tool (generate_image or generate_video)
     3. Present each generated visual to the user
     4. For each visual, create 2-3 platform-specific caption options
+    5. For each video, generate 2-3 videos that run in sequence and can be edited together using the concatenate_videos tool
     
+
     After generating all visuals, ask the user to confirm their satisfaction.
     Once confirmed, compile all final selections and transfer back to the parent agent.
-    """,
-    # input_schema=VisualCritique,
-    tools=[generate_image, generate_video],
+    """
+    + IMAGE_VIDEO_GENERATION_SUBAGENT_INSTR
+    + VEO3_INSTR,
+    tools=[generate_image, generate_video, concatenate_videos],
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
 )
 

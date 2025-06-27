@@ -1,6 +1,9 @@
 import os
 import uuid
 import time
+import subprocess
+import tempfile
+from typing import List
 
 from google import genai
 from google.genai import types
@@ -52,7 +55,7 @@ async def generate_video(
     prompt: str,
     tool_context: ToolContext,
     number_of_videos: int = 1,
-    aspect_ratio: str = "16:9",
+    # aspect_ratio: str = "16:9",
     negative_prompt: str = "",
     existing_image_filename: str = "",
 ):
@@ -62,17 +65,15 @@ async def generate_video(
         prompt (str): The prompt to generate the video from.
         tool_context (ToolContext): The tool context.
         number_of_videos (int, optional): The number of videos to generate. Defaults to 1.
-        aspect_ratio (str, optional): The aspect ratio of the video. Defaults to "16:9".
         negative_prompt (str, optional): The negative prompt to use. Defaults to "".
 
     Returns:
         dict: status dict
 
-    Supported aspect ratios are:
-        16:9 (landscape) and 9:16 (portrait).
+
     """
     gen_config = GenerateVideosConfig(
-        aspect_ratio=aspect_ratio,
+        aspect_ratio="16:9",
         number_of_videos=number_of_videos,
         output_gcs_uri=os.environ["BUCKET"],
         negative_prompt=negative_prompt,
@@ -114,3 +115,150 @@ async def generate_video(
                 types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
             )
         return {"status": "ok", "video_filename": f"{filename}.mp4"}
+
+
+async def concatenate_videos(
+    video_filenames: List[str],
+    tool_context: ToolContext,
+    concept_name: str = "concept",
+    transition_type: str = "fade",
+    transition_duration: float = 0.5,
+):
+    """Concatenates multiple videos into a single longer video for a concept.
+    
+    Args:
+        video_filenames (List[str]): List of video filenames from tool_context artifacts.
+        tool_context (ToolContext): The tool context.
+        concept_name (str, optional): Name of the concept for the output filename. Defaults to "concept".
+        transition_type (str, optional): Type of transition between videos ("fade", "dissolve", "none"). Defaults to "fade".
+        transition_duration (float, optional): Duration of transition in seconds. Defaults to 0.5.
+    
+    Returns:
+        dict: Status and the location of the concatenated video file.
+    """
+    if not video_filenames:
+        return {"status": "failed", "error": "No video filenames provided"}
+    
+    try:
+        # Create temporary directory for processing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Load videos from artifacts and save locally
+            local_video_paths = []
+            for idx, video_filename in enumerate(video_filenames):
+                # Load artifact
+                video_part = await tool_context.load_artifact(video_filename)
+                if not video_part:
+                    return {"status": "failed", "error": f"Could not load artifact: {video_filename}"}
+                
+                # Extract bytes from the Part object
+                video_bytes = video_part.inline_data.data
+                
+                # Save locally for ffmpeg processing
+                local_path = os.path.join(temp_dir, f"video_{idx}.mp4")
+                with open(local_path, "wb") as f:
+                    f.write(video_bytes)
+                local_video_paths.append(local_path)
+            
+            # Create output filename
+            output_filename = f"{concept_name}_{uuid.uuid4()}.mp4"
+            output_path = os.path.join(temp_dir, output_filename)
+            
+            if len(local_video_paths) == 1:
+                # If only one video, just copy it
+                subprocess.run(
+                    ["cp", local_video_paths[0], output_path],
+                    check=True
+                )
+            else:
+                # Create ffmpeg filter complex for concatenation with transitions
+                if transition_type == "none":
+                    # Simple concatenation without transitions
+                    concat_file = os.path.join(temp_dir, "concat_list.txt")
+                    with open(concat_file, "w") as f:
+                        for video_path in local_video_paths:
+                            f.write(f"file '{video_path}'\n")
+                    
+                    subprocess.run(
+                        [
+                            "ffmpeg",
+                            "-f", "concat",
+                            "-safe", "0",
+                            "-i", concat_file,
+                            "-c", "copy",
+                            "-y",
+                            output_path
+                        ],
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
+                else:
+                    # Concatenation with transitions
+                    # Build complex filter for fade/dissolve transitions
+                    if transition_type == "fade":
+                        transition = "fade"
+                    elif transition_type == "dissolve":
+                        transition = "dissolve"
+                    else:
+                        transition = "fade"  # Default to fade
+                    
+                    # Create filter expression
+                    filter_expr = ""
+                    for i in range(len(local_video_paths) - 1):
+                        if i == 0:
+                            filter_expr += f"[0:v][1:v]xfade=transition={transition}:duration={transition_duration}:offset=5[v1];"
+                        else:
+                            filter_expr += f"[v{i}][{i+1}:v]xfade=transition={transition}:duration={transition_duration}:offset={(i+1)*5-i*transition_duration}[v{i+1}];"
+                    
+                    # Remove trailing semicolon and set final output
+                    filter_expr = filter_expr.rstrip(";")
+                    final_output = f"[v{len(local_video_paths)-1}]"
+                    
+                    # Run ffmpeg with complex filter
+                    cmd = ["ffmpeg"]
+                    for video_path in local_video_paths:
+                        cmd.extend(["-i", video_path])
+                    
+                    cmd.extend([
+                        "-filter_complex", filter_expr,
+                        "-map", final_output.strip("[]"),
+                        "-c:v", "libx264",
+                        "-preset", "fast",
+                        "-crf", "23",
+                        "-y",
+                        output_path
+                    ])
+                    
+                    subprocess.run(cmd, check=True, capture_output=True, text=True)
+            
+            # Read the output video
+            with open(output_path, "rb") as f:
+                video_bytes = f.read()
+            
+            # Save as artifact
+            await tool_context.save_artifact(
+                output_filename,
+                types.Part.from_bytes(data=video_bytes, mime_type="video/mp4")
+            )
+            
+            # Also upload to GCS for persistence
+            gcs_uri = upload_file_to_gcs(
+                file_path=output_filename,
+                file_data=video_bytes,
+                content_type="video/mp4"
+            )
+            
+            return {
+                "status": "ok", 
+                "video_filename": output_filename,
+                "gcs_uri": gcs_uri,
+                "num_videos_concatenated": len(video_filenames)
+            }
+            
+    except subprocess.CalledProcessError as e:
+        return {
+            "status": "failed", 
+            "error": f"FFmpeg error: {e.stderr if hasattr(e, 'stderr') else str(e)}"
+        }
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
