@@ -18,7 +18,7 @@ client = genai.Client()
 async def generate_image(
     prompt: str, tool_context: ToolContext, number_of_images: int = 1
 ):
-    """Generates an image based on the prompt.
+    f"""Generates an image based on the prompt for {IMAGE_MODEL}
 
     Args:
         prompt (str): The prompt to generate the image from.
@@ -50,13 +50,13 @@ async def generate_image(
 
 async def generate_video(
     prompt: str,
-    tool_context: "ToolContext",
+    tool_context: ToolContext,
     number_of_videos: int = 1,
     aspect_ratio: str = "16:9",
     negative_prompt: str = "",
     existing_image_filename: str = "",
 ):
-    """Generates a video based on the prompt.
+    f"""Generates a video based on the prompt for {VIDEO_MODEL}.
 
     Args:
         prompt (str): The prompt to generate the video from.

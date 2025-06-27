@@ -2,7 +2,7 @@ from google.adk.agents import Agent, SequentialAgent
 from google.genai import types
 from pydantic import BaseModel, Field
 from typing import List
-from ...utils import MODEL
+from ...utils import MODEL, IMAGE_MODEL, VIDEO_MODEL
 from .tools import generate_image, generate_video
 from .prompts import (
     AD_CONTENT_GENERATOR_NEW_INSTR,
@@ -36,7 +36,7 @@ class AdCopyCritique(BaseModel):
     """Model for critiquing ad copy ideas."""
 
     selected_copies: List[AdCopyIdea] = Field(
-        description="List of 4-8 best ad copy ideas after critique",
+        description="List of 2-4 best ad copy ideas after critique",
     )
     critique_rationale: str = Field(
         description="Explanation of selection criteria and why these copies were chosen"
@@ -56,7 +56,7 @@ class VisualDraft(BaseModel):
     """Model for initial visual concepts."""
 
     visual_concepts: List[VisualConcept] = Field(
-        description="List of 10-15 visual concepts"
+        description="List of 4-8 visual concepts"
     )
 
 
@@ -64,7 +64,7 @@ class VisualCritique(BaseModel):
     """Model for critiquing visual concepts."""
 
     selected_concepts: List[VisualConcept] = Field(
-        description="List of 4-8 best visual concepts after critique",
+        description="List of 2-3 best visual concepts after critique",
     )
     critique_rationale: str = Field(
         description="Explanation of selection criteria and why these visuals were chosen"
@@ -73,7 +73,7 @@ class VisualCritique(BaseModel):
 
 # --- AD CREATIVE SUBAGENTS ---
 ad_copy_drafter = Agent(
-    model="gemini-2.5-flash",
+    model="gemini-2.5-pro",
     name="ad_copy_drafter",
     description="Generate 10-15 initial ad copy ideas based on campaign guidelines and trends",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
@@ -91,6 +91,20 @@ ad_copy_drafter = Agent(
     - Call-to-action
     - Which trend(s) it leverages
     - Brief rationale for target audience appeal
+
+    <INSIGHTS>
+    {insights}
+    </INSIGHTS>
+    <YT_TRENDS>
+    {target_yt_trends}
+    </YT_TRENDS>
+    <SEARCH_TRENDS>
+    {target_search_trends}
+    </SEARCH_TRENDS>
+    <CAMPAIGN_GUIDE>
+    {campaign_guide}
+    </CAMPAIGN_GUIDE>
+
     """,
     output_schema=AdCopyDraft,
     generate_content_config=types.GenerateContentConfig(
@@ -102,7 +116,7 @@ ad_copy_drafter = Agent(
 
 
 ad_copy_critic = Agent(
-    model="gemini-2.5-flash",
+    model="gemini-2.5-pro",
     name="ad_copy_critic",
     description="Critique and narrow down ad copies based on product, audience, and trends",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
@@ -118,7 +132,7 @@ ad_copy_critic = Agent(
     
     Provide detailed rationale for your selections, explaining why these specific copies will perform best.
     """,
-    input_schema=AdCopyDraft,
+    # input_schema=AdCopyDraft,
     output_schema=AdCopyCritique,
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     disallow_transfer_to_peers=True,
@@ -127,7 +141,7 @@ ad_copy_critic = Agent(
 
 
 ad_copy_finalizer = Agent(
-    model="gemini-2.5-flash",
+    model="gemini-2.5-pro",
     name="ad_copy_finalizer",
     description="Finalize and polish the selected ad copies",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
@@ -142,7 +156,7 @@ ad_copy_finalizer = Agent(
     Present the final 4-8 ad copies to the user, explaining the unique value of each.
     Ask the user to select which copies they want to proceed with for visual generation.
     """,
-    input_schema=AdCopyCritique,
+    # input_schema=AdCopyCritique,
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
 )
@@ -162,7 +176,7 @@ ad_creative_pipeline = SequentialAgent(
 
 # --- IMAGE/VIDEO GENERATION SUBAGENTS ---
 visual_concept_drafter = Agent(
-    model="gemini-2.5-flash",
+    model="gemini-2.5-pro",
     name="visual_concept_drafter",
     description="Generate 10-15 initial visual concepts for selected ad copies",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
@@ -189,7 +203,7 @@ visual_concept_drafter = Agent(
 
 
 visual_concept_critic = Agent(
-    model="gemini-2.5-flash",
+    model="gemini-2.5-pro",
     name="visual_concept_critic",
     description="Critique and narrow down visual concepts",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
@@ -206,24 +220,22 @@ visual_concept_critic = Agent(
     Ensure a good mix of images and videos in your selection.
     Provide detailed rationale for your selections.
     """,
-    input_schema=VisualDraft,
+    # input_schema=VisualDraft,
     output_schema=VisualCritique,
-    generate_content_config=types.GenerateContentConfig(
-        temperature=0.7, response_mime_type="application/json"
-    ),
+    generate_content_config=types.GenerateContentConfig(temperature=0.7),
     disallow_transfer_to_peers=True,
     disallow_transfer_to_parent=True,
 )
 
 
 visual_generator = Agent(
-    model="gemini-2.5-flash",
+    model="gemini-2.5-pro",
     name="visual_generator",
     description="Generate final visuals using image and video generation tools",
-    instruction="""You are a visual content producer creating final assets.
+    instruction=f"""You are a visual content producer creating final assets.
     
     Take the selected concepts from `visual_critique` and:
-    1. Refine the generation prompts for optimal results
+    1. Refine the generation prompts for optimal results. Images use {IMAGE_MODEL} and videos use {VIDEO_MODEL}
     2. Generate each visual using the appropriate tool (generate_image or generate_video)
     3. Present each generated visual to the user
     4. For each visual, create 2-3 platform-specific caption options
@@ -231,7 +243,7 @@ visual_generator = Agent(
     After generating all visuals, ask the user to confirm their satisfaction.
     Once confirmed, compile all final selections and transfer back to the parent agent.
     """,
-    input_schema=VisualCritique,
+    # input_schema=VisualCritique,
     tools=[generate_image, generate_video],
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
 )
@@ -251,7 +263,7 @@ visual_generation_pipeline = SequentialAgent(
 
 # Main orchestrator agent
 ad_content_generator_agent = Agent(
-    model="gemini-2.5-flash",
+    model="gemini-2.5-pro",
     name="ad_content_generator_agent",
     description="Orchestrate comprehensive ad campaign creation with multiple copy and visual options",
     instruction=AD_CONTENT_GENERATOR_NEW_INSTR,
