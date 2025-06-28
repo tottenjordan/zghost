@@ -235,8 +235,8 @@ visual_concept_critic = Agent(
     6. Diversity of visual approaches
     7. Utilize techniques to maintain continuity in the prompts
     8. Prompts are maximizing descriptive possibilities to match the intended tone
-    9. Descriptions of scenes, characters, tone, emotion are all extremely verbose and leverage ideas from the prompting best practices
-    10. These verbose descriptions are maintained scene to scene
+    9. Descriptions of scenes, characters, tone, emotion are all extremely verbose (100+ words) and leverage ideas from the prompting best practices
+    10. These verbose descriptions are maintained scene to scene to avoid saying things like "the same person", instead use the same provided description
 
     Ensure a good mix of images and videos in your selection.
     Provide detailed rationale for your selections.
