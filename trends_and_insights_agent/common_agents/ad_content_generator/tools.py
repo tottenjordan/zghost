@@ -121,15 +121,14 @@ async def generate_video(
 async def concatenate_videos(
     video_filenames: List[str],
     tool_context: ToolContext,
-    concept_name: str = "concept",
-    # transition_type: str = "fade",
-    # transition_duration: float = 0.5,
+    concept_name: str,
 ):
     """Concatenates multiple videos into a single longer video for a concept.
 
     Args:
         video_filenames (List[str]): List of video filenames from tool_context artifacts.
         tool_context (ToolContext): The tool context.
+        concept_name (str, optional): The name of the concept.
 
     Returns:
         dict: Status and the location of the concatenated video file.

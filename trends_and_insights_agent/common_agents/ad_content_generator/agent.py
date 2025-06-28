@@ -92,6 +92,11 @@ ad_copy_drafter = Agent(
     - Call-to-action
     - Which trend(s) it leverages
     - Brief rationale for target audience appeal
+    - A storyboard: A list of descriptions of scenes
+    - 2-4 scenes per ad copy
+    - Each scene is 8 seconds long
+
+    Use the `google_search` tool to support your decisions
 
     <INSIGHTS>
     {insights}
@@ -107,12 +112,10 @@ ad_copy_drafter = Agent(
     </CAMPAIGN_GUIDE>
 
     """,
-    output_schema=AdCopyDraft,
     generate_content_config=types.GenerateContentConfig(
         temperature=1.5,
     ),
-    disallow_transfer_to_peers=True,
-    disallow_transfer_to_parent=True,
+    tools=[google_search],
 )
 
 
@@ -130,10 +133,13 @@ ad_copy_critic = Agent(
     4. Platform-appropriate tone and length
     5. Potential for high engagement
     6. Brand consistency with campaign guidelines
+    7. Feedback on the storyboard and refinement of the details of the scene descriptions
+
+    Use the `google_search` tool to support your decisions
     
     Provide detailed rationale for your selections, explaining why these specific copies will perform best.
     """,
-    output_schema=AdCopyCritique,
+    tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     disallow_transfer_to_peers=True,
     disallow_transfer_to_parent=True,
@@ -152,12 +158,15 @@ ad_copy_finalizer = Agent(
     2. Ensure platform compliance (character limits, guidelines)
     3. Add any final creative touches
     4. Present them in order of recommended priority
+
+    Use the `google_search` tool to support your decisions
     
     Present the final 4-8 ad copies to the user, explaining the unique value of each.
     Ask the user to select which copies they want to proceed with for visual generation.
     """,
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
+    output_key="final_ad_copies",
 )
 
 
@@ -179,7 +188,7 @@ visual_concept_drafter = Agent(
     name="visual_concept_drafter",
     description="Generate 10-15 initial visual concepts for selected ad copies",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
-    instruction="""You are a visual creative director generating initial concepts.
+    instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {IMAGE_MODEL} and {VIDEO_MODEL}
     
     Based on the `final_ad_copies` selected by the user, generate 4-8 visual concepts that:
     - Include both image and video concepts
@@ -187,17 +196,26 @@ visual_concept_drafter = Agent(
     - Incorporate trending visual styles and themes
     - Consider platform-specific best practices
     - Consider generated videos are 8 seconds in length
+    - Consider prompting best practices (below)
+
     
     For each concept, provide:
     - Type (image or video)
     - Detailed generation prompt
     - Creative concept explanation
     - Which ad copy it connects to
+    - A draft {IMAGE_MODEL} or {VIDEO_MODEL} prompt.
+    - If this is a video, create unique prompts for each scene description from the selected storyboards
+    - Try to prompt for continuity between scenes in the storyboard prompts
+
+    Use the `google_search` tool to support your decisions
+
+    <PROMPTING_BEST_PRACTICES>
+    {VEO3_INSTR}
+    </PROMPTING_BEST_PRACTICES>
     """,
-    output_schema=VisualDraft,
+    tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=1.5),
-    disallow_transfer_to_peers=True,
-    disallow_transfer_to_parent=True,
 )
 
 
@@ -206,23 +224,34 @@ visual_concept_critic = Agent(
     name="visual_concept_critic",
     description="Critique and narrow down visual concepts",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
-    instruction="""You are a creative director evaluating visual concepts.
+    instruction="""You are a creative director evaluating visual concepts and high quality prompts that result in high impact
     
-    Review the `visual_draft` and select the 4-8 BEST visual concepts based on:
+    Review the `visual_draft` and select the 4-8 BEST visual concepts and prompts on:
     1. Visual appeal and stopping power for social media
     2. Alignment with ad copy messaging
     3. Trend relevance without feeling forced
     4. Production feasibility with AI generation
     5. Platform optimization (aspect ratios, duration)
     6. Diversity of visual approaches
-    
+    7. Utilize techniques to maintain continuity in the prompts
+    8. Prompts are maximizing descriptive possibilities to match the intended tone
+    9. Descriptions of scenes, characters, tone, emotion are all extremely verbose and leverage ideas from the prompting best practices
+    10. These verbose descriptions are maintained scene to scene
+
     Ensure a good mix of images and videos in your selection.
     Provide detailed rationale for your selections.
+
+    Use the `google_search` tool to support your decisions
+
+    When you are done, confirm the selected concepts and prompts with the user
+
+    <PROMPTING_BEST_PRACTICES>
+    {VEO3_INSTR}
+    </PROMPTING_BEST_PRACTICES>
     """,
-    output_schema=VisualCritique,
+    tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
-    disallow_transfer_to_peers=True,
-    disallow_transfer_to_parent=True,
+    output_key="selected_concepts",
 )
 
 
@@ -233,11 +262,10 @@ visual_generator = Agent(
     instruction=f"""You are a visual content producer creating final assets.
     
     Take the selected concepts from `visual_critique` and:
-    1. Refine the generation prompts for optimal results. Images use {IMAGE_MODEL} and videos use {VIDEO_MODEL}
-    2. Generate each visual using the appropriate tool (generate_image or generate_video)
-    3. Present each generated visual to the user
-    4. For each visual, create 2-3 platform-specific caption options
-    5. For each video, generate 2-3 videos that run in sequence and can be edited together using the concatenate_videos tool
+    1. Generate each visual using the appropriate tool (generate_image or generate_video)
+    2. Present each generated visual to the user
+    3. For each visual, create 2-3 platform-specific caption options
+    4. For each scene video in the concept, use the `concatenate_videos` tool in the proper order of the scenes
     
 
     After generating all visuals, ask the user to confirm their satisfaction.
@@ -267,10 +295,6 @@ ad_content_generator_agent = Agent(
     name="ad_content_generator_agent",
     description="Orchestrate comprehensive ad campaign creation with multiple copy and visual options",
     instruction=AD_CONTENT_GENERATOR_NEW_INSTR,
-    sub_agents=[
-        ad_creative_pipeline,
-        visual_generation_pipeline,
-        visual_generator
-    ],
+    sub_agents=[ad_creative_pipeline, visual_generation_pipeline, visual_generator],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )

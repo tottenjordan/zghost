@@ -85,6 +85,7 @@ AD_CONTENT_GENERATOR_NEW_INSTR = """**Role:** You are the orchestrator for a com
 
 
 VEO3_INSTR = """Here are some example best practices when creating prompts for VEO3:
+SUPPRESS SUBTITLES
 <SUBJECT>
 People: Man, woman, child, elderly person, specific professions (e.g., "a seasoned detective", "a joyful baker", "a futuristic astronaut"), historical figures, mythical beings (e.g., "a mischievous fairy", "a stoic knight").
 Animals: Specific breeds (e.g., "a playful Golden Retriever puppy", "a majestic bald eagle", "a sleek black panther"), fantastical creatures (e.g., "a miniature dragon with iridescent scales", "a wise, ancient talking tree").
