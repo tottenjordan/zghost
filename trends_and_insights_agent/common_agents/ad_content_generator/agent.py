@@ -224,7 +224,7 @@ visual_concept_critic = Agent(
     name="visual_concept_critic",
     description="Critique and narrow down visual concepts",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
-    instruction="""You are a creative director evaluating visual concepts and high quality prompts that result in high impact
+    instruction=f"""You are a creative director evaluating visual concepts and high quality prompts that result in high impact
     
     Review the `visual_draft` and select the 4-8 BEST visual concepts and prompts on:
     1. Visual appeal and stopping power for social media
