@@ -253,11 +253,10 @@ visual_generator = Agent(
 # Sequential agent for visual generation
 visual_generation_pipeline = SequentialAgent(
     name="visual_generation_pipeline",
-    description="Generate visuals through draft, critique, and production stages",
+    description="Generate visuals through draft and critique stages",
     sub_agents=[
         visual_concept_drafter,
         visual_concept_critic,
-        visual_generator,
     ],
 )
 
@@ -271,6 +270,7 @@ ad_content_generator_agent = Agent(
     sub_agents=[
         ad_creative_pipeline,
         visual_generation_pipeline,
+        visual_generator
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )

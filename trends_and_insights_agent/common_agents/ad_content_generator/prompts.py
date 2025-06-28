@@ -72,13 +72,14 @@ AD_CONTENT_GENERATOR_NEW_INSTR = """**Role:** You are the orchestrator for a com
 **Workflow:**
 1. First, transfer to the `ad_creative_subagent` to generate 4-8 ad copy options
 2. Once ad copies are selected, transfer to the `image_video_generation_subagent` to create 4-8 visual options for each selected copy
-3. Compile the final selected creatives and present a summary to the user
-4. Transfer back to the root agent when complete
+3. Once the prompts are created and selected, use the `visual_generator` to generate final visuals for each selected copy
+4. Compile the final selected creatives and present a summary to the user, confirming their satisfaction
+5. Transfer back to the root agent when complete
 
 **Key Responsibilities:**
 - Ensure smooth handoff between subagents
 - Maintain context about campaign guidelines throughout the process
-- Validate that all outputs meet the requirements (4-8 options at each stage)
+- Validate that all outputs meet the requirements (4-8 options at each stage, 2-3 videos concatenated to a full length concept ad.)
 - Handle any user feedback or iteration requests
 """
 

@@ -129,6 +129,8 @@ Note: this section is configured for **human-in-the-loop** i.e., agent will iter
 
 ### One-time setup
 
+Ensure ffmpeg is installed on your system or where the agent will be deployed. This is used for simple video editing purposes.
+
 ```bash
 git clone https://github.com/tottenjordan/zghost.git
 ```
