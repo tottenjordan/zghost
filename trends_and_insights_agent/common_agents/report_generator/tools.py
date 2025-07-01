@@ -28,7 +28,11 @@ async def generate_research_pdf(
     Returns:
         dict: Status and the location of the PDF.
     """
-    logging.info(f"markdown_string in `generate_research_pdf`: {markdown_string}")
+    # logging.info(f"markdown_string in `generate_research_pdf`: {markdown_string}")
+
+    # TODO: add these state vairables to report
+    # campaign_research_markdown = tool_context.state['final_ca_report_with_citations']
+    # gs_research_markdown = tool_context.state['final_gs_report_with_citations']
 
     # create local dir to save PDF file
     DIR = f"files/research"

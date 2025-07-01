@@ -7,14 +7,13 @@ Your main job is to save details from marketing campaign guides.
 
 Follow these steps to complete your task:
 1. Use the `campaign_guide_data_extract_agent` tool to extract important information from the user-provided campaign guide.
-2. Confirm the user has no other guides or artifacts to submit. Once confirmed, transfer back to the `root_agent`.
+2. Then transfer to the `trends_and_insights_agent` agent.
 
 """
 
 
 GUIDE_DATA_EXTRACT_INSTR = """
-Extract **ALL** text from the given marketing campaign guide. 
-Be sure to use the schema provided to generate the most detailed summary of the guide.
+Extract **ALL** text from the provided campaign guide.
 
 **Important:** Grab as much details as possible from the secions below:
 
@@ -27,5 +26,5 @@ Be sure to use the schema provided to generate the most detailed summary of the 
 * media_strategy: [extract bulleted list of media channels]
 * key_selling_points: [extract bulleted list of features and their description]
 
-This data will be used downstream to create ideas for marketing campaigns briefs.
+Your response must be a single, raw JSON object 'MarketingCampaignGuide' schema
 """

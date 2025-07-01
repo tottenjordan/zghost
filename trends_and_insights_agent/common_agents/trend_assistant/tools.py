@@ -57,20 +57,15 @@ async def save_yt_trends_to_session_state(
         tool_context: The tool context.
     """
     existing_target_yt_trends = tool_context.state.get("target_yt_trends")
-    # logging.info(f"selected_trends: {selected_trends}")
-    # logging.info(f"Existing target_yt_trends: {existing_target_yt_trends}")
-
     if existing_target_yt_trends is not {"target_yt_trends": []}:
         existing_target_yt_trends["target_yt_trends"].append(selected_trends)
     tool_context.state["target_yt_trends"] = existing_target_yt_trends
-
-    # logging.info(f"\n\n final state value: {existing_target_yt_trends} \n\n")
     return {"status": "ok"}
 
 
 def get_youtube_trends(
     region_code: str,
-    max_results: int = 5,
+    max_results: int = 45,
 ) -> dict:
     """
     Makes request to YouTube Data API for most popular videos in a given region.
@@ -110,14 +105,9 @@ async def save_search_trends_to_session_state(
         tool_context: The tool context.
     """
     existing_target_search_trends = tool_context.state.get("target_search_trends")
-    # logging.info(f"new_trends: {new_trends}")
-    # logging.info(f"Existing target_search_trends: {existing_target_search_trends}")
-
     if existing_target_search_trends is not {"target_search_trends": []}:
         existing_target_search_trends["target_search_trends"].append(new_trends)
     tool_context.state["target_search_trends"] = existing_target_search_trends
-
-    # logging.info(f"\n\n final state value: {existing_target_search_trends} \n\n")
     return {"status": "ok"}
 
 
@@ -145,8 +135,8 @@ def get_daily_gtrends() -> str:
              Returns 25 terms ordered by their rank (ascending order) for the current week.
     """
     # get latest refresh date
-    # max_date = get_gtrends_max_date()
-    max_date = "06/18/2025"
+    max_date = get_gtrends_max_date()
+    # max_date = "06/18/2025"
     logging.info(f"\n\nmax_date in trends_assistant: {max_date}\n\n")
 
     query = f"""
