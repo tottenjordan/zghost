@@ -1,10 +1,8 @@
 import os
 import re
-import shutil
 import datetime
 import logging
 from typing import Optional
-from markdown_pdf import MarkdownPdf, Section
 
 logging.basicConfig(level=logging.INFO)
 
@@ -12,18 +10,17 @@ from google.genai import types
 from google.adk.planners import BuiltInPlanner
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.agents import Agent, SequentialAgent
-from google.adk.tools import ToolContext, google_search
+from google.adk.tools import LongRunningFunctionTool, ToolContext, google_search
 from google.adk.agents.callback_context import CallbackContext
 from pydantic import BaseModel, Field
 
 from ...shared_libraries import callbacks, schema_types
+from ...tools import analyze_youtube_videos
 from ...utils import MODEL
-
-# from ...tools import query_web
 
 # TODO: mv to config
 ADAPTIVE_THINKING_MODEL = "gemini-2.5-flash"
-REASONING_MODEL = "gemini-2.5-flash"
+REASONING_MODEL = "gemini-2.5-pro"
 
 
 # --- Structured Output Models ---
@@ -61,8 +58,8 @@ def collect_research_sources_callback(callback_context: CallbackContext) -> None
             session events and persistent state.
     """
     session = callback_context._invocation_context.session
-    url_to_short_id = callback_context.state.get("ca_url_to_short_id", {})
-    sources = callback_context.state.get("ca_sources", {})
+    url_to_short_id = callback_context.state.get("url_to_short_id", {})
+    sources = callback_context.state.get("sources", {})
     id_counter = len(url_to_short_id) + 1
     for event in session.events:
         if not (event.grounding_metadata and event.grounding_metadata.grounding_chunks):
@@ -106,8 +103,8 @@ def collect_research_sources_callback(callback_context: CallbackContext) -> None
                                 "confidence": confidence,
                             }
                         )
-    callback_context.state["ca_url_to_short_id"] = url_to_short_id
-    callback_context.state["ca_sources"] = sources
+    callback_context.state["url_to_short_id"] = url_to_short_id
+    callback_context.state["sources"] = sources
 
 
 def citation_replacement_callback(
@@ -115,9 +112,9 @@ def citation_replacement_callback(
 ) -> Optional[types.Content]:
     """Replaces citation tags in a report with Markdown-formatted links.
 
-    Processes 'ca_final_cited_report' from context state, converting tags like
+    Processes 'combined_final_cited_report' from context state, converting tags like
     `<cite source="src-N"/>` into hyperlinks using source information from
-    `callback_context.state["ca_sources"]`. Also fixes spacing around punctuation.
+    `callback_context.state["sources"]`. Also fixes spacing around punctuation.
 
     Args:
         callback_context (CallbackContext): Contains the report and source information.
@@ -126,8 +123,8 @@ def citation_replacement_callback(
         types.Content: The processed report with Markdown citation links.
     """
     # types.Content: The processed report with Markdown citation links.
-    final_report = callback_context.state.get("ca_final_cited_report", "")
-    sources = callback_context.state.get("ca_sources", {})
+    final_report = callback_context.state.get("combined_final_cited_report", "")
+    sources = callback_context.state.get("sources", {})
 
     def tag_replacer(match: re.Match) -> str:
         short_id = match.group(1)
@@ -143,11 +140,52 @@ def citation_replacement_callback(
         final_report,
     )
     processed_report = re.sub(r"\s+([.,;:])", r"\1", processed_report)
-    callback_context.state["final_ca_report_with_citations"] = processed_report
+    callback_context.state["final_report_with_citations"] = processed_report
     return types.Content(parts=[types.Part(text=processed_report)])
 
 
 # --- AGENT DEFINITIONS ---
+yt_analysis_generator_agent = Agent(
+    model=MODEL,
+    name="yt_analysis_generator_agent",
+    description="Process YouTube videos, extract key details, and provide an overall summary.",
+    instruction="""
+    Your goal is to **understand the content** of the trending YouTube video in the 'target_yt_trends' state key.
+    
+    1. Review the 'target_yt_trends' state key and use the `analyze_youtube_videos` tool to analyze the 'video_url'.
+    2. Provide a concise summary covering:
+        - **Main Thesis/Claim:** What is the video about? What is being discussed?
+        - **Key Entities:** Describe any key entities (e.g., people, places, things) involved and how they are related. 
+        - **Trend Context:** Why might this video be trending?
+        - **Summary:** Provide a concise summary of the video content.
+    """,
+    tools=[
+        LongRunningFunctionTool(analyze_youtube_videos),
+    ],
+    output_key="yt_video_analysis",
+)
+
+
+gs_web_planner = Agent(
+    model=MODEL,
+    name="gs_web_planner",
+    description="Generates initial queries to understand why the 'target_search_trends' are trending.",
+    instruction="""You are a research strategist. 
+    Your job is to create high-level queries that will help marketers better understand the cultural significance of a trend in Google Search.
+    
+    1. Read the 'target_search_trends' state key to get the Search trend.
+    2. Generate 4-5 queries that will provide more context, and answer questions like:
+        - Why are these search terms trending? Who is involved?
+        - Are there any related themes that would resonate with our target audience?
+        - Describe any key entities involved (i.e., people, places, organizations, named events, etc.), and the relationships between these key entities, especially in the context of the trending topic, or if possible the target product
+        - Explain the cultural significance of the trend. 
+    
+    Your output should just include a numbered list of queries. Nothing else.
+    """,
+    output_key="inital_gs_queries",
+)
+
+
 campaign_web_planner = Agent(
     model=MODEL,
     name="campaign_web_planner",
@@ -166,35 +204,43 @@ campaign_web_planner = Agent(
     output_key="inital_campaign_queries",
 )
 
-campaign_web_searcher = Agent(
+
+combined_web_searcher = Agent(
     model=ADAPTIVE_THINKING_MODEL,
-    name="campaign_web_searcher",
-    description="Performs the crucial first pass of web research about the campaign guide.",
+    name="combined_web_searcher",
+    description="Performs the crucial first pass of web research about the campaign guide, search trend, and trending youtube video.",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""
-    You are a diligent and exhaustive researcher. Your task is to conduct initial web research for concepts described in the campaign guide.
-    You will be provided with a list of web queries in the 'inital_campaign_queries' state key.
-    Use the 'google_search' tool to execute all queries. 
-    Synthesize the results into a detailed summary.
+    You are a highly capable and diligent research and synthesis agent. Your comprehensive task is to execute a provided research plan with **absolute fidelity**, first by gathering necessary information, and then by synthesizing that information into specified outputs.
+
+    You will be provided with two sets of web queries, stored in the 'inital_gs_queries' and 'inital_campaign_queries' state keys.
+
+    1. For each list of queries (e.g., the 'inital_gs_queries', and 'inital_campaign_queries' state keys):
+        *   **Execution:** Utilize the `google_search` tool to execute **all** web queries in the list
+        *   **Summarization:** Synthesize the search results into a detailed, coherent summary.
+
+    2. Generate a report documenting each summary from Step 1.
     """,
     tools=[google_search],
-    output_key="campaign_web_search_insights",
+    output_key="combined_web_search_insights",
     after_agent_callback=collect_research_sources_callback,
 )
 
-campaign_web_evaluator = Agent(
-    model=MODEL,
-    name="campaign_web_evaluator",
+
+combined_web_evaluator = Agent(
+    model=REASONING_MODEL,
+    name="combined_web_evaluator",
     description="Critically evaluates research about the campaign guide and generates follow-up queries.",
     instruction=f"""
-    You are a meticulous quality assurance analyst evaluating the research findings in 'campaign_web_search_insights'.
+    You are a meticulous quality assurance analyst evaluating the research findings in 'combined_web_search_insights'.
     
     Be critical of the completeness of the research.
     Consider the bigger picture and the intersection of the target product and target audience. 
-        - Do not consider the trends from Google Search or YouTube, yet.
+    Consider the trends from Google Search and YouTube.
+    
     Look for any gaps in depth or coverage, as well as any areas that need more clarification. 
         - If you find significant gaps in depth or coverage, write a detailed comment about what's missing, and generate 5-7 specific follow-up queries to fill those gaps.
-        - If you don't find any significant gaps, write a detailed comment about one aspect of the campaign guide to research further. Provide 5-7 related queries.
+        - If you don't find any significant gaps, write a detailed comment about any aspect of the campaign guide or trends to research further. Provide 5-7 related queries.
 
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
     Your response must be a single, raw JSON object validating against the 'CampaignFeedback' schema.
@@ -202,31 +248,33 @@ campaign_web_evaluator = Agent(
     output_schema=CampaignFeedback,
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
-    output_key="campaign_research_evaluation",
+    output_key="combined_research_evaluation",
 )
 
-enhanced_campaign_searcher = Agent(
+
+enhanced_combined_searcher = Agent(
     model=ADAPTIVE_THINKING_MODEL,
-    name="enhanced_campaign_searcher",
+    name="enhanced_combined_searcher",
     description="Executes follow-up searches and integrates new findings.",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""
     You are a specialist researcher executing a refinement pass.
-    You are tasked to conduct a second round of web research and gather insights related to the campaign guide, the target audience, and the target product.
+    You are tasked to conduct a second round of web research and gather insights related to the trending YouTube video, the trending Search terms, the target audience, and the target product.
 
-    1.  Review the 'campaign_research_evaluation' state key to understand the previous round of research.
+    1.  Review the 'combined_research_evaluation' state key to understand the previous round of research.
     2.  Execute EVERY query listed in 'follow_up_queries' using the 'google_search' tool.
-    3.  Synthesize the new findings and COMBINE them with the existing information in 'campaign_web_search_insights'.
-    4.  Your output MUST be the new, complete, and improved set of campaign web research insights.
+    3.  Synthesize the new findings and COMBINE them with the existing information in 'combined_web_search_insights'.
+    4.  Your output MUST be the new, complete, and improved set of research insights for the trending Search terms, trending YouTube video, and campaign guide.
     """,
     tools=[google_search],
-    output_key="campaign_web_search_insights",
+    output_key="combined_web_search_insights",
     after_agent_callback=collect_research_sources_callback,
 )
 
-campaign_report_composer = Agent(
+
+combined_report_composer = Agent(
     model=REASONING_MODEL,
-    name="campaign_report_composer",
+    name="combined_report_composer",
     include_contents="none",
     description="Transforms research data and a markdown outline into a final, cited report.",
     instruction="""
@@ -234,10 +282,12 @@ campaign_report_composer = Agent(
 
     ---
     ### INPUT DATA
-    *   Research Plan: `{inital_campaign_queries}`
-    *   Research Critiques: `{campaign_research_evaluation}`
-    *   Final Research Findings: `{campaign_web_search_insights}`
-    *   Citation Sources: `{ca_sources}`
+    *   Video Analysis: `{yt_video_analysis}`
+    *   Search Trend Guide: `{inital_gs_queries}`
+    *   Campaign Research Guide: `{inital_campaign_queries}`
+    *   Research Critiques: `{combined_research_evaluation}`
+    *   Final Research Findings: `{combined_web_search_insights}`
+    *   Citation Sources: `{sources}`
 
     ---
     ### CRITICAL: Citation System
@@ -250,103 +300,21 @@ campaign_report_composer = Agent(
     Generate a comprehensive report using ONLY the `<cite source="src-ID_NUMBER" />` tag system for all citations.
     Do not include a "References" or "Sources" section; all citations must be in-line.
     """,
-    output_key="ca_final_cited_report",
+    output_key="combined_final_cited_report",
     after_agent_callback=citation_replacement_callback,
 )
 
-insights_generator_agent = Agent(
-    model=MODEL,
-    name="insights_generator_agent",
-    description="Critically evaluates all research about the campaign guide and generates insights.",
-    # include_contents="none",
-    instruction="""
-    Using the research findings from the 'final_ca_report_with_citations' state key, generate multiple insights that will help marketers better understand the campaign.
-    
-    *Note:* an insight is a data point that: 
-    *   is referenceable (with a source), 
-    *   shows deep intersections between the the goal of a campaign guide and broad information sources,
-    *   and is actionable i.e., provides value within the context of the campaign.
-    
-    ---
-    ### Instructions
-    1.  Review the 'ca_final_cited_report' state key to understand the completed campaign research.
-    2.  Generate 5-7 insights from this campaign research. These insights should somehow relate to concepts described in the campaign guide (e.g., the target product, target audience, etc.).
-    
-    Your response must be a single, raw JSON object validating against the 'Insights' schema.
-    """,
-    disallow_transfer_to_parent=True,
-    disallow_transfer_to_peers=True,
-    generate_content_config=schema_types.json_response_config,
-    output_schema=schema_types.Insights,
-    output_key="insights",
-)
 
-
-insight_synthesizer = Agent(
-    name="insight_synthesizer",
-    model=MODEL,
-    # Change 3: Improved instruction, correctly using state key injection
-    instruction="""You are an AI Assistant responsible for combining research insights into a structured report.
-
-    1. Read the insights for the campaign research in the 'insights' state key:
-
-        {insights}
-
-    2. Generate a report in markdown format, capturing each insight from the previous step. For each insight, provide the following:
-    * **[inisght title]**
-        * **Description:**
-        * **Insight URLs:**
-        * **Key Entities Involved:**
-        * **Key Relationships:**
-        * **Key Audiences:**
-        * **Key Product Insights:**
-
-    Output *only* the structured report following this format. 
-    Do not include introductory or concluding phrases outside this structure, and strictly adhere to listing the insights from Step 1.
-    """,
-    description="Synthesizes insisghts from Search Trends.",
-    output_key="insight_synth",
-)
-
-
-
-campaign_research_pipeline = SequentialAgent(
-    name="campaign_research_pipeline",
-    description="Executes a pipeline of web research related to the campaign guide. It performs iterative research, evaluation, and insight generation.",
+combined_research_pipeline = SequentialAgent(
+    name="combined_research_pipeline",
+    description="Executes a pipeline of web research related to the trending Search terms, trending YouTube videos, and the campaign guide. It performs iterative research, evaluation, and insight generation.",
     sub_agents=[
+        yt_analysis_generator_agent,
+        gs_web_planner,
         campaign_web_planner,
-        campaign_web_searcher,
-        campaign_web_evaluator,
-        enhanced_campaign_searcher,
-        campaign_report_composer,
-        insights_generator_agent,
-        insight_synthesizer,
+        combined_web_searcher,
+        combined_web_evaluator,
+        enhanced_combined_searcher,
+        combined_report_composer,
     ],
 )
-
-
-# campaign_researcher_agent = Agent(
-#     name="campaign_researcher_agent",
-#     model=MODEL,
-#     description="Conducts web research specifically for product insights related to concepts defined in the campaign guide",
-#     instruction="""
-#     You are a web research planning assistant. Read the **workflow** below and begin with Step 1 immediately. Do not deviate from these steps.
-
-#     **Workflow:**
-#     1. Create a high-level research plan for understanding the campaign guide:
-#         - Don't consider the trends from Search or YouTube. Instead focus on deep dives into the campaign guide (e.g., the target product and target audience)
-#         - Include 4-5 bullets describing action-oriented research goals or themes.
-#     2. Call the `campaign_research_pipeline` agent to execute on this plan.
-#     """,
-#     tools=[
-#         # query_web,
-#         # call_insights_generation_agent,
-#         # AgentTool(agent=insights_generator_agent),
-#     ],
-#     sub_agents=[campaign_research_pipeline],
-#     generate_content_config=types.GenerateContentConfig(
-#         temperature=1.0,
-#     ),
-#     # after_agent_callback=callbacks.campaign_callback_function,
-# )
-# # Once steps 1 and 2 are complete, transfer to the `root_agent`. Do this without collecting user input.

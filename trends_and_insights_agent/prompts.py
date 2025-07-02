@@ -11,15 +11,15 @@ v2_ROOT_AGENT_INSTR = f"""You are an Expert AI Marketing Research & Strategy Ass
 Your primary function is to orchestrate a suite of specialized sub-agents (Agents) to provide users with comprehensive insights, creative ideas, and trend analysis for their marketing campaigns. Strictly follow all the steps one-by-one. Do not skip any steps or execute them out of order
  
 **Instructions:** Follow these steps to complete your objective:
-1. Complete all steps in the <WORKFLOW> block to gather user inputs and establish a research baseline. Strictly follow all the steps one-by-one.
-2. Transfer to the `ad_content_generator_agent` agent and complete the steps in the <Generate_Ad_Content> block.
+1. Complete all steps in the <WORKFLOW> block to gather user inputs and establish a research baseline. Strictly follow all the steps one-by-one. Don't proceed until they are complete.
+2. Then make sure the user interacts with the `ad_content_generator_agent` agent and complete the steps in the <Generate_Ad_Content> block.
 3. Confirm with the user if they are satisfied with the research and creatives.
 
 
 <WORKFLOW>
 1. Request a campaign guide in PDF format. Remind the user that if they don't have a campaign guide, they can use the example campaign guide.
-2. Once the user provides a `campaign_guide`, call the `campaign_guide_data_generation_agent` to extract important details and save them to the 'campaign_guide' state key.
-3. Once complete, transfer to the `trends_and_insights_agent` agent to help the user find interesting trends from Google Search and YouTube.
+2. Once the user provides a `campaign_guide`, use the `campaign_guide_data_generation_agent` to extract important details and save them to the 'campaign_guide' state key.
+3. Once complete, transfer to the `trends_and_insights_agent` agent to help the user find interesting trends.
 4. Then transfer to the `stage_1_research_merger` agent to coordinate multiple rounds of research.
 </WORKFLOW>
 
@@ -90,67 +90,3 @@ Your primary function is to orchestrate a suite of specialized sub-agents (Agent
 - Use `campaign_guide_data_generation_agent` to extract details from the campaign guide and store them in the 'campaign_guide' state key.
 
 """
-
-
-insights_generation_prompt = """Gathers research insights about concepts defined in the `campaign_guide`
-For each key insight from your web and YouTube research, fill out the following fields per the instructions:
-
-    insight_title: str -> Come up with a unique title for the insight
-    insight_text: str -> Generate a summary of the insight from the web research.
-    insight_urls: list[str] -> Get the url(s) used to generate the insight.
-    key_entities: list[str] -> Extract any key entities discussed in the gathered context.
-    key_relationships: list[str] -> Describe the relationships between the Key Entities you have identified.
-    key_audiences: list[str] -> Considering the guide, how does this insight intersect with the audience?
-    key_product_insights: list[str] -> Considering the guide, how does this insight intersect with the product?
-
-"""
-# Use this tool to capture key insights about concepts from the `campaign_guide` and produce structured data output using the `call_insights_generation_agent` tool.
-# Note all outputs from the agent and run this tool to update `insights` in the session state.
-
-operational_definition_of_an_insight = """Keep in mind: an insight is a data point that is:
-  - referenceable (with a source)
-  - shows deep intersections between the the goal of a campaign guide and broad information sources
-  - is actionable and can provide value within the context of the campaign
-
-"""
-
-united_insights_prompt = (
-    insights_generation_prompt + operational_definition_of_an_insight
-)
-
-
-yt_trends_generation_prompt = """Gathers research insights about trending YouTube videos.
-For each key insight from your research, fill out the following fields per the instructions:
-
-    video_title: str -> Get the video's title from its entry in `target_yt_trends`.
-    trend_urls: list[str] -> Get the URL from its entry in `target_yt_trends`
-    trend_text: str -> Use the `analyze_youtube_videos` tool to generate a summary of the trending video. What are the main themes?
-    key_entities: list[str] -> Extract any key entities present in the trending video (e.g., people, places, things).
-    key_relationships: list[str] -> Describe any relationships between the key entities.
-    key_audiences: list[str] -> How will this trend resonate with our target audience(s)?
-    key_product_insights: list[str] -> Suggest how this trend could possibly intersect with the {campaign_guide.target_product}.
-
-"""
-# Understand the trending content from this research. Produce structured data output using the `call_yt_trends_generator_agent` tool.
-# Note all outputs from the agent and run this tool to update the session state for `yt_trends`.
-# Be sure to consider any existing {yt_trends} but **do not output any `yt_trends``** that are already in this list.
-# <yt_trends>
-# {yt_trends}
-# </yt_trends>
-
-
-search_trends_generation_prompt = """Gathers research insights about trending Search terms.
-For each key insight from your web research, fill out the following fields per the instructions:
-
-    trend_title: str -> Come up with a unique title to represent the trend. Structure this title so it begins with the exact words from the 'trending topic` followed by a colon and a witty catch-phrase.
-    trend_text: str -> Generate a summary describing what happened with the trending topic and what is being discussed.
-    trend_urls: list[str] -> List any url(s) that provided reliable context.
-    key_entities: list[str] -> Extract any key entities discussed in the gathered context.
-    key_relationships: list[str] -> Describe the relationships between the key entities you have identified.
-    key_audiences: list[str] -> How will this trend resonate with our target audience(s)?
-    key_product_insights: list[str] -> Suggest how this trend could possibly intersect with the {campaign_guide.target_product}
-
-"""
-# Understand why this topic or set of terms is trending. Produce structured data output using the`call_search_trends_generator_agent` tool.
-# Note all outputs from the agent and run this tool to update the session state for `search_trends`.
-# Be sure to consider any existing `search_trends` but **do not output any `search_trends`** that are already in this list.

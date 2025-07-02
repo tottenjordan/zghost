@@ -37,10 +37,6 @@ from .shared_libraries.schema_types import (
     json_response_config,
 )
 
-from .common_agents.campaign_guide_data_generation.agent import (
-    campaign_guide_data_generation_agent,
-)
-
 # ========================
 # clients
 # ========================
@@ -62,6 +58,7 @@ client = Client()
 # ========================
 # artifacts
 # ========================
+
 
 # TODO: need to load artifact for data extraction
 async def load_sample_guide(tool_context: ToolContext) -> Optional[types.Content]:
@@ -571,43 +568,21 @@ def analyze_youtube_videos(
             model=MODEL,
             contents=contents,
             config=types.GenerateContentConfig(
-                # system_instruction=youtube_analysis_prompt,
                 temperature=0.1,
             ),
         )
+
+        # result = client.models.generate_content(
+        #     model=MODEL,
+        #     contents=types.Content(
+        #         role="user",
+        #         parts=[
+        #             types.Part(
+        #                 file_data=types.FileData(file_uri=youtube_url)
+        #             ),
+        #             types.Part(text=prompt)
+        #         ]
+        #     )
+        # )
+
         return result.text
-
-
-# # ========================
-# # Insight Generation
-# # ========================
-
-
-# async def call_campaign_guide_agent(question: str, tool_context: ToolContext) -> dict:
-#     """
-#     Tool to call the `campaign_guide_data_generation_agent` agent.
-#     Use this tool when instructions call for `campaign_guide_data_generation_agent` use.
-
-#     Args:
-#         question: The question to ask the agent, use the tool_context to extract the following schema:
-#             campaign_name: str -> given name of campaign; could be title of uploaded `campaign_guide`.
-#             brand: str -> target product's brand.
-#             target_product: str -> the subject of the marketing campaign objectives.
-#             target_audience: list[str] -> specific group(s) we intended to reach. Typically described with demographic, psychographic, and behavioral profile of the ideal customer or user.
-#             target_regions: list[str] -> specific cities and/or countries we intend to reach.
-#             campaign_objectives: list[str] -> goals that define what the marketing campaign plans to achieve.
-#             media_strategy: list[str] -> media channels or formats the campaign intends to use to reach the target audience.
-#             key_selling_points: list[str] -> aspects of the `target_product` that distinguish it from competitors and persuades customers to choose it.
-#         tool_context: The ADK tool context.
-#     """
-
-#     # Check for hallucinations or if there is not enough context to feed the LLM:
-#     if len(question) < 42:
-#         return {"status": f"error, need more context, input: {question}"}
-
-#     agent_tool = AgentTool(campaign_guide_data_generation_agent)
-#     campaign_guide_state = await agent_tool.run_async(
-#         args={"request": question}, tool_context=tool_context
-#     )
-#     tool_context.state["campaign_guide"] = campaign_guide_state
-#     return {"status": "ok"}

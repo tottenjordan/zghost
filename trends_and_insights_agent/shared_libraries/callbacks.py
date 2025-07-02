@@ -75,9 +75,6 @@ def campaign_callback_function(
     """
     This sets default values for:
         *   campaign_guide
-        *   search_trends
-        *   yt_trends
-        *   insights
         *   target_search_trends
         *   target_yt_trends
         *   artifact_keys
@@ -88,20 +85,15 @@ def campaign_callback_function(
     current_state = callback_context.state.to_dict()
 
     # Check the condition in session state dictionary
-    yt_trends = callback_context.state.get("yt_trends")
-    search_trends = callback_context.state.get("search_trends")
+    artifact_keys = callback_context.state.get("artifact_keys")
+    campaign_guide = callback_context.state.get("campaign_guide")
     target_yt_trends = callback_context.state.get("target_yt_trends")
     target_search_trends = callback_context.state.get("target_search_trends")
-    insights = callback_context.state.get("insights")
-    campaign_guide = callback_context.state.get("campaign_guide")
-    artifact_keys = callback_context.state.get("artifact_keys")
 
     return_content = None  # placeholder for optional returned parts
+
     if campaign_guide is None:
         return_content = "campaign_guide"
-        # callback_context.state["campaign_guide"] = {
-        #     "campaign_guide": "not yet populated"
-        # }
         callback_context.state["campaign_guide"] = "not yet populated"
 
     if artifact_keys is None:
@@ -111,32 +103,7 @@ def campaign_callback_function(
         else:
             return_content += ", artifact_keys"
 
-    if search_trends is None:
-        # callback_context.state["search_trends"] = []
-        callback_context.state["search_trends"] = {"search_trends": []}
-        if return_content is None:
-            return_content = "search_trends"
-        else:
-            return_content += ", search_trends"
-
-    if yt_trends is None:
-        # callback_context.state["yt_trends"] = []
-        callback_context.state["yt_trends"] = {"yt_trends": []}
-        if return_content is None:
-            return_content = "yt_trends"
-        else:
-            return_content += ", yt_trends"
-
-    if insights is None:
-        # callback_context.state["insights"] = []
-        callback_context.state["insights"] = {"insights": []}
-        if return_content is None:
-            return_content = "insights"
-        else:
-            return_content += ", insights"
-
     if target_search_trends is None:
-        # callback_context.state["target_search_trends"] = []
         callback_context.state["target_search_trends"] = {"target_search_trends": []}
         if return_content is None:
             return_content = "target_search_trends"
@@ -144,7 +111,6 @@ def campaign_callback_function(
             return_content += ", target_search_trends"
 
     if target_yt_trends is None:
-        # callback_context.state["target_yt_trends"] = []
         callback_context.state["target_yt_trends"] = {"target_yt_trends": []}
         if return_content is None:
             return_content = "target_yt_trends"

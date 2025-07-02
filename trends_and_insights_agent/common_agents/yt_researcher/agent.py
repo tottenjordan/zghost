@@ -217,7 +217,7 @@ yt_trends_generator_agent = Agent(
     name="yt_trends_generator_agent",
     description="Evaluates research and analysis about the trending YouTube video to generates insights.",
     instruction="""
-    Generate insights that will help marketers understand the context of the trending YouTube video.
+    Using the research findings from the 'final_yt_report_with_citations' state key, generate multiple insights that will help marketers understand the context of the trending YouTube video.
 
     *Note:* an insight is a data point that: 
     *   is referenceable (with a source), 
@@ -226,9 +226,8 @@ yt_trends_generator_agent = Agent(
 
     ---
     ### Instructions
-    1.  Review the 'yt_video_analysis' state key to understand what the video is about, who is involved, and what is being discussed.
-    2.  Reveiw the 'yt_web_search_insights' state key to understand why this video is trending and any cultural significance.
-    3.  Generate 2-3 insights from this trend research.
+    1.  Review the 'final_yt_report_with_citations' state key to understand the completed research on the trending YouTube video.
+    2.  Generate 2-3 insights from this research.
     
     Your response must be a single, raw JSON object validating against the 'YT_Trends' schema.
     """,
@@ -237,6 +236,33 @@ yt_trends_generator_agent = Agent(
     generate_content_config=schema_types.json_response_config,
     output_schema=schema_types.YT_Trends,
     output_key="yt_trends",
+)
+
+
+yt_insight_synthesizer = Agent(
+    name="yt_insight_synthesizer",
+    model=MODEL,
+    # Change 3: Improved instruction, correctly using state key injection
+    instruction="""You are an AI Assistant responsible for combining research insights into a structured report.
+
+    1. Read the insights for the trending YouTube video research in the 'yt_trends' state key:
+
+        {yt_trends}
+
+    2. Generate a report in markdown format, capturing each insight from the previous step. For each insight, provide the following:
+    * **[video title]**
+        * **Trend Description:**
+        * **Trend URLs:**
+        * **Key Entities Involved:**
+        * **Key Relationships:**
+        * **Key Audiences:**
+        * **Key Product Insights:**
+
+    Output *only* the structured report following this format. 
+    Do not include introductory or concluding phrases outside this structure, and strictly adhere to listing the insights from Step 1.
+    """,
+    description="Synthesizes insisghts from trending YouTube content.",
+    output_key="yt_trends_synth",
 )
 
 
@@ -250,6 +276,7 @@ yt_research_pipeline = SequentialAgent(
         yt_web_searcher,
         yt_report_composer,
         yt_trends_generator_agent,
+        yt_insight_synthesizer,
     ],
 )
 

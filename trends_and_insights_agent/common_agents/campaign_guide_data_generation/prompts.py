@@ -26,5 +26,5 @@ Extract **ALL** text from the provided campaign guide.
 * media_strategy: [extract bulleted list of media channels]
 * key_selling_points: [extract bulleted list of features and their description]
 
-Your response must be a single, raw JSON object 'MarketingCampaignGuide' schema
+Your response must be a single, raw JSON object validating against the 'MarketingCampaignGuide' schema.
 """

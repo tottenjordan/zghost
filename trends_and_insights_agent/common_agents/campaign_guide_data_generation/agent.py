@@ -15,6 +15,8 @@ from .prompts import GUIDE_DATA_EXTRACT_INSTR, GUIDE_DATA_GEN_INSTR
 from ...shared_libraries import callbacks, schema_types
 from ...utils import MODEL
 
+# DOC_UNDERSTANDING_MODEL = "gemini-2.5-flash"
+
 client = Client()
 
 # TODO: add support for URLs and user inputs
@@ -63,5 +65,5 @@ campaign_guide_data_generation_agent = LlmAgent(
     tools=[
         AgentTool(agent=campaign_guide_data_extract_agent),
     ],
-    after_tool_callback=process_toolbox_output,
+    # after_tool_callback=process_toolbox_output,
 )

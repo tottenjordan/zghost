@@ -22,7 +22,7 @@ async def generate_research_pdf(
     Make sure the PDF is formatted correctly with human readable characters.
 
     Args:
-        markdown_string: a string in Markdown format that clearly presents the session state: `campaign_guide`, `search_trends`, `yt_trends`, and `insights`
+        markdown_string: a string in Markdown format that clearly presents the campaign and trend research.
         tool_context (ToolContext): The tool context.
 
     Returns:
@@ -31,8 +31,6 @@ async def generate_research_pdf(
     # logging.info(f"markdown_string in `generate_research_pdf`: {markdown_string}")
 
     # TODO: add these state vairables to report
-    # campaign_research_markdown = tool_context.state['final_ca_report_with_citations']
-    # gs_research_markdown = tool_context.state['final_gs_report_with_citations']
 
     # create local dir to save PDF file
     DIR = f"files/research"

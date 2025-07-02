@@ -256,7 +256,7 @@ search_trends_generator_agent = Agent(
     description="Critically evaluates all research about the trending Search terms and generates insights.",
     # include_contents="none",
     instruction=f"""
-    Using the research findings from the 'gs_final_cited_report' state key, generate multiple insights that will help marketers better understand the context of this Search trend.
+    Using the research findings from the 'final_gs_report_with_citations' state key, generate multiple insights that will help marketers better understand the context of this Search trend.
     
     *Note:* an insight is a data point that: 
     *   is referenceable (with a source), 
@@ -265,7 +265,7 @@ search_trends_generator_agent = Agent(
     
     ---
     ### Instructions
-    1.  Review the 'gs_final_cited_report' state key to understand the completed Search trend research.
+    1.  Review the 'final_gs_report_with_citations' state key to understand the completed Search trend research.
     2.  Generate 5-7 insights from this trend research.
     
     Your response must be a single, raw JSON object validating against the 'Search_Trends' schema.
@@ -277,6 +277,34 @@ search_trends_generator_agent = Agent(
     output_key="search_trends",
 )
 
+
+search_insight_synthesizer = Agent(
+    name="search_insight_synthesizer",
+    model=MODEL,
+    # Change 3: Improved instruction, correctly using state key injection
+    instruction="""You are an AI Assistant responsible for combining research insights into a structured report.
+
+    1. Read the insights for the Search trend research in the 'search_trends' state key:
+
+        {search_trends}
+
+    2. Generate a report in markdown format, capturing each insight from the previous step. For each insight, provide the following:
+    * **[trend title]**
+        * **Trend Description:**
+        * **Trend URLs:**
+        * **Key Entities Involved:**
+        * **Key Relationships:**
+        * **Key Audiences:**
+        * **Key Product Insights:**
+
+    Output *only* the structured report following this format. 
+    Do not include introductory or concluding phrases outside this structure, and strictly adhere to listing the insights from Step 1.
+    """,
+    description="Synthesizes insisghts from Search Trends.",
+    output_key="search_trends_synth",
+)
+
+
 gs_research_pipeline = SequentialAgent(
     name="gs_research_pipeline",
     description="Executes a pipeline of web research related to the trending Search terms **only**. It performs iterative research, evaluation, and insight generation.",
@@ -287,6 +315,7 @@ gs_research_pipeline = SequentialAgent(
         enhanced_gs_searcher,
         gs_report_composer,
         search_trends_generator_agent,
+        search_insight_synthesizer,
     ],
 )
 

@@ -993,14 +993,14 @@ files = [
 
 [[package]]
 name = "google-adk"
-version = "1.4.2"
+version = "1.5.0"
 description = "Agent Development Kit"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "google_adk-1.4.2-py3-none-any.whl", hash = "sha256:5987096b4ad854aa2f9faa923e1632a65d69d21794766e44683f36505382ab6a"},
-    {file = "google_adk-1.4.2.tar.gz", hash = "sha256:f1d4ccf109aaeaf2af2ffd419432b337499e38d008e59944c036b84206f2806e"},
+    {file = "google_adk-1.5.0-py3-none-any.whl", hash = "sha256:f2ce47fa9a56097664d1c7499c867954326ca80fe891421c4c72ee3a70e19e55"},
+    {file = "google_adk-1.5.0.tar.gz", hash = "sha256:917770107963714362b8925acf39d01a6d84701ba7c30d0f4f19a47296b6faab"},
 ]
 
 [package.dependencies]
@@ -1013,7 +1013,7 @@ google-cloud-aiplatform = {version = ">=1.95.1", extras = ["agent-engines"]}
 google-cloud-secret-manager = ">=2.22.0"
 google-cloud-speech = ">=2.30.0"
 google-cloud-storage = ">=2.18.0,<3.0.0"
-google-genai = ">=1.17.0"
+google-genai = ">=1.21.1"
 graphviz = ">=0.20.2"
 mcp = {version = ">=1.8.0", markers = "python_version >= \"3.10\""}
 opentelemetry-api = ">=1.31.0"
@@ -1035,7 +1035,7 @@ websockets = ">=15.0.1"
 a2a = ["a2a-sdk (>=0.2.7) ; python_version >= \"3.10\""]
 dev = ["flit (>=3.10.0)", "isort (>=6.0.0)", "mypy (>=1.15.0)", "pyink (>=24.10.0)", "pylint (>=2.6.0)"]
 docs = ["autodoc_pydantic", "furo", "myst-parser", "sphinx", "sphinx-autodoc-typehints", "sphinx-rtd-theme"]
-eval = ["google-cloud-aiplatform[evaluation] (>=1.87.0)", "pandas (>=2.2.3)", "tabulate (>=0.9.0)"]
+eval = ["google-cloud-aiplatform[evaluation] (>=1.87.0)", "pandas (>=2.2.3)", "rouge-score (>=0.1.2)", "tabulate (>=0.9.0)"]
 extensions = ["anthropic (>=0.43.0)", "beautifulsoup4 (>=3.2.2)", "crewai[tools] ; python_version >= \"3.10\"", "docker (>=7.0.0)", "langgraph (>=0.2.60)", "litellm (>=1.63.11)", "llama-index-readers-file (>=0.4.0)", "lxml (>=5.3.0)", "toolbox-core (>=0.1.0)"]
 test = ["anthropic (>=0.43.0)", "langchain-community (>=0.3.17)", "langgraph (>=0.2.60)", "litellm (>=1.71.2)", "llama-index-readers-file (>=0.4.0)", "pytest (>=8.3.4)", "pytest-asyncio (>=0.25.0)", "pytest-mock (>=3.14.0)", "pytest-xdist (>=3.6.1)"]
 
@@ -1472,14 +1472,14 @@ testing = ["pytest"]
 
 [[package]]
 name = "google-genai"
-version = "1.21.0"
+version = "1.23.0"
 description = "GenAI Python SDK"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "google_genai-1.21.0-py3-none-any.whl", hash = "sha256:ea87838d42b657414418a61893edf07e8521ac7a9c7a31dcdefec82e20e06b27"},
-    {file = "google_genai-1.21.0.tar.gz", hash = "sha256:02ec1657839f71d4fe02fb9afcf6d6571a860c767dae6d697a988e682f095d0f"},
+    {file = "google_genai-1.23.0-py3-none-any.whl", hash = "sha256:59d603e35440fb1e61482264ee214d17f8c4ed9d29ec08cd4a6de8d090aaabb9"},
+    {file = "google_genai-1.23.0.tar.gz", hash = "sha256:a3ce7803ac3b038d4c4e166070451b560278c9f20cd819650debd17cd69cb1b3"},
 ]
 
 [package.dependencies]
@@ -5390,4 +5390,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "f5700943e02808e973f5f40baecb53eaeda583819c874aee617e629537f4de27"
+content-hash = "fbaa7baa58f6cb4194e4bff706874a39fa74d74bc1a76cff99c3f02e06b3734f"
