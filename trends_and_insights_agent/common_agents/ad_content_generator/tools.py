@@ -20,13 +20,17 @@ client = genai.Client()
 
 
 async def generate_image(
-    prompt: str, tool_context: ToolContext, number_of_images: int = 1
+    prompt: str,
+    tool_context: ToolContext,
+    concept_name: str,
+    number_of_images: int = 1,
 ):
     f"""Generates an image based on the prompt for {IMAGE_MODEL}
 
     Args:
         prompt (str): The prompt to generate the image from.
         tool_context (ToolContext): The tool context.
+        concept_name (str, optional): The name of the concept.
         number_of_images (int, optional): The number of images to generate. Defaults to 1.
 
     Returns:
@@ -40,16 +44,24 @@ async def generate_image(
     )
     if not response.generated_images:
         return {"status": "failed"}
-    for image_results in response.generated_images:
+
+    # Create output filename
+    if concept_name:
+        concept_name = concept_name.replace(" ", "_")
+        filename_prefix = f"{concept_name}"
+    else:
+        filename_prefix = f"{uuid.uuid4()}"
+
+    for index, image_results in enumerate(response.generated_images):
         image_bytes = image_results.image.image_bytes
-        filename = uuid.uuid4()
+        filename = f"{filename_prefix}_{index}.png"
         await tool_context.save_artifact(
-            f"{filename}.png",
+            filename,
             types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
         )
         # save the file locally for gcs upload
-        upload_file_to_gcs(file_path=f"{filename}.png", file_data=image_bytes)
-    return {"status": "ok", "filename": f"{filename}.png"}
+        upload_file_to_gcs(file_path=f"{filename}", file_data=image_bytes)
+    return {"status": "ok", "filename": f"{filename}"}
 
 
 async def generate_video(
@@ -160,7 +172,11 @@ async def concatenate_videos(
                 local_video_paths.append(local_path)
 
             # Create output filename
-            output_filename = f"{concept_name}_{uuid.uuid4()}.mp4"
+            if concept_name:
+                output_filename = f"{concept_name}.mp4"
+            else:
+                output_filename = f"{uuid.uuid4()}.mp4"
+
             output_path = os.path.join(temp_dir, output_filename)
 
             if len(local_video_paths) == 1:
@@ -201,6 +217,9 @@ async def concatenate_videos(
                 output_filename,
                 types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
             )
+
+            # TODO: support a list of artifacts; need to associate with their ad copies, etc.
+            # tool_context.state["artifact_keys"]["campaign_videos"] = output_filename
 
             # Also upload to GCS for persistence
             gcs_uri = upload_file_to_gcs(

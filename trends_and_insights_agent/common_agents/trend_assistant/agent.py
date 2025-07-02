@@ -45,27 +45,6 @@ async def process_toolbox_output(
     return None
 
 
-def modify_output_after_agent(callback_context: CallbackContext) -> Optional[types.Content]:
-    """
-    Logs exit from an agent and checks 'add_concluding_note' in session state.
-    If True, returns new Content to *replace* the agent's original output.
-    If False or not present, returns None, allowing the agent's original output to be used.
-    """
-    agent_name = callback_context.agent_name
-    invocation_id = callback_context.invocation_id
-    current_state = callback_context.state.to_dict()
-
-    logging.info(f"\n\n[Callback] Exiting agent: {agent_name} (Inv: {invocation_id})\n\n")
-    logging.info(f"\n\n[Callback] Current State: {current_state}\n\n")
-
-    if callback_context.state["target_search_trends"] is None:
-        logging.info(f"\n\n state['target_search_trends'] is None \n\n")
-
-    if callback_context.state["target_yt_trends"] is None:
-        logging.info(f"\n\n state['target_yt_trends'] is None \n\n")
-
-    return None
-
 trends_and_insights_agent = Agent(
     model=MODEL,
     name="trends_and_insights_agent",
@@ -81,5 +60,4 @@ trends_and_insights_agent = Agent(
         temperature=1.0,
     ),
     # after_tool_callback=process_toolbox_output,
-    after_agent_callback=modify_output_after_agent,
 )

@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 from google.genai import types
 from google.adk.planners import BuiltInPlanner
 from google.adk.tools.agent_tool import AgentTool
-from google.adk.agents import Agent, SequentialAgent
+from google.adk.agents import Agent, SequentialAgent, ParallelAgent
 from google.adk.tools import LongRunningFunctionTool, ToolContext, google_search
 from google.adk.agents.callback_context import CallbackContext
 from pydantic import BaseModel, Field
@@ -164,6 +164,40 @@ yt_analysis_generator_agent = Agent(
     ],
     output_key="yt_video_analysis",
 )
+yt_web_planner = Agent(
+    model=MODEL,
+    name="gs_web_planner",
+    description="Generates initial queries to understand why the 'target_yt_trends' are trending.",
+    instruction="""You are a research strategist. 
+    Your job is to create high-level queries that will help marketers better understand the cultural significance of trending YouTube videos.
+    
+    1. Read the 'yt_video_analysis' state key to understand the trending YouTube video.
+    2. Generate 2-3 web queries to better understanding the context of the video.
+    
+    Your output should just include a numbered list of queries. Nothing else.
+    """,
+    output_key="initial_yt_queries",
+)
+yt_web_searcher = Agent(
+    model=ADAPTIVE_THINKING_MODEL,
+    name="yt_web_searcher",
+    description="Performs web research to better understand the context of the trending YouTube video.",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    instruction="""
+    You are a diligent and exhaustive researcher. 
+    Your task is to conduct initial web research for concepts described in the 'yt_video_analysis' state key.
+    You will be provided with a list of web queries in the 'initial_yt_queries' state key.
+    Execute all of these queries using the 'google_search' tool and synthesize the results into a detailed summary
+    """,
+    tools=[google_search],
+    output_key="yt_web_search_insights",
+    after_agent_callback=collect_research_sources_callback,
+)
+yt_sequential_planner = SequentialAgent(
+    name="yt_sequential_planner",
+    description="Executes sequential research tasks for trending YouTube videos.",
+    sub_agents=[yt_analysis_generator_agent, yt_web_planner, yt_web_searcher],
+)
 
 
 gs_web_planner = Agent(
@@ -171,20 +205,39 @@ gs_web_planner = Agent(
     name="gs_web_planner",
     description="Generates initial queries to understand why the 'target_search_trends' are trending.",
     instruction="""You are a research strategist. 
-    Your job is to create high-level queries that will help marketers better understand the cultural significance of a trend in Google Search.
+    Your job is to create high-level queries that will help marketers better understand the cultural significance of trends from Google Search.
     
     1. Read the 'target_search_trends' state key to get the Search trend.
     2. Generate 4-5 queries that will provide more context, and answer questions like:
         - Why are these search terms trending? Who is involved?
         - Are there any related themes that would resonate with our target audience?
         - Describe any key entities involved (i.e., people, places, organizations, named events, etc.), and the relationships between these key entities, especially in the context of the trending topic, or if possible the target product
-        - Explain the cultural significance of the trend. 
+        - Explain the cultural significance of the trend.
     
     Your output should just include a numbered list of queries. Nothing else.
     """,
     output_key="inital_gs_queries",
 )
-
+gs_web_searcher = Agent(
+    model=ADAPTIVE_THINKING_MODEL,
+    name="gs_web_searcher",
+    description="Performs the crucial first pass of web research about the trending Search terms.",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    instruction="""
+    You are a diligent and exhaustive researcher. 
+    Your task is to conduct initial web research for the trending Search terms.
+    Use the 'google_search' tool to execute all queries listed in 'inital_gs_queries'. 
+    Synthesize the results into a detailed summary.
+    """,
+    tools=[google_search],
+    output_key="gs_web_search_insights",
+    after_agent_callback=collect_research_sources_callback,
+)
+gs_sequential_planner = SequentialAgent(
+    name="gs_sequential_planner",
+    description="Executes sequential research tasks for trends in Google Search.",
+    sub_agents=[gs_web_planner, gs_web_searcher],
+)
 
 campaign_web_planner = Agent(
     model=MODEL,
@@ -203,28 +256,104 @@ campaign_web_planner = Agent(
     """,
     output_key="inital_campaign_queries",
 )
-
-
-combined_web_searcher = Agent(
+campaign_web_searcher = Agent(
     model=ADAPTIVE_THINKING_MODEL,
-    name="combined_web_searcher",
-    description="Performs the crucial first pass of web research about the campaign guide, search trend, and trending youtube video.",
+    name="campaign_web_searcher",
+    description="Performs the crucial first pass of web research about the campaign guide.",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""
-    You are a highly capable and diligent research and synthesis agent. Your comprehensive task is to execute a provided research plan with **absolute fidelity**, first by gathering necessary information, and then by synthesizing that information into specified outputs.
-
-    You will be provided with two sets of web queries, stored in the 'inital_gs_queries' and 'inital_campaign_queries' state keys.
-
-    1. For each list of queries (e.g., the 'inital_gs_queries', and 'inital_campaign_queries' state keys):
-        *   **Execution:** Utilize the `google_search` tool to execute **all** web queries in the list
-        *   **Summarization:** Synthesize the search results into a detailed, coherent summary.
-
-    2. Generate a report documenting each summary from Step 1.
+    You are a diligent and exhaustive researcher. Your task is to conduct initial web research for concepts described in the campaign guide.
+    You will be provided with a list of web queries in the 'inital_campaign_queries' state key.
+    Use the 'google_search' tool to execute all queries. 
+    Synthesize the results into a detailed summary.
     """,
     tools=[google_search],
-    output_key="combined_web_search_insights",
+    output_key="campaign_web_search_insights",
     after_agent_callback=collect_research_sources_callback,
 )
+ca_sequential_planner = SequentialAgent(
+    name="ca_sequential_planner",
+    description="Executes sequential research tasks for concepts described in the campaign guide.",
+    sub_agents=[campaign_web_planner, campaign_web_searcher],
+)
+
+parallel_planner_agent = ParallelAgent(
+    name="parallel_planner_agent",
+    sub_agents=[yt_sequential_planner, gs_sequential_planner, ca_sequential_planner],
+    description="Runs multiple research planning agents in parallel."
+)
+
+merge_planners = Agent(
+    name="SynthesisAgent",
+    model=REASONING_MODEL,
+    description="Combine results from state keys 'campaign_web_search_insights', 'gs_web_search_insights', and 'yt_web_search_insights'",
+    instruction="""You are an AI Assistant responsible for combining initial research findings into a comprehensive summary.
+    Your primary task is to synthesize the following research summaries, clearly attributing findings to their source areas. Structure your response using headings for each topic. Ensure the report is coherent and integrates the key points smoothly.
+
+    **Crucially: Your entire response MUST be grounded *exclusively* on the information provided in the 'Input Summaries' below. Do NOT add any external knowledge, facts, or details not present in these specific summaries.**
+
+    **Input Summaries:**
+
+    *   **Campaign Guide:**
+        {campaign_web_search_insights}
+
+    *   **Google Search Trends:**
+        {gs_web_search_insights}
+
+    *   **YouTube Trends:**
+        {yt_web_search_insights}
+
+    **Output Format:**
+
+    ## Summary of Recent Sustainable Technology Advancements
+
+    ### Campaign Guide Findings
+    (Based on 'campaign_web_search_insights' findings)
+    [Synthesize and elaborate *only* on the campaign guide input summary provided above.]
+
+    ### Google Search Trend Findings
+    (Based on 'gs_web_search_insights' findings)
+    [Synthesize and elaborate *only* on the Google Search Trends input summary provided above.]
+
+    ### YouTube Trends Findings
+    (Based on 'yt_web_search_insights' findings)
+    [Synthesize and elaborate *only* on the YouTube Trends input summary provided above.]
+
+    Output *only* the structured report following this format. Do not include introductory or concluding phrases outside this structure, and strictly adhere to using only the provided input summary content.
+    """,
+    output_key="combined_web_search_insights",
+)
+
+merge_parallel_insights = SequentialAgent(
+    name="merge_parallel_insights",
+    sub_agents=[parallel_planner_agent, merge_planners],
+    description="Coordinates parallel research and synthesizes the results."
+)
+
+# combined_web_searcher = Agent(
+#     model=ADAPTIVE_THINKING_MODEL,
+#     name="combined_web_searcher",
+#     description="Performs the crucial first pass of web research about the campaign guide, search trend, and trending youtube video.",
+#     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+#     instruction="""
+#     You are a highly capable and diligent research and synthesis agent. Your comprehensive task is to execute a provided research plan with **absolute fidelity**, first by gathering necessary information, and then by synthesizing that information into specified outputs.
+
+#     **Your workflow is:**
+#     1.  Review the 'inital_campaign_queries' state key to understand the initial campaign queries.
+#     2.  Execute EVERY query listed in 'inital_campaign_queries' using the 'google_search' tool.
+#     3.  Synthesize the search results from Step 2 into a detailed, coherent summary.
+#     4.  Review the 'inital_gs_queries' state key to understand the initial Search Trend queries.
+#     5.  Execute EVERY query listed in 'inital_gs_queries' using the 'google_search' tool.
+#     6.  Synthesize the search results from Step 5 into a detailed, coherent summary.
+
+#     **Final Instructions:**
+#     Generate a report summarizing all research findings from the previous steps.
+#     Make sure your report is clear and easy to follow.
+#     """,
+#     tools=[google_search],
+#     output_key="combined_web_search_insights",
+#     after_agent_callback=collect_research_sources_callback,
+# )
 
 
 combined_web_evaluator = Agent(
@@ -236,7 +365,7 @@ combined_web_evaluator = Agent(
     
     Be critical of the completeness of the research.
     Consider the bigger picture and the intersection of the target product and target audience. 
-    Consider the trends from Google Search and YouTube.
+    Consider the trends in each of the 'target_search_trends' and 'target_yt_trends' state keys.
     
     Look for any gaps in depth or coverage, as well as any areas that need more clarification. 
         - If you find significant gaps in depth or coverage, write a detailed comment about what's missing, and generate 5-7 specific follow-up queries to fill those gaps.
@@ -282,11 +411,10 @@ combined_report_composer = Agent(
 
     ---
     ### INPUT DATA
-    *   Video Analysis: `{yt_video_analysis}`
-    *   Search Trend Guide: `{inital_gs_queries}`
-    *   Campaign Research Guide: `{inital_campaign_queries}`
-    *   Research Critiques: `{combined_research_evaluation}`
-    *   Final Research Findings: `{combined_web_search_insights}`
+    *   Search Trends: {target_search_trends}
+    *   YouTube Trends: {target_yt_trends}
+    *   YouTube Video Analysis: {yt_video_analysis}
+    *   Final Research Findings: {combined_web_search_insights}
     *   Citation Sources: `{sources}`
 
     ---
@@ -309,10 +437,11 @@ combined_research_pipeline = SequentialAgent(
     name="combined_research_pipeline",
     description="Executes a pipeline of web research related to the trending Search terms, trending YouTube videos, and the campaign guide. It performs iterative research, evaluation, and insight generation.",
     sub_agents=[
-        yt_analysis_generator_agent,
-        gs_web_planner,
-        campaign_web_planner,
-        combined_web_searcher,
+        # yt_analysis_generator_agent,
+        # gs_web_planner,
+        # campaign_web_planner,
+        # combined_web_searcher,
+        merge_parallel_insights,
         combined_web_evaluator,
         enhanced_combined_searcher,
         combined_report_composer,

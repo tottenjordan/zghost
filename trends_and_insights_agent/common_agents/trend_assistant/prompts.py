@@ -25,5 +25,5 @@ Your **objective** is to use the **available tools** to complete the **instructi
     </Example
 5. Ask the user which trending video to proceed with. Don't proceed to the next step until the user has selected at least one trending video.
 6. Once they choose a trending video, use the `save_yt_trends_to_session_state` tool to save their choice in the 'target_yt_trends' state key.
-7. Transfer to the `stage_1_research_merger` agent without any user input.
+7. Confirm the selections with the user. Once the user confirms, transfer to the `root_agent`.
 """

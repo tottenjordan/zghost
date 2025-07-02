@@ -80,9 +80,9 @@ ad_copy_drafter = Agent(
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a creative copywriter generating initial ad copy ideas.
     
-    Based on the `campaign_guide`, `search_trends`, and `yt_trends`, generate 10-15 diverse ad copy ideas that:
+    Based on the insights, `campaign_guide`, `target_search_trends`, and `target_yt_trends`, generate 10-15 diverse ad copy ideas that:
     - Incorporate key selling points from the campaign guide
-    - Reference trends from search and/or YouTube
+    - Reference trends from Search and/or YouTube
     - Vary in tone, style, and approach
     - Are suitable for Instagram/TikTok platforms
     
@@ -99,7 +99,7 @@ ad_copy_drafter = Agent(
     Use the `google_search` tool to support your decisions
 
     <INSIGHTS>
-    {insights}
+    {final_report_with_citations}
     </INSIGHTS>
     <YT_TRENDS>
     {target_yt_trends}
