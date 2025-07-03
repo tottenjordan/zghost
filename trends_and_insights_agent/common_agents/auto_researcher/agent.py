@@ -15,12 +15,8 @@ from google.adk.agents.callback_context import CallbackContext
 from pydantic import BaseModel, Field
 
 from ...shared_libraries import callbacks, schema_types
+from ...shared_libraries.config import config
 from ...tools import analyze_youtube_videos
-from ...utils import MODEL
-
-# TODO: mv to config
-ADAPTIVE_THINKING_MODEL = "gemini-2.5-flash"
-REASONING_MODEL = "gemini-2.5-pro"
 
 
 # --- Structured Output Models ---
@@ -148,7 +144,7 @@ def citation_replacement_callback(
 
 # --- PARALLEL RESEARCH SUBAGENTS ---
 yt_analysis_generator_agent = Agent(
-    model=MODEL,
+    model=config.worker_model,
     name="yt_analysis_generator_agent",
     description="Process YouTube videos, extract key details, and provide an overall summary.",
     instruction="""
@@ -167,7 +163,7 @@ yt_analysis_generator_agent = Agent(
     output_key="yt_video_analysis",
 )
 yt_web_planner = Agent(
-    model=MODEL,
+    model=config.worker_model,
     name="gs_web_planner",
     description="Generates initial queries to understand why the 'target_yt_trends' are trending.",
     instruction="""You are a research strategist. 
@@ -181,7 +177,7 @@ yt_web_planner = Agent(
     output_key="initial_yt_queries",
 )
 yt_web_searcher = Agent(
-    model=ADAPTIVE_THINKING_MODEL,
+    model=config.worker_model,
     name="yt_web_searcher",
     description="Performs web research to better understand the context of the trending YouTube video.",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
@@ -203,14 +199,25 @@ yt_sequential_planner = SequentialAgent(
 
 
 gs_web_planner = Agent(
-    model=MODEL,
+    model=config.worker_model,
     name="gs_web_planner",
     description="Generates initial queries to understand why the 'target_search_trends' are trending.",
     instruction="""You are a research strategist. 
     Your job is to create high-level queries that will help marketers better understand the cultural significance of trends from Google Search.
+
+    Review the search trend(s) provided in the **Input Data**, then proceed to the **Instructions**.
+
+    ---
+    **Input Data**
+
+    <SEARCH_TRENDS>
+    {target_search_trends}
+    </SEARCH_TRENDS>
     
+    ---
+    **Instructions**
     1. Read the 'target_search_trends' state key to get the Search trend.
-    2. Generate 4-5 queries that will provide more context, and answer questions like:
+    2. Generate 4-5 queries that will provide more context for this trend, and answer questions like:
         - Why are these search terms trending? Who is involved?
         - Are there any related themes that would resonate with our target audience?
         - Describe any key entities involved (i.e., people, places, organizations, named events, etc.), and the relationships between these key entities, especially in the context of the trending topic, or if possible the target product
@@ -221,7 +228,7 @@ gs_web_planner = Agent(
     output_key="inital_gs_queries",
 )
 gs_web_searcher = Agent(
-    model=ADAPTIVE_THINKING_MODEL,
+    model=config.worker_model,
     name="gs_web_searcher",
     description="Performs the crucial first pass of web research about the trending Search terms.",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
@@ -242,24 +249,47 @@ gs_sequential_planner = SequentialAgent(
 )
 
 campaign_web_planner = Agent(
-    model=MODEL,
+    model=config.worker_model,
     name="campaign_web_planner",
-    description="Generates initial queries to guide web research about concepts described in the campaign guide.",
+    description="Generates initial queries to guide web research about concepts described in the `campaign_guide`.",
     instruction="""You are a research strategist. 
-    Your job is to create high-level queries that will help marketers better understand concepts in the 'campaign_guide', such as the 'target_audience', 'target_product', and 'key_selling_points'.
+    Your job is to create high-level queries that will help marketers better understand concepts described in the 'campaign_guide' state key.
+     
+    Review the concepts from the campaign guide provided in the **Input Data**, then generate a list of web queries to better understand them.
+
+    ---
+    **Input Data**
+
+    <TARGET_AUDIENCE>
+    {target_audience}
+    </TARGET_AUDIENCE>
+
+    <TARGET_PRODUCT>
+    {target_product}
+    </TARGET_PRODUCT>
     
+    <KEY_SELLING_POINTS>
+    {key_selling_points}
+    </KEY_SELLING_POINTS>
+    
+    ---
+    **Critical Guidelines**
     The queries shoud help answer questions like:
-    *  What's relevant, distinctive, or helpful about the {campaign_guide.target_product}?
+    *  What's relevant, distinctive, or helpful about the {target_product}?
     *  What are some key attributes about the target audience?
     *  Which key selling points would the target audience best resonate with? Why? 
     *  How could marketers make a culturally relevant advertisement related to product insights?
     
+    ---
+    **Final Instructions**
+    Generate a list of web queries that addresses the **Critical Guidelines**.
     Your output should just include a numbered list of queries. Nothing else.
     """,
     output_key="inital_campaign_queries",
 )
+
 campaign_web_searcher = Agent(
-    model=ADAPTIVE_THINKING_MODEL,
+    model=config.worker_model,
     name="campaign_web_searcher",
     description="Performs the crucial first pass of web research about the campaign guide.",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
@@ -282,29 +312,19 @@ ca_sequential_planner = SequentialAgent(
 parallel_planner_agent = ParallelAgent(
     name="parallel_planner_agent",
     sub_agents=[yt_sequential_planner, gs_sequential_planner, ca_sequential_planner],
-    description="Runs multiple research planning agents in parallel."
+    description="Runs multiple research planning agents in parallel.",
 )
 
 merge_planners = Agent(
-    name="SynthesisAgent",
-    model=REASONING_MODEL,
+    name="merge_planners",
+    model=config.critic_model,
+    # include_contents="none",
     description="Combine results from state keys 'campaign_web_search_insights', 'gs_web_search_insights', and 'yt_web_search_insights'",
     instruction="""You are an AI Assistant responsible for combining initial research findings into a comprehensive summary.
-    Your primary task is to synthesize the following research summaries, clearly attributing findings to their source areas. Structure your response using headings for each topic. Ensure the report is coherent and integrates the key points smoothly.
+    Your primary task is to organize the following research summaries, clearly attributing findings to their source areas. 
+    Structure your response using headings for each topic. Ensure the report is coherent and integrates the key points smoothly.
 
-    **Crucially: Your entire response MUST be grounded *exclusively* on the information provided in the 'Input Summaries' below. Do NOT add any external knowledge, facts, or details not present in these specific summaries.**
-
-    **Input Summaries:**
-
-    *   **Campaign Guide:**
-        {campaign_web_search_insights}
-
-    *   **Google Search Trends:**
-        {gs_web_search_insights}
-
-    *   **YouTube Trends:**
-        {yt_web_search_insights}
-
+    ---
     **Output Format:**
 
     # Summary of Campaign and Trend Research
@@ -326,20 +346,20 @@ merge_planners = Agent(
 merge_parallel_insights = SequentialAgent(
     name="merge_parallel_insights",
     sub_agents=[parallel_planner_agent, merge_planners],
-    description="Coordinates parallel research and synthesizes the results."
+    description="Coordinates parallel research and synthesizes the results.",
 )
 
 
 # --- COMBINED RESEARCH SUBAGENTS ---
 combined_web_evaluator = Agent(
-    model=REASONING_MODEL,
+    model=config.critic_model,
     name="combined_web_evaluator",
     description="Critically evaluates research about the campaign guide and generates follow-up queries.",
     instruction=f"""
     You are a meticulous quality assurance analyst evaluating the research findings in 'combined_web_search_insights'.
     
     Be critical of the completeness of the research.
-    Consider the bigger picture and the intersection of the `campaign_guide.target_product` and `campaign_guide.target_audience`. 
+    Consider the bigger picture and the intersection of the `target_product` and `target_audience`. 
     Consider the trends in each of the 'target_search_trends' and 'target_yt_trends' state keys.
     
     Look for any gaps in depth or coverage, as well as any areas that need more clarification. 
@@ -357,7 +377,7 @@ combined_web_evaluator = Agent(
 
 
 enhanced_combined_searcher = Agent(
-    model=ADAPTIVE_THINKING_MODEL,
+    model=config.worker_model,
     name="enhanced_combined_searcher",
     description="Executes follow-up searches and integrates new findings.",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
@@ -377,7 +397,7 @@ enhanced_combined_searcher = Agent(
 
 
 combined_report_composer = Agent(
-    model=REASONING_MODEL,
+    model=config.critic_model,
     name="combined_report_composer",
     include_contents="none",
     description="Transforms research data and a markdown outline into a final, cited report.",
@@ -385,7 +405,7 @@ combined_report_composer = Agent(
     Transform the provided data into a polished, professional, and meticulously cited research report.
 
     ---
-    ### INPUT DATA
+    **INPUT DATA**
     *   **Search Trends:**
         {target_search_trends}
 
@@ -402,17 +422,17 @@ combined_report_composer = Agent(
         `{sources}`
 
     ---
-    ### CRITICAL: Citation System
+    **CRITICAL: Citation System**
     To cite a source, you MUST insert a special citation tag directly after the claim it supports.
 
     **The only correct format is:** `<cite source="src-ID_NUMBER" />`
 
     ---
-    ### OUTPUT FORMAT
+    **OUTPUT FORMAT**
     Organize the output to include these sections:
+    *   **Campaign Guide**
     *   **Search Trend**
     *   **YouTube Trend**
-    *   **Campaign Guide**
     *   **Key Insights from Research**
 
     You can use any format you prefer, but here's a suggested structure:
@@ -423,7 +443,7 @@ combined_report_composer = Agent(
     Make sure your outline is clear and easy to follow.
 
     ---
-    ### Final Instructions
+    **Final Instructions**
     Generate a comprehensive report using ONLY the `<cite source="src-ID_NUMBER" />` tag system for all citations.
     Ensure the final report follows a structure similar to the one proposed in the **OUTPUT FORMAT**
     Do not include a "References" or "Sources" section; all citations must be in-line.

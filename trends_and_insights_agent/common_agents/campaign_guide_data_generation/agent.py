@@ -13,9 +13,7 @@ from google.adk.agents.callback_context import CallbackContext
 
 from .prompts import GUIDE_DATA_EXTRACT_INSTR, GUIDE_DATA_GEN_INSTR
 from ...shared_libraries import callbacks, schema_types
-from ...utils import MODEL
-
-# DOC_UNDERSTANDING_MODEL = "gemini-2.5-flash"
+from ...shared_libraries.config import config
 
 client = Client()
 
@@ -43,9 +41,9 @@ async def process_toolbox_output(
 
 
 campaign_guide_data_extract_agent = LlmAgent(
-    model=MODEL,
+    model=config.worker_model,
     name="campaign_guide_data_extract_agent",
-    description="Captures campaign guide provided by user.",
+    description="Captures campaign details if user uploads PDF.",
     instruction=GUIDE_DATA_EXTRACT_INSTR,
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
@@ -55,7 +53,7 @@ campaign_guide_data_extract_agent = LlmAgent(
 )
 
 campaign_guide_data_generation_agent = LlmAgent(
-    model=MODEL,
+    model=config.worker_model,
     name="campaign_guide_data_generation_agent",
     description="Extracts and stores key information from marketing campaign guides (PDFs).",
     instruction=GUIDE_DATA_GEN_INSTR,

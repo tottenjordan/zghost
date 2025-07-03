@@ -1,4 +1,5 @@
 """callbacks - currently exploring how these work by observing log output"""
+
 import os
 import json
 import logging
@@ -14,9 +15,12 @@ from google.adk.tools.base_tool import BaseTool
 from google.adk.models import LlmResponse, LlmRequest
 from google.adk.agents.callback_context import CallbackContext
 
-SAMPLE_SCENARIO_PATH = os.getenv(
-    "PIXEL_CAMPAIGN_SCENARIO", "trends_and_insights_agent/shared_libraries/example_campaign_state.json"
-)
+from .config import setup_config
+
+
+# get initial session state json
+SESSION_STATE_JSON_PATH = os.getenv("SESSION_STATE_JSON_PATH", default=None)
+logging.info(f"\n\n`SESSION_STATE_JSON_PATH`: {SESSION_STATE_JSON_PATH}\n\n")
 
 
 def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
@@ -27,10 +31,13 @@ def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
         source: A JSON object of states.
         target: The session state object to insert into.
     """
-    target.update(source)
+    if setup_config.state_init not in target:
+        target[setup_config.state_init] = True
+        
+        target.update(source)
 
 
-def _load_precreated_itinerary(callback_context: CallbackContext):
+def _load_session_state(callback_context: CallbackContext):
     """
     Sets up the initial state.
     Set this as a callback as before_agent_call of the `root_agent`.
@@ -39,16 +46,16 @@ def _load_precreated_itinerary(callback_context: CallbackContext):
     Args:
         callback_context: The callback context.
     """
-    campaign_guide = callback_context.state.get("campaign_guide")
-    if campaign_guide is None:
-        data = {}
-        with open(SAMPLE_SCENARIO_PATH, "r") as file:
+    data = {}
+    if SESSION_STATE_JSON_PATH:
+        with open(SESSION_STATE_JSON_PATH, "r") as file:
             data = json.load(file)
             logging.info(f"\n\nLoading Initial State: {data}\n\n")
-
-        _set_initial_states(data["state"], callback_context.state)
     else:
-        logging.info("\n\n state already set \n\n")
+        data = setup_config.empty_session_state
+        logging.info(f"\n\nLoading Initial State (empty): {data}\n\n")
+
+    _set_initial_states(data["state"], callback_context.state)
 
 
 # TODO: not saving artifact correctly

@@ -3,7 +3,9 @@
 
 GUIDE_DATA_GEN_INSTR = """
 You are a data generation agent. 
-Your main job is to save details from marketing campaign guides. 
+Your main job is to save details from marketing campaign guides.
+
+**Only use this tool if the user uploads a PDF**
 
 Follow these steps to complete your task:
 1. Use the `campaign_guide_data_extract_agent` tool to extract important information from the user-provided campaign guide.

@@ -5,7 +5,6 @@ from google.adk.tools import load_artifacts
 
 from .common_agents.campaign_guide_data_generation.agent import (
     campaign_guide_data_generation_agent,
-    campaign_guide_data_extract_agent,
 )
 from .common_agents.report_generator.agent import (
     report_generator_agent,
@@ -15,7 +14,7 @@ from .common_agents.ad_content_generator.agent import ad_content_generator_agent
 from .common_agents.staged_researcher.agent import stage_1_research_merger
 
 from .shared_libraries import callbacks
-from .utils import MODEL
+from .shared_libraries.config import config
 from .tools import get_user_file, load_sample_guide
 from .prompts import (
     GLOBAL_INSTR,
@@ -25,7 +24,7 @@ from .prompts import (
 
 
 root_agent = Agent(
-    model=MODEL,
+    model=config.worker_model,
     name="root_agent",
     description="A trend and insight assistant using the services of multiple sub-agents.",
     instruction=v2_ROOT_AGENT_INSTR,
@@ -47,7 +46,7 @@ root_agent = Agent(
         response_modalities=["TEXT"],
     ),
     before_agent_callback=[
-        callbacks._load_precreated_itinerary,
+        callbacks._load_session_state,
         # callbacks.campaign_callback_function,
         # callbacks.before_agent_get_user_file,
     ],

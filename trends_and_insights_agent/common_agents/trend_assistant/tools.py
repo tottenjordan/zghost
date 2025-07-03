@@ -13,14 +13,12 @@ from google.genai import types
 from google.adk.agents import Agent
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
-
 import googleapiclient.discovery
 from google.cloud import bigquery
 
-# from google.cloud import secretmanager as sm
 
-from ...utils import MODEL
 from ...secrets import access_secret_version
+from ...shared_libraries.config import config
 
 
 # ========================
@@ -65,7 +63,7 @@ async def save_yt_trends_to_session_state(
 
 def get_youtube_trends(
     region_code: str = "US",
-    max_results: int = 25,  # TODO: add to config
+    max_results: int = config.n_yt_trend_videos,
 ) -> dict:
     """
     Makes request to YouTube Data API for most popular videos in a given region.
@@ -87,7 +85,26 @@ def get_youtube_trends(
         maxResults=max_results,
     )
     trend_response = request.execute()
-    return trend_response
+    # return trend_response
+
+    # TODO: only return select fields
+    trend_dict = {}
+    i = 1
+    for video in trend_response["items"]:
+        row_name = f"row_{i}"
+        trend_dict.update(
+            {
+                row_name: {
+                    "videoId": video["id"],
+                    "videoTitle": video["snippet"]["title"],
+                    # 'videoDescription': video['snippet']['description'],
+                    "duration": video["contentDetails"]["duration"],
+                    "videoURL": f"https://www.youtube.com/watch?v={video['id']}",
+                }
+            }
+        )
+        i += 1
+    return trend_dict
 
 
 async def save_search_trends_to_session_state(

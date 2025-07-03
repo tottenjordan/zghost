@@ -13,8 +13,8 @@ from google.adk import Agent
 from google.adk.tools import ToolContext
 from google.cloud import storage
 
-from ...utils import download_blob, upload_file_to_gcs, IMAGE_MODEL, VIDEO_MODEL
-
+from ...utils import download_blob, upload_file_to_gcs
+from ...shared_libraries.config import config
 
 client = genai.Client()
 
@@ -25,7 +25,7 @@ async def generate_image(
     concept_name: str,
     number_of_images: int = 1,
 ):
-    f"""Generates an image based on the prompt for {IMAGE_MODEL}
+    f"""Generates an image based on the prompt for {config.image_gen_model}
 
     Args:
         prompt (str): The prompt to generate the image from.
@@ -38,7 +38,7 @@ async def generate_image(
 
     """
     response = client.models.generate_images(
-        model=IMAGE_MODEL,
+        model=config.image_gen_model,
         prompt=prompt,
         config={"number_of_images": number_of_images},
     )
@@ -75,7 +75,7 @@ async def generate_video(
     negative_prompt: str = "",
     existing_image_filename: str = "",
 ):
-    f"""Generates a video based on the prompt for {VIDEO_MODEL}.
+    f"""Generates a video based on the prompt for {config.video_gen_model}.
 
     Args:
         prompt (str): The prompt to generate the video from.
@@ -98,14 +98,14 @@ async def generate_video(
         gcs_location = f"{os.environ['BUCKET']}/{existing_image_filename}"
         existing_image = types.Image(gcs_uri=gcs_location, mime_type="image/png")
         operation = client.models.generate_videos(
-            model=VIDEO_MODEL,
+            model=config.video_gen_model,
             prompt=prompt,
             image=existing_image,
             config=gen_config,
         )
     else:
         operation = client.models.generate_videos(
-            model=VIDEO_MODEL, prompt=prompt, config=gen_config
+            model=config.video_gen_model, prompt=prompt, config=gen_config
         )
     while not operation.done:
         time.sleep(15)
@@ -228,9 +228,7 @@ async def concatenate_videos(
                 content_type="video/mp4",
             )
             new_entry = {output_filename: gcs_uri}
-            tool_context.state["artifact_keys"]["video_creatives"].update(
-                new_entry
-            )
+            tool_context.state["artifact_keys"]["video_creatives"].update(new_entry)
 
             return {
                 "status": "ok",

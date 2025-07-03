@@ -2,7 +2,8 @@ from google.adk.agents import Agent, SequentialAgent
 from google.genai import types
 from pydantic import BaseModel, Field
 from typing import List
-from ...utils import MODEL, IMAGE_MODEL, VIDEO_MODEL
+
+from ...shared_libraries.config import config
 from .tools import generate_image, generate_video, concatenate_videos
 from .prompts import (
     AD_CONTENT_GENERATOR_NEW_INSTR,
@@ -80,9 +81,9 @@ ad_copy_drafter = Agent(
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a creative copywriter generating initial ad copy ideas.
     
-    Review the research findings in the 'final_report_with_citations' state key.
-    Using insights related to the campaign guide, trending YouTube video, and trending Search terms, generate 10-15 diverse ad copy ideas that:
-    - Incorporate key selling points from the campaign guide
+    Review the research findings in the 'combined_final_cited_report' state key.
+    Using insights related to the `campaign_guide`, trending YouTube video, and trending Search terms, generate 10-15 diverse ad copy ideas that:
+    - Incorporate key selling points for the {target_product}
     - Reference the YouTube trend, Search trend, or both
     - Vary in tone, style, and approach
     - Are suitable for Instagram/TikTok platforms
@@ -108,7 +109,7 @@ ad_copy_drafter = Agent(
     </SEARCH_TRENDS>
     
     <INSIGHTS>
-    {final_report_with_citations}
+    {combined_final_cited_report}
     </INSIGHTS>
     """,
     generate_content_config=types.GenerateContentConfig(
@@ -155,10 +156,11 @@ ad_copy_finalizer = Agent(
     instruction="""You are a senior copywriter finalizing ad campaigns.
     
     Take the selected copies from `ad_copy_critique` and:
-    1. Polish the language for maximum impact
-    2. Ensure platform compliance (character limits, guidelines)
-    3. Add any final creative touches
-    4. Present them in order of recommended priority
+    1. Polish the language for maximum impact.
+    2. Ensure platform compliance (character limits, guidelines).
+    3. Add any final creative touches.
+    4. Ensure they market the {target_product}.
+    5. Present them in order of recommended priority
 
     Use the `google_search` tool to support your decisions
     
@@ -189,7 +191,7 @@ visual_concept_drafter = Agent(
     name="visual_concept_drafter",
     description="Generate 10-15 initial visual concepts for selected ad copies",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
-    instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {IMAGE_MODEL} and {VIDEO_MODEL}.
+    instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
     
     Based on the user-selected ad copies in the 'final_ad_copies' state key, generate 4-8 visual concepts that:
     - Include both image and video concepts
@@ -206,7 +208,7 @@ visual_concept_drafter = Agent(
     - Which ad copy it connects to
     - Detailed generation prompt
     - Creative concept explanation
-    - A draft {IMAGE_MODEL} or {VIDEO_MODEL} prompt.
+    - A draft {config.image_gen_model} or {config.video_gen_model} prompt.
     - If this is a video, create unique prompts for each scene description from the selected storyboards
     - Try to prompt for continuity between scenes in the storyboard prompts
 

@@ -55,11 +55,11 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 
 **[entry point]** 
 
-
-++ manually upload a `campaign_guide` (PDF) or use [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf)
+* Agent will populate the initial session state with the dict in [shared_libraries/example_campaign_state.json](trends_and_insights_agent/shared_libraries/example_campaign_state.json).. use the default values or easily change them yourself
+* Can also manually upload a `campaign_guide` in PDF format e.g., [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf)
 
 ```
-> [user]: Use this marketing campaign guide to plan and conduct research for potential campaign briefs
+> [user]: Hello...
 ```
 
 **[trends]** 
@@ -74,19 +74,14 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 > [user]: selects interesting YouTube trend(s)
 ```
 
-**[campaign research]** 
+**[campaign & trend research]** 
 
 ```
-> [agent]: I'll start by using the `campaign_researcher_agent` to research concepts from the campaign guide.
+> [agent]: <executes pipeline of parallel research tasks>
+
+> [agent]: [Displays combined research report and saves as PDF artifact]
 ```
 
-**[trend research]** 
-
-```
-> [agent]: Okay, I have the research insights. Now, let's get some additional context for the trending YouTube video and Search term. I'll start by using the `yt_researcher_agent` to research the trending YouTube video.
-
-> [agent]: Now let's get some additional context for the trending Search term. I'll use the `gs_researcher_agent` to research the trending Search term and understand any cultural significance.
-```
 
 **[creative gen]** 
 
@@ -230,6 +225,7 @@ GOOGLE_CLOUD_PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER # e.g., 1234756
 GOOGLE_CLOUD_LOCATION=YOUR_LOCATION # e.g., us-central1
 BUCKET=gs://YOUR_GCS_BUCKET_NAME # create a GCS bucket
 YT_SECRET_MNGR_NAME=YOUR_SECRET_NAME # e.g., yt-data-api
+SESSION_STATE_JSON_PATH=trends_and_insights_agent/shared_libraries/example_campaign_state.json
 ```
 
 *(3) copy `.env` file to `root_agent` dir:*

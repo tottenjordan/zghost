@@ -17,12 +17,13 @@ async def save_final_report_artifact(tool_context: ToolContext) -> str:
     processed_report = tool_context.state["final_report_with_citations"]
 
     # create local dir to save PDF file
-    DIR = f"files/research"
-    if not os.path.exists(DIR):
-        os.makedirs(DIR)
+    DIR = "files"
+    SUBDIR = f"{DIR}/research"
+    if not os.path.exists(SUBDIR):
+        os.makedirs(SUBDIR)
 
     filename = "final_report_with_citations.pdf"
-    filepath = f"{DIR}/{filename}"
+    filepath = f"{SUBDIR}/{filename}"
 
     pdf = MarkdownPdf(toc_level=0)
     pdf.add_section(Section(f" {processed_report}\n", toc=False))

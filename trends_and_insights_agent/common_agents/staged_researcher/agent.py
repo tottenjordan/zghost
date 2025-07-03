@@ -8,12 +8,12 @@ from google.adk.agents import Agent, LlmAgent, SequentialAgent, ParallelAgent
 
 from .tools import save_final_report_artifact
 from ...common_agents.auto_researcher.agent import combined_research_pipeline
-from ...utils import MODEL
+from ...shared_libraries.config import config
 
 
 stage_1_report_agent = LlmAgent(
     name="stage_1_report_agent",
-    model=MODEL,
+    model=config.worker_model,
     description="Combines research findings into a report and saves it as an artifact.",
     instruction="""You are an AI Assistant responsible for combining research findings into a structured report.
 

@@ -19,7 +19,7 @@ from .tools import (
 )
 from .prompts import AUTO_TREND_AGENT_INSTR
 from ...shared_libraries import schema_types
-from ...utils import MODEL
+from ...shared_libraries.config import config
 
 
 # TODO: add AgentTool for Search Trends, YouTube Trends
@@ -46,7 +46,7 @@ async def process_toolbox_output(
 
 
 trends_and_insights_agent = Agent(
-    model=MODEL,
+    model=config.worker_model,
     name="trends_and_insights_agent",
     description="Displays trending topics from Google Search and trending videos from YouTube.",
     instruction=AUTO_TREND_AGENT_INSTR,

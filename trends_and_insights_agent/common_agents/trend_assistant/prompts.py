@@ -1,7 +1,9 @@
 """Prompt for trend assistant sub-agent"""
 
-N_YOUTUBE_TREND_VIDEOS = 25  # TODO: add to config
-N_SEARCH_TREND_TOPICS = 25  # TODO: add to config
+from ...shared_libraries.config import config
+
+N_YOUTUBE_TREND_VIDEOS = config.n_yt_trend_videos
+N_SEARCH_TREND_TOPICS = 25
 
 AUTO_TREND_AGENT_INSTR = f"""**Role:** You are an excellent trend finder who helps expert marketers explore trending topics
 
