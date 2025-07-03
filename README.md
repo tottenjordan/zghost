@@ -40,11 +40,10 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 1. `user` ingests PDF campaign brief defining target audience, product, region, media strategy, brand voice, etc. 
 2. `user` selects trending term(s) from Google Search
 3. `user` selects trending video(s) from YouTube
-4. `agent` conducts web research to gather insight about concepts in campaign guide
-5. `agent` conducts web research to understand the context of each trend
-6. `agent` generates camapign concepts that resonate with the target audience, while tapping into themes from the trends & insights
-7. `agent` generates image and video creatives, ad copy, and social media captions
-8. `agent` generates research report (PDF)
+4. `agent` conducts web research to gather insight about concepts from campaign guide, search trends, and trending YouTube video
+5. `agent` generates camapign concepts that resonate with the target audience, while tapping into themes from the trends & insights
+6. `agent` generates image and video creatives, ad copy, and social media captions
+7. `agent` generates research report (PDF)
 
 <details>
   <summary>Example interaction</summary>
@@ -145,7 +144,15 @@ python3 -m venv .venv && source .venv/bin/activate
 <details>
   <summary>Install packages</summary>
 
-*Optionally install `ipykernel` to run/test in notebooks*
+*install `ffmpeg` for video editing...*
+
+```bash
+sudo apt update
+sudo apt install ffmpeg
+ffmpeg -version
+```
+
+*install python packages...*
 
 ```bash
 pip install pipx
