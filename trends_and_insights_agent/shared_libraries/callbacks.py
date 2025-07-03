@@ -1,5 +1,6 @@
 """callbacks - currently exploring how these work by observing log output"""
-
+import os
+import json
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -8,9 +9,46 @@ from collections import defaultdict
 
 from google.genai import types
 from google.adk.tools import ToolContext
+from google.adk.sessions.state import State
 from google.adk.tools.base_tool import BaseTool
 from google.adk.models import LlmResponse, LlmRequest
 from google.adk.agents.callback_context import CallbackContext
+
+SAMPLE_SCENARIO_PATH = os.getenv(
+    "PIXEL_CAMPAIGN_SCENARIO", "trends_and_insights_agent/shared_libraries/example_campaign_state.json"
+)
+
+
+def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
+    """
+    Setting the initial session state given a JSON object of states.
+
+    Args:
+        source: A JSON object of states.
+        target: The session state object to insert into.
+    """
+    target.update(source)
+
+
+def _load_precreated_itinerary(callback_context: CallbackContext):
+    """
+    Sets up the initial state.
+    Set this as a callback as before_agent_call of the `root_agent`.
+    This gets called before the system instruction is contructed.
+
+    Args:
+        callback_context: The callback context.
+    """
+    campaign_guide = callback_context.state.get("campaign_guide")
+    if campaign_guide is None:
+        data = {}
+        with open(SAMPLE_SCENARIO_PATH, "r") as file:
+            data = json.load(file)
+            logging.info(f"\n\nLoading Initial State: {data}\n\n")
+
+        _set_initial_states(data["state"], callback_context.state)
+    else:
+        logging.info("\n\n state already set \n\n")
 
 
 # TODO: not saving artifact correctly
@@ -98,6 +136,8 @@ def campaign_callback_function(
 
     if artifact_keys is None:
         callback_context.state["artifact_keys"] = {}
+        callback_context.state["artifact_keys"]["image_creatives"] = {}
+        callback_context.state["artifact_keys"]["video_creatives"] = {}
         if return_content is None:
             return_content = "artifact_keys"
         else:

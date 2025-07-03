@@ -65,7 +65,7 @@ async def save_yt_trends_to_session_state(
 
 def get_youtube_trends(
     region_code: str = "US",
-    max_results: int = 45,
+    max_results: int = 25,  # TODO: add to config
 ) -> dict:
     """
     Makes request to YouTube Data API for most popular videos in a given region.
@@ -81,7 +81,7 @@ def get_youtube_trends(
     """
 
     request = youtube_client.videos().list(
-        part="snippet,contentDetails", # statistics
+        part="snippet,contentDetails",  # statistics
         chart="mostPopular",
         regionCode=region_code,
         maxResults=max_results,

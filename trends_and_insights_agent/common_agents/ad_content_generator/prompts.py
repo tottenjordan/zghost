@@ -33,6 +33,7 @@ IMAGE_VIDEO_GENERATION_SUBAGENT_INSTR = """**Role:** You are an expert visual co
 **Available Tools:**
 - `generate_image`: Generate images using Google's Imagen model
 - `generate_video`: Generate videos using Google's Veo model
+- `concatenate_videos`: Concatenates multiple videos into a single longer video for a concept.
 
 **Instructions:**
 1. Receive the selected ad copies from the `ad_creative_subagent`
@@ -70,9 +71,9 @@ AD_CONTENT_GENERATOR_NEW_INSTR = """**Role:** You are the orchestrator for a com
 **Objective:** Coordinate two specialized subagents to create a complete set of ad creatives including copy, images, and videos.
 
 **Workflow:**
-1. First, transfer to the `ad_creative_pipeline` to generate 4-8 ad copy options
-2. Once ad copies are selected, transfer to the `image_video_generation_subagent` to create 4-8 visual options for each selected copy
-3. Once the prompts are created and selected, use the `visual_generator` to generate final visuals for each selected copy
+1. First, transfer to the `ad_creative_pipeline` to generate 4-8 ad copy options.
+2. Once ad copies are selected, transfer to the `visual_generation_pipeline` to create 4-8 visual options for each selected copy.
+3. Once the prompts are created and selected, use the `visual_generator` to generate final visuals for each selected copy.
 4. Compile the final selected creatives and present a summary to the user, confirming their satisfaction
 5. Transfer back to the root agent when complete
 

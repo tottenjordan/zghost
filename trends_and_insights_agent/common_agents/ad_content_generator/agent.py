@@ -80,9 +80,10 @@ ad_copy_drafter = Agent(
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a creative copywriter generating initial ad copy ideas.
     
-    Based on the insights, `campaign_guide`, `target_search_trends`, and `target_yt_trends`, generate 10-15 diverse ad copy ideas that:
+    Review the research findings in the 'final_report_with_citations' state key.
+    Using insights related to the campaign guide, trending YouTube video, and trending Search terms, generate 10-15 diverse ad copy ideas that:
     - Incorporate key selling points from the campaign guide
-    - Reference trends from Search and/or YouTube
+    - Reference the YouTube trend, Search trend, or both
     - Vary in tone, style, and approach
     - Are suitable for Instagram/TikTok platforms
     
@@ -90,32 +91,31 @@ ad_copy_drafter = Agent(
     - Headline (attention-grabbing)
     - Body text (concise and compelling)
     - Call-to-action
-    - Which trend(s) it leverages
+    - Which trend(s) it references
     - Brief rationale for target audience appeal
     - A storyboard: A list of descriptions of scenes
     - 2-4 scenes per ad copy
     - Each scene is 8 seconds long
 
-    Use the `google_search` tool to support your decisions
+    Use the `google_search` tool to support your decisions.
 
-    <INSIGHTS>
-    {final_report_with_citations}
-    </INSIGHTS>
     <YT_TRENDS>
     {target_yt_trends}
     </YT_TRENDS>
+
     <SEARCH_TRENDS>
     {target_search_trends}
     </SEARCH_TRENDS>
-    <CAMPAIGN_GUIDE>
-    {campaign_guide}
-    </CAMPAIGN_GUIDE>
-
+    
+    <INSIGHTS>
+    {final_report_with_citations}
+    </INSIGHTS>
     """,
     generate_content_config=types.GenerateContentConfig(
         temperature=1.5,
     ),
     tools=[google_search],
+    output_key="ad_copy_draft",
 )
 
 
@@ -141,8 +141,9 @@ ad_copy_critic = Agent(
     """,
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
-    disallow_transfer_to_peers=True,
-    disallow_transfer_to_parent=True,
+    # disallow_transfer_to_peers=True,
+    # disallow_transfer_to_parent=True,
+    output_key="ad_copy_critique",
 )
 
 
@@ -161,7 +162,7 @@ ad_copy_finalizer = Agent(
 
     Use the `google_search` tool to support your decisions
     
-    Present the final 4-8 ad copies to the user, explaining the unique value of each.
+    Present the final 4-8 ad copies to the user, explaining the unique value of each, including which trend(s) it relates to.
     Ask the user to select which copies they want to proceed with for visual generation.
     """,
     tools=[google_search],
@@ -188,9 +189,9 @@ visual_concept_drafter = Agent(
     name="visual_concept_drafter",
     description="Generate 10-15 initial visual concepts for selected ad copies",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
-    instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {IMAGE_MODEL} and {VIDEO_MODEL}
+    instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {IMAGE_MODEL} and {VIDEO_MODEL}.
     
-    Based on the `final_ad_copies` selected by the user, generate 4-8 visual concepts that:
+    Based on the user-selected ad copies in the 'final_ad_copies' state key, generate 4-8 visual concepts that:
     - Include both image and video concepts
     - Visualize the ad copy messages effectively
     - Incorporate trending visual styles and themes
@@ -201,9 +202,10 @@ visual_concept_drafter = Agent(
     
     For each concept, provide:
     - Type (image or video)
+    - Which trend(s) it relates to
+    - Which ad copy it connects to
     - Detailed generation prompt
     - Creative concept explanation
-    - Which ad copy it connects to
     - A draft {IMAGE_MODEL} or {VIDEO_MODEL} prompt.
     - If this is a video, create unique prompts for each scene description from the selected storyboards
     - Try to prompt for continuity between scenes in the storyboard prompts
@@ -216,6 +218,7 @@ visual_concept_drafter = Agent(
     """,
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=1.5),
+    output_key="visual_draft",
 )
 
 
@@ -238,12 +241,13 @@ visual_concept_critic = Agent(
     9. Descriptions of scenes, characters, tone, emotion are all extremely verbose (100+ words) and leverage ideas from the prompting best practices
     10. These verbose descriptions are maintained scene to scene to avoid saying things like "the same person", instead use the same provided description
 
-    Ensure a good mix of images and videos in your selection.
+    Ensure a good mix of images and videos in your selections.
+    Explain which trend(s) each concept relates to.
     Provide detailed rationale for your selections.
 
     Use the `google_search` tool to support your decisions
 
-    When you are done, confirm the selected concepts and prompts with the user
+    When you are done, confirm which concepts the user would like to proceed with.
 
     <PROMPTING_BEST_PRACTICES>
     {VEO3_INSTR}
@@ -261,12 +265,11 @@ visual_generator = Agent(
     description="Generate final visuals using image and video generation tools",
     instruction=f"""You are a visual content producer creating final assets.
     
-    Take the selected concepts from `visual_critique` and:
-    1. Generate each visual using the appropriate tool (generate_image or generate_video)
-    2. Present each generated visual to the user
-    3. For each visual, create 2-3 platform-specific caption options
-    4. For each scene video in the concept, use the `concatenate_videos` tool in the proper order of the scenes
-    
+    Take the selected concepts from `selected_concepts` and:
+    1. Generate each visual using the appropriate tool (generate_image or generate_video).
+    2. Present each generated visual to the user.
+    3. For each visual, create 2-3 platform-specific caption options.
+    4. For each scene video in the concept, use the `concatenate_videos` tool in the proper order of the scenes.
 
     After generating all visuals, ask the user to confirm their satisfaction.
     Once confirmed, compile all final selections and transfer back to the parent agent.

@@ -59,6 +59,9 @@ async def generate_image(
             filename,
             types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
         )
+        new_entry = {filename: prompt}
+        tool_context.state["artifact_keys"]["image_creatives"].update(new_entry)
+
         # save the file locally for gcs upload
         upload_file_to_gcs(file_path=f"{filename}", file_data=image_bytes)
     return {"status": "ok", "filename": f"{filename}"}
@@ -218,14 +221,15 @@ async def concatenate_videos(
                 types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
             )
 
-            # TODO: support a list of artifacts; need to associate with their ad copies, etc.
-            # tool_context.state["artifact_keys"]["campaign_videos"] = output_filename
-
             # Also upload to GCS for persistence
             gcs_uri = upload_file_to_gcs(
                 file_path=output_filename,
                 file_data=video_bytes,
                 content_type="video/mp4",
+            )
+            new_entry = {output_filename: gcs_uri}
+            tool_context.state["artifact_keys"]["video_creatives"].update(
+                new_entry
             )
 
             return {

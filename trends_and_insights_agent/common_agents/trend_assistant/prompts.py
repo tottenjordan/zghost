@@ -1,7 +1,7 @@
 """Prompt for trend assistant sub-agent"""
 
-N_YOUTUBE_TREND_VIDEOS = 45
-N_SEARCH_TREND_TOPICS = 25
+N_YOUTUBE_TREND_VIDEOS = 25  # TODO: add to config
+N_SEARCH_TREND_TOPICS = 25  # TODO: add to config
 
 AUTO_TREND_AGENT_INSTR = f"""**Role:** You are an excellent trend finder who helps expert marketers explore trending topics
 
