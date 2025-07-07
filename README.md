@@ -361,3 +361,9 @@ adk deploy cloud_run \
   --with_ui \
   trends_and_insights_agent/
 ```
+
+### Deployment to Agentspace
+
+1. Configure `publish_to_agentspace.sh`
+2. Run the `notebooks/deployment_guide.ipynb` notebook
+3. Run `bash publish_to_agentspace.sh`
