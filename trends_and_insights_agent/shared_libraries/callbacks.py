@@ -1,59 +1,107 @@
 """callbacks - currently exploring how these work by observing log output"""
 
+import os
+import json
 import logging
 
 logging.basicConfig(level=logging.INFO)
 from typing import Dict, Any, Optional
+from collections import defaultdict
 
 from google.genai import types
 from google.adk.tools import ToolContext
+from google.adk.sessions.state import State
 from google.adk.tools.base_tool import BaseTool
 from google.adk.models import LlmResponse, LlmRequest
 from google.adk.agents.callback_context import CallbackContext
 
+from .config import setup_config
+
+
+# get initial session state json
+SESSION_STATE_JSON_PATH = os.getenv("SESSION_STATE_JSON_PATH", default=None)
+logging.info(f"\n\n`SESSION_STATE_JSON_PATH`: {SESSION_STATE_JSON_PATH}\n\n")
+
+
+def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
+    """
+    Setting the initial session state given a JSON object of states.
+
+    Args:
+        source: A JSON object of states.
+        target: The session state object to insert into.
+    """
+    if setup_config.state_init not in target:
+        target[setup_config.state_init] = True
+        
+        target.update(source)
+
+
+def _load_session_state(callback_context: CallbackContext):
+    """
+    Sets up the initial state.
+    Set this as a callback as before_agent_call of the `root_agent`.
+    This gets called before the system instruction is contructed.
+
+    Args:
+        callback_context: The callback context.
+    """
+    data = {}
+    if SESSION_STATE_JSON_PATH:
+        with open(SESSION_STATE_JSON_PATH, "r") as file:
+            data = json.load(file)
+            logging.info(f"\n\nLoading Initial State: {data}\n\n")
+    else:
+        data = setup_config.empty_session_state
+        logging.info(f"\n\nLoading Initial State (empty): {data}\n\n")
+
+    _set_initial_states(data["state"], callback_context.state)
+
 
 # TODO: not saving artifact correctly
 async def before_agent_get_user_file(
-    callback_context: CallbackContext
+    callback_context: CallbackContext,
 ) -> Optional[types.Content]:
     """
     Checks for user-uploaded file before the agent runs.
-    
-    If file found in user's message, this callback processes it, then 
-    saves it as an artifact: `user_uploaded_campaign_guide`.
+
+    If file found in user's message, this callback processes it, then
+    saves it as an artifact: `user_uploaded_campaign_guide.pdf`.
     At this time, we are only accepting campaign guides in PDF format.
     If no file is found, it returns None, allowing the agent to proceed normally.
-    
+
     Returns:
         dict: confirmation message to the user
     """
     parts = []
     if callback_context.user_content and callback_context.user_content.parts:
-        parts = [p for p in callback_context.user_content.parts if p.inline_data is not None]
+        parts = [
+            p for p in callback_context.user_content.parts if p.inline_data is not None
+        ]
 
     # if no file then continue to agent by returning empty
     if not parts:
         return None
-    
+
     # if file then save as artifact
     part = parts[-1]
-    artifact_key = 'user_uploaded_campaign_guide'
+    artifact_key = "campaign_guide.pdf"
     file_bytes = part.inline_data.data
     file_type = part.inline_data.mime_type
 
     # confirm file_type is pdf or png, else let user know the expected type
-    if file_type != 'application/pdf':
+    if file_type != "application/pdf":
         issue_message = f"The file you provided is of type {file_type} which is not supported here.  Please provide PDF."
-        response = types.Content(
-            parts = [types.Part(text = issue_message)],
-            role = 'model'
-        )
+        response = types.Content(parts=[types.Part(text=issue_message)], role="model")
         return response
 
     # create & save artifact
-    artifact = types.Part.from_bytes(data = file_bytes, mime_type = "application/pdf")
-    version = await callback_context.save_artifact(filename = artifact_key, artifact = artifact)
-    
+    artifact = types.Part.from_bytes(data=file_bytes, mime_type="application/pdf")
+    version = await callback_context.save_artifact(
+        filename=artifact_key, artifact=artifact
+    )
+    callback_context.state["artifact_keys"]["b4_agent_user_file_cb"] = artifact_key
+
     # Formulate a confirmation message
     confirmation_message = (
         f"Successfully processed your uploaded file.\n\n"
@@ -61,8 +109,7 @@ async def before_agent_get_user_file(
         f"'{artifact_key}' (version: {version}, size: {len(file_bytes)} bytes).\n\n"
     )
     response = types.Content(
-        parts = [types.Part(text = confirmation_message)],
-        role = 'model'
+        parts=[types.Part(text=confirmation_message)], role="model"
     )
     return response
 
@@ -73,11 +120,9 @@ def campaign_callback_function(
     """
     This sets default values for:
         *   campaign_guide
-        *   search_trends
-        *   yt_trends
-        *   insights
         *   target_search_trends
         *   target_yt_trends
+        *   artifact_keys
     """
 
     agent_name = callback_context.agent_name
@@ -85,47 +130,27 @@ def campaign_callback_function(
     current_state = callback_context.state.to_dict()
 
     # Check the condition in session state dictionary
-    yt_trends = callback_context.state.get("yt_trends")
-    search_trends = callback_context.state.get("search_trends")
+    artifact_keys = callback_context.state.get("artifact_keys")
+    campaign_guide = callback_context.state.get("campaign_guide")
     target_yt_trends = callback_context.state.get("target_yt_trends")
     target_search_trends = callback_context.state.get("target_search_trends")
-    insights = callback_context.state.get("insights")
-    campaign_guide = callback_context.state.get("campaign_guide")
 
     return_content = None  # placeholder for optional returned parts
+
     if campaign_guide is None:
         return_content = "campaign_guide"
-        # callback_context.state["campaign_guide"] = {
-        #     "campaign_guide": "not yet populated"
-        # }
         callback_context.state["campaign_guide"] = "not yet populated"
 
-    if search_trends is None:
-        # callback_context.state["search_trends"] = []
-        callback_context.state["search_trends"] = {"search_trends": []}
+    if artifact_keys is None:
+        callback_context.state["artifact_keys"] = {}
+        callback_context.state["artifact_keys"]["image_creatives"] = {}
+        callback_context.state["artifact_keys"]["video_creatives"] = {}
         if return_content is None:
-            return_content = "search_trends"
+            return_content = "artifact_keys"
         else:
-            return_content += ", search_trends"
-
-    if yt_trends is None:
-        # callback_context.state["yt_trends"] = []
-        callback_context.state["yt_trends"] = {"yt_trends": []}
-        if return_content is None:
-            return_content = "yt_trends"
-        else:
-            return_content += ", yt_trends"
-
-    if insights is None:
-        # callback_context.state["insights"] = []
-        callback_context.state["insights"] = {"insights": []}
-        if return_content is None:
-            return_content = "insights"
-        else:
-            return_content += ", insights"
+            return_content += ", artifact_keys"
 
     if target_search_trends is None:
-        # callback_context.state["target_search_trends"] = []
         callback_context.state["target_search_trends"] = {"target_search_trends": []}
         if return_content is None:
             return_content = "target_search_trends"
@@ -133,7 +158,6 @@ def campaign_callback_function(
             return_content += ", target_search_trends"
 
     if target_yt_trends is None:
-        # callback_context.state["target_yt_trends"] = []
         callback_context.state["target_yt_trends"] = {"target_yt_trends": []}
         if return_content is None:
             return_content = "target_yt_trends"

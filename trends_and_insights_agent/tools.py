@@ -1,5 +1,4 @@
 import os
-
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -20,14 +19,14 @@ import pandas as pd
 from typing import Optional
 
 from pydantic import BaseModel
-from google.genai import types
-from google.genai import Client
 from google.adk.agents import Agent
+from google.genai import types, Client
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
 
 from google.cloud import secretmanager as sm
 import googleapiclient.discovery
+from google.cloud import storage
 
 from .utils import MODEL
 from .secrets import access_secret_version
@@ -36,10 +35,6 @@ from .shared_libraries.schema_types import (
     YT_Trends,
     Search_Trends,
     json_response_config,
-)
-
-from .common_agents.campaign_guide_data_generation.agent import (
-    campaign_guide_data_generation_agent,
 )
 
 # ========================
@@ -58,6 +53,157 @@ youtube_client = googleapiclient.discovery.build(
 
 # google genai client
 client = Client()
+
+
+# ========================
+# artifacts
+# ========================
+
+
+# TODO: need to load artifact for data extraction
+async def load_sample_guide(tool_context: ToolContext) -> Optional[types.Content]:
+    """
+    Loads a sample campaign guide from a public Cloud Storage bucket.
+    This function is executed upon user request, typically to quickly demo with sample data.
+
+    Checks if the file from GCS is already loaded as an artifact. If so, returns its details.
+    Otherwise, downloads the file, saves it as an artifact in the ADK session,
+    and returns its details.
+
+    Args:
+        tool_context: The execution context for the tool.
+    Returns:
+        A string confirming the file status (already loaded or newly loaded) and its details,
+        or an error message.
+    """
+
+    gcs_bucket = "jts-public-bucket-host"
+    gcs_file_path = f"sample-campaign-guides/[zghost]_v9_marketing_guide_Pixel_9.pdf"
+    gsutil_uri = f"gs://{gcs_bucket}/{gcs_file_path}"
+    public_url = f"https://storage.googleapis.com/{gcs_bucket}/{gcs_file_path}"
+
+    # a key for the artifact to be stored as:
+    file_name = gcs_file_path.split("/")[-1]
+    # artifact_key = f"gcsfile_{gcs_bucket}_{gcs_file_path.replace('/', '_')}"
+    artifact_key = "campaign_guide.pdf"
+
+    try:
+        # does this file already exists as an artifact?
+        existing_artifact = await tool_context.load_artifact(filename=artifact_key)
+
+        # it already exists:
+        if existing_artifact and isinstance(existing_artifact, types.Part):
+            file_type = existing_artifact.inline_data.mime_type
+            file_size = len(existing_artifact.inline_data.data)
+
+            message = (
+                f"\nThe file {file_name} (from gs://{gcs_bucket}/{gcs_file_path}) is already loaded as an artifact!"
+                f"Type: {file_type}, Size: {file_size} bytes, artifact_key = {artifact_key}.\n\n"
+                f"Now let's extract the details..."
+            )
+            return message
+
+        # retrieve file as bytes
+        gcs = storage.Client()
+        bucket = gcs.bucket(gcs_bucket)
+        blob = bucket.blob(gcs_file_path)
+        if not blob.exists():
+            return f"Error: File not found in GCS at gs://{gcs_bucket}/{gcs_file_path}"
+
+        file_bytes = blob.download_as_bytes()
+        file_type = blob.content_type
+        file_ext = file_name.split(".")[-1]
+
+        # confirm file_type is pdf or png, else error
+        if file_type is None or file_type != "application/pdf":
+            if file_ext == "pdf":
+                file_type = "application/pdf"
+            else:
+                # file_type = 'application/octet-stream'
+                return f"Error: Expected File type not found in GCS at gs://{gcs_bucket}/{gcs_file_path}. Found type {file_type}."
+
+        # add info to tool_context as artifact
+        file_part = types.Part.from_bytes(data=file_bytes, mime_type=file_type)
+        version = await tool_context.save_artifact(
+            filename=artifact_key, artifact=file_part
+        )
+        tool_context.state["artifact_keys"]["load_sample_guide"] = artifact_key
+
+        # Formulate a confirmation message
+        confirmation_message = (
+            f"\nThe file {file_name} of type {blob.content_type} and size {len(file_bytes)} bytes was loaded as an artifact!\n\n"
+            f"The `artifact_key` = {artifact_key} and `version` = {version}.\n\n"
+            f"Now let's extract the details..."
+        )
+        response = types.Content(
+            parts=[types.Part(text=confirmation_message)], role="model"
+        )
+
+        return response
+
+    except Exception as e:
+
+        return f"Error downloading the file: {str(e)}"
+
+
+# get uploaded PDFs
+async def get_user_file(tool_context: ToolContext) -> Optional[types.Content]:
+    """
+    Processes a newly uploaded user file, making it available for other tools.
+
+    This tool MUST be called as the first step immediately after a user uploads a file.
+    It accesses the file data from the user's message, and saves it as a session artifact with the key
+    'user_uploaded_file'. All other document processing tools depend on this artifact being created first.
+
+    Args:
+        tool_context: The execution context for the tool, which contains the user's
+                      uploaded file content.
+    Returns:
+        A string confirming the successful creation of the file artifact and its
+        details, or a clear error message if the file cannot be processed.
+    """
+
+    try:
+        # parts = tool_context.user_content.parts
+        parts = [
+            p for p in tool_context.user_content.parts if p.inline_data is not None
+        ]
+        if parts:
+            part = parts[-1]  # take the most recent file
+            artifact_key = "campaign_guide.pdf"
+            file_bytes = part.inline_data.data
+            file_type = part.inline_data.mime_type
+
+            # confirm file_type is pdf, else error
+            if file_type != "application/pdf":
+                return f"Error: Expected File type not found. Found type {file_type}."
+
+            if file_type == "application/pdf":
+                file_part = types.Part.from_bytes(data=file_bytes, mime_type=file_type)
+
+            # add info to tool_context as artifact
+            version = await tool_context.save_artifact(
+                filename=artifact_key, artifact=file_part
+            )
+            tool_context.state["artifact_keys"]["get_user_file"] = artifact_key
+
+            # Formulate a confirmation message
+            confirmation_message = (
+                f"\nThank you! I've successfully processed your uploaded PDF file.\n\n"
+                f"I'm assuming this is a campaign guide. It is stored as an artifact with key "
+                f"'{artifact_key}' (version: {version}, size: {len(file_bytes)} bytes).\n\n"
+                f"Now let's extract the details..."
+            )
+            response = types.Content(
+                parts=[types.Part(text=confirmation_message)], role="model"
+            )
+
+            return response
+
+        else:
+            return f"Did not find file data in the user context."
+    except Exception as e:
+        return f"Error looking for user file: {str(e)}"
 
 
 # ========================
@@ -383,10 +529,11 @@ def query_youtube_api(
     yt_data_api_response = yt_data_api_request.execute()
     return yt_data_api_response
 
+
 # region_code: str = "US",
-        # region_code (str): selects a video chart available in the specified region.
-        #     Values are ISO 3166-1 alpha-2 country codes. For example, the region_code for the United Kingdom would be 'GB',
-        #     whereas 'US' would represent The United States.
+# region_code (str): selects a video chart available in the specified region.
+#     Values are ISO 3166-1 alpha-2 country codes. For example, the region_code for the United Kingdom would be 'GB',
+#     whereas 'US' would represent The United States.
 
 
 def analyze_youtube_videos(
@@ -421,43 +568,21 @@ def analyze_youtube_videos(
             model=MODEL,
             contents=contents,
             config=types.GenerateContentConfig(
-                # system_instruction=youtube_analysis_prompt,
                 temperature=0.1,
             ),
         )
+
+        # result = client.models.generate_content(
+        #     model=MODEL,
+        #     contents=types.Content(
+        #         role="user",
+        #         parts=[
+        #             types.Part(
+        #                 file_data=types.FileData(file_uri=youtube_url)
+        #             ),
+        #             types.Part(text=prompt)
+        #         ]
+        #     )
+        # )
+
         return result.text
-
-
-# # ========================
-# # Insight Generation
-# # ========================
-
-
-# async def call_campaign_guide_agent(question: str, tool_context: ToolContext) -> dict:
-#     """
-#     Tool to call the `campaign_guide_data_generation_agent` agent.
-#     Use this tool when instructions call for `campaign_guide_data_generation_agent` use.
-
-#     Args:
-#         question: The question to ask the agent, use the tool_context to extract the following schema:
-#             campaign_name: str -> given name of campaign; could be title of uploaded `campaign_guide`.
-#             brand: str -> target product's brand.
-#             target_product: str -> the subject of the marketing campaign objectives.
-#             target_audience: list[str] -> specific group(s) we intended to reach. Typically described with demographic, psychographic, and behavioral profile of the ideal customer or user.
-#             target_regions: list[str] -> specific cities and/or countries we intend to reach.
-#             campaign_objectives: list[str] -> goals that define what the marketing campaign plans to achieve.
-#             media_strategy: list[str] -> media channels or formats the campaign intends to use to reach the target audience.
-#             key_selling_points: list[str] -> aspects of the `target_product` that distinguish it from competitors and persuades customers to choose it.
-#         tool_context: The ADK tool context.
-#     """
-
-#     # Check for hallucinations or if there is not enough context to feed the LLM:
-#     if len(question) < 42:
-#         return {"status": f"error, need more context, input: {question}"}
-
-#     agent_tool = AgentTool(campaign_guide_data_generation_agent)
-#     campaign_guide_state = await agent_tool.run_async(
-#         args={"request": question}, tool_context=tool_context
-#     )
-#     tool_context.state["campaign_guide"] = campaign_guide_state
-#     return {"status": "ok"}

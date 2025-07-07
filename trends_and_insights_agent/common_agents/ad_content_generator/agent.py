@@ -1,24 +1,305 @@
-from .tools import generate_image, generate_video
-from google.adk.agents import Agent
-from google.adk.tools import load_artifacts
-from google.adk.tools import LongRunningFunctionTool
-from .prompts import AUTO_CREATIVE_INSTR
+from google.adk.agents import Agent, SequentialAgent
 from google.genai import types
-from ...utils import MODEL
+from pydantic import BaseModel, Field
+from typing import List
 
-# from ...prompts import GLOBAL_INSTR
+from ...shared_libraries.config import config
+from .tools import generate_image, generate_video, concatenate_videos
+from .prompts import (
+    AD_CONTENT_GENERATOR_NEW_INSTR,
+    AD_CREATIVE_SUBAGENT_INSTR,
+    IMAGE_VIDEO_GENERATION_SUBAGENT_INSTR,
+    VEO3_INSTR,
+)
+from google.adk.planners import BuiltInPlanner
+from google.adk.tools import google_search
 
 
-ad_content_generator_agent = Agent(
-    model=MODEL,
-    name="ad_content_generator_agent",
-    description="Help users generate visual concepts, images, and videos for ad creatives.",
-    instruction=AUTO_CREATIVE_INSTR,
-    tools=[
-        generate_image,
-        generate_video,
-    ],
+# --- Structured Output Models ---
+class AdCopyIdea(BaseModel):
+    """Model representing a single ad copy idea."""
+
+    headline: str = Field(description="The headline of the ad copy")
+    body: str = Field(description="The main body text of the ad")
+    call_to_action: str = Field(description="The call-to-action text")
+    target_trend: str = Field(description="Which trend(s) this copy leverages")
+    rationale: str = Field(
+        description="Why this will resonate with the target audience"
+    )
+
+
+class AdCopyDraft(BaseModel):
+    """Model for initial ad copy ideas."""
+
+    ad_copies: List[AdCopyIdea] = Field(description="List of 10-15 ad copy ideas")
+
+
+class AdCopyCritique(BaseModel):
+    """Model for critiquing ad copy ideas."""
+
+    selected_copies: List[AdCopyIdea] = Field(
+        description="List of 2-4 best ad copy ideas after critique",
+    )
+    critique_rationale: str = Field(
+        description="Explanation of selection criteria and why these copies were chosen"
+    )
+
+
+class VisualConcept(BaseModel):
+    """Model representing a visual concept."""
+
+    concept_type: str = Field(description="Either 'image' or 'video'")
+    prompt: str = Field(description="The generation prompt")
+    creative_concept: str = Field(description="Brief explanation of the concept")
+    connected_ad_copy: str = Field(description="Which ad copy this visual connects to")
+
+
+class VisualDraft(BaseModel):
+    """Model for initial visual concepts."""
+
+    visual_concepts: List[VisualConcept] = Field(
+        description="List of 4-8 visual concepts"
+    )
+
+
+class VisualCritique(BaseModel):
+    """Model for critiquing visual concepts."""
+
+    selected_concepts: List[VisualConcept] = Field(
+        description="List of 2-3 best visual concepts after critique",
+    )
+    critique_rationale: str = Field(
+        description="Explanation of selection criteria and why these visuals were chosen"
+    )
+
+
+# --- AD CREATIVE SUBAGENTS ---
+ad_copy_drafter = Agent(
+    model="gemini-2.5-pro",
+    name="ad_copy_drafter",
+    description="Generate 10-15 initial ad copy ideas based on campaign guidelines and trends",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    instruction="""You are a creative copywriter generating initial ad copy ideas.
+    
+    Review the research findings in the 'combined_final_cited_report' state key.
+    Using insights related to the `campaign_guide`, trending YouTube video, and trending Search terms, generate 10-15 diverse ad copy ideas that:
+    - Incorporate key selling points for the {target_product}
+    - Reference the YouTube trend, Search trend, or both
+    - Vary in tone, style, and approach
+    - Are suitable for Instagram/TikTok platforms
+    
+    Each ad copy should include:
+    - Headline (attention-grabbing)
+    - Body text (concise and compelling)
+    - Call-to-action
+    - Which trend(s) it references
+    - Brief rationale for target audience appeal
+    - A storyboard: A list of descriptions of scenes
+    - 2-4 scenes per ad copy
+    - Each scene is 8 seconds long
+
+    Use the `google_search` tool to support your decisions.
+
+    <YT_TRENDS>
+    {target_yt_trends}
+    </YT_TRENDS>
+
+    <SEARCH_TRENDS>
+    {target_search_trends}
+    </SEARCH_TRENDS>
+    
+    <INSIGHTS>
+    {combined_final_cited_report}
+    </INSIGHTS>
+    """,
     generate_content_config=types.GenerateContentConfig(
         temperature=1.5,
     ),
+    tools=[google_search],
+    output_key="ad_copy_draft",
+)
+
+
+ad_copy_critic = Agent(
+    model="gemini-2.5-pro",
+    name="ad_copy_critic",
+    description="Critique and narrow down ad copies based on product, audience, and trends",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    instruction="""You are a strategic marketing critic evaluating ad copy ideas.
+    
+    Review the `ad_copy_draft` and select the 4-8 BEST ad copies based on:
+    1. Alignment with target audience demographics and psychographics
+    2. Effective use of trending topics that feel authentic
+    3. Clear communication of key selling points
+    4. Platform-appropriate tone and length
+    5. Potential for high engagement
+    6. Brand consistency with campaign guidelines
+    7. Feedback on the storyboard and refinement of the details of the scene descriptions
+
+    Use the `google_search` tool to support your decisions
+    
+    Provide detailed rationale for your selections, explaining why these specific copies will perform best.
+    """,
+    tools=[google_search],
+    generate_content_config=types.GenerateContentConfig(temperature=0.7),
+    # disallow_transfer_to_peers=True,
+    # disallow_transfer_to_parent=True,
+    output_key="ad_copy_critique",
+)
+
+
+ad_copy_finalizer = Agent(
+    model="gemini-2.5-pro",
+    name="ad_copy_finalizer",
+    description="Finalize and polish the selected ad copies",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    instruction="""You are a senior copywriter finalizing ad campaigns.
+    
+    Take the selected copies from `ad_copy_critique` and:
+    1. Polish the language for maximum impact.
+    2. Ensure platform compliance (character limits, guidelines).
+    3. Add any final creative touches.
+    4. Ensure they market the {target_product}.
+    5. Present them in order of recommended priority
+
+    Use the `google_search` tool to support your decisions
+    
+    Present the final 4-8 ad copies to the user, explaining the unique value of each, including which trend(s) it relates to.
+    Ask the user to select which copies they want to proceed with for visual generation.
+    """,
+    tools=[google_search],
+    generate_content_config=types.GenerateContentConfig(temperature=0.8),
+    output_key="final_ad_copies",
+)
+
+
+# Sequential agent for ad creative generation
+ad_creative_pipeline = SequentialAgent(
+    name="ad_creative_pipeline",
+    description="Generate ad copy through draft, critique, and finalization stages",
+    sub_agents=[
+        ad_copy_drafter,
+        ad_copy_critic,
+        ad_copy_finalizer,
+    ],
+)
+
+
+# --- IMAGE/VIDEO GENERATION SUBAGENTS ---
+visual_concept_drafter = Agent(
+    model="gemini-2.5-pro",
+    name="visual_concept_drafter",
+    description="Generate 10-15 initial visual concepts for selected ad copies",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
+    
+    Based on the user-selected ad copies in the 'final_ad_copies' state key, generate 4-8 visual concepts that:
+    - Include both image and video concepts
+    - Visualize the ad copy messages effectively
+    - Incorporate trending visual styles and themes
+    - Consider platform-specific best practices
+    - Consider generated videos are 8 seconds in length
+    - Consider prompting best practices (below)
+
+    
+    For each concept, provide:
+    - Type (image or video)
+    - Which trend(s) it relates to
+    - Which ad copy it connects to
+    - Detailed generation prompt
+    - Creative concept explanation
+    - A draft {config.image_gen_model} or {config.video_gen_model} prompt.
+    - If this is a video, create unique prompts for each scene description from the selected storyboards
+    - Try to prompt for continuity between scenes in the storyboard prompts
+
+    Use the `google_search` tool to support your decisions
+
+    <PROMPTING_BEST_PRACTICES>
+    {VEO3_INSTR}
+    </PROMPTING_BEST_PRACTICES>
+    """,
+    tools=[google_search],
+    generate_content_config=types.GenerateContentConfig(temperature=1.5),
+    output_key="visual_draft",
+)
+
+
+visual_concept_critic = Agent(
+    model="gemini-2.5-pro",
+    name="visual_concept_critic",
+    description="Critique and narrow down visual concepts",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    instruction=f"""You are a creative director evaluating visual concepts and high quality prompts that result in high impact
+    
+    Review the `visual_draft` and select the 4-8 BEST visual concepts and prompts on:
+    1. Visual appeal and stopping power for social media
+    2. Alignment with ad copy messaging
+    3. Trend relevance without feeling forced
+    4. Production feasibility with AI generation
+    5. Platform optimization (aspect ratios, duration)
+    6. Diversity of visual approaches
+    7. Utilize techniques to maintain continuity in the prompts
+    8. Prompts are maximizing descriptive possibilities to match the intended tone
+    9. Descriptions of scenes, characters, tone, emotion are all extremely verbose (100+ words) and leverage ideas from the prompting best practices
+    10. These verbose descriptions are maintained scene to scene to avoid saying things like "the same person", instead use the same provided description
+
+    Ensure a good mix of images and videos in your selections.
+    Explain which trend(s) each concept relates to.
+    Provide detailed rationale for your selections.
+
+    Use the `google_search` tool to support your decisions
+
+    When you are done, confirm which concepts the user would like to proceed with.
+
+    <PROMPTING_BEST_PRACTICES>
+    {VEO3_INSTR}
+    </PROMPTING_BEST_PRACTICES>
+    """,
+    tools=[google_search],
+    generate_content_config=types.GenerateContentConfig(temperature=0.7),
+    output_key="selected_concepts",
+)
+
+
+visual_generator = Agent(
+    model="gemini-2.5-pro",
+    name="visual_generator",
+    description="Generate final visuals using image and video generation tools",
+    instruction=f"""You are a visual content producer creating final assets.
+    
+    Take the selected concepts from `selected_concepts` and:
+    1. Generate each visual using the appropriate tool (generate_image or generate_video).
+    2. Present each generated visual to the user.
+    3. For each visual, create 2-3 platform-specific caption options.
+    4. For each scene video in the concept, use the `concatenate_videos` tool in the proper order of the scenes.
+
+    After generating all visuals, ask the user to confirm their satisfaction.
+    Once confirmed, compile all final selections and transfer back to the parent agent.
+    """
+    + IMAGE_VIDEO_GENERATION_SUBAGENT_INSTR
+    + VEO3_INSTR,
+    tools=[generate_image, generate_video, concatenate_videos],
+    generate_content_config=types.GenerateContentConfig(temperature=1.2),
+)
+
+
+# Sequential agent for visual generation
+visual_generation_pipeline = SequentialAgent(
+    name="visual_generation_pipeline",
+    description="Generate visuals through draft and critique stages",
+    sub_agents=[
+        visual_concept_drafter,
+        visual_concept_critic,
+    ],
+)
+
+
+# Main orchestrator agent
+ad_content_generator_agent = Agent(
+    model="gemini-2.5-pro",
+    name="ad_content_generator_agent",
+    description="Orchestrate comprehensive ad campaign creation with multiple copy and visual options",
+    instruction=AD_CONTENT_GENERATOR_NEW_INSTR,
+    sub_agents=[ad_creative_pipeline, visual_generation_pipeline, visual_generator],
+    generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )

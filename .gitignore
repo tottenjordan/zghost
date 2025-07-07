@@ -9,4 +9,4 @@ __pycache__/
 trends_and_insights_agent/.adk/*
 *.evalset.json
 stash/*
-.DS_Store
+files/*
