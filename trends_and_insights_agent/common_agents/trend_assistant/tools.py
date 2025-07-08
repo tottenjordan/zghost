@@ -142,7 +142,7 @@ def get_gtrends_max_date() -> str:
     return max_date.iloc[0][0].strftime("%m/%d/%Y")
 
 
-def get_daily_gtrends() -> str:
+def get_daily_gtrends() -> dict:
     """
     Retrieves the top 25 Google Search Trends (term, rank, refresh_date) from a BigQuery table.
 
@@ -175,7 +175,4 @@ def get_daily_gtrends() -> str:
     df_t = df_t[new_order]
     markdown_string = df_t.to_markdown(index=True)
 
-    return f"""# Google Search Trends: \n{markdown_string}"""
-
-    # return print(df_t.to_markdown(index=False))
-    # return {"markdown_string": df_t.to_markdown(index=False)}
+    return {"markdown_string": markdown_string}

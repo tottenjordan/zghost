@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
+        "evalset",
         "finalizer",
         "genai",
         "googleapiclient",
@@ -13,6 +14,7 @@
         "pipx",
         "psychographic",
         "psychographics",
+        "pycache",
         "pytest",
         "secretmanager",
         "serviceusage",

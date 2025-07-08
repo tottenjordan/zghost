@@ -97,6 +97,7 @@ ad_copy_drafter = Agent(
     - A storyboard: A list of descriptions of scenes
     - 2-4 scenes per ad copy
     - Each scene is 8 seconds long
+    - Create 2-3 social media caption options
 
     Use the `google_search` tool to support your decisions.
 
@@ -156,16 +157,20 @@ ad_copy_finalizer = Agent(
     instruction="""You are a senior copywriter finalizing ad campaigns.
     
     Take the selected copies from `ad_copy_critique` and:
+    1. Select the best 2-4 ad copies.
+
+    For each selected ad copy:
     1. Polish the language for maximum impact.
     2. Ensure platform compliance (character limits, guidelines).
     3. Add any final creative touches.
     4. Ensure they market the {target_product}.
-    5. Present them in order of recommended priority
-
-    Use the `google_search` tool to support your decisions
+    5. Present them in order of recommended priority.
+    6. Explain the unique value of each ad copy, including which trend(s) it relates to.
     
-    Present the final 4-8 ad copies to the user, explaining the unique value of each, including which trend(s) it relates to.
-    Ask the user to select which copies they want to proceed with for visual generation.
+
+    Use the `google_search` tool to support your decisions.
+    
+    Ask the user to select which copies they want to proceed with for visual generation of the agent-selected 2-4 copies.
     """,
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
@@ -185,15 +190,15 @@ ad_creative_pipeline = SequentialAgent(
 )
 
 
-# --- IMAGE/VIDEO GENERATION SUBAGENTS ---
+# --- PROMPT GENERATION SUBAGENTS ---
 visual_concept_drafter = Agent(
     model="gemini-2.5-pro",
     name="visual_concept_drafter",
-    description="Generate 10-15 initial visual concepts for selected ad copies",
+    description="Generate initial visual concepts for selected ad copies",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
     
-    Based on the user-selected ad copies in the 'final_ad_copies' state key, generate 4-8 visual concepts that:
+    Based on the user-selected ad copies in the 'final_ad_copies' state key:
     - Include both image and video concepts
     - Visualize the ad copy messages effectively
     - Incorporate trending visual styles and themes
@@ -231,7 +236,7 @@ visual_concept_critic = Agent(
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction=f"""You are a creative director evaluating visual concepts and high quality prompts that result in high impact
     
-    Review the `visual_draft` and select the 4-8 BEST visual concepts and prompts on:
+    Review the `visual_draft` and create prompts on:
     1. Visual appeal and stopping power for social media
     2. Alignment with ad copy messaging
     3. Trend relevance without feeling forced
@@ -270,8 +275,7 @@ visual_generator = Agent(
     Take the selected concepts from `selected_concepts` and:
     1. Generate each visual using the appropriate tool (generate_image or generate_video).
     2. Present each generated visual to the user.
-    3. For each visual, create 2-3 platform-specific caption options.
-    4. For each scene video in the concept, use the `concatenate_videos` tool in the proper order of the scenes.
+    3. For each scene video in the concept, use the `concatenate_videos` tool in the proper order of the scenes.
 
     After generating all visuals, ask the user to confirm their satisfaction.
     Once confirmed, compile all final selections and transfer back to the parent agent.
