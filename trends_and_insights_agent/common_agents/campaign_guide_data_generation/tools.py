@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 # get_marketing_brief
 async def get_marketing_guide(guide_file_path: str, gcs_bucket: str) -> str:
-    "Gets marketing brieguidef and uploads it to a GCS bucket."
+    "Gets marketing brief and uploads it to a GCS bucket."
     from google.cloud import storage
 
     storage_client = storage.Client()

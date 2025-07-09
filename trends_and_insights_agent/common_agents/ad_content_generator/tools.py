@@ -11,8 +11,8 @@ from google.genai import types
 from google.genai.types import GenerateVideosConfig
 from google.adk.tools import ToolContext
 
-from ...utils import download_blob, upload_file_to_gcs
 from ...shared_libraries.config import config
+from ...shared_libraries.utils import download_blob, upload_file_to_gcs
 
 client = genai.Client()
 

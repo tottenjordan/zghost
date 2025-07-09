@@ -1,7 +1,5 @@
 """Common data schema and types for the Trends & Insights Agent"""
 
-from typing import Optional, Union
-
 from google.genai import types
 from pydantic import BaseModel, Field
 

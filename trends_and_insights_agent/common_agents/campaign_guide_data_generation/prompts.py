@@ -17,7 +17,7 @@ Follow these steps to complete your task:
 GUIDE_DATA_EXTRACT_INSTR = """
 Extract **ALL** text from the provided campaign guide.
 
-**Important:** Grab as much details as possible from the secions below:
+**Important:** Grab as much details as possible from the sections below:
 
 * campaign_name: [should be the title of the document]
 * brand: [infer this from the target product]

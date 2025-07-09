@@ -30,16 +30,15 @@ async def generate_research_pdf(
     """
     # logging.info(f"markdown_string in `generate_research_pdf`: {markdown_string}")
 
-    # TODO: add these state vairables to report
-
     # create local dir to save PDF file
-    DIR = f"files/research"
-    if not os.path.exists(DIR):
-        os.makedirs(DIR)
+    DIR = f"files"
+    SUBDIR = f"{DIR}/research"
+    if not os.path.exists(SUBDIR):
+        os.makedirs(SUBDIR)
 
     filename = uuid.uuid4()
     filename = str(filename)[:8]
-    filepath = f"{DIR}/report_{filename}.pdf"
+    filepath = f"{SUBDIR}/report_{filename}.pdf"
 
     pdf = MarkdownPdf(toc_level=0)
     pdf.add_section(Section(f" {markdown_string}\n", toc=False))
@@ -70,11 +69,11 @@ async def generate_research_pdf(
         logging.exception(f"An unexpected error occurred during artifact save: {e}")
 
     try:
-        shutil.rmtree(DIR)
-        logging.info(f"Directory '{DIR}' and its contents removed successfully")
+        shutil.rmtree(SUBDIR)
+        logging.info(f"Directory '{SUBDIR}' and its contents removed successfully")
     except FileNotFoundError:
-        logging.exception(f"Directory '{DIR}' not found")
+        logging.exception(f"Directory '{SUBDIR}' not found")
     except OSError as e:
-        logging.exception(f"Error removing directory '{DIR}': {e}")
+        logging.exception(f"Error removing directory '{SUBDIR}': {e}")
 
     return {"status": "ok", "filename": artifact_filename}

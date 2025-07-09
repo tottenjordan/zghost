@@ -4,12 +4,9 @@ logging.basicConfig(level=logging.INFO)
 from typing import Dict, Any, Optional
 
 from google.genai import types
+from google.adk.agents import Agent
 from google.adk.tools import ToolContext
 from google.adk.tools.base_tool import BaseTool
-from google.adk.tools.agent_tool import AgentTool
-from google.adk.agents import Agent, SequentialAgent
-from google.adk.tools import LongRunningFunctionTool
-from google.adk.agents.callback_context import CallbackContext
 
 from .tools import (
     get_daily_gtrends,
@@ -18,11 +15,11 @@ from .tools import (
     save_search_trends_to_session_state,
 )
 from .prompts import AUTO_TREND_AGENT_INSTR
-from ...shared_libraries import schema_types
 from ...shared_libraries.config import config
 
 
 # TODO: add AgentTool for Search Trends, YouTube Trends
+
 
 # --- 1. Define the Callback Function ---
 async def process_toolbox_output(
@@ -50,11 +47,11 @@ trends_and_insights_agent = Agent(
     name="trends_and_insights_agent",
     description="Displays trending topics from Google Search and trending videos from YouTube.",
     instruction=AUTO_TREND_AGENT_INSTR,
-    tools = [
+    tools=[
         get_daily_gtrends,
         get_youtube_trends,
         save_yt_trends_to_session_state,
-        save_search_trends_to_session_state
+        save_search_trends_to_session_state,
     ],
     generate_content_config=types.GenerateContentConfig(
         temperature=1.0,

@@ -3,11 +3,10 @@ from google.adk.planners import BuiltInPlanner
 from google.adk.tools import load_artifacts
 from google.adk.tools import google_search
 from google.genai import types
-from pydantic import BaseModel, Field
-from typing import List
 
-from ...shared_libraries.config import config
-from ...shared_libraries import callbacks
+from trends_and_insights_agent.shared_libraries.config import config
+from trends_and_insights_agent.shared_libraries import callbacks
+
 from .tools import (
     generate_image,
     generate_video,
@@ -15,7 +14,6 @@ from .tools import (
 )
 from .prompts import (
     AD_CONTENT_GENERATOR_NEW_INSTR,
-    IMAGE_VIDEO_GENERATION_SUBAGENT_INSTR,
     VEO3_INSTR,
 )
 
@@ -69,9 +67,7 @@ ad_copy_drafter = Agent(
     tools=[google_search],
     output_key="ad_copy_draft",
 )
-# - A storyboard: A list of descriptions of scenes
-# - 2-4 scenes per ad copy
-# - Each scene is 8 seconds long
+
 
 ad_copy_critic = Agent(
     model=config.critic_model,
@@ -107,7 +103,7 @@ ad_copy_critic = Agent(
     # disallow_transfer_to_parent=True,
     output_key="ad_copy_critique",
 )
-# 7. Feedback on the storyboard and refinement of the details of the scene descriptions
+
 
 ad_copy_finalizer = Agent(
     model=config.worker_model,
@@ -120,20 +116,9 @@ ad_copy_finalizer = Agent(
     2. Once the use makes their selection, display the selected ad copies and their details.
     
     """,
-    # tools=[
-    #     # google_search,
-    # ],
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
     output_key="final_ad_copies",
 )
-
-# For each user-selected ad copy:
-# 1. Polish the language for maximum impact.
-# 2. Ensure platform compliance (character limits, guidelines).
-# 3. Add any final creative touches.
-# 4. Ensure they market the {target_product}.
-# 5. Present them in order of recommended priority.
-# 6. Explain the unique value of each ad copy, including which trend(s) it relates to.
 
 
 # Sequential agent for ad creative generation
@@ -218,7 +203,6 @@ visual_concept_critic = Agent(
     """,
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
-    # output_key="selected_concepts",
     output_key="visual_concept_critique",
 )
 
@@ -234,15 +218,9 @@ visual_concept_finalizer = Agent(
     2. Once the use makes their selection, display the selected concepts and their details.
     
     """,
-    # tools=[
-    #     google_search,
-    # ],
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
     output_key="final_visual_concepts",
 )
-    # 1. Display the visual concepts from the 'visual_concept_critique' state key.
-    # 2. Then, work with the user to understand which concepts they'd like to proceed with. They can choose one or multiple. Do not proceed to the next step until the user has selected at least one visual concept.
-    # 3. Once the use makes their selection, display the selected concept(s) and their details.
 
 
 # Sequential agent for visual generation

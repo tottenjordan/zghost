@@ -1,23 +1,20 @@
 from google.genai import types
-from google.adk.tools.agent_tool import AgentTool
-from google.adk.agents import Agent, SequentialAgent
-from google.adk.tools import load_artifacts
+from google.adk.agents import Agent
 
+# from google.adk.tools import load_artifacts
+
+from .common_agents.report_generator.agent import report_generator_agent
+from .common_agents.trend_assistant.agent import trends_and_insights_agent
+from .common_agents.staged_researcher.agent import combined_research_merger
+from .common_agents.ad_content_generator.agent import ad_content_generator_agent
 from .common_agents.campaign_guide_data_generation.agent import (
     campaign_guide_data_generation_agent,
 )
-from .common_agents.report_generator.agent import (
-    report_generator_agent,
-)
-from .common_agents.trend_assistant.agent import trends_and_insights_agent
-from .common_agents.ad_content_generator.agent import ad_content_generator_agent
-from .common_agents.staged_researcher.agent import stage_1_research_merger
 
 from .shared_libraries import callbacks
 from .shared_libraries.config import config
 from .prompts import (
     GLOBAL_INSTR,
-    AUTO_ROOT_AGENT_INSTR,
     v2_ROOT_AGENT_INSTR,
 )
 
@@ -33,7 +30,7 @@ root_agent = Agent(
         trends_and_insights_agent,
         ad_content_generator_agent,
         report_generator_agent,
-        stage_1_research_merger,
+        combined_research_merger,
     ],
     # tools=[
     #     load_artifacts,

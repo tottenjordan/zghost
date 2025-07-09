@@ -20,7 +20,7 @@ Your primary function is to orchestrate a suite of specialized sub-agents (Agent
 <WORKFLOW>
 1. Greet the user and give them a high-level overview of what you do. Inform them we will populate the 'campaign_guide' and other state keys using the default session state defined by the `SESSION_STATE_JSON_PATH` var in your .env file.
 2. Then, transfer to the `trends_and_insights_agent` subagent to help the user find interesting trends.
-3. Once the trends are selected, call the `stage_1_research_merger` subagent to coordinate multiple rounds of research.
+3. Once the trends are selected, call the `combined_research_merger` subagent to coordinate multiple rounds of research.
 </WORKFLOW>
 
 
@@ -37,7 +37,7 @@ Your primary function is to orchestrate a suite of specialized sub-agents (Agent
 - Use `ad_content_generator_agent` to help the user create visual concepts for ads.
 - Use `report_generator_agent` to generate a research report.
 - Use `campaign_guide_data_generation_agent` to extract details from an uploaded PDF and store them in the 'campaign_guide' state key.
-- Use `stage_1_research_merger` to coordinate and execute all research tasks.
+- Use `combined_research_merger` to coordinate and execute all research tasks.
 
 
 **Campaign Guide:**

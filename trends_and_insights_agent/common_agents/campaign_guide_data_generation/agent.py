@@ -1,43 +1,16 @@
 import logging
 
 logging.basicConfig(level=logging.INFO)
-from typing import Dict, Any, Optional
 
 from google.genai import types, Client
-from google.adk.tools import ToolContext
-from google.adk.agents import Agent, LlmAgent
-from google.adk.tools.base_tool import BaseTool
+from google.adk.agents import LlmAgent
 from google.adk.tools.agent_tool import AgentTool
-from google.adk.models import LlmResponse, LlmRequest
-from google.adk.agents.callback_context import CallbackContext
 
 from .prompts import GUIDE_DATA_EXTRACT_INSTR, GUIDE_DATA_GEN_INSTR
-from ...shared_libraries import callbacks, schema_types
+from ...shared_libraries import schema_types
 from ...shared_libraries.config import config
 
 client = Client()
-
-# TODO: add support for URLs and user inputs
-
-async def process_toolbox_output(
-    tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, tool_response: Dict
-) -> str:  # Optional[Dict]:
-    """
-    Inspects/modifies the tool result after execution.
-    """
-
-    # get tool response information
-    agent_name = tool_context.agent_name
-    response = tool_response  # .get("result", "")
-    logging.info(f"\n\n ## JT DEBUGGING - BEGIN ## \n\n")
-    logging.info(f"--- `process_toolbox_output` ---")
-    logging.info(f"\n\n agent_name: {agent_name}")
-
-    if tool.name == "campaign_guide_data_extract_agent":
-        logging.info(f"\n\n tool.name: {tool.name}")
-        logging.info(f"\n\n response: {response} .\n\n")
-    # passthrough response
-    return None
 
 
 campaign_guide_data_extract_agent = LlmAgent(
@@ -65,3 +38,25 @@ campaign_guide_data_generation_agent = LlmAgent(
     ],
     # after_tool_callback=process_toolbox_output,
 )
+
+# TODO: add support for URLs and user uploads
+
+# async def process_toolbox_output(
+#     tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, tool_response: Dict
+# ) -> str:  # Optional[Dict]:
+#     """
+#     Inspects/modifies the tool result after execution.
+#     """
+
+#     # get tool response information
+#     agent_name = tool_context.agent_name
+#     response = tool_response  # .get("result", "")
+#     logging.info(f"\n\n ## JT DEBUGGING - BEGIN ## \n\n")
+#     logging.info(f"--- `process_toolbox_output` ---")
+#     logging.info(f"\n\n agent_name: {agent_name}")
+
+#     if tool.name == "campaign_guide_data_extract_agent":
+#         logging.info(f"\n\n tool.name: {tool.name}")
+#         logging.info(f"\n\n response: {response} .\n\n")
+#     # passthrough response
+#     return None

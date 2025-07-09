@@ -8,14 +8,10 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 from typing import Dict, Any, Optional
-from collections import defaultdict
 
 from google.genai import types
-from google.adk.tools import ToolContext
 from google.adk.sessions.state import State
-from google.adk.tools.base_tool import BaseTool
 from google.adk.models.llm_request import LlmRequest
-from google.adk.models.llm_response import LlmResponse
 from google.adk.agents.callback_context import CallbackContext
 
 from .config import config, setup_config
