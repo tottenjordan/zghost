@@ -27,7 +27,7 @@ from ...shared_libraries.config import config
 # --- 1. Define the Callback Function ---
 async def process_toolbox_output(
     tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, tool_response: Dict
-) -> str:  # Optional[Dict]:
+) -> Optional[str]:  # Optional[Dict]:
     """
     Inspects/modifies the tool result after execution.
     """

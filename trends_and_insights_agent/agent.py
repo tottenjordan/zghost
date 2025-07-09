@@ -15,7 +15,6 @@ from .common_agents.staged_researcher.agent import stage_1_research_merger
 
 from .shared_libraries import callbacks
 from .shared_libraries.config import config
-from .tools import get_user_file, load_sample_guide
 from .prompts import (
     GLOBAL_INSTR,
     AUTO_ROOT_AGENT_INSTR,
@@ -36,18 +35,15 @@ root_agent = Agent(
         report_generator_agent,
         stage_1_research_merger,
     ],
-    tools=[
-        # load_artifacts,
-        # get_user_file,
-        # load_sample_guide,
-    ],
+    # tools=[
+    #     load_artifacts,
+    # ],
     generate_content_config=types.GenerateContentConfig(
         temperature=0.01,
         response_modalities=["TEXT"],
     ),
     before_agent_callback=[
         callbacks._load_session_state,
-        # callbacks.campaign_callback_function,
-        # callbacks.before_agent_get_user_file,
     ],
+    before_model_callback=callbacks.rate_limit_callback,
 )

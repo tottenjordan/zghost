@@ -9,9 +9,7 @@ import logging
 from google import genai
 from google.genai import types
 from google.genai.types import GenerateVideosConfig
-from google.adk import Agent
 from google.adk.tools import ToolContext
-from google.cloud import storage
 
 from ...utils import download_blob, upload_file_to_gcs
 from ...shared_libraries.config import config
@@ -24,7 +22,7 @@ async def generate_image(
     tool_context: ToolContext,
     concept_name: str,
     number_of_images: int = 1,
-):
+) -> dict:
     f"""Generates an image based on the prompt for {config.image_gen_model}
 
     Args:
@@ -53,17 +51,20 @@ async def generate_image(
         filename_prefix = f"{uuid.uuid4()}"
 
     for index, image_results in enumerate(response.generated_images):
-        image_bytes = image_results.image.image_bytes
-        filename = f"{filename_prefix}_{index}.png"
-        await tool_context.save_artifact(
-            filename,
-            types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
-        )
-        new_entry = {filename: prompt}
-        tool_context.state["artifact_keys"]["image_creatives"].update(new_entry)
+        if image_results.image is not None:
+            if image_results.image.image_bytes is not None:
+                image_bytes = image_results.image.image_bytes
+                filename = f"{filename_prefix}_{index}.png"
+                await tool_context.save_artifact(
+                    filename,
+                    types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+                )
+                # new_entry = {filename: prompt}
+                # tool_context.state["artifact_keys"]["image_creatives"].update(new_entry)
 
-        # save the file locally for gcs upload
-        upload_file_to_gcs(file_path=f"{filename}", file_data=image_bytes)
+                # save the file locally for gcs upload
+                upload_file_to_gcs(file_path=f"{filename}", file_data=image_bytes)
+
     return {"status": "ok", "filename": f"{filename}"}
 
 
@@ -116,21 +117,31 @@ async def generate_video(
         return {"status": f"failed due to error: {operation.error}"}
 
     if operation.response:
-
-        for generated_video in operation.result.generated_videos:
-            video_uri = generated_video.video.uri
-            filename = uuid.uuid4()
-            BUCKET = os.getenv("BUCKET")
-            video_bytes = download_blob(
-                BUCKET.replace("gs://", ""),
-                video_uri.replace(BUCKET, "")[1:],  # get rid of slash
-            )
-            print(f"The location for this video is here: {filename}.mp4")
-            await tool_context.save_artifact(
-                f"{filename}.mp4",
-                types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
-            )
-        return {"status": "ok", "video_filename": f"{filename}.mp4"}
+        if (
+            operation.result is not None
+            and operation.result.generated_videos is not None
+        ):
+            for generated_video in operation.result.generated_videos:
+                if (
+                    generated_video.video is not None
+                    and generated_video.video.uri is not None
+                ):
+                    video_uri = generated_video.video.uri
+                    filename = uuid.uuid4()
+                    BUCKET = os.getenv("BUCKET")
+                    if BUCKET is not None:
+                        video_bytes = download_blob(
+                            BUCKET.replace("gs://", ""),
+                            video_uri.replace(BUCKET, "")[1:],  # get rid of slash
+                        )
+                        print(f"The location for this video is here: {filename}.mp4")
+                        await tool_context.save_artifact(
+                            f"{filename}.mp4",
+                            types.Part.from_bytes(
+                                data=video_bytes, mime_type="video/mp4"
+                            ),
+                        )
+                    return {"status": "ok", "video_filename": f"{filename}.mp4"}
 
 
 async def concatenate_videos(
@@ -163,6 +174,16 @@ async def concatenate_videos(
                     return {
                         "status": "failed",
                         "error": f"Could not load artifact: {video_filename}",
+                    }
+                if not video_part.inline_data:
+                    return {
+                        "status": "failed",
+                        "error": f"Could not load artifact inline_data: {video_filename}",
+                    }
+                if not video_part.inline_data.data:
+                    return {
+                        "status": "failed",
+                        "error": f"Could not load artifact inline_data.data: {video_filename}",
                     }
 
                 # Extract bytes from the Part object

@@ -12,9 +12,9 @@ except ImportError:
     logging.exception("Please install it first using: pip install googlesearch-python")
     search = None  # Set search to None so the script doesn't crash immediately
 
-import asyncio
-import aiohttp
-import trafilatura
+# import asyncio
+# import aiohttp
+# import trafilatura
 import pandas as pd
 from typing import Optional
 
@@ -60,150 +60,150 @@ client = Client()
 # ========================
 
 
-# TODO: need to load artifact for data extraction
-async def load_sample_guide(tool_context: ToolContext) -> Optional[types.Content]:
-    """
-    Loads a sample campaign guide from a public Cloud Storage bucket.
-    This function is executed upon user request, typically to quickly demo with sample data.
+# # TODO: need to load artifact for data extraction
+# async def load_sample_guide(tool_context: ToolContext) -> Optional[types.Content]:
+#     """
+#     Loads a sample campaign guide from a public Cloud Storage bucket.
+#     This function is executed upon user request, typically to quickly demo with sample data.
 
-    Checks if the file from GCS is already loaded as an artifact. If so, returns its details.
-    Otherwise, downloads the file, saves it as an artifact in the ADK session,
-    and returns its details.
+#     Checks if the file from GCS is already loaded as an artifact. If so, returns its details.
+#     Otherwise, downloads the file, saves it as an artifact in the ADK session,
+#     and returns its details.
 
-    Args:
-        tool_context: The execution context for the tool.
-    Returns:
-        A string confirming the file status (already loaded or newly loaded) and its details,
-        or an error message.
-    """
+#     Args:
+#         tool_context: The execution context for the tool.
+#     Returns:
+#         A string confirming the file status (already loaded or newly loaded) and its details,
+#         or an error message.
+#     """
 
-    gcs_bucket = "jts-public-bucket-host"
-    gcs_file_path = f"sample-campaign-guides/[zghost]_v9_marketing_guide_Pixel_9.pdf"
-    gsutil_uri = f"gs://{gcs_bucket}/{gcs_file_path}"
-    public_url = f"https://storage.googleapis.com/{gcs_bucket}/{gcs_file_path}"
+#     gcs_bucket = "jts-public-bucket-host"
+#     gcs_file_path = f"sample-campaign-guides/[zghost]_v9_marketing_guide_Pixel_9.pdf"
+#     gsutil_uri = f"gs://{gcs_bucket}/{gcs_file_path}"
+#     public_url = f"https://storage.googleapis.com/{gcs_bucket}/{gcs_file_path}"
 
-    # a key for the artifact to be stored as:
-    file_name = gcs_file_path.split("/")[-1]
-    # artifact_key = f"gcsfile_{gcs_bucket}_{gcs_file_path.replace('/', '_')}"
-    artifact_key = "campaign_guide.pdf"
+#     # a key for the artifact to be stored as:
+#     file_name = gcs_file_path.split("/")[-1]
+#     # artifact_key = f"gcsfile_{gcs_bucket}_{gcs_file_path.replace('/', '_')}"
+#     artifact_key = "campaign_guide.pdf"
 
-    try:
-        # does this file already exists as an artifact?
-        existing_artifact = await tool_context.load_artifact(filename=artifact_key)
+#     try:
+#         # does this file already exists as an artifact?
+#         existing_artifact = await tool_context.load_artifact(filename=artifact_key)
 
-        # it already exists:
-        if existing_artifact and isinstance(existing_artifact, types.Part):
-            file_type = existing_artifact.inline_data.mime_type
-            file_size = len(existing_artifact.inline_data.data)
+#         # it already exists:
+#         if existing_artifact and isinstance(existing_artifact, types.Part):
+#             file_type = existing_artifact.inline_data.mime_type
+#             file_size = len(existing_artifact.inline_data.data)
 
-            message = (
-                f"\nThe file {file_name} (from gs://{gcs_bucket}/{gcs_file_path}) is already loaded as an artifact!"
-                f"Type: {file_type}, Size: {file_size} bytes, artifact_key = {artifact_key}.\n\n"
-                f"Now let's extract the details..."
-            )
-            return message
+#             message = (
+#                 f"\nThe file {file_name} (from gs://{gcs_bucket}/{gcs_file_path}) is already loaded as an artifact!"
+#                 f"Type: {file_type}, Size: {file_size} bytes, artifact_key = {artifact_key}.\n\n"
+#                 f"Now let's extract the details..."
+#             )
+#             return message
 
-        # retrieve file as bytes
-        gcs = storage.Client()
-        bucket = gcs.bucket(gcs_bucket)
-        blob = bucket.blob(gcs_file_path)
-        if not blob.exists():
-            return f"Error: File not found in GCS at gs://{gcs_bucket}/{gcs_file_path}"
+#         # retrieve file as bytes
+#         gcs = storage.Client()
+#         bucket = gcs.bucket(gcs_bucket)
+#         blob = bucket.blob(gcs_file_path)
+#         if not blob.exists():
+#             return f"Error: File not found in GCS at gs://{gcs_bucket}/{gcs_file_path}"
 
-        file_bytes = blob.download_as_bytes()
-        file_type = blob.content_type
-        file_ext = file_name.split(".")[-1]
+#         file_bytes = blob.download_as_bytes()
+#         file_type = blob.content_type
+#         file_ext = file_name.split(".")[-1]
 
-        # confirm file_type is pdf or png, else error
-        if file_type is None or file_type != "application/pdf":
-            if file_ext == "pdf":
-                file_type = "application/pdf"
-            else:
-                # file_type = 'application/octet-stream'
-                return f"Error: Expected File type not found in GCS at gs://{gcs_bucket}/{gcs_file_path}. Found type {file_type}."
+#         # confirm file_type is pdf or png, else error
+#         if file_type is None or file_type != "application/pdf":
+#             if file_ext == "pdf":
+#                 file_type = "application/pdf"
+#             else:
+#                 # file_type = 'application/octet-stream'
+#                 return f"Error: Expected File type not found in GCS at gs://{gcs_bucket}/{gcs_file_path}. Found type {file_type}."
 
-        # add info to tool_context as artifact
-        file_part = types.Part.from_bytes(data=file_bytes, mime_type=file_type)
-        version = await tool_context.save_artifact(
-            filename=artifact_key, artifact=file_part
-        )
-        tool_context.state["artifact_keys"]["load_sample_guide"] = artifact_key
+#         # add info to tool_context as artifact
+#         file_part = types.Part.from_bytes(data=file_bytes, mime_type=file_type)
+#         version = await tool_context.save_artifact(
+#             filename=artifact_key, artifact=file_part
+#         )
+#         tool_context.state["artifact_keys"]["load_sample_guide"] = artifact_key
 
-        # Formulate a confirmation message
-        confirmation_message = (
-            f"\nThe file {file_name} of type {blob.content_type} and size {len(file_bytes)} bytes was loaded as an artifact!\n\n"
-            f"The `artifact_key` = {artifact_key} and `version` = {version}.\n\n"
-            f"Now let's extract the details..."
-        )
-        response = types.Content(
-            parts=[types.Part(text=confirmation_message)], role="model"
-        )
+#         # Formulate a confirmation message
+#         confirmation_message = (
+#             f"\nThe file {file_name} of type {blob.content_type} and size {len(file_bytes)} bytes was loaded as an artifact!\n\n"
+#             f"The `artifact_key` = {artifact_key} and `version` = {version}.\n\n"
+#             f"Now let's extract the details..."
+#         )
+#         response = types.Content(
+#             parts=[types.Part(text=confirmation_message)], role="model"
+#         )
 
-        return response
+#         return response
 
-    except Exception as e:
+#     except Exception as e:
 
-        return f"Error downloading the file: {str(e)}"
+#         return f"Error downloading the file: {str(e)}"
 
 
-# get uploaded PDFs
-async def get_user_file(tool_context: ToolContext) -> Optional[types.Content]:
-    """
-    Processes a newly uploaded user file, making it available for other tools.
+# # get uploaded PDFs
+# async def get_user_file(tool_context: ToolContext) -> Optional[types.Content]:
+#     """
+#     Processes a newly uploaded user file, making it available for other tools.
 
-    This tool MUST be called as the first step immediately after a user uploads a file.
-    It accesses the file data from the user's message, and saves it as a session artifact with the key
-    'user_uploaded_file'. All other document processing tools depend on this artifact being created first.
+#     This tool MUST be called as the first step immediately after a user uploads a file.
+#     It accesses the file data from the user's message, and saves it as a session artifact with the key
+#     'user_uploaded_file'. All other document processing tools depend on this artifact being created first.
 
-    Args:
-        tool_context: The execution context for the tool, which contains the user's
-                      uploaded file content.
-    Returns:
-        A string confirming the successful creation of the file artifact and its
-        details, or a clear error message if the file cannot be processed.
-    """
+#     Args:
+#         tool_context: The execution context for the tool, which contains the user's
+#                       uploaded file content.
+#     Returns:
+#         A string confirming the successful creation of the file artifact and its
+#         details, or a clear error message if the file cannot be processed.
+#     """
 
-    try:
-        # parts = tool_context.user_content.parts
-        parts = [
-            p for p in tool_context.user_content.parts if p.inline_data is not None
-        ]
-        if parts:
-            part = parts[-1]  # take the most recent file
-            artifact_key = "campaign_guide.pdf"
-            file_bytes = part.inline_data.data
-            file_type = part.inline_data.mime_type
+#     try:
+#         # parts = tool_context.user_content.parts
+#         parts = [
+#             p for p in tool_context.user_content.parts if p.inline_data is not None
+#         ]
+#         if parts:
+#             part = parts[-1]  # take the most recent file
+#             artifact_key = "campaign_guide.pdf"
+#             file_bytes = part.inline_data.data
+#             file_type = part.inline_data.mime_type
 
-            # confirm file_type is pdf, else error
-            if file_type != "application/pdf":
-                return f"Error: Expected File type not found. Found type {file_type}."
+#             # confirm file_type is pdf, else error
+#             if file_type != "application/pdf":
+#                 return f"Error: Expected File type not found. Found type {file_type}."
 
-            if file_type == "application/pdf":
-                file_part = types.Part.from_bytes(data=file_bytes, mime_type=file_type)
+#             if file_type == "application/pdf":
+#                 file_part = types.Part.from_bytes(data=file_bytes, mime_type=file_type)
 
-            # add info to tool_context as artifact
-            version = await tool_context.save_artifact(
-                filename=artifact_key, artifact=file_part
-            )
-            tool_context.state["artifact_keys"]["get_user_file"] = artifact_key
+#             # add info to tool_context as artifact
+#             version = await tool_context.save_artifact(
+#                 filename=artifact_key, artifact=file_part
+#             )
+#             tool_context.state["artifact_keys"]["get_user_file"] = artifact_key
 
-            # Formulate a confirmation message
-            confirmation_message = (
-                f"\nThank you! I've successfully processed your uploaded PDF file.\n\n"
-                f"I'm assuming this is a campaign guide. It is stored as an artifact with key "
-                f"'{artifact_key}' (version: {version}, size: {len(file_bytes)} bytes).\n\n"
-                f"Now let's extract the details..."
-            )
-            response = types.Content(
-                parts=[types.Part(text=confirmation_message)], role="model"
-            )
+#             # Formulate a confirmation message
+#             confirmation_message = (
+#                 f"\nThank you! I've successfully processed your uploaded PDF file.\n\n"
+#                 f"I'm assuming this is a campaign guide. It is stored as an artifact with key "
+#                 f"'{artifact_key}' (version: {version}, size: {len(file_bytes)} bytes).\n\n"
+#                 f"Now let's extract the details..."
+#             )
+#             response = types.Content(
+#                 parts=[types.Part(text=confirmation_message)], role="model"
+#             )
 
-            return response
+#             return response
 
-        else:
-            return f"Did not find file data in the user context."
-    except Exception as e:
-        return f"Error looking for user file: {str(e)}"
+#         else:
+#             return f"Did not find file data in the user context."
+#     except Exception as e:
+#         return f"Error looking for user file: {str(e)}"
 
 
 # ========================
@@ -213,7 +213,7 @@ def perform_google_search(
     query: str,
     num_results: int = 10,
     lang: str = "en",
-    pause_time: float = 2.0,
+    pause_time: int = 2,
 ) -> list:
     # ) -> AsyncGenerator[list, None]:
     """
@@ -223,7 +223,7 @@ def perform_google_search(
         query (str): The search term.
         num_results (int): The desired number of search results to retrieve.
         lang (str): The language code for the search (e.g., 'en', 'es').
-        pause_time (float): Seconds to pause between HTTP requests to avoid blocking.
+        pause_time (int): Seconds to pause between HTTP requests to avoid blocking.
 
     Returns:
         list: A list of URLs found for the query, or an empty list if an error occurs
@@ -257,206 +257,206 @@ def perform_google_search(
     return search_results_urls
 
 
-async def extract_main_text_from_url(
-    url: str,
-    session: aiohttp.ClientSession,  # Pass the session for reuse
-    timeout: int = 15,
-    include_tables: bool = False,
-    favour_precision: bool = True,
-) -> Optional[str]:  # Returns a single string or None
-    """
-    Fetches a webpage asynchronously and extracts the main textual content using trafilatura.
+# async def extract_main_text_from_url(
+#     url: str,
+#     session: aiohttp.ClientSession,  # Pass the session for reuse
+#     timeout: int = 15,
+#     include_tables: bool = False,
+#     favour_precision: bool = True,
+# ) -> Optional[str]:  # Returns a single string or None
+#     """
+#     Fetches a webpage asynchronously and extracts the main textual content using trafilatura.
 
-    Args:
-        url (str): The URL of the webpage to scrape.
-        session (aiohttp.ClientSession): The aiohttp session to use for requests.
-        timeout (int): Max time in seconds to wait for the server response.
-        include_tables (bool): Whether to include text found within HTML tables.
-        favour_precision (bool): If True, prioritizes accuracy over recall.
+#     Args:
+#         url (str): The URL of the webpage to scrape.
+#         session (aiohttp.ClientSession): The aiohttp session to use for requests.
+#         timeout (int): Max time in seconds to wait for the server response.
+#         include_tables (bool): Whether to include text found within HTML tables.
+#         favour_precision (bool): If True, prioritizes accuracy over recall.
 
-    Returns:
-        Optional[str]: The extracted main text content, or None if an error occurs.
-    """
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-    }
+#     Returns:
+#         Optional[str]: The extracted main text content, or None if an error occurs.
+#     """
+#     headers = {
+#         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
+#         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,*/*;q=0.8",
+#         "Accept-Language": "en-US,en;q=0.9",
+#     }
 
-    extracted_text = None
-    logging.info(f"Attempting to fetch URL: {url}")
+#     extracted_text = None
+#     logging.info(f"Attempting to fetch URL: {url}")
 
-    try:
-        async with session.get(
-            url, headers=headers, timeout=timeout, allow_redirects=True
-        ) as response:
-            # Raise an HTTPError for bad responses (4xx or 5xx)
-            # aiohttp doesn't raise by default like requests, so we check status
-            if response.status >= 400:
-                logging.info(f"HTTP Error {response.status} for URL {url}")
-                # Optionally raise an exception or just return None
-                # response.raise_for_status() # This would raise ClientResponseError
-                return None  # Return None on client/server errors
+#     try:
+#         async with session.get(
+#             url, headers=headers, timeout=timeout, allow_redirects=True
+#         ) as response:
+#             # Raise an HTTPError for bad responses (4xx or 5xx)
+#             # aiohttp doesn't raise by default like requests, so we check status
+#             if response.status >= 400:
+#                 logging.info(f"HTTP Error {response.status} for URL {url}")
+#                 # Optionally raise an exception or just return None
+#                 # response.raise_for_status() # This would raise ClientResponseError
+#                 return None  # Return None on client/server errors
 
-            # Check content type (optional)
-            content_type = response.headers.get("content-type", "").lower()
-            if "text/html" not in content_type:
-                logging.info(
-                    f"Warning: Content-Type for {url} is '{content_type}'. Extraction might be suboptimal."
-                )
+#             # Check content type (optional)
+#             content_type = response.headers.get("content-type", "").lower()
+#             if "text/html" not in content_type:
+#                 logging.info(
+#                     f"Warning: Content-Type for {url} is '{content_type}'. Extraction might be suboptimal."
+#                 )
 
-            # Read the response content as bytes (best for trafilatura)
-            html_content = await response.read()
+#             # Read the response content as bytes (best for trafilatura)
+#             html_content = await response.read()
 
-            # Run trafilatura extraction (potentially blocking, see note below)
-            logging.info(f"Extracting main content from {url} using trafilatura...")
-            # Note: trafilatura itself is synchronous CPU-bound code.
-            # For *very* heavy pages or *many* concurrent tasks on a limited machine,
-            # you *might* consider running this part in a thread pool executor too,
-            # using loop.run_in_executor(None, trafilatura.extract, ...),
-            # but often the network I/O is the main bottleneck, so direct call is fine.
-            extracted_text = trafilatura.extract(
-                html_content,
-                include_comments=False,
-                include_tables=include_tables,
-                favor_precision=favour_precision,
-                # target_language='en' # Optional
-            )
+#             # Run trafilatura extraction (potentially blocking, see note below)
+#             logging.info(f"Extracting main content from {url} using trafilatura...")
+#             # Note: trafilatura itself is synchronous CPU-bound code.
+#             # For *very* heavy pages or *many* concurrent tasks on a limited machine,
+#             # you *might* consider running this part in a thread pool executor too,
+#             # using loop.run_in_executor(None, trafilatura.extract, ...),
+#             # but often the network I/O is the main bottleneck, so direct call is fine.
+#             extracted_text = trafilatura.extract(
+#                 html_content,
+#                 include_comments=False,
+#                 include_tables=include_tables,
+#                 favor_precision=favour_precision,
+#                 # target_language='en' # Optional
+#             )
 
-            if not extracted_text and favour_precision:
-                logging.info(
-                    f"Precision mode yielded no text for {url}, trying recall mode..."
-                )
-                extracted_text = trafilatura.extract(
-                    html_content,
-                    include_comments=False,
-                    include_tables=include_tables,
-                    favor_recall=True,  # Switch to favouring recall
-                )
+#             if not extracted_text and favour_precision:
+#                 logging.info(
+#                     f"Precision mode yielded no text for {url}, trying recall mode..."
+#                 )
+#                 extracted_text = trafilatura.extract(
+#                     html_content,
+#                     include_comments=False,
+#                     include_tables=include_tables,
+#                     favor_recall=True,  # Switch to favouring recall
+#                 )
 
-            if extracted_text:
-                logging.info(
-                    f"Successfully extracted content from {url} (approx. {len(extracted_text)} chars)."
-                )
-            else:
-                # Check if original response text had *any* text
-                try:
-                    # Try decoding for the check, ignore errors
-                    page_text = html_content.decode(errors="ignore")
-                    if page_text and len(page_text.strip()) > 0:
-                        logging.info(
-                            f"Trafilatura could not extract main content from {url}, though the page was fetched."
-                        )
-                    else:
-                        logging.info(
-                            f"The fetched page {url} appears to have no text content."
-                        )
-                except Exception:  # Guard against decoding errors just for the print
-                    logging.exception(
-                        f"Trafilatura could not extract main content from {url} (and checking raw text failed)."
-                    )
+#             if extracted_text:
+#                 logging.info(
+#                     f"Successfully extracted content from {url} (approx. {len(extracted_text)} chars)."
+#                 )
+#             else:
+#                 # Check if original response text had *any* text
+#                 try:
+#                     # Try decoding for the check, ignore errors
+#                     page_text = html_content.decode(errors="ignore")
+#                     if page_text and len(page_text.strip()) > 0:
+#                         logging.info(
+#                             f"Trafilatura could not extract main content from {url}, though the page was fetched."
+#                         )
+#                     else:
+#                         logging.info(
+#                             f"The fetched page {url} appears to have no text content."
+#                         )
+#                 except Exception:  # Guard against decoding errors just for the print
+#                     logging.exception(
+#                         f"Trafilatura could not extract main content from {url} (and checking raw text failed)."
+#                     )
 
-                extracted_text = None  # Ensure None is returned if extraction fails
+#                 extracted_text = None  # Ensure None is returned if extraction fails
 
-    except aiohttp.ClientError as e:
-        # Handles client-side exceptions like connection errors, timeouts
-        logging.exception(f"Aiohttp client error fetching URL {url}: {e}")
-        extracted_text = None
-    except asyncio.TimeoutError:
-        logging.exception(f"Timeout error fetching URL {url} after {timeout} seconds.")
-        extracted_text = None
-    except Exception as e:
-        # Catch potential unexpected errors during extraction or other issues
-        logging.exception(
-            f"An unexpected error occurred for URL {url}: {type(e).__name__} - {e}"
-        )
-        extracted_text = None
+#     except aiohttp.ClientError as e:
+#         # Handles client-side exceptions like connection errors, timeouts
+#         logging.exception(f"Aiohttp client error fetching URL {url}: {e}")
+#         extracted_text = None
+#     except asyncio.TimeoutError:
+#         logging.exception(f"Timeout error fetching URL {url} after {timeout} seconds.")
+#         extracted_text = None
+#     except Exception as e:
+#         # Catch potential unexpected errors during extraction or other issues
+#         logging.exception(
+#             f"An unexpected error occurred for URL {url}: {type(e).__name__} - {e}"
+#         )
+#         extracted_text = None
 
-    # No yield needed, just return the final result for this URL
-    return extracted_text
+#     # No yield needed, just return the final result for this URL
+#     return extracted_text
 
 
-async def query_web(
-    query: str,
-    num_results: int = 10,
-    lang: str = "en",
-    pause_time: float = 2.0,
-    scrape_timeout: int = 15,  # Add timeout for scraping
-    include_tables: bool = False,
-    favour_precision: bool = True,
-) -> list[dict[str, Optional[str]]]:  # Return list of dicts, text can be None
-    """
-    Asynchronously queries the web and scrapes results concurrently.
+# async def query_web(
+#     query: str,
+#     num_results: int = 10,
+#     lang: str = "en",
+#     pause_time: float = 2.0,
+#     scrape_timeout: int = 15,  # Add timeout for scraping
+#     include_tables: bool = False,
+#     favour_precision: bool = True,
+# ) -> list[dict[str, Optional[str]]]:  # Return list of dicts, text can be None
+#     """
+#     Asynchronously queries the web and scrapes results concurrently.
 
-    Args:
-        query (str): The search term.
-        num_results (int): Max number of search results to retrieve URLs for.
-        lang (str): Language code for the search.
-        pause_time (float): Pause between Google search requests (sync part).
-        scrape_timeout (int): Timeout in seconds for each website scraping attempt.
-        include_tables (bool): Whether to include table text during scraping.
-        favour_precision (bool): Prioritize precision in text extraction.
+#     Args:
+#         query (str): The search term.
+#         num_results (int): Max number of search results to retrieve URLs for.
+#         lang (str): Language code for the search.
+#         pause_time (float): Pause between Google search requests (sync part).
+#         scrape_timeout (int): Timeout in seconds for each website scraping attempt.
+#         include_tables (bool): Whether to include table text during scraping.
+#         favour_precision (bool): Prioritize precision in text extraction.
 
-    Returns:
-        List[Dict[str, Optional[str]]]: A list of dictionaries, each containing:
-            'url': The URL of the search result.
-            'website_text': The extracted text (str) or None if scraping failed.
-    """
-    # Step 1: Perform the Google search (synchronous code run in a thread)
-    # Use asyncio.to_thread to run the blocking search function without blocking the event loop
-    try:
-        urls = await asyncio.to_thread(
-            perform_google_search, query, num_results, lang, pause_time
-        )
-    except Exception as e:
-        logging.exception(f"Error running Google search in thread: {e}")
-        urls = []
+#     Returns:
+#         List[Dict[str, Optional[str]]]: A list of dictionaries, each containing:
+#             'url': The URL of the search result.
+#             'website_text': The extracted text (str) or None if scraping failed.
+#     """
+#     # Step 1: Perform the Google search (synchronous code run in a thread)
+#     # Use asyncio.to_thread to run the blocking search function without blocking the event loop
+#     try:
+#         urls = await asyncio.to_thread(
+#             perform_google_search, query, num_results, lang, pause_time
+#         )
+#     except Exception as e:
+#         logging.exception(f"Error running Google search in thread: {e}")
+#         urls = []
 
-    if not urls:
-        logging.info("No URLs found or search failed.")
-        return []
+#     if not urls:
+#         logging.info("No URLs found or search failed.")
+#         return []
 
-    logging.info(f"\nStarting concurrent scraping for {len(urls)} URLs...")
-    results = []
-    # Create a single aiohttp session to be reused for all requests
-    async with aiohttp.ClientSession() as session:
-        # Create a list of tasks for concurrent scraping
-        tasks = [
-            extract_main_text_from_url(
-                url,
-                session,
-                timeout=scrape_timeout,
-                include_tables=include_tables,
-                favour_precision=favour_precision,
-            )
-            for url in urls
-        ]
+#     logging.info(f"\nStarting concurrent scraping for {len(urls)} URLs...")
+#     results = []
+#     # Create a single aiohttp session to be reused for all requests
+#     async with aiohttp.ClientSession() as session:
+#         # Create a list of tasks for concurrent scraping
+#         tasks = [
+#             extract_main_text_from_url(
+#                 url,
+#                 session,
+#                 timeout=scrape_timeout,
+#                 include_tables=include_tables,
+#                 favour_precision=favour_precision,
+#             )
+#             for url in urls
+#         ]
 
-        # Run tasks concurrently and gather results
-        # return_exceptions=True ensures that if one task fails, others continue,
-        # and the exception object is returned in place of the result.
-        scraped_texts_or_errors = await asyncio.gather(*tasks, return_exceptions=True)
+#         # Run tasks concurrently and gather results
+#         # return_exceptions=True ensures that if one task fails, others continue,
+#         # and the exception object is returned in place of the result.
+#         scraped_texts_or_errors = await asyncio.gather(*tasks, return_exceptions=True)
 
-    # Step 3: Combine URLs with scraped text (or error indicators)
-    logging.info("\nScraping finished. Processing results...")
-    for i, url in enumerate(urls):
-        site_data = {"url": url}
-        result = scraped_texts_or_errors[i]
+#     # Step 3: Combine URLs with scraped text (or error indicators)
+#     logging.info("\nScraping finished. Processing results...")
+#     for i, url in enumerate(urls):
+#         site_data = {"url": url}
+#         result = scraped_texts_or_errors[i]
 
-        if isinstance(result, Exception):
-            logging.info(f"Failed to scrape {url}: {type(result).__name__} - {result}")
-            site_data["website_text"] = None  # Indicate failure with None
-        elif result is None:
-            logging.info(f"Scraping completed for {url}, but no text was extracted.")
-            site_data["website_text"] = None  # Indicate no text extracted with None
-        else:
-            logging.info(f"Successfully processed {url}")
-            site_data["website_text"] = result  # Assign the extracted text
+#         if isinstance(result, Exception):
+#             logging.info(f"Failed to scrape {url}: {type(result).__name__} - {result}")
+#             site_data["website_text"] = None  # Indicate failure with None
+#         elif result is None:
+#             logging.info(f"Scraping completed for {url}, but no text was extracted.")
+#             site_data["website_text"] = None  # Indicate no text extracted with None
+#         else:
+#             logging.info(f"Successfully processed {url}")
+#             site_data["website_text"] = result  # Assign the extracted text
 
-        results.append(site_data)
+#         results.append(site_data)
 
-    logging.info(f"\nProcessed {len(results)} URLs.")
-    return results
+#     logging.info(f"\nProcessed {len(results)} URLs.")
+#     return results
 
 
 # ========================
@@ -539,7 +539,7 @@ def query_youtube_api(
 def analyze_youtube_videos(
     prompt: str,
     youtube_url: str,
-) -> str:
+) -> Optional[str]:
     """
     Analyzes youtube videos given a prompt and the video's URL
 
@@ -557,13 +557,10 @@ def analyze_youtube_videos(
             file_uri=youtube_url,
             mime_type="video/*",
         )
-
-        contents = [
-            types.Content(
-                role="user",
-                parts=[types.Part.from_text(text=prompt), video],
-            )
-        ]
+        contents = types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=prompt), video],
+        )
         result = client.models.generate_content(
             model=MODEL,
             contents=contents,
@@ -571,18 +568,6 @@ def analyze_youtube_videos(
                 temperature=0.1,
             ),
         )
+        if result and result.text is not None:
 
-        # result = client.models.generate_content(
-        #     model=MODEL,
-        #     contents=types.Content(
-        #         role="user",
-        #         parts=[
-        #             types.Part(
-        #                 file_data=types.FileData(file_uri=youtube_url)
-        #             ),
-        #             types.Part(text=prompt)
-        #         ]
-        #     )
-        # )
-
-        return result.text
+            return result.text

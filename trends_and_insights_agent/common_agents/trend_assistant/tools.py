@@ -63,7 +63,7 @@ async def save_yt_trends_to_session_state(
 
 def get_youtube_trends(
     region_code: str = "US",
-    max_results: int = config.n_yt_trend_videos,
+    max_results: int = config.max_results_yt_trends,
 ) -> dict:
     """
     Makes request to YouTube Data API for most popular videos in a given region.
@@ -111,11 +111,11 @@ async def save_search_trends_to_session_state(
     new_trends: dict, tool_context: ToolContext
 ) -> dict:
     """
-    Tool to call the `target_search_trends_generator_agent` agent and update the `target_search_trends` in the session state.
+    Tool to save `new_trends` to the `target_search_trends` in the session state.
     Use this tool after the user has selected a Trending Search topic to target for the campaign.
 
     Args:
-        Question: The question to ask the agent, use the tool_context to extract the following schema:
+        new_trends: The selected trends from the markdown table. Use the `tool_context` to extract the following schema:
             trend_title: str -> The trend's `term` from the markdown table. Should be the exact same words as seen in the markdown table.
             trend_rank: int -> The trend's `rank` in the markdown table. Should be the exact same number as seen in the markdown table.
             trend_refresh_date: str -> The trend's `refresh_date` from the markdown table. Should be the same date string as seen in the markdown table, and formatted as 'MM/DD/YYYY'

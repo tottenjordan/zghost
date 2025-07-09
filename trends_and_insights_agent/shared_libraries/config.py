@@ -12,14 +12,17 @@ class ResearchConfiguration:
         video_analysis_model (str): Model for video understanding.
         image_gen_model (str): Model for generating images.
         video_gen_model (str): Model for generating video.
-        n_yt_trend_videos (int): The value to set for `max_results` with the YouTube API 
+        max_results_yt_trends (int): The value to set for `max_results` with the YouTube API 
                                 i.e., the number of video results to return.
+        rate_limit_seconds (int): total duration to calculate the rate at which the agent queries the LLM API.
+        rpm_quota (int): requests per minute threshold for agent LLM API rate limiter
 
     """
 
     critic_model: str = "gemini-2.5-pro"  # "gemini-2.5-pro" | "gemini-2.5-flash"
     worker_model: str = "gemini-2.5-flash"  # "gemini-2.5-flash" | "gemini-2.0-flash"
     video_analysis_model: str = "gemini-2.5-pro"
+    lite_planner_model: str = "gemini-2.0-flash-001"
 
     # "imagen-4.0-ultra-generate-preview-06-06" "imagen-4.0-generate-preview-06-06"
     image_gen_model: str = "imagen-4.0-fast-generate-preview-06-06"
@@ -27,7 +30,9 @@ class ResearchConfiguration:
     # "veo-2.0-generate-001" | veo-3.0-generate-preview
     video_gen_model: str = "veo-3.0-generate-preview"
 
-    n_yt_trend_videos: int = 45
+    max_results_yt_trends: int = 45
+    rate_limit_seconds: int = 60
+    rpm_quota: int = 1000
 
 
 config = ResearchConfiguration()

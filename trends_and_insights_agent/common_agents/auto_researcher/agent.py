@@ -2,147 +2,24 @@ import os
 import re
 import datetime
 import logging
-from typing import Optional
 
 logging.basicConfig(level=logging.INFO)
 
 from google.genai import types
 from google.adk.planners import BuiltInPlanner
-from google.adk.tools.agent_tool import AgentTool
 from google.adk.agents import Agent, SequentialAgent, ParallelAgent
-from google.adk.tools import LongRunningFunctionTool, ToolContext, google_search
-from google.adk.agents.callback_context import CallbackContext
-from pydantic import BaseModel, Field
+from google.adk.tools import LongRunningFunctionTool, google_search
 
 from ...shared_libraries import callbacks, schema_types
 from ...shared_libraries.config import config
 from ...tools import analyze_youtube_videos
 
 
-# --- Structured Output Models ---
-class CampaignSearchQuery(BaseModel):
-    """Model representing a specific search query for web search."""
-
-    search_query: str = Field(
-        description="A highly specific and targeted query for web search."
-    )
-
-
-class CampaignFeedback(BaseModel):
-    """Model for providing evaluation feedback on research quality."""
-
-    comment: str = Field(
-        description="Detailed explanation of the evaluation, highlighting strengths and/or weaknesses of the research."
-    )
-    follow_up_queries: list[CampaignSearchQuery] | None = Field(
-        default=None,
-        description="A list of specific, targeted follow-up search queries needed to fix research gaps. This should be null or empty if no follow-up questions needed.",
-    )
-
-
-# --- CALLBAKCS ---
-def collect_research_sources_callback(callback_context: CallbackContext) -> None:
-    """Collects and organizes web-based research sources and their supported claims from agent events.
-
-    This function processes the agent's `session.events` to extract web source details (URLs,
-    titles, domains from `grounding_chunks`) and associated text segments with confidence scores
-    (from `grounding_supports`). The aggregated source information and a mapping of URLs to short
-    IDs are cumulatively stored in `callback_context.state`.
-
-    Args:
-        callback_context (CallbackContext): The context object providing access to the agent's
-            session events and persistent state.
-    """
-    session = callback_context._invocation_context.session
-    url_to_short_id = callback_context.state.get("url_to_short_id", {})
-    sources = callback_context.state.get("sources", {})
-    id_counter = len(url_to_short_id) + 1
-    for event in session.events:
-        if not (event.grounding_metadata and event.grounding_metadata.grounding_chunks):
-            continue
-        chunks_info = {}
-        for idx, chunk in enumerate(event.grounding_metadata.grounding_chunks):
-            if not chunk.web:
-                continue
-            url = chunk.web.uri
-            title = (
-                chunk.web.title
-                if chunk.web.title != chunk.web.domain
-                else chunk.web.domain
-            )
-            if url not in url_to_short_id:
-                short_id = f"src-{id_counter}"
-                url_to_short_id[url] = short_id
-                sources[short_id] = {
-                    "short_id": short_id,
-                    "title": title,
-                    "url": url,
-                    "domain": chunk.web.domain,
-                    "supported_claims": [],
-                }
-                id_counter += 1
-            chunks_info[idx] = url_to_short_id[url]
-        if event.grounding_metadata.grounding_supports:
-            for support in event.grounding_metadata.grounding_supports:
-                confidence_scores = support.confidence_scores or []
-                chunk_indices = support.grounding_chunk_indices or []
-                for i, chunk_idx in enumerate(chunk_indices):
-                    if chunk_idx in chunks_info:
-                        short_id = chunks_info[chunk_idx]
-                        confidence = (
-                            confidence_scores[i] if i < len(confidence_scores) else 0.5
-                        )
-                        text_segment = support.segment.text if support.segment else ""
-                        sources[short_id]["supported_claims"].append(
-                            {
-                                "text_segment": text_segment,
-                                "confidence": confidence,
-                            }
-                        )
-    callback_context.state["url_to_short_id"] = url_to_short_id
-    callback_context.state["sources"] = sources
-
-
-def citation_replacement_callback(
-    callback_context: CallbackContext,
-) -> Optional[types.Content]:
-    """Replaces citation tags in a report with Markdown-formatted links.
-
-    Processes 'combined_final_cited_report' from context state, converting tags like
-    `<cite source="src-N"/>` into hyperlinks using source information from
-    `callback_context.state["sources"]`. Also fixes spacing around punctuation.
-
-    Args:
-        callback_context (CallbackContext): Contains the report and source information.
-
-    Returns:
-        types.Content: The processed report with Markdown citation links.
-    """
-    # types.Content: The processed report with Markdown citation links.
-    final_report = callback_context.state.get("combined_final_cited_report", "")
-    sources = callback_context.state.get("sources", {})
-
-    def tag_replacer(match: re.Match) -> str:
-        short_id = match.group(1)
-        if not (source_info := sources.get(short_id)):
-            logging.warning(f"Invalid citation tag found and removed: {match.group(0)}")
-            return ""
-        display_text = source_info.get("title", source_info.get("domain", short_id))
-        return f" [{display_text}]({source_info['url']})"
-
-    processed_report = re.sub(
-        r'<cite\s+source\s*=\s*["\']?\s*(src-\d+)\s*["\']?\s*/>',
-        tag_replacer,
-        final_report,
-    )
-    processed_report = re.sub(r"\s+([.,;:])", r"\1", processed_report)
-    callback_context.state["final_report_with_citations"] = processed_report
-    return types.Content(parts=[types.Part(text=processed_report)])
-
-
 # --- AGENT DEFINITIONS --- #
 
-# --- PARALLEL RESEARCH SUBAGENTS ---
+# --- PARALLEL RESEARCH SUBAGENTS --- #
+
+# --- YouTube Trend Research Planner --- #
 yt_analysis_generator_agent = Agent(
     model=config.worker_model,
     name="yt_analysis_generator_agent",
@@ -163,7 +40,7 @@ yt_analysis_generator_agent = Agent(
     output_key="yt_video_analysis",
 )
 yt_web_planner = Agent(
-    model=config.worker_model,
+    model=config.lite_planner_model,
     name="gs_web_planner",
     description="Generates initial queries to understand why the 'target_yt_trends' are trending.",
     instruction="""You are a research strategist. 
@@ -180,7 +57,9 @@ yt_web_searcher = Agent(
     model=config.worker_model,
     name="yt_web_searcher",
     description="Performs web research to better understand the context of the trending YouTube video.",
-    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(include_thoughts=False)
+    ),
     instruction="""
     You are a diligent and exhaustive researcher. 
     Your task is to conduct initial web research for concepts described in the 'yt_video_analysis' state key.
@@ -189,7 +68,7 @@ yt_web_searcher = Agent(
     """,
     tools=[google_search],
     output_key="yt_web_search_insights",
-    after_agent_callback=collect_research_sources_callback,
+    after_agent_callback=callbacks.collect_research_sources_callback,
 )
 yt_sequential_planner = SequentialAgent(
     name="yt_sequential_planner",
@@ -197,9 +76,9 @@ yt_sequential_planner = SequentialAgent(
     sub_agents=[yt_analysis_generator_agent, yt_web_planner, yt_web_searcher],
 )
 
-
+# --- Google Search Trend Research Planner --- #
 gs_web_planner = Agent(
-    model=config.worker_model,
+    model=config.lite_planner_model,
     name="gs_web_planner",
     description="Generates initial queries to understand why the 'target_search_trends' are trending.",
     instruction="""You are a research strategist. 
@@ -223,24 +102,26 @@ gs_web_planner = Agent(
         - Describe any key entities involved (i.e., people, places, organizations, named events, etc.), and the relationships between these key entities, especially in the context of the trending topic, or if possible the target product
         - Explain the cultural significance of the trend.
     
-    Your output should just include a numbered list of queries. Nothing else.
+    **CRITICAL RULE: Your output should just include a numbered list of queries. Nothing else.**
     """,
-    output_key="inital_gs_queries",
+    output_key="initial_gs_queries",
 )
 gs_web_searcher = Agent(
     model=config.worker_model,
     name="gs_web_searcher",
     description="Performs the crucial first pass of web research about the trending Search terms.",
-    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(include_thoughts=False)
+    ),
     instruction="""
     You are a diligent and exhaustive researcher. 
     Your task is to conduct initial web research for the trending Search terms.
-    Use the 'google_search' tool to execute all queries listed in 'inital_gs_queries'. 
+    Use the 'google_search' tool to execute all queries listed in 'initial_gs_queries'. 
     Synthesize the results into a detailed summary.
     """,
     tools=[google_search],
     output_key="gs_web_search_insights",
-    after_agent_callback=collect_research_sources_callback,
+    after_agent_callback=callbacks.collect_research_sources_callback,
 )
 gs_sequential_planner = SequentialAgent(
     name="gs_sequential_planner",
@@ -248,14 +129,15 @@ gs_sequential_planner = SequentialAgent(
     sub_agents=[gs_web_planner, gs_web_searcher],
 )
 
+# --- Campaign Guide Research Planner --- #
 campaign_web_planner = Agent(
-    model=config.worker_model,
+    model=config.lite_planner_model,
     name="campaign_web_planner",
     description="Generates initial queries to guide web research about concepts described in the `campaign_guide`.",
     instruction="""You are a research strategist. 
     Your job is to create high-level queries that will help marketers better understand concepts described in the 'campaign_guide' state key.
      
-    Review the concepts from the campaign guide provided in the **Input Data**, then generate a list of web queries to better understand them.
+    Review the concepts from the campaign guide provided in the **Input Data**, then generate a list of 4-6 web queries to better understand them.
 
     ---
     **Input Data**
@@ -273,8 +155,8 @@ campaign_web_planner = Agent(
     </KEY_SELLING_POINTS>
     
     ---
-    **Critical Guidelines**
-    The queries shoud help answer questions like:
+    **Important Guidelines**
+    The queries should help answer questions like:
     *  What's relevant, distinctive, or helpful about the {target_product}?
     *  What are some key attributes about the target audience?
     *  Which key selling points would the target audience best resonate with? Why? 
@@ -282,12 +164,11 @@ campaign_web_planner = Agent(
     
     ---
     **Final Instructions**
-    Generate a list of web queries that addresses the **Critical Guidelines**.
-    Your output should just include a numbered list of queries. Nothing else.
+    Generate a list of web queries that addresses the **Important Guidelines**.
+    **CRITICAL RULE: Your output should just include a numbered list of queries. Nothing else.**
     """,
-    output_key="inital_campaign_queries",
+    output_key="initial_campaign_queries",
 )
-
 campaign_web_searcher = Agent(
     model=config.worker_model,
     name="campaign_web_searcher",
@@ -295,13 +176,13 @@ campaign_web_searcher = Agent(
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""
     You are a diligent and exhaustive researcher. Your task is to conduct initial web research for concepts described in the campaign guide.
-    You will be provided with a list of web queries in the 'inital_campaign_queries' state key.
+    You will be provided with a list of web queries in the 'initial_campaign_queries' state key.
     Use the 'google_search' tool to execute all queries. 
     Synthesize the results into a detailed summary.
     """,
     tools=[google_search],
     output_key="campaign_web_search_insights",
-    after_agent_callback=collect_research_sources_callback,
+    after_agent_callback=callbacks.collect_research_sources_callback,
 )
 ca_sequential_planner = SequentialAgent(
     name="ca_sequential_planner",
@@ -309,15 +190,17 @@ ca_sequential_planner = SequentialAgent(
     sub_agents=[campaign_web_planner, campaign_web_searcher],
 )
 
+
 parallel_planner_agent = ParallelAgent(
     name="parallel_planner_agent",
     sub_agents=[yt_sequential_planner, gs_sequential_planner, ca_sequential_planner],
     description="Runs multiple research planning agents in parallel.",
 )
 
+
 merge_planners = Agent(
     name="merge_planners",
-    model=config.critic_model,
+    model=config.worker_model,
     # include_contents="none",
     description="Combine results from state keys 'campaign_web_search_insights', 'gs_web_search_insights', and 'yt_web_search_insights'",
     instruction="""You are an AI Assistant responsible for combining initial research findings into a comprehensive summary.
@@ -342,6 +225,7 @@ merge_planners = Agent(
     """,
     output_key="combined_web_search_insights",
 )
+
 
 merge_parallel_insights = SequentialAgent(
     name="merge_parallel_insights",
@@ -369,10 +253,11 @@ combined_web_evaluator = Agent(
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
     Your response must be a single, raw JSON object validating against the 'CampaignFeedback' schema.
     """,
-    output_schema=CampaignFeedback,
+    output_schema=schema_types.CampaignFeedback,
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
     output_key="combined_research_evaluation",
+    before_model_callback=callbacks.rate_limit_callback,
 )
 
 
@@ -392,7 +277,7 @@ enhanced_combined_searcher = Agent(
     """,
     tools=[google_search],
     output_key="combined_web_search_insights",
-    after_agent_callback=collect_research_sources_callback,
+    after_agent_callback=callbacks.collect_research_sources_callback,
 )
 
 
@@ -406,6 +291,7 @@ combined_report_composer = Agent(
 
     ---
     **INPUT DATA**
+
     *   **Search Trends:**
         {target_search_trends}
 
@@ -449,7 +335,8 @@ combined_report_composer = Agent(
     Do not include a "References" or "Sources" section; all citations must be in-line.
     """,
     output_key="combined_final_cited_report",
-    after_agent_callback=citation_replacement_callback,
+    after_agent_callback=callbacks.citation_replacement_callback,
+    before_model_callback=callbacks.rate_limit_callback,
 )
 
 
@@ -458,10 +345,6 @@ combined_research_pipeline = SequentialAgent(
     name="combined_research_pipeline",
     description="Executes a pipeline of web research related to the trending Search terms, trending YouTube videos, and the campaign guide. It performs iterative research, evaluation, and insight generation.",
     sub_agents=[
-        # yt_analysis_generator_agent,
-        # gs_web_planner,
-        # campaign_web_planner,
-        # combined_web_searcher,
         merge_parallel_insights,
         combined_web_evaluator,
         enhanced_combined_searcher,
