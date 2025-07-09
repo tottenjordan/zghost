@@ -13,37 +13,24 @@
 
 The Trend & Insight Agent is a marketing tool for developing data-driven and culturally relevant marketing strategies. Built with Google’s [Agent Development Kit (ADK)](https://google.github.io/adk-docs/), this multi-agent system helps users generate ad creatives from trending themes found in Google Search and YouTube.
 
-**What does it do?**
-
--   **Streamline the Marketing Process:** From initial inspiration and competitive analysis to creative drafts and reporting, TIA improves marketing use case velocity by making it easier to ideate, execute, and analyze campaigns
--   **Leverage Advanced AI:** With LLM-based agents, users generate refined marketing briefs, draft ad creatives, and compile comprehensive reports. These agents are powered by the diverse range of models available in [Vertex AI's Model Garden](https://console.cloud.google.com/vertex-ai/model-garden)
--   **Deep Integration with Google Ecosystem:** Gather real-time insights from trends in Google Search and YouTube, using guardrails from your own internal campaign guidelines. This ensures marketing strategies are data-driven and culturally relevant.
-
-
-**Marketing best practices**
-
--   **Act on Real-Time Insights:** Tap into the pulse of current trends and audience interests, ensuring that campaigns are always timely and relevant.
--   **Maintain Brand Consistency:** Ingest campaign guidelines to ensure all creative and messaging aligns with established brand voice and objectives.
--   **Optimize for Performance:** Leverage data-driven insights to refine strategies and maximize the impact of marketing efforts.
-
 ## Key Features
 
 - Build LLM-based agents with [models supported in Vertex AI's Model Garden](https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/available-models)
-- Gather related content from Google Search and [YouTube](https://developers.google.com/youtube/v3/docs/search) for initial inspiration, competitor insights
 - Explore [trending Search terms](https://cloud.google.com/blog/products/data-analytics/top-25-google-search-terms-now-in-bigquery?e=48754805) and [trending YouTube videos](https://developers.google.com/youtube/v3/docs/videos/list)
+- Gather related content from Google Search and [YouTube](https://developers.google.com/youtube/v3/docs/search) for initial inspiration, competitor insights
 - Draft ad creatives (e.g., image and video) based on trends, campaign themes, or specific prompts
 - Compile trends, insights, and campaign research into a comprehensive report
 
 
 ## Example usage
 
-1. `user` ingests PDF campaign brief defining target audience, product, region, media strategy, brand voice, etc. 
+1. Use one of the example state json files under `shared_libraries/profiles/` to load a "campaign guide". Or create your own. Just reference the desired path in your `.env` file.
 2. `user` selects trending term(s) from Google Search
 3. `user` selects trending video(s) from YouTube
 4. `agent` conducts web research to gather insight about concepts from campaign guide, search trends, and trending YouTube video
-5. `agent` generates camapign concepts that resonate with the target audience, while tapping into themes from the trends & insights
+5. `agent` generates visual concepts for ad creatives that (1) resonate with the target audience and (2) tap into themes from the trends & insights
 6. `agent` generates image and video creatives, ad copy, and social media captions
-7. `agent` generates research report (PDF)
+7. `agent` generates comprehensive report (PDF) documenting the campaign guide, trends, research, and creatives from the current session
 
 <details>
   <summary>Example interaction</summary>
@@ -54,7 +41,7 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 
 **[entry point]** 
 
-* Agent will populate the initial session state with the dict in [shared_libraries/example_campaign_state.json](trends_and_insights_agent/shared_libraries/example_campaign_state.json).. use the default values or easily change them yourself
+* Agent will populate the initial session state with the dict in [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json).. use the default values or easily change them yourself
 * Can also manually upload a `campaign_guide` in PDF format e.g., [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf)
 
 ```
@@ -232,7 +219,7 @@ GOOGLE_CLOUD_PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER # e.g., 1234756
 GOOGLE_CLOUD_LOCATION=YOUR_LOCATION # e.g., us-central1
 BUCKET=gs://YOUR_GCS_BUCKET_NAME # create a GCS bucket
 YT_SECRET_MNGR_NAME=YOUR_SECRET_NAME # e.g., yt-data-api
-SESSION_STATE_JSON_PATH=trends_and_insights_agent/shared_libraries/example_campaign_state.json
+SESSION_STATE_JSON_PATH=trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json
 ```
 
 *(3) copy `.env` file to `root_agent` dir:*
