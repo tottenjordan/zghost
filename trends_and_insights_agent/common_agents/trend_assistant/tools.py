@@ -1,23 +1,16 @@
 # imports
 import os
 import logging
-import tabulate
-import pandas as pd
-from typing import Any
-from pydantic import BaseModel, Field
 
-from google.genai import types
-from google.adk.agents import Agent
-from google.adk.tools import ToolContext
-from google.adk.tools.agent_tool import AgentTool
+logging.basicConfig(level=logging.INFO)
+
 
 import googleapiclient.discovery
 from google.cloud import bigquery
+from google.adk.tools import ToolContext
 
-# from google.cloud import secretmanager as sm
-
-from ...utils import MODEL
-from ...secrets import access_secret_version
+from ...shared_libraries.config import config
+from ...shared_libraries.secrets import access_secret_version
 
 
 # ========================
@@ -53,21 +46,16 @@ async def save_yt_trends_to_session_state(
             video_url: str -> The user-selected video's URL.
         tool_context: The tool context.
     """
-
     existing_target_yt_trends = tool_context.state.get("target_yt_trends")
-    # logging.info(f"selected_trends: {selected_trends}")
-    # logging.info(f"Existing target_yt_trends: {existing_target_yt_trends}")
-
     if existing_target_yt_trends is not {"target_yt_trends": []}:
         existing_target_yt_trends["target_yt_trends"].append(selected_trends)
     tool_context.state["target_yt_trends"] = existing_target_yt_trends
-
     return {"status": "ok"}
 
 
 def get_youtube_trends(
-    region_code: str,
-    max_results: int = 5,
+    region_code: str = "US",
+    max_results: int = config.max_results_yt_trends,
 ) -> dict:
     """
     Makes request to YouTube Data API for most popular videos in a given region.
@@ -83,37 +71,52 @@ def get_youtube_trends(
     """
 
     request = youtube_client.videos().list(
-        part="snippet,contentDetails,statistics",
+        part="snippet,contentDetails",  # statistics
         chart="mostPopular",
         regionCode=region_code,
         maxResults=max_results,
     )
     trend_response = request.execute()
-    return trend_response
+    # return trend_response
+
+    # TODO: only return select fields
+    trend_dict = {}
+    i = 1
+    for video in trend_response["items"]:
+        row_name = f"row_{i}"
+        trend_dict.update(
+            {
+                row_name: {
+                    "videoId": video["id"],
+                    "videoTitle": video["snippet"]["title"],
+                    # 'videoDescription': video['snippet']['description'],
+                    "duration": video["contentDetails"]["duration"],
+                    "videoURL": f"https://www.youtube.com/watch?v={video['id']}",
+                }
+            }
+        )
+        i += 1
+    return trend_dict
 
 
 async def save_search_trends_to_session_state(
     new_trends: dict, tool_context: ToolContext
 ) -> dict:
     """
-    Tool to call the `target_search_trends_generator_agent` agent and update the `target_search_trends` in the session state.
+    Tool to save `new_trends` to the `target_search_trends` in the session state.
     Use this tool after the user has selected a Trending Search topic to target for the campaign.
 
     Args:
-        Question: The question to ask the agent, use the tool_context to extract the following schema:
+        new_trends: The selected trends from the markdown table. Use the `tool_context` to extract the following schema:
             trend_title: str -> The trend's `term` from the markdown table. Should be the exact same words as seen in the markdown table.
             trend_rank: int -> The trend's `rank` in the markdown table. Should be the exact same number as seen in the markdown table.
             trend_refresh_date: str -> The trend's `refresh_date` from the markdown table. Should be the same date string as seen in the markdown table, and formatted as 'MM/DD/YYYY'
         tool_context: The tool context.
     """
     existing_target_search_trends = tool_context.state.get("target_search_trends")
-    # logging.info(f"new_trends: {new_trends}")
-    # logging.info(f"Existing target_search_trends: {existing_target_search_trends}")
-
     if existing_target_search_trends is not {"target_search_trends": []}:
         existing_target_search_trends["target_search_trends"].append(new_trends)
     tool_context.state["target_search_trends"] = existing_target_search_trends
-
     return {"status": "ok"}
 
 
@@ -131,7 +134,7 @@ def get_gtrends_max_date() -> str:
     return max_date.iloc[0][0].strftime("%m/%d/%Y")
 
 
-def get_daily_gtrends() -> str:
+def get_daily_gtrends() -> dict:
     """
     Retrieves the top 25 Google Search Trends (term, rank, refresh_date) from a BigQuery table.
 
@@ -142,6 +145,7 @@ def get_daily_gtrends() -> str:
     """
     # get latest refresh date
     max_date = get_gtrends_max_date()
+    # max_date = "06/18/2025"
     logging.info(f"\n\nmax_date in trends_assistant: {max_date}\n\n")
 
     query = f"""
@@ -163,7 +167,4 @@ def get_daily_gtrends() -> str:
     df_t = df_t[new_order]
     markdown_string = df_t.to_markdown(index=True)
 
-    return f"""# Google Search Trends: \n{markdown_string}"""
-
-    # return print(df_t.to_markdown(index=False))
-    # return {"markdown_string": df_t.to_markdown(index=False)}
+    return {"markdown_string": markdown_string}

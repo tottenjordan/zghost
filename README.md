@@ -1,53 +1,34 @@
-# Trend & Insight Agents
+# trends-2-creatives
 
 > a multi-agent system finding the intersection between product, trend, and audience
 
-<details>
-  <summary>trends-2-creatives</summary>
+<details open>
+  <summary>trends R us</summary>
 
-<img src='media/deep-fried-trends.jpeg' width="700"/>
+<p align="center">
+  <img src='media/deep-fried-trends.jpeg' width="700"/>
+</p>
 
 </details>
 
 ## About
 
-The Trend & Insight Agent is a marketing tool for developing data-driven and culturally relevant marketing strategies. Built with Google’s [Agent Development Kit (ADK)](https://google.github.io/adk-docs/), this multi-agent system helps users generate ad creatives from trending themes found in Google Search and YouTube.
-
-**What does it do?**
-
--   **Streamline the Marketing Process:** From initial inspiration and competitive analysis to creative drafts and reporting, TIA improves marketing use case velocity by making it easier to ideate, execute, and analyze campaigns
--   **Leverage Advanced AI:** With LLM-based agents, users generate refined marketing briefs, draft ad creatives, and compile comprehensive reports. These agents are powered by the diverse range of models available in [Vertex AI's Model Garden](https://console.cloud.google.com/vertex-ai/model-garden)
--   **Deep Integration with Google Ecosystem:** Gather real-time insights from trends in Google Search and YouTube, using guardrails from your own internal campaign guidelines. This ensures marketing strategies are data-driven and culturally relevant.
-
-
-**Marketing best practices**
-
--   **Act on Real-Time Insights:** Tap into the pulse of current trends and audience interests, ensuring that campaigns are always timely and relevant.
--   **Maintain Brand Consistency:** Ingest campaign guidelines to ensure all creative and messaging aligns with established brand voice and objectives.
--   **Optimize for Performance:** Leverage data-driven insights to refine strategies and maximize the impact of marketing efforts.
-
-## Key Features
+*trends-2-creatives* is a marketing tool for developing data-driven and culturally relevant marketing strategies. Built with Google’s [Agent Development Kit (ADK)](https://google.github.io/adk-docs/), this multi-agent system helps users generate ad creatives from trending themes found in Google Search and YouTube.
 
 - Build LLM-based agents with [models supported in Vertex AI's Model Garden](https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/available-models)
-- Gather related content from Google Search and [YouTube](https://developers.google.com/youtube/v3/docs/search) for initial inspiration, competitor insights
 - Explore [trending Search terms](https://cloud.google.com/blog/products/data-analytics/top-25-google-search-terms-now-in-bigquery?e=48754805) and [trending YouTube videos](https://developers.google.com/youtube/v3/docs/videos/list)
+- Conduct web research to better understand the campaign, Search trend, and trending YouTube video
 - Draft ad creatives (e.g., image and video) based on trends, campaign themes, or specific prompts
-- Compile trends, insights, and campaign research into a comprehensive report
+
+<p align="center">
+  <img src='media/t2a_high_level_v3.png' width="800"/>
+</p>
 
 
 ## Example usage
 
-1. `user` ingests PDF campaign brief defining target audience, product, region, media strategy, brand voice, etc. 
-2. `user` selects trending term(s) from Google Search
-3. `user` selects trending video(s) from YouTube
-4. `agent` conducts web research to gather insight about concepts in campaign guide
-5. `agent` conducts web research to understand the context of each trend
-6. `agent` generates camapign concepts that resonate with the target audience, while tapping into themes from the trends & insights
-7. `agent` generates image and video creatives, ad copy, and social media captions
-8. `agent` generates research report (PDF)
-
 <details>
-  <summary>Example interaction</summary>
+  <summary>sample interaction</summary>
 
 ---
 
@@ -55,11 +36,17 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 
 **[entry point]** 
 
+First we need a "campaign guide", which typically includes target product, target audience, key selling points, campaign objectives, etc.
 
-++ manually upload a `campaign_guide` (PDF) or use [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf)
+three options:
+1. Use default values in one of the provided example state configs [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json) (make sure path in `.env` file) 
+2. Manually edit one of these files or create a similar `json` with something you're more familiar with
+3. Upload a `campaign_guide` in PDF format e.g., [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf)
+    * TODO: fix support for user-uploaded PDF 
+
 
 ```
-> [user]: Use this marketing campaign guide to plan and conduct research for potential campaign briefs
+> [user]: Hello...
 ```
 
 **[trends]** 
@@ -67,26 +54,21 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 ```
 > [agent]: [displays Search Trends]
 
-> [user]: selects interesting Search trend(s)
+> [user]: <selects interesting Search trend(s)>
 
 > [agent]: [displays YouTube Trends]
 
-> [user]: selects interesting YouTube trend(s)
+> [user]: <selects interesting YouTube trend(s)>
 ```
 
-**[campaign research]** 
+**[campaign & trend research]** 
 
 ```
-> [agent]: I'll start by using the `campaign_researcher_agent` to research concepts from the campaign guide.
+> [agent]: <executes pipeline of parallel research tasks>
+
+> [agent]: [Displays combined research report and saves as PDF artifact]
 ```
 
-**[trend research]** 
-
-```
-> [agent]: Okay, I have the research insights. Now, let's get some additional context for the trending YouTube video and Search term. I'll start by using the `yt_researcher_agent` to research the trending YouTube video.
-
-> [agent]: Now let's get some additional context for the trending Search term. I'll use the `gs_researcher_agent` to research the trending Search term and understand any cultural significance.
-```
 
 **[creative gen]** 
 
@@ -110,7 +92,15 @@ Note: this section is configured for **human-in-the-loop** i.e., agent will iter
 </details>
 
 
-## How to use this repo
+**sample output**
+
+
+<p align="center">
+  <img src='media/example_out_hulk_1.png' width="700"/>
+</p>
+
+
+# How to use this repo
 
 1. Clone this repo (to local or Vertex AI Workbench Instance)
 2. Create and store YouTube API key
@@ -118,7 +108,7 @@ Note: this section is configured for **human-in-the-loop** i.e., agent will iter
 4. Run commands under **Start a session**
 
 
-### Create and store YouTube API key
+## Create and store YouTube API key
 
 1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
 
@@ -127,7 +117,9 @@ Note: this section is configured for **human-in-the-loop** i.e., agent will iter
    > For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
 
 
-### One-time setup
+## One-time setup
+
+Ensure ffmpeg is installed on your system or where the agent will be deployed. This is used for simple video editing purposes.
 
 ```bash
 git clone https://github.com/tottenjordan/zghost.git
@@ -148,7 +140,15 @@ python3 -m venv .venv && source .venv/bin/activate
 <details>
   <summary>Install packages</summary>
 
-*Optionally install `ipykernel` to run/test in notebooks*
+*install `ffmpeg` for video editing...*
+
+```bash
+sudo apt update
+sudo apt install ffmpeg
+ffmpeg -version
+```
+
+*install python packages...*
 
 ```bash
 pip install pipx
@@ -228,6 +228,7 @@ GOOGLE_CLOUD_PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER # e.g., 1234756
 GOOGLE_CLOUD_LOCATION=YOUR_LOCATION # e.g., us-central1
 BUCKET=gs://YOUR_GCS_BUCKET_NAME # create a GCS bucket
 YT_SECRET_MNGR_NAME=YOUR_SECRET_NAME # e.g., yt-data-api
+SESSION_STATE_JSON_PATH=trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json
 ```
 
 *(3) copy `.env` file to `root_agent` dir:*
@@ -262,7 +263,7 @@ gcloud storage buckets create gs://$BUCKET --location=$GOOGLE_CLOUD_LOCATION
 </details>
 
 
-### Start a session
+## Start a session
 
 When starting a new session (e.g., after a new code commit, package update/add, etc.):
 
@@ -306,16 +307,34 @@ kill -9 $PID
 lsof -i :8000
 ```
 
-### Video walkthrough
+# Video walkthrough
 
-[![TIA Video Demo](media/vid_demo_teaser.png)](https://www.youtube.com/watch?v=rDqFdTJfsFA "TIA Video Demo")
+> Updated version coming soon!
 
 
-# Tools
+# Sub-agents & Tools
 
-![Tool and Agent Architecture](media/agent_tool_arch.png)
+<p align="center">
+  <img src='media/t2a_overview_2.png' width="800"/>
+</p>
 
-## CI And Testing
+
+## Staged Research Pipeline
+
+<p align="center">
+  <img src='media/t2a_staged_research_overview_1.png' width="800"/>
+</p>
+
+
+## Ad Content Generator Pipeline
+
+<p align="center">
+  <img src='media/t2a_ad_content_overview_1.png' width="800"/>
+</p>
+
+
+
+# CI And Testing
 
 Using `pytest`, users can test for tool coverage as well as Agent evaluations.
 
@@ -361,3 +380,9 @@ adk deploy cloud_run \
   --with_ui \
   trends_and_insights_agent/
 ```
+
+### Deployment to Agentspace
+
+1. Configure `publish_to_agentspace.sh`
+2. Run the `notebooks/deployment_guide.ipynb` notebook
+3. Run `bash publish_to_agentspace.sh`

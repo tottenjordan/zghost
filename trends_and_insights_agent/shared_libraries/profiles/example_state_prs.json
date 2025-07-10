@@ -1,0 +1,37 @@
+{
+    "state": {
+        "artifact_keys": {
+            "image_creatives": {},
+            "video_creatives": {}
+        },
+        "target_product": "PRS SE CE24 Electric Guitar",
+        "target_audience": [
+            "Demographics: millennials who follow jam bands such as Widespread Panic and Phish.",
+            "Psychographics: millennials who respond positively to nostalgic messages.",
+            "Lifestyle or profession: frequent travelers; spending most income on concert experiences.",
+            "Hobbies, interests, humor: music lovers, attend lots of jam band concerts.",
+            "Actively researching concert and music festival tickets; musical instruments, love surreal memes (e.g.,  https://www.reddit.com/r/surrealmemes/)."
+        ],
+        "key_selling_points": [
+            "Bolt-on Maple Neck - The bolt-on construction with a maple neck provides a distinct tone with enhanced brightness and a slightly more percussive attack",
+            "Wide Thin Profile- The Wide Thin neck carve offers a comfortable and fast playing experience, allowing for easy access to all 24 frets.",
+            "Satin Finish - The satin finish on the neck and body allows for a smooth, comfortable feel and a more intimate playing experience, as it doesn't stick to the hand like some gloss finishes.",
+            "85/15 S Humbuckers - These pickups deliver a wide tonal range, from thick humbucker tones to clear single-coil sounds, making the guitar suitable for various genres."
+        ],
+        "campaign_guide" : {
+            "campaign_name" : "Marketing Campaign Guide: PRS SE CE24 Guitar",
+            "brand": "Paul Reed Smith (PRS)",
+            "target_region": "Atlanta, US",
+            "campaign_objectives": [
+                "Increase Brand Awareness",
+                "Drive Consideration and Desire for PRS SE CE24 Guitar Features"
+            ]
+        },
+        "target_search_trends": {
+            "target_search_trends": []
+        },
+        "target_yt_trends": {
+            "target_yt_trends": []
+        }
+    }
+}

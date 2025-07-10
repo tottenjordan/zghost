@@ -4,14 +4,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 from google.cloud import storage
-from typing import Optional
-from google.adk.agents.callback_context import CallbackContext
-from google.genai import types
 
 
-MODEL = "gemini-2.0-flash-001"  # "gemini-2.0-flash-001" | "gemini-2.5-flash" | "gemini-2.5-pro-preview-06-05"
+MODEL = "gemini-2.5-flash"  # "gemini-2.0-flash-001" | "gemini-2.0-flash-lite-001" | "gemini-2.5-flash" | "gemini-2.5-pro-preview-06-05"
 IMAGE_MODEL = "imagen-4.0-fast-generate-preview-06-06"  # "imagen-4.0-ultra-generate-preview-06-06" "imagen-4.0-generate-preview-06-06"
-VIDEO_MODEL = "veo-3.0-generate-preview"  # veo-3.0-generate-preview
+VIDEO_MODEL = (
+    "veo-3.0-generate-preview"  # "veo-3.0-generate-preview" | veo-3.0-generate-preview
+)
 
 
 def download_blob(bucket_name, source_blob_name):
@@ -38,7 +37,7 @@ def upload_file_to_gcs(
     file_path: str,
     file_data: bytes,
     content_type: str = "image/png",
-    gcs_bucket: str = os.environ.get("BUCKET"),
+    gcs_bucket: str = os.environ.get("BUCKET", "tmp"),
 ):
     """
     Uploads a file to a GCS bucket.

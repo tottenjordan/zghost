@@ -6,7 +6,7 @@
 **/__pycache__/
 __pycache__/
 *.whl
-publish_to_agentspace*
 trends_and_insights_agent/.adk/*
 *.evalset.json
 stash/*
+files/*

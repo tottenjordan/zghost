@@ -1,7 +1,5 @@
 """Common data schema and types for the Trends & Insights Agent"""
 
-from typing import Optional, Union
-
 from google.genai import types
 from pydantic import BaseModel, Field
 
@@ -10,6 +8,29 @@ from pydantic import BaseModel, Field
 json_response_config = types.GenerateContentConfig(
     response_mime_type="application/json"
 )
+
+
+# =============================
+# Research Structured Feedback
+# =============================
+class CampaignSearchQuery(BaseModel):
+    """Model representing a specific search query for web search."""
+
+    search_query: str = Field(
+        description="A highly specific and targeted query for web search."
+    )
+
+
+class CampaignFeedback(BaseModel):
+    """Model for providing evaluation feedback on research quality."""
+
+    comment: str = Field(
+        description="Detailed explanation of the evaluation, highlighting strengths and/or weaknesses of the research."
+    )
+    follow_up_queries: list[CampaignSearchQuery] | None = Field(
+        default=None,
+        description="A list of specific, targeted follow-up search queries needed to fix research gaps. This should be null or empty if no follow-up questions needed.",
+    )
 
 
 # ==========================
