@@ -309,7 +309,7 @@ lsof -i :8000
 
 # Video walkthrough
 
-> Coming soon!
+> Updated version coming soon!
 
 
 # Sub-agents & Tools
