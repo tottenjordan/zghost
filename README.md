@@ -24,14 +24,6 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 
 ## Example usage
 
-1. Use one of the example state json files under `shared_libraries/profiles/` to load a "campaign guide". Or create your own. Just reference the desired path in your `.env` file.
-2. `user` selects trending term(s) from Google Search
-3. `user` selects trending video(s) from YouTube
-4. `agent` conducts web research to gather insight about concepts from campaign guide, search trends, and trending YouTube video
-5. `agent` generates visual concepts for ad creatives that (1) resonate with the target audience and (2) tap into themes from the trends & insights
-6. `agent` generates image and video creatives, ad copy, and social media captions
-7. `agent` generates comprehensive report (PDF) documenting the campaign guide, trends, research, and creatives from the current session
-
 <details>
   <summary>Example interaction</summary>
 
@@ -53,11 +45,11 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 ```
 > [agent]: [displays Search Trends]
 
-> [user]: selects interesting Search trend(s)
+> [user]: <selects interesting Search trend(s)>
 
 > [agent]: [displays YouTube Trends]
 
-> [user]: selects interesting YouTube trend(s)
+> [user]: <selects interesting YouTube trend(s)>
 ```
 
 **[campaign & trend research]** 
@@ -298,16 +290,26 @@ kill -9 $PID
 lsof -i :8000
 ```
 
-### Video walkthrough
+# Video walkthrough
 
-[![TIA Video Demo](media/vid_demo_teaser.png)](https://www.youtube.com/watch?v=rDqFdTJfsFA "TIA Video Demo")
+> TODO
 
 
 # Tools
 
-![Tool and Agent Architecture](media/agent_tool_arch.png)
+![Tool and Agent Architecture](media/t2a_overview_2.png)
 
-## CI And Testing
+## Staged Research Pipeline
+
+![Research Subagent Diagram](media/t2a_staged_research_overview_1.png)
+
+## Ad Content Generator Pipeline
+
+> TODO
+
+
+
+# CI And Testing
 
 Using `pytest`, users can test for tool coverage as well as Agent evaluations.
 
