@@ -22,7 +22,7 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 ## Example usage
 
 <details>
-  <summary>Example interaction</summary>
+  <summary>sample interaction</summary>
 
 ---
 
@@ -30,8 +30,14 @@ The Trend & Insight Agent is a marketing tool for developing data-driven and cul
 
 **[entry point]** 
 
-* Agent will populate the initial session state with the dict in [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json).. use the default values or easily change them yourself
-* Can also manually upload a `campaign_guide` in PDF format e.g., [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf)
+First we need a "campaign guide", which typically includes target product, target audience, key selling points, campaign objectives, etc.
+
+three options:
+1. Use default values in one of the provided example state configs [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json) (make sure path in `.env` file) 
+2. Manually edit one of these files or create a similar `json` with something you're more familiar with
+3. Upload a `campaign_guide` in PDF format e.g., [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf)
+    * TODO: fix support for user-uploaded PDF 
+
 
 ```
 > [user]: Hello...
@@ -79,13 +85,16 @@ Note: this section is configured for **human-in-the-loop** i.e., agent will iter
 
 </details>
 
-#### output
 
-<img src='media/example_out_hulk_1.png' width="700"/>
-
+**sample output**
 
 
-## How to use this repo
+<p align="center">
+  <img src='media/example_out_hulk_1.png' width="700"/>
+</p>
+
+
+# How to use this repo
 
 1. Clone this repo (to local or Vertex AI Workbench Instance)
 2. Create and store YouTube API key
@@ -93,7 +102,7 @@ Note: this section is configured for **human-in-the-loop** i.e., agent will iter
 4. Run commands under **Start a session**
 
 
-### Create and store YouTube API key
+## Create and store YouTube API key
 
 1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
 
@@ -102,7 +111,7 @@ Note: this section is configured for **human-in-the-loop** i.e., agent will iter
    > For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
 
 
-### One-time setup
+## One-time setup
 
 Ensure ffmpeg is installed on your system or where the agent will be deployed. This is used for simple video editing purposes.
 
@@ -248,7 +257,7 @@ gcloud storage buckets create gs://$BUCKET --location=$GOOGLE_CLOUD_LOCATION
 </details>
 
 
-### Start a session
+## Start a session
 
 When starting a new session (e.g., after a new code commit, package update/add, etc.):
 
@@ -294,20 +303,28 @@ lsof -i :8000
 
 # Video walkthrough
 
-> TODO
+> Coming soon!
 
 
-# Tools
+# Sub-agents & Tools
 
-![Tool and Agent Architecture](media/t2a_overview_2.png)
+<p align="center">
+  <img src='media/t2a_overview_2.png' width="800"/>
+</p>
+
 
 ## Staged Research Pipeline
 
-![Research Subagent Diagram](media/t2a_staged_research_overview_1.png)
+<p align="center">
+  <img src='media/t2a_staged_research_overview_1.png' width="800"/>
+</p>
+
 
 ## Ad Content Generator Pipeline
 
-![Ad Content Subagent Diagram](media/t2a_ad_content_overview_1.png)
+<p align="center">
+  <img src='media/t2a_ad_content_overview_1.png' width="800"/>
+</p>
 
 
 

@@ -1,5 +1,9 @@
 # Marketing Campaign Research Report: Hulkamania vs. Spam Calls: A Pixel 9 Takedown
 
+<p align="center" width="100%">
+    <img width="90%" src="../media/example_out_hulk_1.png">
+</p>
+
 ## Campaign Guide Summary:
 The Google Pixel 9 marketing campaign targets Gen Z individuals (aged 18-24) in Atlanta, US, who are frustrated with technology. The campaign aims to increase brand awareness and drive consideration for the Pixel 9's key features, including its AI-powered camera and Pixel Call Assist. The media strategy focuses on visually-driven content on Instagram, engaging videos on TikTok, and longer-form content on YouTube, leveraging influencer marketing and highly targeted digital ads. The campaign objectives are to establish the Pixel 9 as a relevant and desirable smartphone option for Gen Z, effectively communicating its unique benefits and seamless integration with the Google ecosystem. Key selling points include the best-in-class camera and Pixel Call Assist, which makes life easier by filtering spam calls.
 
