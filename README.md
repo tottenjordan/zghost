@@ -305,7 +305,7 @@ lsof -i :8000
 
 ## Ad Content Generator Pipeline
 
-> TODO
+![Ad Content Subagent Diagram](media/t2a_ad_content_overview_1.png)
 
 
 
