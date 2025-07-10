@@ -2,7 +2,7 @@
 
 > a multi-agent system finding the intersection between product, trend, and audience
 
-<details open>
+<details>
   <summary>trends R us</summary>
 
 <p align="center">
