@@ -3,7 +3,7 @@
 > a multi-agent system finding the intersection between product, trend, and audience
 
 <details open>
-  <summary>sample interaction</summary>
+  <summary>helpp-w-trends-</summary>
 
 <p align="center">
   <img src='media/deep-fried-trends.jpeg' width="700"/>
