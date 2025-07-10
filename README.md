@@ -3,7 +3,7 @@
 > a multi-agent system finding the intersection between product, trend, and audience
 
 <p align="center">
-  <img src='media/deep-fried-trends.jpeg' width="500"/>
+  <img src='media/deep-fried-trends.jpeg' width="700"/>
 </p>
 
 ## About
@@ -16,7 +16,7 @@
 - Draft ad creatives (e.g., image and video) based on trends, campaign themes, or specific prompts
 
 <p align="center">
-  <img src='media/t2a_high_level_v3.png' width="700"/>
+  <img src='media/t2a_high_level_v3.png' width="800"/>
 </p>
 
 
