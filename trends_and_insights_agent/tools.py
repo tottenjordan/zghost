@@ -3,15 +3,6 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-try:
-    # The library is called 'googlesearch', but installed via 'googlesearch-python'
-    from googlesearch import search
-
-except ImportError:
-    logging.exception("Could not import the 'googlesearch' library.")
-    logging.exception("Please install it first using: pip install googlesearch-python")
-    search = None  # Set search to None so the script doesn't crash immediately
-
 import pandas as pd
 from typing import Optional
 import googleapiclient.discovery
@@ -37,57 +28,6 @@ youtube_client = googleapiclient.discovery.build(
 
 # google genai client
 client = Client()
-
-
-# ========================
-# search tools
-# ========================
-def perform_google_search(
-    query: str,
-    num_results: int = 10,
-    lang: str = "en",
-    pause_time: int = 2,
-) -> list:
-    # ) -> AsyncGenerator[list, None]:
-    """
-    Performs a Google search for a given query using the googlesearch-python library.
-
-    Args:
-        query (str): The search term.
-        num_results (int): The desired number of search results to retrieve.
-        lang (str): The language code for the search (e.g., 'en', 'es').
-        pause_time (int): Seconds to pause between HTTP requests to avoid blocking.
-
-    Returns:
-        list: A list of URLs found for the query, or an empty list if an error occurs
-              or the library wasn't imported.
-    """
-    if not search:
-        logging.info("Googlesearch library not available. Cannot perform search.")
-        return []
-
-    search_results_urls = []
-    logging.info(f"Searching Google for: '{query}' (up to {num_results} results)...")
-    try:
-        # The search function returns a generator. We convert it to a list.
-        #   [[1](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AWQVqAIt0WzakIytkvxX-NyLXvi8MeY_Lt0gOuYicrDUrmlo-oMJU5YQyD8tzXvLuLEhWcYU9l5rdXcKddjNmU0AEb2_LVzo3sGqCr7_xnWMkqIUtpuW9_rohiniNpWh0CQoxZKz1tXlOg==)]
-        # 'stop=num_results' ensures we try to fetch exactly that many.
-        # 'pause' helps avoid getting temporarily blocked by Google.
-        results_generator = search(
-            query, num_results=num_results, lang=lang, sleep_interval=pause_time
-        )
-        search_results_urls = list(results_generator)
-
-        logging.info(f"Found {len(search_results_urls)} results.")
-
-    except Exception as e:
-        logging.exception(f"An error occurred during the Google search: {e}")
-        logging.info(
-            "This might be due to network issues or Google blocking the request."
-        )
-        logging.info("Try increasing the 'pause_time' or searching less frequently.")
-
-    return search_results_urls
 
 
 # ========================
@@ -207,7 +147,6 @@ def analyze_youtube_videos(
 # ========================
 # artifacts
 # ========================
-
 
 # # TODO: need to load artifact for data extraction
 # async def load_sample_guide(tool_context: ToolContext) -> Optional[types.Content]:
