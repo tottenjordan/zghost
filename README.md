@@ -96,7 +96,7 @@ Note: this section is configured for **human-in-the-loop** i.e., agent will iter
 
 
 <p align="center">
-  <img src='media/example_out_hulk_1.png' width="700"/>
+  <img src='media/t2a_hulk_call_Screen_v2.png' width="700"/>
 </p>
 
 
@@ -315,7 +315,7 @@ lsof -i :8000
 # Sub-agents & Tools
 
 <p align="center">
-  <img src='media/t2a_overview_2.png' width="800"/>
+  <img src='media/t2a_high_level_Defined.png' width="800"/>
 </p>
 
 
