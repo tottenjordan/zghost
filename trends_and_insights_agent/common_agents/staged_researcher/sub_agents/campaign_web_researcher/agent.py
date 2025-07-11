@@ -50,6 +50,8 @@ campaign_web_planner = Agent(
     """,
     output_key="initial_campaign_queries",
 )
+
+
 campaign_web_searcher = Agent(
     model=config.worker_model,
     name="campaign_web_searcher",
@@ -65,6 +67,8 @@ campaign_web_searcher = Agent(
     output_key="campaign_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
 )
+
+
 ca_sequential_planner = SequentialAgent(
     name="ca_sequential_planner",
     description="Executes sequential research tasks for concepts described in the campaign guide.",

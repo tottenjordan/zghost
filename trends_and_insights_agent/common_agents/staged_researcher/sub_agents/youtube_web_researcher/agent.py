@@ -34,6 +34,8 @@ yt_analysis_generator_agent = Agent(
     ],
     output_key="yt_video_analysis",
 )
+
+
 yt_web_planner = Agent(
     model=config.lite_planner_model,
     name="gs_web_planner",
@@ -48,13 +50,13 @@ yt_web_planner = Agent(
     """,
     output_key="initial_yt_queries",
 )
+
+
 yt_web_searcher = Agent(
     model=config.worker_model,
     name="yt_web_searcher",
     description="Performs web research to better understand the context of the trending YouTube video.",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""
     You are a diligent and exhaustive researcher. 
     Your task is to conduct initial web research for concepts described in the 'yt_video_analysis' state key.
@@ -65,6 +67,8 @@ yt_web_searcher = Agent(
     output_key="yt_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
 )
+
+
 yt_sequential_planner = SequentialAgent(
     name="yt_sequential_planner",
     description="Executes sequential research tasks for trending YouTube videos.",

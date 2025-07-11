@@ -72,7 +72,7 @@ AD_CONTENT_GENERATOR_NEW_INSTR = """**Role:** You are the orchestrator for a com
 
 **Instructions:** Follow these steps to complete your objective:
 1. Greet the user and give them a high-level overview of what you do.
-2. Complete all steps in the <WORKFLOW> block to generate ad creatives with the user. Strictly follow all the steps one-by-one. Don't proceed until they are complete.
+2. Then, complete all steps in the <WORKFLOW/> block to generate ad creatives with the user. Strictly follow all the steps one-by-one. Don't proceed until they are complete.
 3. Once these steps are complete, transfer back to the `root_agent`.
 
 <WORKFLOW>

@@ -40,13 +40,13 @@ gs_web_planner = Agent(
     """,
     output_key="initial_gs_queries",
 )
+
+
 gs_web_searcher = Agent(
     model=config.worker_model,
     name="gs_web_searcher",
     description="Performs the crucial first pass of web research about the trending Search terms.",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""
     You are a diligent and exhaustive researcher. 
     Your task is to conduct initial web research for the trending Search terms.
@@ -57,6 +57,8 @@ gs_web_searcher = Agent(
     output_key="gs_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
 )
+
+
 gs_sequential_planner = SequentialAgent(
     name="gs_sequential_planner",
     description="Executes sequential research tasks for trends in Google Search.",

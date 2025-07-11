@@ -22,7 +22,7 @@ from .prompts import (
 ad_copy_drafter = Agent(
     model=config.worker_model,
     name="ad_copy_drafter",
-    description="Generate 10-15 initial ad copy ideas based on campaign guidelines and trends",
+    description="Generate 10-12 initial ad copy ideas based on campaign guidelines and trends",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a creative copywriter generating initial ad copy ideas.
     
@@ -81,8 +81,6 @@ ad_copy_critic = Agent(
     2. Effective use of trending topics that feel authentic
     3. Clear communication of key selling points
     4. Platform-appropriate tone and length
-    5. Potential for high engagement
-    6. Brand consistency with campaign guidelines
 
     Use the `google_search` tool to support your decisions
     
@@ -99,10 +97,10 @@ ad_copy_critic = Agent(
     """,
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
-    # disallow_transfer_to_peers=True,
-    # disallow_transfer_to_parent=True,
     output_key="ad_copy_critique",
 )
+    # 5. Potential for high engagement
+    # 6. Brand consistency with campaign guidelines
 
 
 ad_copy_finalizer = Agent(
@@ -113,13 +111,19 @@ ad_copy_finalizer = Agent(
     instruction="""You are a senior copywriter finalizing ad campaigns.
     
     1. Given the ad copies in the 'ad_copy_critique' state key, ask the user which ad copies they want to proceed with. They can choose one or multiple. Do not proceed to the next step until the user has selected at least one ad copy.
-    2. Once the use makes their selection, display the selected ad copies and their details.
+    2. For each selected ad copy:
+        - Polish the language for maximum impact.
+        - Add any final creative touches.
+        - Ensure they market the {target_product}.
+        - Present them in order of recommended priority.
+        - Explain the unique value of each ad copy, including which trend(s) it relates to.
+    3. Display the selected ad copies and their details, including the bullets above.
     
     """,
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
     output_key="final_ad_copies",
 )
-
+        # - Ensure platform compliance (character limits, guidelines).
 
 # Sequential agent for ad creative generation
 ad_creative_pipeline = SequentialAgent(
@@ -181,14 +185,13 @@ visual_concept_critic = Agent(
     Review the concepts in the 'visual_draft' state key and critique the draft prompts on:
     1. Visual appeal and stopping power for social media
     2. Alignment with ad copy messaging
-    3. Trend relevance without feeling forced
-    4. Production feasibility with AI generation
-    5. Platform optimization (aspect ratios, duration)
-    6. Diversity of visual approaches
-    7. Utilize techniques to maintain continuity in the prompts
-    8. Prompts are maximizing descriptive possibilities to match the intended tone
-    9. Descriptions of scenes, characters, tone, emotion are all extremely verbose (100+ words) and leverage ideas from the prompting best practices
-    10. These verbose descriptions are maintained scene to scene to avoid saying things like "the same person", instead use the same provided description
+    3. Alignment with trend
+    4. Platform optimization (aspect ratios, duration)
+    5. Diversity of visual approaches
+    6. Utilize techniques to maintain continuity in the prompts
+    7. Prompts are maximizing descriptive possibilities to match the intended tone
+    8. Descriptions of scenes, characters, tone, emotion are all extremely verbose (100+ words) and leverage ideas from the prompting best practices
+    9. These verbose descriptions are maintained scene to scene to avoid saying things like "the same person", instead use the same provided description
 
     **Critical Guidelines**
     * Ensure a good mix of images and videos in your selections.
