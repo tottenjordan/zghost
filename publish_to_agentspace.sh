@@ -2,7 +2,7 @@
 export PROJECT_NUMBER="679926387543"
 export PROJECT_ID="wortz-project-352116"
 export AS_APP="grocery-demo_1738268844814"
-export REASONING_ENGINE_ID="9102364185148260352"
+export REASONING_ENGINE_ID="1065972125082320896"
 export REASONING_ENGINE="projects/${PROJECT_NUMBER}/locations/us-central1/reasoningEngines/${REASONING_ENGINE_ID}" #new name. We should do a list query to make sure it exists
 export AGENT_DISPLAY_NAME="Trends and Insights Agent"
 export AGENT_DESCRIPTION="You are a complex agent that analyzes marketing briefs and transforms insights into creatives."

@@ -134,12 +134,18 @@ def get_gtrends_max_date() -> str:
     return max_date.iloc[0][0].strftime("%m/%d/%Y")
 
 
-def get_daily_gtrends() -> dict:
+max_date = get_gtrends_max_date()
+
+
+def get_daily_gtrends(today_date: str = max_date) -> dict:
     """
-    Retrieves the top 25 Google Search Trends (term, rank, refresh_date) from a BigQuery table.
+    Retrieves the top 25 Google Search Trends (term, rank, refresh_date).
+
+    Args:
+        today_date: Today's date in the format 'MM/DD/YYYY'. Use the default value provided.
 
     Returns:
-        str: a markdown table containing the Google Search Trends.
+        dict: key is the latest date for the trends, the value is a markdown table containing the Google Search Trends.
              The table includes columns for 'term', 'rank', and 'refresh_date'.
              Returns 25 terms ordered by their rank (ascending order) for the current week.
     """
@@ -159,12 +165,18 @@ def get_daily_gtrends() -> dict:
         GROUP BY term, refresh_date
         ORDER BY (SELECT rank FROM UNNEST(x))
         """
-    df_t = bq_client.query(query).to_dataframe()
-    df_t.index += 1
-    df_t["rank"] = df_t.index
-    df_t = df_t.drop("x", axis=1)
-    new_order = ["term", "rank", "refresh_date"]
-    df_t = df_t[new_order]
-    markdown_string = df_t.to_markdown(index=True)
+    try:
+        df_t = bq_client.query(query).to_dataframe()
+        df_t.index += 1
+        df_t["rank"] = df_t.index
+        df_t = df_t.drop("x", axis=1)
+        new_order = ["term", "rank", "refresh_date"]
+        df_t = df_t[new_order]
+        markdown_string = df_t.to_markdown(index=True)
+    except Exception as e:
+        return {"status": "error", "error_message": str(e)}
 
-    return {"markdown_string": markdown_string}
+    return {
+        "status": "ok",
+        f"markdown_string_for_today_up_to_{max_date}": markdown_string,
+    }

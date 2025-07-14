@@ -8,6 +8,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 from typing import Dict, Any, Optional
+import requests
 
 from google.genai import types
 from google.adk.sessions.state import State
@@ -18,13 +19,18 @@ from .config import config, setup_config
 
 
 # get initial session state json
-SESSION_STATE_JSON_PATH = os.getenv("SESSION_STATE_JSON_PATH", default=None)
+SESSION_STATE_JSON_PATH = os.getenv(
+    "SESSION_STATE_JSON_PATH", default="example_state_pixel_w_surreal_meme.json"
+)
 logging.info(f"\n\n`SESSION_STATE_JSON_PATH`: {SESSION_STATE_JSON_PATH}\n\n")
+
 
 # Adjust these values to limit the rate at which the agent
 # queries the LLM API.
 RATE_LIMIT_SECS = config.rate_limit_seconds
 RPM_QUOTA = config.rpm_quota
+PROFILE_PATH = "http://raw.githubusercontent.com/tottenjordan/zghost/refs/heads/main/trends_and_insights_agent/shared_libraries/profiles"
+FULL_JSON_PATH = os.path.join(PROFILE_PATH, SESSION_STATE_JSON_PATH)
 
 
 def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
@@ -41,6 +47,7 @@ def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
         target.update(source)
 
 
+#  No such file or directory: '../trends_and_insights_agent/shared_libraries/profiles/example_state_prs.json'
 def _load_session_state(callback_context: CallbackContext):
     """
     Sets up the initial state.
@@ -51,10 +58,10 @@ def _load_session_state(callback_context: CallbackContext):
         callback_context: The callback context.
     """
     data = {}
-    if SESSION_STATE_JSON_PATH:
-        with open(SESSION_STATE_JSON_PATH, "r") as file:
-            data = json.load(file)
-            logging.info(f"\n\nLoading Initial State: {data}\n\n")
+    if FULL_JSON_PATH:
+        resp = requests.get(FULL_JSON_PATH)
+        data = json.loads(resp.text)
+        logging.info(f"\n\nLoading Initial State: {data}\n\n")
     else:
         data = setup_config.empty_session_state
         logging.info(f"\n\nLoading Initial State (empty): {data}\n\n")
