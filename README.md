@@ -47,11 +47,7 @@ three options:
 
 ```
 > [user]: Hello...
-```
 
-**[trends]** 
-
-```
 > [agent]: [displays Search Trends]
 
 > [user]: <selects interesting Search trend(s)>
@@ -66,13 +62,13 @@ three options:
 ```
 > [agent]: <executes pipeline of parallel research tasks>
 
-> [agent]: [Displays combined research report and saves as PDF artifact]
+> [agent]: [displays combined research report and saves as PDF artifact]
 ```
 
 
 **[creative gen]** 
 
-Note: this section is configured for **human-in-the-loop** i.e., agent will iterate with user when generating image and video creatives
+> Note: this section is configured for **human-in-the-loop** i.e., agent will iterate with user when generating image and video creatives
 
 ```
 > [agent]: Now that I have all the research, I'll use the ad_content_generator_agent to help generate ad creatives based on the campaign themes, trend analysis, web research insights, and specific prompts.
@@ -92,7 +88,7 @@ Note: this section is configured for **human-in-the-loop** i.e., agent will iter
 </details>
 
 
-**sample output**
+**sample ad creative**
 
 
 <p align="center">
@@ -103,18 +99,9 @@ Note: this section is configured for **human-in-the-loop** i.e., agent will iter
 # How to use this repo
 
 1. Clone this repo (to local or Vertex AI Workbench Instance)
-2. Create and store YouTube API key
-3. Open terminal, run commands under **One-time setup**
+2. Open terminal, run commands under **One-time setup**
+3. Create and store YouTube API key
 4. Run commands under **Start a session**
-
-
-## Create and store YouTube API key
-
-1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
-
-2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (see `YT_SECRET_MNGR_NAME` in `.env` file)
-
-   > For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
 
 
 ## One-time setup
@@ -174,8 +161,21 @@ gcloud services enable artifactregistry.googleapis.com \
     eventarc.googleapis.com \
     serviceusage.googleapis.com \
     secretmanager.googleapis.com \
-    aiplatform.googleapis.com
+    aiplatform.googleapis.com \
+    youtube.googleapis.com
 ```
+
+</details>
+
+
+<details>
+  <summary>Create and store YouTube API key</summary>
+
+1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
+
+2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (see `YT_SECRET_MNGR_NAME` in `.env` file)
+
+   > For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
 
 </details>
 
@@ -183,16 +183,7 @@ gcloud services enable artifactregistry.googleapis.com \
 <details>
   <summary>Optionally, create notebook kernel</summary>
 
-*create kernel with required packages for notebooks hosted locally or in [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction)* 
-
-**Notebook hosted locally**
-
-```bash
-export ENV_NAME=py312_venv
-python3 -m ipykernel install --user --name $ENV_NAME --display-name $ENV_NAME
-```
-
-**Notebook hosted in Vertex AI Workbench**
+*create kernel with required packages for notebooks hosted in [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction)* 
 
 *run this in instance terminal window:*
 
@@ -204,8 +195,6 @@ echo $DL_ANACONDA_ENV_HOME
 python3 -m ipykernel install --prefix "${DL_ANACONDA_ENV_HOME}" --name $ENV_NAME --display-name $ENV_NAME
 ```
 
-*In either option, open a notebook file and select your kernel (top right). Should see `$ENV_NAME` as an available kernel* 
-
 </details>
 
 
@@ -216,19 +205,18 @@ python3 -m ipykernel install --prefix "${DL_ANACONDA_ENV_HOME}" --name $ENV_NAME
 
 ```bash
 touch .env
-nano .env
 ```
 
 *(2) edit variables as needed:*
 
 ```bash
 GOOGLE_GENAI_USE_VERTEXAI=1
-GOOGLE_CLOUD_PROJECT=YOUR_GCP_PROJECT_ID
-GOOGLE_CLOUD_PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER # e.g., 1234756
-GOOGLE_CLOUD_LOCATION=YOUR_LOCATION # e.g., us-central1
-BUCKET=gs://YOUR_GCS_BUCKET_NAME # create a GCS bucket
-YT_SECRET_MNGR_NAME=YOUR_SECRET_NAME # e.g., yt-data-api
-SESSION_STATE_JSON_PATH=trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json
+GOOGLE_CLOUD_PROJECT=<YOUR_GCP_PROJECT_ID>
+GOOGLE_CLOUD_PROJECT_NUMBER=<YOUR_GCP_PROJECT_NUMBER> # e.g., 1234756
+GOOGLE_CLOUD_LOCATION=<YOUR_LOCATION> # e.g., us-central1
+BUCKET=gs://<YOUR_GCS_BUCKET_NAME> # create a GCS bucket
+YT_SECRET_MNGR_NAME=<YOUR_SECRET_NAME> # e.g., yt-data-api
+SESSION_STATE_JSON_PATH=example_state_pixel.json
 ```
 
 *(3) copy `.env` file to `root_agent` dir:*
@@ -253,12 +241,8 @@ source .env
 *create Cloud Storage bucket:*
 
 ```bash
-gcloud storage buckets create gs://$BUCKET --location=$GOOGLE_CLOUD_LOCATION
+gcloud storage buckets create $BUCKET --location=$GOOGLE_CLOUD_LOCATION
 ```
-
-**TODOs:**
-* create BigQuery tables for Trends dataset
-* create commands for granting proper IAM to each asset
 
 </details>
 
@@ -315,23 +299,28 @@ lsof -i :8000
 # Sub-agents & Tools
 
 <p align="center">
-  <img src='media/t2a_high_level_Defined.png' width="800"/>
+  <img src='media/t2a_overview_of_tools.png' width="800"/>
 </p>
 
 
-## Staged Research Pipeline
+<details>
+  <summary>Staged Research Pipeline</summary>
 
 <p align="center">
-  <img src='media/t2a_staged_research_overview_1.png' width="800"/>
+  <img src='media/t2a_staged_research_overview_2.png' width="800"/>
 </p>
 
+</details>
 
-## Ad Content Generator Pipeline
+
+<details>
+  <summary>Ad Content Generator Pipeline</summary>
 
 <p align="center">
-  <img src='media/t2a_ad_content_overview_1.png' width="800"/>
+  <img src='media/t2a_ad_content_overview_2.png' width="800"/>
 </p>
 
+</details>
 
 
 # CI And Testing
