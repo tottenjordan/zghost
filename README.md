@@ -381,8 +381,22 @@ adk deploy cloud_run \
   trends_and_insights_agent/
 ```
 
-### Deployment to Agentspace
+# Deployment to Agentspace
 
-1. Configure `publish_to_agentspace.sh`
-2. Run the `notebooks/deployment_guide.ipynb` notebook
-3. Run `bash publish_to_agentspace.sh`
+
+Example usage:
+# Using JSON config
+```bash
+./publish_to_agentspace_v2.sh --action update --config agent_config_example.json
+```
+# Using command line args
+```bash
+./publish_to_agentspace_v2.sh --action create \
+  --project-id wortz-project-352116 \
+  --project-number 679926387543 \
+  --app-id grocery-demo_1738268844814 \
+  --reasoning-engine 1065972125082320896 \
+  --display-name "Trends and Insights Agent" \
+  --agent-id trends_and_insights_agent \
+  --instructions "Agent instructions here"
+```
