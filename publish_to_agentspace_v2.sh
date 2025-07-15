@@ -40,11 +40,18 @@ usage() {
     echo ""
     echo "Example with config file:"
     echo "  $0 --action create --config agent_config.json"
+    echo "  $0 --action update --config agent_config.json"
     echo ""
-    echo "Example with command line args:"
+    echo "Example with command line args (update):"
     echo "  $0 --action update --project-id my-project --project-number 12345 \\"
     echo "     --app-id my-app --reasoning-engine 67890 --display-name 'My Agent' \\"
     echo "     --agent-id my_agent --instructions 'Agent instructions here'"
+    echo ""
+    echo "Example with command line args (create):"
+    echo "  $0 --action create --project-id my-project --project-number 12345 \\"
+    echo "     --app-id my-app --reasoning-engine 67890 --display-name 'My Agent' \\"
+    echo "     --agent-id my_agent --description 'Agent description' \\"
+    echo "     --instructions 'Agent instructions here'"
     exit 1
 }
 
@@ -165,6 +172,7 @@ missing_params=()
 
 if [[ "$ACTION" == "create" ]]; then
     [[ -z "$AGENT_INSTRUCTIONS" ]] && missing_params+=("instructions")
+    [[ -z "$AGENT_DESCRIPTION" ]] && missing_params+=("description")
 fi
 
 if [[ ${#missing_params[@]} -gt 0 ]]; then
@@ -186,6 +194,9 @@ echo "Project Number: $PROJECT_NUMBER"
 echo "App ID: $AS_APP"
 echo "Reasoning Engine: $REASONING_ENGINE"
 echo "Agent Display Name: $AGENT_DISPLAY_NAME"
+if [[ -n "$AGENT_DESCRIPTION" ]]; then
+    echo "Agent Description: $AGENT_DESCRIPTION"
+fi
 echo "Agent ID: $AGENT_ID"
 echo "Location: $LOCATION"
 echo "=================================="

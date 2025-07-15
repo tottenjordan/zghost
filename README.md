@@ -398,5 +398,6 @@ Example usage:
   --reasoning-engine 1065972125082320896 \
   --display-name "Trends and Insights Agent" \
   --agent-id trends_and_insights_agent \
-  --instructions "Agent instructions here"
+  --instructions "Agent instructions here" \
+  --description 'Agent description'
 ```
