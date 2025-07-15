@@ -373,20 +373,52 @@ adk deploy cloud_run \
 # Deployment to Agentspace
 
 
-Example usage:
-# Using JSON config
+Usage: `./publish_to_agentspace_v2.sh [OPTIONS]`
+
+Options:
+  -a, --action <create|update|list|delete>  Action to perform (required)
+  -c, --config <file>              JSON configuration file
+  -p, --project-id <id>            Google Cloud project ID
+  -n, --project-number <number>    Google Cloud project number
+  -e, --app-id <id>                Agent Space application ID
+  -r, --reasoning-engine <id>      Reasoning Engine ID (required for create/update)
+  -d, --display-name <name>        Agent display name (required for create/update)
+  -s, --description <desc>         Agent description (required for create)
+  -i, --agent-id <id>              Agent ID (required for update/delete)
+  -t, --instructions <text>        Agent instructions/tool description (required for create)
+  -u, --icon-uri <uri>             Icon URI (optional)
+  -l, --location <location>        Location (default: us)
+  -h, --help                       Display this help message
+
+### Example with config file:
 ```bash
-./publish_to_agentspace_v2.sh --action update --config agent_config_example.json
+./publish_to_agentspace_v2.sh --action create --config agent_config.json
+./publish_to_agentspace_v2.sh --action update --config agent_config.json
+./publish_to_agentspace_v2.sh --action list --config agent_config.json
+./publish_to_agentspace_v2.sh --action delete --config agent_config.json
 ```
-# Using command line args
+### Example with command line args:
+
+Create agent:
 ```bash
-./publish_to_agentspace_v2.sh --action create \
-  --project-id wortz-project-352116 \
-  --project-number 679926387543 \
-  --app-id grocery-demo_1738268844814 \
-  --reasoning-engine 1065972125082320896 \
-  --display-name "Trends and Insights Agent" \
-  --agent-id trends_and_insights_agent \
-  --instructions "Agent instructions here" \
-  --description 'Agent description'
+./publish_to_agentspace_v2.sh --action create --project-id my-project --project-number 12345 \
+--app-id my-app --reasoning-engine 67890 --display-name 'My Agent' \
+--description 'Agent description' --instructions 'Agent instructions here'
+```
+  Update agent:
+```bash
+./publish_to_agentspace_v2.sh --action update --project-id my-project --project-number 12345 \
+--app-id my-app --reasoning-engine 67890 --display-name 'My Agent' \
+--agent-id 123456789 --description 'Updated description'
+```
+  List agents:
+```bash
+./publish_to_agentspace_v2.sh --action list --project-id my-project --project-number 12345 \
+--app-id my-app
+```
+
+  Delete agent:
+```bash
+./publish_to_agentspace_v2.sh --action delete --project-id my-project --project-number 12345 \
+--app-id my-app --agent-id 123456789
 ```

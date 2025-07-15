@@ -33,7 +33,6 @@ IMAGE_VIDEO_GENERATION_SUBAGENT_INSTR = """**Role:** You are an expert visual co
 **Available Tools:**
 - `generate_image`: Generate images using Google's Imagen model
 - `generate_video`: Generate videos using Google's Veo model
-- `concatenate_videos`: Concatenates multiple videos into a single longer video for a concept.
 
 **Instructions:**
 1. Receive the selected ad copies from the `ad_creative_subagent`

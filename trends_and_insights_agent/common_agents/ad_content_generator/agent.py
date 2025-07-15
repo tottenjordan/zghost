@@ -10,7 +10,7 @@ from trends_and_insights_agent.shared_libraries import callbacks
 from .tools import (
     generate_image,
     generate_video,
-    concatenate_videos,
+    # concatenate_videos,
 )
 from .prompts import (
     AD_CONTENT_GENERATOR_NEW_INSTR,
@@ -249,7 +249,6 @@ visual_generator = Agent(
     **Available Tools:**
     - `generate_image`: Generate images using Google's Imagen model
     - `generate_video`: Generate videos using Google's Veo model
-    - `concatenate_videos`: Concatenates multiple videos into a single longer video for a concept.
 
     **Instructions:**
     1. For each ad copy in the 'final_visual_concepts' state key, generate the creative visual using the appropriate tool (generate_image or generate_video).
@@ -259,7 +258,6 @@ visual_generator = Agent(
         - The prompt used for generation
         - Brief explanation of the creative concept
         - How it connects to the selected ad copy
-    3. For each scene video in the concept, use the `concatenate_videos` tool in the proper order of the scenes.
 
     After generating all visuals, ask the user to confirm their satisfaction.
 
@@ -281,7 +279,7 @@ visual_generator = Agent(
      {VEO3_INSTR}
     </PROMPTING_BEST_PRACTICES>
     """,
-    tools=[generate_image, generate_video, concatenate_videos, load_artifacts],
+    tools=[generate_image, generate_video, load_artifacts],
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
     before_model_callback=callbacks.rate_limit_callback,
 )
