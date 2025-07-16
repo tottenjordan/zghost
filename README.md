@@ -373,8 +373,23 @@ adk deploy cloud_run \
 # Deployment to Agentspace
 
 
+Create an Agent Engine in the `notebooks/deployment_guide.ipynb` notebook
+
+Then note the Agent Engine ID (last numeric portion of the Resource Name). e.g.:
+
+```bash
+agent_engine = vertexai.agent_engines.get('projects/679926387543/locations/us-central1/reasoningEngines/1093257605637210112')
+```
+
+Update the `agent_config_example.json`, then run:
+
+```bash
+./publish_to_agentspace_v2.sh --action create --config agent_config.json
+```
+
 Usage: `./publish_to_agentspace_v2.sh [OPTIONS]`
 
+```bash
 Options:
   -a, --action <create|update|list|delete>  Action to perform (required)
   -c, --config <file>              JSON configuration file
@@ -389,6 +404,7 @@ Options:
   -u, --icon-uri <uri>             Icon URI (optional)
   -l, --location <location>        Location (default: us)
   -h, --help                       Display this help message
+```
 
 ### Example with config file:
 ```bash

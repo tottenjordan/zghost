@@ -1,7 +1,7 @@
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.planners import BuiltInPlanner
 from google.adk.tools import load_artifacts
-from google.adk.tools import google_search
+from google.adk.tools import google_search, load_artifacts
 from google.genai import types
 
 from trends_and_insights_agent.shared_libraries.config import config
@@ -258,6 +258,8 @@ visual_generator = Agent(
         - The prompt used for generation
         - Brief explanation of the creative concept
         - How it connects to the selected ad copy
+
+    Utilize the `load_artifacts` tool to display the artifacts back to the user.
 
     After generating all visuals, ask the user to confirm their satisfaction.
 
