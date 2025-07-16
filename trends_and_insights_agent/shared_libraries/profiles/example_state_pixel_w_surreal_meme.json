@@ -1,8 +1,10 @@
 {
     "state": {
-        "artifact_keys": {
-            "image_creatives": {},
-            "video_creatives": {}
+        "img_artifact_keys": {
+            "img_artifact_keys": []
+        },
+        "vid_artifact_keys": {
+            "vid_artifact_keys": []
         },
         "target_product": "Pixel 9 smartphone",
         "target_audience": [
