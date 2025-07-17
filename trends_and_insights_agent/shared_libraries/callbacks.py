@@ -1,14 +1,12 @@
 """callbacks - currently exploring how these work by observing log output"""
 
-import os
-import re
-import json
-import time
+import os, re, json, time
+import pandas as pd
+import requests
 import logging
 
 logging.basicConfig(level=logging.INFO)
 from typing import Dict, Any, Optional
-import requests
 
 from google.genai import types
 from google.adk.sessions.state import State
@@ -24,13 +22,14 @@ SESSION_STATE_JSON_PATH = os.getenv(
 )
 logging.info(f"\n\n`SESSION_STATE_JSON_PATH`: {SESSION_STATE_JSON_PATH}\n\n")
 
+# TODO: this is a short term fix for deployment to agentspace
+PROFILE_PATH = "http://raw.githubusercontent.com/tottenjordan/zghost/refs/heads/deployment-fix-july-25/trends_and_insights_agent/shared_libraries/profiles"
+FULL_JSON_PATH = os.path.join(PROFILE_PATH, SESSION_STATE_JSON_PATH)
 
 # Adjust these values to limit the rate at which the agent
 # queries the LLM API.
 RATE_LIMIT_SECS = config.rate_limit_seconds
 RPM_QUOTA = config.rpm_quota
-PROFILE_PATH = "http://raw.githubusercontent.com/tottenjordan/zghost/refs/heads/main/trends_and_insights_agent/shared_libraries/profiles"
-FULL_JSON_PATH = os.path.join(PROFILE_PATH, SESSION_STATE_JSON_PATH)
 
 
 def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
@@ -43,11 +42,11 @@ def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
     """
     if setup_config.state_init not in target:
         target[setup_config.state_init] = True
+        target["gcs_folder"] = pd.Timestamp.utcnow().strftime("%Y_%m_%d_%H_%M")
 
         target.update(source)
 
 
-#  No such file or directory: '../trends_and_insights_agent/shared_libraries/profiles/example_state_prs.json'
 def _load_session_state(callback_context: CallbackContext):
     """
     Sets up the initial state.
@@ -120,7 +119,8 @@ def campaign_callback_function(
         *   campaign_guide
         *   target_search_trends
         *   target_yt_trends
-        *   artifact_keys
+        *   img_artifact_keys
+        *   vid_artifact_keys
     """
 
     agent_name = callback_context.agent_name
@@ -128,7 +128,9 @@ def campaign_callback_function(
     current_state = callback_context.state.to_dict()
 
     # Check the condition in session state dictionary
-    artifact_keys = callback_context.state.get("artifact_keys")
+    # artifact_keys = callback_context.state.get("artifact_keys")
+    img_artifact_keys = callback_context.state.get("img_artifact_keys")
+    vid_artifact_keys = callback_context.state.get("vid_artifact_keys")
     campaign_guide = callback_context.state.get("campaign_guide")
     target_yt_trends = callback_context.state.get("target_yt_trends")
     target_search_trends = callback_context.state.get("target_search_trends")
@@ -139,14 +141,28 @@ def campaign_callback_function(
         return_content = "campaign_guide"
         callback_context.state["campaign_guide"] = "not yet populated"
 
-    if artifact_keys is None:
-        callback_context.state["artifact_keys"] = {}
-        callback_context.state["artifact_keys"]["image_creatives"] = {}
-        callback_context.state["artifact_keys"]["video_creatives"] = {}
+    # if artifact_keys is None:
+    #     callback_context.state["artifact_keys"] = {}
+    #     callback_context.state["artifact_keys"]["image_creatives"] = {}
+    #     callback_context.state["artifact_keys"]["video_creatives"] = {}
+    #     if return_content is None:
+    #         return_content = "artifact_keys"
+    #     else:
+    #         return_content += ", artifact_keys"
+
+    if img_artifact_keys is None:
+        callback_context.state["img_artifact_keys"] = {"img_artifact_keys": []}
         if return_content is None:
-            return_content = "artifact_keys"
+            return_content = "img_artifact_keys"
         else:
-            return_content += ", artifact_keys"
+            return_content += ", img_artifact_keys"
+
+    if vid_artifact_keys is None:
+        callback_context.state["vid_artifact_keys"] = {"vid_artifact_keys": []}
+        if return_content is None:
+            return_content = "vid_artifact_keys"
+        else:
+            return_content += ", vid_artifact_keys"
 
     if target_search_trends is None:
         callback_context.state["target_search_trends"] = {"target_search_trends": []}

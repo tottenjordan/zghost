@@ -11,6 +11,9 @@ from .tools import (
     generate_image,
     generate_video,
     # concatenate_videos,
+    save_img_artifact_key,
+    save_artifact_key_after_tool,
+    save_creatives_and_research_report,
 )
 from .prompts import (
     AD_CONTENT_GENERATOR_NEW_INSTR,
@@ -27,7 +30,7 @@ ad_copy_drafter = Agent(
     instruction="""You are a creative copywriter generating initial ad copy ideas.
     
     Review the research findings in the 'combined_final_cited_report' state key.
-    Using insights related to the `campaign_guide`, trending YouTube video, and trending Search terms, generate 8-10 diverse ad copy ideas that:
+    Using insights related to the `campaign_guide`, trending YouTube video, and trending Search terms, generate 10-12 diverse ad copy ideas that:
     - Incorporate key selling points for the {target_product}
     - Vary in tone, style, and approach
     - Are suitable for Instagram/TikTok platforms
@@ -76,7 +79,7 @@ ad_copy_critic = Agent(
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a strategic marketing critic evaluating ad copy ideas.
     
-    Review the candidates in the 'ad_copy_draft' state key and select the 4-6 BEST ad copies based on:
+    Review the candidates in the 'ad_copy_draft' state key and select the 6-8 BEST ad copies based on:
     1. Alignment with target audience demographics and psychographics
     2. Effective use of trending topics that feel authentic
     3. Clear communication of key selling points
@@ -99,8 +102,6 @@ ad_copy_critic = Agent(
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     output_key="ad_copy_critique",
 )
-    # 5. Potential for high engagement
-    # 6. Brand consistency with campaign guidelines
 
 
 ad_copy_finalizer = Agent(
@@ -114,16 +115,21 @@ ad_copy_finalizer = Agent(
     2. For each selected ad copy:
         - Polish the language for maximum impact.
         - Add any final creative touches.
-        - Ensure they market the {target_product}.
-        - Present them in order of recommended priority.
+        - Ensure it markets the {target_product}.
+        - Determine if any known product features or selling points are relevant.
         - Explain the unique value of each ad copy, including which trend(s) it relates to.
-    3. Display the selected ad copies and their details, including the bullets above.
+    3. Display the selected ad copies in order of recommended priority, be sure to include the following details for each one:
+        - Headline (attention-grabbing)
+        - Body text (concise and compelling)
+        - Call-to-action
+        - Which trend(s) it references
+        - Brief rationale for target audience appeal
+        - A candidate social media caption
     
     """,
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
     output_key="final_ad_copies",
 )
-        # - Ensure platform compliance (character limits, guidelines).
 
 # Sequential agent for ad creative generation
 ad_creative_pipeline = SequentialAgent(
@@ -145,23 +151,30 @@ visual_concept_drafter = Agent(
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
     
-    Based on the user-selected ad copies in the 'final_ad_copies' state key:
-    - Include both image and video concepts.
+    Based on the user-selected ad copies in the 'final_ad_copies' state key, generate visual concepts that:
     - Incorporate trending visual styles and themes.
     - Consider platform-specific best practices.
-    - Consider generated videos are 8 seconds in length.
-    
+    - Find a clever way to market the 'target_product'
+
+
+    In aggregate, the total set of visual concepts should:
+    -   Balance the use of image and video creatives.
+    -   Balance reference to the Search trend(s) and the trending Youtube video(s).
+    -   Include a few concepts that attempt to combine both Search and YouTube trends
+
+
     For each visual concept, provide:
-    - Name (intuitive name of the concept)
-    - Type (image or video)
-    - Which trend(s) it relates to (e.g., 'target_search_trends' and 'target_yt_trends' state keys)
-    - Which ad copy it connects to
-    - Creative concept explanation
-    - A draft {config.image_gen_model} or {config.video_gen_model} prompt.
-    - If this is a video concept:
-        - Include a storyboard that lists 2-4 scene descriptions. Create unique prompts for each scene description
-        - Prompt for continuity between scenes in the storyboard prompts.
-        - Consider the prompting best practices in the <PROMPTING_BEST_PRACTICES/> block.
+    -   Name (intuitive name of the concept)
+    -   Type (image or video)
+    -   Which trend(s) it relates to (e.g., 'target_search_trends' and 'target_yt_trends' state keys)
+    -   Which ad copy it connects to
+    -   Creative concept explanation
+    -   A draft {config.image_gen_model} or {config.video_gen_model} prompt.
+    -   If this is a video concept:
+        -   Consider generated videos are 8 seconds in length.
+        -   Include a storyboard that lists 2-4 scene descriptions. Create unique prompts for each scene description
+        -   Prompt for continuity between scenes in the storyboard prompts.
+        -   Consider the prompting best practices in the <PROMPTING_BEST_PRACTICES/> block.
 
     Use the `google_search` tool to support your decisions.
 
@@ -247,12 +260,13 @@ visual_generator = Agent(
     **Objective:** Generate visual content options (images and videos) based on the selected ad copies in the 'final_visual_concepts' state key.
 
     **Available Tools:**
-    - `generate_image`: Generate images using Google's Imagen model
-    - `generate_video`: Generate videos using Google's Veo model
+    - `generate_image`: Generate images using Google's Imagen model.
+    - `generate_video`: Generate videos using Google's Veo model.
+    - `save_img_artifact_key`: Use this tool to update the 'img_artifact_keys' state key for each image generated with the `generate_image` tool.
 
     **Instructions:**
     1. For each ad copy in the 'final_visual_concepts' state key, generate the creative visual using the appropriate tool (generate_image or generate_video).
-        - For images, follow the instructions in the <IMAGE_GENERATION/> block.
+        - For images, follow the instructions in the <IMAGE_GENERATION/> block. For each image generated, call the `save_img_artifact_key` tool to update the session state.
         - For videos, follow the instructions in the <VIDEO_GENERATION/> block. Consider the prompting best practices in the <PROMPTING_BEST_PRACTICES/> block
     2. Present each generated visual to the user with:
         - The prompt used for generation
@@ -281,9 +295,10 @@ visual_generator = Agent(
      {VEO3_INSTR}
     </PROMPTING_BEST_PRACTICES>
     """,
-    tools=[generate_image, generate_video, load_artifacts],
+    tools=[generate_image, generate_video, load_artifacts, save_img_artifact_key],
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
     before_model_callback=callbacks.rate_limit_callback,
+    after_tool_callback=save_artifact_key_after_tool,
 )
 
 
@@ -294,5 +309,6 @@ ad_content_generator_agent = Agent(
     description="Orchestrate comprehensive ad campaign creation with multiple copy and visual options",
     instruction=AD_CONTENT_GENERATOR_NEW_INSTR,
     sub_agents=[ad_creative_pipeline, visual_generation_pipeline, visual_generator],
+    tools=[save_creatives_and_research_report],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )

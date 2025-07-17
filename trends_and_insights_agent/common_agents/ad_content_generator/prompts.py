@@ -75,10 +75,10 @@ AD_CONTENT_GENERATOR_NEW_INSTR = """**Role:** You are the orchestrator for a com
 3. Once these steps are complete, transfer back to the `root_agent`.
 
 <WORKFLOW>
-1. First, transfer to the `ad_creative_pipeline` to generate a set of candidate ad copies.
+1. First, transfer to the `ad_creative_pipeline` subagent to generate a set of candidate ad copies.
 2. Once the candidate ad copies are selected, transfer to the `visual_generation_pipeline` to create visual concepts and prompts for each selected ad copy.
 3. Once the user has selected the visual concepts in the previous step, call the `visual_generator` subagent to generate the final visuals.
-4. Compile the final creatives from this session and present a summary to the user.
+4. Once the user is satisfied with the creatives, use the `save_creatives_and_research_report` tool to build the final report and save it as an artifact.
 </WORKFLOW>
 
 **Key Responsibilities:**
@@ -86,8 +86,6 @@ AD_CONTENT_GENERATOR_NEW_INSTR = """**Role:** You are the orchestrator for a com
 - Maintain context about campaign guidelines throughout the process.
 - Handle any user feedback or iteration requests.
 """
-# Follow these steps in order (be sure to tell the user what you're doing at each
-# step, but without giving technical details):
 
 
 VEO3_INSTR = """Here are some example best practices when creating prompts for VEO3:

@@ -18,7 +18,7 @@ from .prompts import (
     v2_ROOT_AGENT_INSTR,
 )
 
-
+# TODO: system generated prompt says: "You are an agent. Your internal name is 'trends_and_insights_agent'."
 root_agent = Agent(
     model=config.worker_model,
     name="root_agent",
