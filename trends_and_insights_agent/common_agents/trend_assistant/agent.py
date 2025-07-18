@@ -16,16 +16,16 @@ from .prompts import AUTO_TREND_AGENT_INSTR_v2
 from ...shared_libraries.config import config
 
 # TODO: add this here
-# campaign_guide_data_extract_agent = Agent(
+# pdf_data_extract = Agent(
 #     model=config.worker_model,
-#     name="campaign_guide_data_extract_agent",
+#     name="pdf_data_extract",
 #     description="Captures campaign details if user uploads PDF.",
 #     instruction=GUIDE_DATA_EXTRACT_INSTR,
 #     disallow_transfer_to_parent=True,
 #     disallow_transfer_to_peers=True,
 #     generate_content_config=schema_types.json_response_config,
 #     output_schema=schema_types.MarketingCampaignGuide,
-#     output_key="campaign_guide",
+#     output_key="XXXX",
 # )
 
 trends_and_insights_agent = Agent(

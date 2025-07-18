@@ -14,6 +14,7 @@ from trends_and_insights_agent.shared_libraries.config import config
 campaign_web_planner = Agent(
     model=config.lite_planner_model,
     name="campaign_web_planner",
+    # include_contents="none",
     description="Generates initial queries to guide web research about concepts described in the campaign metadata.",
     instruction="""You are a research strategist. 
     Your job is to create high-level queries that will help marketers better understand the 'target_audience', 'target_product', and 'key_selling_points' state keys.
@@ -23,17 +24,17 @@ campaign_web_planner = Agent(
     ---
     **Input Data**
 
-    <TARGET_AUDIENCE>
+    <target_audience>
     {target_audience}
-    </TARGET_AUDIENCE>
+    </target_audience>
 
-    <TARGET_PRODUCT>
+    <target_product>
     {target_product}
-    </TARGET_PRODUCT>
+    </target_product>
     
-    <KEY_SELLING_POINTS>
+    <key_selling_points>
     {key_selling_points}
-    </KEY_SELLING_POINTS>
+    </key_selling_points>
     
     ---
     **Important Guidelines**
@@ -45,7 +46,7 @@ campaign_web_planner = Agent(
     
     ---
     **Final Instructions**
-    Generate a list of web queries that addresses the **Important Guidelines**.
+    Generate a list of web queries that address the **Important Guidelines**.
     **CRITICAL RULE: Your output should just include a numbered list of queries. Nothing else.**
     """,
     output_key="initial_campaign_queries",

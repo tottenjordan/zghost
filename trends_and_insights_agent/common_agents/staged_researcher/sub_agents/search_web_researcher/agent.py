@@ -14,18 +14,19 @@ from trends_and_insights_agent.shared_libraries.config import config
 gs_web_planner = Agent(
     model=config.lite_planner_model,
     name="gs_web_planner",
+    # include_contents="none",
     description="Generates initial queries to understand why the 'target_search_trends' are trending.",
     instruction="""You are a research strategist. 
-    Your job is to create high-level queries that will help marketers better understand the cultural significance of trends from Google Search.
+    Your job is to create high-level queries that will help marketers better understand the cultural significance of Google Search trends in the 'target_search_trends' state key.
 
-    Review the search trend(s) provided in the **Input Data**, then proceed to the **Instructions**.
+    Review the search trend provided in the **Input Data**, then proceed to the **Instructions**.
 
     ---
     **Input Data**
 
-    <SEARCH_TRENDS>
+    <target_search_trends>
     {target_search_trends}
-    </SEARCH_TRENDS>
+    </target_search_trends>
     
     ---
     **Instructions**

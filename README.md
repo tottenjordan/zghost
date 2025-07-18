@@ -36,17 +36,30 @@
 
 **[entry point]** 
 
-First we need a "campaign guide", which typically includes target product, target audience, key selling points, campaign objectives, etc.
+First we need **campaign metadata** e.g., `brand`, `target product`, `target audience`, `key selling points`, etc.
 
-three options:
-1. Use default values in one of the provided example state configs [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json) (make sure path in `.env` file) 
-2. Manually edit one of these files or create a similar `json` with something you're more familiar with
-3. Upload a `campaign_guide` in PDF format e.g., [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf)
-    * TODO: fix support for user-uploaded PDF 
+two options:
+1. [Default] Agent will ask user for **campaign metadata** in the UI
+2. [Optional] to preload these values, use the example json configs [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json) or upload your own. The json config you wish to reference should be set in your `.env` file like so:
+
+```
+SESSION_STATE_JSON_PATH=example_state_prs.json
+```
+
+*Note: remove or comment out this variable to use default option (1)*
 
 
 ```
 > [user]: Hello...
+
+> [agent]: Hello! I'm your AI Marketing Research & Strategy Assistant... To start, what please provide the following campaign metadata:
+
+    * Brand
+    * Target Product
+    * Key Selling Points
+    * Target Audience
+
+> [user]: <provides campaign metadata>
 
 > [agent]: [displays Search Trends]
 

@@ -38,10 +38,10 @@ yt_analysis_generator_agent = Agent(
 
 yt_web_planner = Agent(
     model=config.lite_planner_model,
-    name="gs_web_planner",
+    name="yt_web_planner",
     description="Generates initial queries to understand why the 'target_yt_trends' are trending.",
     instruction="""You are a research strategist. 
-    Your job is to create high-level queries that will help marketers better understand the cultural significance of trending YouTube videos.
+    Your job is to create high-level queries that will help marketers better understand the cultural significance of the selected trending YouTube video(s) in the 'target_yt_trends' state key.
     
     1. Read the 'yt_video_analysis' state key to understand the trending YouTube video.
     2. Generate 2-3 web queries to better understanding the context of the video.

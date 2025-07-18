@@ -11,7 +11,7 @@ from google.adk.agents import Agent, LlmAgent, SequentialAgent, ParallelAgent
 from trends_and_insights_agent.shared_libraries.config import config
 from trends_and_insights_agent.shared_libraries import callbacks, schema_types
 
-from .tools import save_final_report_artifact
+from .tools import save_draft_report_artifact
 from .sub_agents.campaign_web_researcher.agent import ca_sequential_planner
 from .sub_agents.search_web_researcher.agent import gs_sequential_planner
 from .sub_agents.youtube_web_researcher.agent import yt_sequential_planner
@@ -181,16 +181,15 @@ combined_research_pipeline = SequentialAgent(
 combined_report_agent = LlmAgent(
     name="combined_report_agent",
     model=config.worker_model,
-    description="Combines research findings into a report and saves it as an artifact.",
+    description="Combines research findings into a draft report and saves it as an artifact.",
     instruction="""You are an AI Assistant responsible for combining research findings into a structured report.
 
     ### Instructions
-    1. Use the `save_final_report_artifact` tool to save the research report as an artifact. Only use this tool once.
-    2. Once Step 1 is complete, transfer to the `root_agent`.
+    1. Use the `save_draft_report_artifact` tool to save the research report draft as an artifact. Only use this tool once.
+    2. Confirm with the user if they approve of the research draft. Once approved, transfer back to the `root_agent`.
     """,
     tools=[
-        # LongRunningFunctionTool(save_final_report_artifact),
-        save_final_report_artifact,
+        save_draft_report_artifact,
     ],
 )
 

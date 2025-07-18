@@ -12,6 +12,7 @@ from .tools import (
     generate_video,
     # concatenate_videos,
     save_img_artifact_key,
+    save_vid_artifact_key,
     save_creatives_and_research_report,
 )
 from .prompts import (
@@ -165,7 +166,7 @@ visual_concept_drafter = Agent(
     For each visual concept, provide:
     -   Name (intuitive name of the concept)
     -   Type (image or video)
-    -   Which trend(s) it relates to (e.g., 'target_search_trends' and 'target_yt_trends' state keys)
+    -   Which trend(s) it relates to e.g., 'target_search_trends' and 'target_yt_trends' state keys.
     -   Which ad copy it connects to
     -   Creative concept explanation
     -   A draft {config.image_gen_model} or {config.video_gen_model} prompt.
@@ -266,7 +267,7 @@ visual_generator = Agent(
     **Instructions:**
     1. For each ad copy in the 'final_visual_concepts' state key, generate the creative visual using the appropriate tool (generate_image or generate_video).
         - For images, follow the instructions in the <IMAGE_GENERATION/> block. For each image generated, call the `save_img_artifact_key` tool to update the session state.
-        - For videos, follow the instructions in the <VIDEO_GENERATION/> block. Consider the prompting best practices in the <PROMPTING_BEST_PRACTICES/> block
+        - For videos, follow the instructions in the <VIDEO_GENERATION/> block and consider prompting best practices in the <PROMPTING_BEST_PRACTICES/> block. For each image generated, call the `save_vid_artifact_key` tool to update the session state.
     2. Present each generated visual to the user with:
         - The prompt used for generation
         - Brief explanation of the creative concept
@@ -294,7 +295,7 @@ visual_generator = Agent(
      {VEO3_INSTR}
     </PROMPTING_BEST_PRACTICES>
     """,
-    tools=[generate_image, generate_video, load_artifacts, save_img_artifact_key],
+    tools=[generate_image, generate_video, load_artifacts, save_img_artifact_key, save_vid_artifact_key],
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
     before_model_callback=callbacks.rate_limit_callback,
 )

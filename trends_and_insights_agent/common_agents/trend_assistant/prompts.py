@@ -41,6 +41,7 @@ Your **objective** is to use the **available tools** to complete the **instructi
   you only call another `memorize` after the last call has responded. 
 4. Use instructions from <FIND_SEARCH_TRENDS/> to find the user's desired Search trend.
 5. Use instructions from <FIND_YOUTUBE_TRENDS/> to find the user's desired trending YouTube video.
+6. Finally, once the above information is captured, reconfirm with user, if the user is satisfied, transfer to the `root_agent`.
 
 <FIND_SEARCH_TRENDS>
 - Use the `get_daily_gtrends` tool to display the top 25 trending Search terms to the user. This tool produces a formatted markdown table to display to the user.
@@ -59,11 +60,28 @@ Your **objective** is to use the **available tools** to complete the **instructi
 - Once they choose a trending video, use the `save_yt_trends_to_session_state` tool to save their choice in the 'target_yt_trends' state key.
 </FIND_YOUTUBE_TRENDS>
 
-6. Finally, once the above information is captured, reconfirm with user, if the user is satisfied, transfer to the `root_agent`.
 """
 
     # <target_search_trends>{target_search_trends}</target_search_trends>
     # <target_yt_trends>{target_yt_trends}</target_yt_trends>
+
+
+GUIDE_DATA_EXTRACT_INSTR = """
+Extract **ALL** text from the provided campaign guide.
+
+**Important:** Grab as much details as possible from the sections below:
+
+* campaign_name: [should be the title of the document]
+* brand: [infer this from the target product]
+* target_product: [should be explicitly defined]
+* target_audience: [extract bulleted description]
+* target_regions: [should be explicitly defined]
+* campaign_objectives: [extract bulleted list of objectives]
+* media_strategy: [extract bulleted list of media channels]
+* key_selling_points: [extract bulleted list of features and their description]
+
+Your response must be a single, raw JSON object validating against the 'MarketingCampaignGuide' schema.
+"""
 
 
 AUTO_TREND_AGENT_INSTR = f"""**Role:** You are an excellent trend finder who helps expert marketers explore trending topics

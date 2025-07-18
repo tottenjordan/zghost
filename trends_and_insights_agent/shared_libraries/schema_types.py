@@ -36,7 +36,6 @@ class CampaignFeedback(BaseModel):
 # ==========================
 # Marketing Guide Data Gen
 # ==========================
-# used by `campaign_guide_data_generation_agent``
 class MarketingCampaignGuide(BaseModel):
     "Data model for the marketing campaign guide."
 

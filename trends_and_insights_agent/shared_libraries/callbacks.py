@@ -117,7 +117,6 @@ def campaign_callback_function(
 ) -> Optional[types.Content]:
     """
     This sets default values for:
-        *   campaign_guide
         *   brand
         *   target_audience
         *   target_product
@@ -133,7 +132,6 @@ def campaign_callback_function(
     # current_state = callback_context.state.to_dict()
 
     # Check the condition in session state dictionary
-    campaign_guide = callback_context.state.get("campaign_guide")
     brand = callback_context.state.get("brand")
     target_audience = callback_context.state.get("target_audience")
     target_product = callback_context.state.get("target_product")
@@ -145,17 +143,9 @@ def campaign_callback_function(
 
     return_content = None  # placeholder for optional returned parts
 
-    if campaign_guide is None:
-        # TODO: remove this
-        return_content = "campaign_guide"
-        callback_context.state["campaign_guide"] = "not yet populated"
-
     if brand is None:
+        return_content = "brand"
         callback_context.state["brand"] = ""
-        if return_content is None:
-            return_content = "brand"
-        else:
-            return_content += ", brand"
 
     if target_audience is None:
         callback_context.state["target_audience"] = ""

@@ -236,6 +236,34 @@ async def save_img_artifact_key(
     return {"status": "ok"}
 
 
+async def save_vid_artifact_key(
+    artifact_key_dict: dict,
+    tool_context: ToolContext,
+) -> dict:
+    """
+    Tool to save video artifact details to the session state.
+    Use this tool after generating an video with the `generate_video` tool.
+
+    Args:
+        artifact_key_dict (dict): A dict representing a video artifact generated during this session. Use the `tool_context` to extract the following schema:
+            artifact_key (str): The filename used to identify the video artifact. This value is returned in the `generate_video` tool response.
+            vid_prompt (str): The prompt used to generate the video artifact.
+            concept (str): A brief explanation of the creative concept used to generate this artifact.
+            headline (str): The attention-grabbing headline proposed for the artifact's ad-copy.
+            caption (str): The candidate social media caption proposed for the artifact's ad-copy.
+            trend (str): The trend(s) referenced by this creative.
+        tool_context (ToolContext) The tool context.
+    Returns:
+        dict: the status of this functions overall outcome.
+    """
+    existing_vid_artifact_keys = tool_context.state.get("vid_artifact_keys")
+    logging.info(f"\n\nExisting `vid_artifact_keys`: {existing_vid_artifact_keys}\n\n")
+    if existing_vid_artifact_keys is not {"vid_artifact_keys": []}:
+        existing_vid_artifact_keys["vid_artifact_keys"].append(artifact_key_dict)
+    tool_context.state["vid_artifact_keys"] = existing_vid_artifact_keys
+    return {"status": "ok"}
+
+
 async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
     """
     Saves generated PDF report bytes as an artifact.

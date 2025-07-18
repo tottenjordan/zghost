@@ -12,7 +12,7 @@ from ...shared_libraries.utils import upload_blob_to_gcs
 
 
 # --- Tools ---
-async def save_final_report_artifact(tool_context: ToolContext) -> dict:
+async def save_draft_report_artifact(tool_context: ToolContext) -> dict:
     """
     Saves generated PDF report bytes as an artifact.
 
@@ -36,7 +36,7 @@ async def save_final_report_artifact(tool_context: ToolContext) -> dict:
 
         pdf = MarkdownPdf(toc_level=3)
         pdf.add_section(Section(f" {processed_report}\n"))
-        pdf.meta["title"] = "Trend & Campaign Research Report"
+        pdf.meta["title"] = "[draft] Trend & Campaign Research Report"
         pdf.save(filepath)
 
         # open pdf and read bytes for types.Part() object
