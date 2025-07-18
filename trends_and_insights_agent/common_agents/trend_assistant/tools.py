@@ -1,9 +1,7 @@
-# imports
 import os
 import logging
 
 logging.basicConfig(level=logging.INFO)
-
 
 import googleapiclient.discovery
 from google.cloud import bigquery
@@ -26,10 +24,26 @@ YOUTUBE_DATA_API_KEY = access_secret_version(secret_id=yt_secret_id, version_id=
 youtube_client = googleapiclient.discovery.build(
     serviceName="youtube", version="v3", developerKey=YOUTUBE_DATA_API_KEY
 )
-# bigquery client # TODO: add to .env
+
 BQ_PROJECT = os.environ["GOOGLE_CLOUD_PROJECT"]
-BQ_DATASET = "google_trends_copy"  # os.environ["BQ_DATASET"]
 bq_client = bigquery.Client(project=BQ_PROJECT)
+
+
+def memorize(key: str, value: str, tool_context: ToolContext):
+    """
+    Memorize pieces of information, one key-value pair at a time.
+
+    Args:
+        key: the label indexing the memory to store the value.
+        value: the information to be stored.
+        tool_context: The ADK tool context.
+
+    Returns:
+        A status message.
+    """
+    mem_dict = tool_context.state
+    mem_dict[key] = value
+    return {"status": f'Stored "{key}": "{value}"'}
 
 
 async def save_yt_trends_to_session_state(
@@ -127,7 +141,6 @@ def get_gtrends_max_date() -> str:
     query = f"""
         SELECT 
          MAX(refresh_date) as max_date
-        -- FROM `{BQ_PROJECT}.{BQ_DATASET}.top_terms`
         FROM `bigquery-public-data.google_trends.top_terms`
     """
     max_date = bq_client.query(query).to_dataframe()
@@ -159,7 +172,6 @@ def get_daily_gtrends(today_date: str = max_date) -> dict:
           term,
           refresh_date,
           ARRAY_AGG(STRUCT(rank,week) ORDER BY week DESC LIMIT 1) x
-        -- FROM `{BQ_PROJECT}.{BQ_DATASET}.top_terms`
         FROM `bigquery-public-data.google_trends.top_terms`
         WHERE refresh_date = PARSE_DATE('%m/%d/%Y',  '{max_date}')
         GROUP BY term, refresh_date

@@ -1,6 +1,5 @@
 """Prompt campaign guide data extract"""
 
-
 GUIDE_DATA_GEN_INSTR = """
 You are a data generation agent. 
 Your main job is to save details from marketing campaign guides.

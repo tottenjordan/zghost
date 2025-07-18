@@ -12,7 +12,6 @@ from .tools import (
     generate_video,
     # concatenate_videos,
     save_img_artifact_key,
-    save_artifact_key_after_tool,
     save_creatives_and_research_report,
 )
 from .prompts import (
@@ -30,7 +29,7 @@ ad_copy_drafter = Agent(
     instruction="""You are a creative copywriter generating initial ad copy ideas.
     
     Review the research findings in the 'combined_final_cited_report' state key.
-    Using insights related to the `campaign_guide`, trending YouTube video, and trending Search terms, generate 10-12 diverse ad copy ideas that:
+    Using insights related to the campaign metadata, trending YouTube video, and trending Search terms, generate 10-12 diverse ad copy ideas that:
     - Incorporate key selling points for the {target_product}
     - Vary in tone, style, and approach
     - Are suitable for Instagram/TikTok platforms
@@ -298,7 +297,6 @@ visual_generator = Agent(
     tools=[generate_image, generate_video, load_artifacts, save_img_artifact_key],
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
     before_model_callback=callbacks.rate_limit_callback,
-    after_tool_callback=save_artifact_key_after_tool,
 )
 
 

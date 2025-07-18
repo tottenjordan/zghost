@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 from google.genai import types
 from google.adk.tools import ToolContext
 
-from ...shared_libraries.utils import upload_file_to_gcs, upload_blob_to_gcs
+from ...shared_libraries.utils import upload_blob_to_gcs
 
 
 # --- Tools ---
@@ -34,8 +34,9 @@ async def save_final_report_artifact(tool_context: ToolContext) -> dict:
         artifact_key = "research_report_with_citations.pdf"
         filepath = f"{SUBDIR}/{artifact_key}"
 
-        pdf = MarkdownPdf(toc_level=0)
-        pdf.add_section(Section(f" {processed_report}\n", toc=False))
+        pdf = MarkdownPdf(toc_level=3)
+        pdf.add_section(Section(f" {processed_report}\n"))
+        pdf.meta["title"] = "Trend & Campaign Research Report"
         pdf.save(filepath)
 
         # open pdf and read bytes for types.Part() object
@@ -49,13 +50,6 @@ async def save_final_report_artifact(tool_context: ToolContext) -> dict:
             filename=artifact_key, artifact=document_part
         )
         gcs_folder = tool_context.state["gcs_folder"]
-        
-        # artifact_path = os.path.join(gcs_folder, artifact_key)
-        # upload_file_to_gcs(
-        #     file_path=artifact_path,
-        #     file_data=document_bytes,
-        #     content_type="application/pdf",
-        # )
 
         upload_blob_to_gcs(
             source_file_name=filepath,

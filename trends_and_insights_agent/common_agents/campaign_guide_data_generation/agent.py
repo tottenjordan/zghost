@@ -36,27 +36,4 @@ campaign_guide_data_generation_agent = LlmAgent(
     tools=[
         AgentTool(agent=campaign_guide_data_extract_agent),
     ],
-    # after_tool_callback=process_toolbox_output,
 )
-
-# TODO: add support for URLs and user uploads
-
-# async def process_toolbox_output(
-#     tool: BaseTool, args: Dict[str, Any], tool_context: ToolContext, tool_response: Dict
-# ) -> str:  # Optional[Dict]:
-#     """
-#     Inspects/modifies the tool result after execution.
-#     """
-
-#     # get tool response information
-#     agent_name = tool_context.agent_name
-#     response = tool_response  # .get("result", "")
-#     logging.info(f"\n\n ## JT DEBUGGING - BEGIN ## \n\n")
-#     logging.info(f"--- `process_toolbox_output` ---")
-#     logging.info(f"\n\n agent_name: {agent_name}")
-
-#     if tool.name == "campaign_guide_data_extract_agent":
-#         logging.info(f"\n\n tool.name: {tool.name}")
-#         logging.info(f"\n\n response: {response} .\n\n")
-#     # passthrough response
-#     return None

@@ -51,7 +51,9 @@ class SetupConfiguration:
     empty_session_state = {
         # TODO: fix referencing nested dict keys in agent instructions
         "state": {
-            "artifact_keys": {"image_creatives": {}, "video_creatives": {}},
+            "img_artifact_keys": {"img_artifact_keys": []},
+            "vid_artifact_keys": {"vid_artifact_keys": []},
+            "brand": "",
             "target_product": "",
             "target_audience": [],
             "key_selling_points": [],
@@ -61,8 +63,6 @@ class SetupConfiguration:
                 "target_product": "",
                 "target_region": "",
                 "target_audience": [],
-                "campaign_objectives": [],
-                "media_strategy": {},
                 "key_selling_points": [],
             },
             "target_search_trends": {"target_search_trends": []},

@@ -14,11 +14,11 @@ from trends_and_insights_agent.shared_libraries.config import config
 campaign_web_planner = Agent(
     model=config.lite_planner_model,
     name="campaign_web_planner",
-    description="Generates initial queries to guide web research about concepts described in the `campaign_guide`.",
+    description="Generates initial queries to guide web research about concepts described in the campaign metadata.",
     instruction="""You are a research strategist. 
-    Your job is to create high-level queries that will help marketers better understand concepts described in the 'campaign_guide' state key.
+    Your job is to create high-level queries that will help marketers better understand the 'target_audience', 'target_product', and 'key_selling_points' state keys.
      
-    Review the concepts from the campaign guide provided in the **Input Data**, then generate a list of 4-6 web queries to better understand them.
+    Review the campaign metadata provided in the **Input Data**, then generate a list of 4-6 web queries to better understand them.
 
     ---
     **Input Data**

@@ -1,12 +1,8 @@
-import os
 import logging
-import pandas as pd
-import uuid, shutil, time
-from typing import Dict, Any, Optional
-from markdown_pdf import MarkdownPdf, Section
-
 from PIL import Image
 from io import BytesIO
+import uuid, shutil, time, os
+from markdown_pdf import MarkdownPdf, Section
 
 logging.basicConfig(level=logging.INFO)
 
@@ -14,15 +10,11 @@ from google import genai
 from google.genai import types
 from google.cloud import storage
 from google.adk.tools import ToolContext
-from google.adk.tools.base_tool import BaseTool
 from google.genai.types import GenerateVideosConfig
-
-# from google.adk.agents.callback_context import CallbackContext
 
 from ...shared_libraries.config import config
 from ...shared_libraries.utils import (
     download_blob,
-    # upload_file_to_gcs,
     upload_blob_to_gcs,
     download_image_from_gcs,
 )
@@ -63,8 +55,8 @@ async def generate_image(
     else:
         filename_prefix = f"{str(uuid.uuid4())[:8]}"
 
-    DIR = "files"
-    SUBDIR = f"{DIR}/image_gen"
+    DIR = "session_media"
+    SUBDIR = f"{DIR}/imgs"
     if not os.path.exists(SUBDIR):
         os.makedirs(SUBDIR)
 
@@ -88,14 +80,7 @@ async def generate_image(
                 image.save(local_filepath)
                 gcs_folder = tool_context.state["gcs_folder"]
                 artifact_path = os.path.join(gcs_folder, artifact_key)
-
                 logging.info(f"\n\n `generate_image` listdir: {os.listdir('.')}\n\n")
-
-                # upload_file_to_gcs(
-                #     file_path=artifact_key,
-                #     file_data=image_bytes,
-                #     content_type="image/png",
-                # )
 
                 upload_blob_to_gcs(
                     source_file_name=local_filepath,
@@ -106,14 +91,14 @@ async def generate_image(
                 )
 
                 try:
-                    shutil.rmtree(SUBDIR)
+                    shutil.rmtree(DIR)
                     logging.info(
-                        f"Directory '{SUBDIR}' and its contents removed successfully"
+                        f"Directory '{DIR}' and its contents removed successfully"
                     )
                 except FileNotFoundError:
-                    logging.exception(f"Directory '{SUBDIR}' not found")
+                    logging.exception(f"Directory '{DIR}' not found")
                 except OSError as e:
-                    logging.exception(f"Error removing directory '{SUBDIR}': {e}")
+                    logging.exception(f"Error removing directory '{DIR}': {e}")
 
     return {"status": "ok", "artifact_key": f"{artifact_key}"}
 
@@ -144,11 +129,6 @@ async def generate_video(
         filename_prefix = f"{concept_name.replace(" ", "_")}"
     else:
         filename_prefix = f"{str(uuid.uuid4())[:8]}"
-
-    # DIR = "files"
-    # SUBDIR = f"{DIR}/video_gen"
-    # if not os.path.exists(SUBDIR):
-    #     os.makedirs(SUBDIR)
 
     gen_config = GenerateVideosConfig(
         aspect_ratio="16:9",
@@ -225,37 +205,139 @@ async def generate_video(
                             f"Blob {source_blob} copied to {destination_bucket}/{new_blob.name}"
                         )
 
-                    # # save the file locally for gcs upload
-                    # local_filepath = f"{SUBDIR}/{artifact_key}"
-                    # generated_video.video.save(local_filepath)
-                    # gcs_folder = tool_context.state["gcs_folder"]
-                    # artifact_path = os.path.join(gcs_folder, artifact_key)
-
-                    # upload_file_to_gcs(
-                    #     file_path=artifact_path,
-                    #     file_data=video_bytes,
-                    #     content_type="video/mp4",
-                    # )
-
-                    # upload_blob_to_gcs(
-                    #     source_file_name=local_filepath,
-                    #     destination_blob_name=artifact_path,
-                    # )
-                    # logging.info(
-                    #     f"Saved video artifact '{artifact_key}' to folder '{gcs_folder}'"
-                    # )
-
-                    # try:
-                    #     shutil.rmtree(SUBDIR)
-                    #     logging.info(
-                    #         f"Directory '{SUBDIR}' and its contents removed successfully"
-                    #     )
-                    # except FileNotFoundError:
-                    #     logging.exception(f"Directory '{SUBDIR}' not found")
-                    # except OSError as e:
-                    #     logging.exception(f"Error removing directory '{SUBDIR}': {e}")
-
                     return {"status": "ok", "artifact_key": f"{artifact_key}"}
+
+
+async def save_img_artifact_key(
+    artifact_key_dict: dict,
+    tool_context: ToolContext,
+) -> dict:
+    """
+    Tool to save image artifact details to the session state.
+    Use this tool after generating an image with the `generate_image` tool.
+
+    Args:
+        artifact_key_dict (dict): A dict representing an image artifact generated during this session. Use the `tool_context` to extract the following schema:
+            artifact_key (str): The filename used to identify the image artifact. This value is returned in the `generate_image` tool response.
+            img_prompt (str): The prompt used to generate the image artifact.
+            concept (str): A brief explanation of the creative concept used to generate this artifact.
+            headline (str): The attention-grabbing headline proposed for the artifact's ad-copy.
+            caption (str): The candidate social media caption proposed for the artifact's ad-copy.
+            trend (str): The trend(s) referenced by this creative.
+        tool_context (ToolContext) The tool context.
+    Returns:
+        dict: the status of this functions overall outcome.
+    """
+    existing_img_artifact_keys = tool_context.state.get("img_artifact_keys")
+    logging.info(f"\n\nExisting `img_artifact_keys`: {existing_img_artifact_keys}\n\n")
+    if existing_img_artifact_keys is not {"img_artifact_keys": []}:
+        existing_img_artifact_keys["img_artifact_keys"].append(artifact_key_dict)
+    tool_context.state["img_artifact_keys"] = existing_img_artifact_keys
+    return {"status": "ok"}
+
+
+async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
+    """
+    Saves generated PDF report bytes as an artifact.
+
+    Args:
+        tool_context (ToolContext): The tool context.
+
+    Returns:
+        dict: Status and the location of the PDF artifact file.
+    """
+    processed_report = tool_context.state["final_report_with_citations"]
+    gcs_folder = tool_context.state["gcs_folder"]
+
+    try:
+
+        # create local dir to save imgs
+        DIR = f"session_report"
+        IMG_SUBDIR = f"{DIR}/imgs"
+        if not os.path.exists(IMG_SUBDIR):
+            os.makedirs(IMG_SUBDIR)
+
+        # get artifact details
+        img_artifact_state_dict = tool_context.state.get("img_artifact_keys")
+        img_artifact_list = img_artifact_state_dict["img_artifact_keys"]
+        logging.info(f"\n\n img_artifact_list: {img_artifact_list}\n\n")
+
+        IMG_CREATIVE_STRING = ""
+        for entry in img_artifact_list:
+            logging.info(entry)
+            LOCAL_FILE_PATH = os.path.join(IMG_SUBDIR, entry["artifact_key"])
+            ARTIFACT_KEY_NAME = entry["artifact_key"].replace(".png", "")
+            # download locally
+            download_image_from_gcs(
+                source_blob_name=os.path.join(gcs_folder, entry["artifact_key"]),
+                destination_file_name=LOCAL_FILE_PATH,
+            )
+            # TODO: optimize
+            path_str = f"![Example Image]({LOCAL_FILE_PATH})\n"
+            str_1 = f"## {ARTIFACT_KEY_NAME}\n"
+            str_2 = f"**{entry["headline"]}**\n\n"
+            str_3 = f"{path_str}\n\n"
+            str_4 = f"**{entry["caption"]}**\n\n"
+            str_5 = f"**Trend(s):** {entry["trend"]}\n\n"
+            str_6 = f"**Visual Concept:** {entry["concept"]}\n\n"
+            str_7 = f"**Prompt:** {entry["img_prompt"]}\n\n"
+            result = (
+                str_1
+                + " "
+                + str_2
+                + " "
+                + str_3
+                + " "
+                + str_4
+                + " "
+                + str_5
+                + " "
+                + str_6
+                + " "
+                + str_7
+            )
+
+            IMG_CREATIVE_STRING += result
+
+        # create local PDF file
+        artifact_key = "final_trends_and_creatives_report.pdf"
+        report_filepath = f"{DIR}/{artifact_key}.pdf"
+
+        # create PDF object
+        pdf = MarkdownPdf(toc_level=3)
+        pdf.add_section(Section(f" {processed_report}\n"))
+        pdf.add_section(Section(f"# Ad Creatives\n\n{IMG_CREATIVE_STRING}"))
+        pdf.meta["title"] = "trends-2-creatives Final Report"
+        pdf.save(report_filepath)
+
+        # open pdf and read bytes for types.Part() object
+        with open(report_filepath, "rb") as f:
+            document_bytes = f.read()
+
+        # artifact build
+        document_part = types.Part(
+            inline_data=types.Blob(data=document_bytes, mime_type="application/pdf")
+        )
+        version = await tool_context.save_artifact(
+            filename=artifact_key, artifact=document_part
+        )
+        logging.info(
+            f"\n\nSaved report artifact: '{artifact_key}' as version {version}\n\n"
+        )
+        upload_blob_to_gcs(
+            source_file_name=report_filepath,
+            destination_blob_name=os.path.join(gcs_folder, artifact_key),
+        )
+        logging.info(
+            f"\n\nSaved artifact doc '{artifact_key}', version {version}, to folder '{gcs_folder}'\n\n"
+        )
+        # clean up
+        shutil.rmtree(DIR)
+        logging.info(f"Directory '{DIR}' and its contents removed successfully")
+        return {"status": "ok", "artifact_key": artifact_key}
+    except Exception as e:
+        logging.error(f"Error saving artifact: {e}")
+        return {"status": "failed", "error": str(e)}
 
 
 # TODO: Get ffmpeg install working on agent engine
@@ -380,162 +462,3 @@ async def generate_video(
 #         }
 #     except Exception as e:
 #         return {"status": "failed", "error": str(e)}
-
-
-async def save_img_artifact_key(
-    artifact_key_dict: dict,
-    tool_context: ToolContext,
-) -> dict:
-    """
-    Tool to save image artifact details to the session state.
-    Use this tool after generating an image with the `generate_image` tool.
-
-    Args:
-        artifact_key_dict (dict): A dictionary representing an image artifact generated during this session. Use the `tool_context` to extract the following schema:
-            artifact_key (str): The filename used to identify the image artifact. This value is returned in the `generate_image` tool response.
-            img_prompt (str): The prompt used to generate the image artifact.
-            concept (str): A brief explanation of the creative concept used to generate this artifact.
-            headline (str): The attention-grabbing headline proposed for the artifact's ad-copy.
-            caption (str): The candidate social media caption proposed for the artifact's ad-copy.
-            trend (str): The trend(s) referenced by this creative.
-        tool_context (ToolContext) The tool context.
-    Returns:
-        dict: the status of this functions overall outcome.
-    """
-    existing_img_artifact_keys = tool_context.state.get("img_artifact_keys")
-    logging.info(f"\n\nExisting `img_artifact_keys`: {existing_img_artifact_keys}\n\n")
-    if existing_img_artifact_keys is not {"img_artifact_keys": []}:
-        existing_img_artifact_keys["img_artifact_keys"].append(artifact_key_dict)
-    tool_context.state["img_artifact_keys"] = existing_img_artifact_keys
-    return {"status": "ok"}
-
-
-async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
-    """
-    Saves generated PDF report bytes as an artifact.
-
-    Args:
-        tool_context (ToolContext): The tool context.
-
-    Returns:
-        dict: Status and the location of the PDF artifact file.
-    """
-    processed_report = tool_context.state["final_report_with_citations"]
-    gcs_folder = tool_context.state["gcs_folder"]
-
-    try:
-
-        # create local dir to save imgs
-        DIR = f"session_ads"
-        IMG_SUBDIR = f"{DIR}/img"
-        if not os.path.exists(IMG_SUBDIR):
-            os.makedirs(IMG_SUBDIR)
-
-        # get artifact details
-        img_artifact_state_dict = tool_context.state.get("img_artifact_keys")
-        img_artifact_list = img_artifact_state_dict["img_artifact_keys"]
-        logging.info(f"\n\n img_artifact_list: {img_artifact_list}\n\n")
-
-        IMG_CREATIVE_STRING = ""
-        for entry in img_artifact_list:
-            logging.info(entry)
-            LOCAL_FILE_PATH = os.path.join(IMG_SUBDIR, entry["artifact_key"])
-            ARTIFACT_KEY = entry["artifact_key"].replace(".png", "")
-            # download locally
-            download_image_from_gcs(
-                source_blob_name=os.path.join(gcs_folder, entry["artifact_key"]),
-                destination_file_name=LOCAL_FILE_PATH,
-            )
-            path_str = f"![Example Image]({LOCAL_FILE_PATH})\n"
-            str_1 = f"## {ARTIFACT_KEY}\n"
-            str_2 = f"**{entry["headline"]}**\n\n"
-            str_3 = f"{path_str}\n\n"
-            str_4 = f"**{entry["caption"]}**\n\n"
-            str_5 = f"**Trend(s):** {entry["trend"]}\n\n"
-            str_6 = f"**Visual Concept:** {entry["concept"]}\n\n"
-            str_7 = f"**Prompt:** {entry["img_prompt"]}\n\n"
-            result = (
-                str_1
-                + " "
-                + str_2
-                + " "
-                + str_3
-                + " "
-                + str_4
-                + " "
-                + str_5
-                + " "
-                + str_6
-                + " "
-                + str_7
-            )
-
-            IMG_CREATIVE_STRING += result
-
-        # create local PDF file
-        artifact_key = "final_trends_and_creatives_report.pdf"
-        report_filepath = f"{DIR}/{artifact_key}.pdf"
-
-        # create PDF object
-        pdf = MarkdownPdf(toc_level=3)
-        pdf.add_section(Section(f" {processed_report}\n"))
-        pdf.add_section(Section(f"# Ad Creatives\n\n{IMG_CREATIVE_STRING}"))
-        pdf.meta["title"] = "trends-2-creatives Final Report"
-        pdf.save(report_filepath)
-
-        # open pdf and read bytes for types.Part() object
-        with open(report_filepath, "rb") as f:
-            document_bytes = f.read()
-
-        # artifact build
-        document_part = types.Part(
-            inline_data=types.Blob(data=document_bytes, mime_type="application/pdf")
-        )
-        version = await tool_context.save_artifact(
-            filename=artifact_key, artifact=document_part
-        )
-        logging.info(
-            f"\n\nSaved report artifact: '{artifact_key}' as version {version}\n\n"
-        )
-        upload_blob_to_gcs(
-            source_file_name=report_filepath,
-            destination_blob_name=os.path.join(gcs_folder, artifact_key),
-        )
-        logging.info(
-            f"\n\nSaved artifact doc '{artifact_key}', version {version}, to folder '{gcs_folder}'\n\n"
-        )
-        # clean up
-        shutil.rmtree(DIR)
-        logging.info(f"Directory '{DIR}' and its contents removed successfully")
-        return {"status": "ok", "artifact_key": artifact_key}
-    except Exception as e:
-        logging.error(f"Error saving artifact: {e}")
-        return {"status": "failed", "error": str(e)}
-
-
-async def save_artifact_key_after_tool(
-    tool: BaseTool,
-    args: Dict[str, Any],
-    tool_context: ToolContext,
-    tool_response: Dict,
-) -> Optional[Dict]:
-    """
-    Inspects/modifies the tool result after execution.
-    """
-    # get tool response information
-    agent_name = tool_context.agent_name
-    response = tool_response
-    logging.info(
-        f"\n\n After tool call for tool.name '{tool.name}' in agent '{agent_name}'\n\n"
-    )
-    logging.info(f"\n\n Original tool response: {response} \n\n")
-    logging.info(f"\n\n Args used: {args} \n\n")
-
-    if tool.name == "generate_image" or tool.name == "save_img_artifact_key":
-        existing_img_artifact_keys = tool_context.state.get("img_artifact_keys")
-        logging.info(
-            f"\n\n existing_img_artifact_keys: {existing_img_artifact_keys}\n\n"
-        )
-        return None
-
-    return None

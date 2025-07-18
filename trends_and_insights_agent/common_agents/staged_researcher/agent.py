@@ -149,7 +149,7 @@ combined_report_composer = Agent(
     You can use any format you prefer, but here's a suggested structure:
     # Campaign Title
     ## Section Name
-    An overview of what this section covers
+    An overview of what this section covers, including specific insights from web research.
     Feel free to add subsections or bullet points if needed to better organize the content.
     Make sure your outline is clear and easy to follow.
 
@@ -186,7 +186,7 @@ combined_report_agent = LlmAgent(
 
     ### Instructions
     1. Use the `save_final_report_artifact` tool to save the research report as an artifact. Only use this tool once.
-    2. Once Step 1 is complete, transfer to the `ad_content_generator_agent` agent.
+    2. Once Step 1 is complete, transfer to the `root_agent`.
     """,
     tools=[
         # LongRunningFunctionTool(save_final_report_artifact),
