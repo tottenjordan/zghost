@@ -79,9 +79,9 @@ combined_web_evaluator = Agent(
         - If you don't find any significant gaps, write a detailed comment about any aspect of the campaign guide or trends to research further. Provide 5-7 related queries.
 
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
-    Your response must be a single, raw JSON object validating against the 'CampaignFeedback' schema.
+    Provide output in the form of a comment and a bulleted list of follow up queries.
     """,
-    output_schema=schema_types.CampaignFeedback,
+    # output_schema=schema_types.CampaignFeedback,
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
     output_key="combined_research_evaluation",

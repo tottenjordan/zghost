@@ -50,32 +50,34 @@ poetry install               # Install from lock file
 ### Agent Hierarchy
 ```
 root_agent (orchestrator)
-├── campaign_guide_data_generation_agent  # Extract campaign data from PDFs
-│   └── campaign_guide_data_extract_agent # LLM agent for detail extraction
 ├── trends_and_insights_agent            # Display/capture trend selections
-├── combined_research_merger             # Coordinates research pipeline
-│   ├── combined_research_pipeline       # Sequential research flow
-│   │   ├── merge_parallel_insights      # Parallel research coordination
-│   │   │   ├── parallel_planner_agent   # Runs 3 research types simultaneously
-│   │   │   │   ├── yt_sequential_planner # YouTube trend analysis
-│   │   │   │   ├── gs_sequential_planner # Google Search trend analysis
-│   │   │   │   └── ca_sequential_planner # Campaign research
-│   │   │   └── merge_planners           # Combines research plans
-│   │   ├── combined_web_evaluator       # Quality check
-│   │   ├── enhanced_combined_searcher   # Refine search
-│   │   └── combined_report_composer     # Generate unified report
-│   └── combined_report_agent            # Final report synthesis
 ├── ad_content_generator_agent           # Create comprehensive ad campaigns
-│   ├── ad_creative_pipeline             # Ad copy generation flow
-│   │   ├── ad_copy_drafter
-│   │   ├── ad_copy_critic
-│   │   └── ad_copy_finalizer
-│   ├── visual_generation_pipeline       # Visual concept development
-│   │   ├── visual_concept_drafter
-│   │   ├── visual_concept_critic
-│   │   └── visual_concept_finalizer
-│   └── visual_generator                 # Image/video generation
-└── report_generator_agent               # Compile PDF reports
+│   ├── ad_creative_pipeline             # Ad copy generation flow (Sequential)
+│   │   ├── ad_copy_drafter              # Generate 10-12 initial ad copy ideas
+│   │   ├── ad_copy_critic               # Critique and narrow down to 6-8 best
+│   │   └── ad_copy_finalizer            # User selection and final polish
+│   ├── visual_generation_pipeline       # Visual concept development (Sequential)
+│   │   ├── visual_concept_drafter       # Generate visual concepts for ads
+│   │   ├── visual_concept_critic        # Evaluate and refine concepts
+│   │   └── visual_concept_finalizer     # User selection of concepts
+│   └── visual_generator                 # Generate final images/videos
+└── combined_research_pipeline           # Sequential research flow
+    ├── merge_parallel_insights          # Coordinates parallel research (Sequential)
+    │   ├── parallel_planner_agent       # Runs 3 research types simultaneously (Parallel)
+    │   │   ├── yt_sequential_planner    # YouTube trend analysis (Sequential)
+    │   │   │   ├── yt_analysis_generator_agent  # Analyze YouTube video content
+    │   │   │   ├── yt_web_planner       # Generate YouTube research queries
+    │   │   │   └── yt_web_searcher      # Execute YouTube research
+    │   │   ├── gs_sequential_planner    # Google Search trend analysis (Sequential)
+    │   │   │   ├── gs_web_planner       # Generate search trend queries
+    │   │   │   └── gs_web_searcher      # Execute search trend research
+    │   │   └── ca_sequential_planner    # Campaign research (Sequential)
+    │   │       ├── campaign_web_planner # Generate campaign queries
+    │   │       └── campaign_web_searcher # Execute campaign research
+    │   └── merge_planners               # Combines all research results
+    ├── combined_web_evaluator           # Quality check and gap analysis
+    ├── enhanced_combined_searcher       # Execute follow-up queries
+    └── combined_report_composer         # Generate final cited report
 ```
 
 ### Key Directories
@@ -95,15 +97,15 @@ root_agent (orchestrator)
 4. **Async Operations**: Web scraping uses concurrent requests
 
 ### Research Pipeline Architecture
-The combined_research_merger coordinates parallel research:
-1. **Parallel Research Phase**: All three research types run simultaneously
-   - YouTube: `yt_analysis_generator` → `yt_web_planner` → `yt_web_searcher`
-   - Google Search: `gs_web_planner` → `gs_web_searcher`
-   - Campaign: `campaign_web_planner` → `campaign_web_searcher`
-2. **Merge Phase**: `merge_planners` combines all research plans
-3. **Evaluation**: `combined_web_evaluator` checks quality
-4. **Enhancement**: `enhanced_combined_searcher` refines results
-5. **Composition**: `combined_report_composer` generates unified report
+The combined_research_pipeline coordinates parallel research through merge_parallel_insights:
+1. **Parallel Research Phase**: All three research types run simultaneously via `parallel_planner_agent`
+   - YouTube (`yt_sequential_planner`): `yt_analysis_generator_agent` → `yt_web_planner` → `yt_web_searcher`
+   - Google Search (`gs_sequential_planner`): `gs_web_planner` → `gs_web_searcher`
+   - Campaign (`ca_sequential_planner`): `campaign_web_planner` → `campaign_web_searcher`
+2. **Merge Phase**: `merge_planners` combines all research results
+3. **Evaluation**: `combined_web_evaluator` checks quality and identifies gaps
+4. **Enhancement**: `enhanced_combined_searcher` executes follow-up queries
+5. **Composition**: `combined_report_composer` generates final cited report
 
 ## Environment Variables
 Required in `.env`:
