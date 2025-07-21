@@ -7,6 +7,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 from typing import Dict, Any, Optional
+from google.adk.models.llm_response import LlmResponse
 
 from google.genai import types
 from google.adk.sessions.state import State
@@ -270,6 +271,33 @@ def collect_research_sources_callback(callback_context: CallbackContext) -> None
                         )
     callback_context.state["url_to_short_id"] = url_to_short_id
     callback_context.state["sources"] = sources
+
+
+def return_thoughts_only(
+    callback_context: CallbackContext, llm_response: LlmResponse
+) -> LlmResponse:
+    """Callback function that returns only the thoughts of the agent.
+
+    Args:
+      callback_context: A CallbackContext object representing the active
+              callback context.
+
+    Returns:
+        types.Content: The thoughts of the agent.
+    """
+    if llm_response.content and llm_response.content.parts:
+        for part in llm_response.content.parts:
+            if part.thought and part.text:
+                return LlmResponse(
+                    content=types.Content(
+                        parts=[types.Part(text=part.text, thought=True)], role="model"
+                    )
+                )
+    return LlmResponse(
+        content=types.Content(
+            parts=[types.Part(text="Thinking...", thought=True)], role="model"
+        )
+    )
 
 
 def citation_replacement_callback(

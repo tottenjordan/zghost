@@ -9,6 +9,9 @@ from google.adk.agents import Agent, SequentialAgent
 
 from trends_and_insights_agent.shared_libraries import callbacks
 from trends_and_insights_agent.shared_libraries.config import config
+from trends_and_insights_agent.shared_libraries.callbacks import return_thoughts_only
+
+
 
 
 gs_web_planner = Agent(
@@ -57,6 +60,7 @@ gs_web_searcher = Agent(
     tools=[google_search],
     output_key="gs_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
+    # after_model_callback=return_thoughts_only,
 )
 
 

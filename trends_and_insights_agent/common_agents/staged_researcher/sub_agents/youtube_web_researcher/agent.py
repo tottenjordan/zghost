@@ -13,6 +13,8 @@ from google.adk.tools import google_search
 from trends_and_insights_agent.shared_libraries import callbacks
 from trends_and_insights_agent.shared_libraries.config import config
 from trends_and_insights_agent.tools import analyze_youtube_videos
+from trends_and_insights_agent.shared_libraries.callbacks import return_thoughts_only
+
 
 
 yt_analysis_generator_agent = Agent(
@@ -33,6 +35,7 @@ yt_analysis_generator_agent = Agent(
         analyze_youtube_videos,
     ],
     output_key="yt_video_analysis",
+    # after_model_callback=return_thoughts_only,
 )
 
 
@@ -66,6 +69,7 @@ yt_web_searcher = Agent(
     tools=[google_search],
     output_key="yt_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
+    # after_model_callback=return_thoughts_only,
 )
 
 

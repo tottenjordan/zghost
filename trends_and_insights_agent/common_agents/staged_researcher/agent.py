@@ -15,6 +15,8 @@ from .tools import save_draft_report_artifact
 from .sub_agents.campaign_web_researcher.agent import ca_sequential_planner
 from .sub_agents.search_web_researcher.agent import gs_sequential_planner
 from .sub_agents.youtube_web_researcher.agent import yt_sequential_planner
+from trends_and_insights_agent.shared_libraries.callbacks import return_thoughts_only
+
 
 
 # --- PARALLEL RESEARCH SUBAGENTS --- #
@@ -48,6 +50,7 @@ merge_planners = Agent(
     {yt_web_search_insights}
 
     Output *only* the structured report following this format. Do not include introductory or concluding phrases outside this structure, and strictly adhere to using only the provided input summary content.
+    When finished, transfer to the parent agent.
     """,
     output_key="combined_web_search_insights",
 )
@@ -83,6 +86,7 @@ combined_web_evaluator = Agent(
     disallow_transfer_to_peers=True,
     output_key="combined_research_evaluation",
     before_model_callback=callbacks.rate_limit_callback,
+    # after_model_callback=return_thoughts_only,
 )
 
 
@@ -103,6 +107,7 @@ enhanced_combined_searcher = Agent(
     tools=[google_search],
     output_key="combined_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
+    # after_model_callback=return_thoughts_only,
 )
 
 
@@ -177,44 +182,3 @@ combined_research_pipeline = SequentialAgent(
     ],
 )
 
-
-combined_report_agent = LlmAgent(
-    name="combined_report_agent",
-    model=config.worker_model,
-    description="Combines research findings into a draft report and saves it as an artifact.",
-    instruction="""You are an AI Assistant responsible for combining research findings into a structured report.
-
-    ### Instructions
-    1. Use the `save_draft_report_artifact` tool to save the research report draft as an artifact. Only use this tool once.
-    2. Confirm with the user if they approve of the research draft. Once approved, transfer back to the `root_agent`.
-    """,
-    tools=[
-        save_draft_report_artifact,
-    ],
-)
-
-
-combined_research_merger = SequentialAgent(
-    name="combined_research_merger",
-    sub_agents=[combined_research_pipeline, combined_report_agent],
-    description="Coordinates research pipeline and synthesizes the results.",
-)
-
-
-# # Main orchestrator agent
-# stage_1_research_merger = Agent(
-#     model="gemini-2.5-pro",
-#     name="stage_1_research_merger",
-#     description="Orchestrate comprehensive research for the campaign guide and trending topics.",
-#     instruction="""**Role:** You are the orchestrator for a comprehensive research workflow.
-#     **Objective:** Coordinate the use subagents and tools to conduct research and save the results as an artifact.
-
-#     **Workflow:**
-#     1. First, call the `combined_research_pipeline` subagent to conduct web research on the campaign guide and selected trends.
-#     2. Once the research tasks are complete, use the `save_final_report_artifact` tool to save the research report as an artifact.
-#     3. Transfer back to the `root_agent`.
-#     """,
-#     sub_agents=[combined_research_pipeline],
-#     tools=[save_final_report_artifact],
-#     generate_content_config=types.GenerateContentConfig(temperature=1.0),
-# )

@@ -9,6 +9,8 @@ from google.adk.agents import Agent, SequentialAgent
 
 from trends_and_insights_agent.shared_libraries import callbacks
 from trends_and_insights_agent.shared_libraries.config import config
+from trends_and_insights_agent.shared_libraries.callbacks import return_thoughts_only
+
 
 
 campaign_web_planner = Agent(
@@ -50,6 +52,7 @@ campaign_web_planner = Agent(
     **CRITICAL RULE: Your output should just include a numbered list of queries. Nothing else.**
     """,
     output_key="initial_campaign_queries",
+    # after_model_callback=return_thoughts_only,
 )
 
 
@@ -67,6 +70,7 @@ campaign_web_searcher = Agent(
     tools=[google_search],
     output_key="campaign_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
+    # after_model_callback=return_thoughts_only,
 )
 
 
