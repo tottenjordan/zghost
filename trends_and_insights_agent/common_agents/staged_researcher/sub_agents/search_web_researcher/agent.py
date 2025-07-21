@@ -10,8 +10,7 @@ from google.adk.agents import Agent, SequentialAgent
 from trends_and_insights_agent.shared_libraries import callbacks
 from trends_and_insights_agent.shared_libraries.config import config
 from trends_and_insights_agent.shared_libraries.callbacks import return_thoughts_only
-
-
+import functools
 
 
 gs_web_planner = Agent(
@@ -58,9 +57,11 @@ gs_web_searcher = Agent(
     Synthesize the results into a detailed summary.
     """,
     tools=[google_search],
-    output_key="gs_web_search_insights",
+    # output_key="ç",
     after_agent_callback=callbacks.collect_research_sources_callback,
-    # after_model_callback=return_thoughts_only,
+    after_model_callback=functools.partial(
+        return_thoughts_only, llm_text_state_key="gs_web_search_insights"
+    ),
 )
 
 

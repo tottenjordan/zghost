@@ -10,7 +10,7 @@ from google.adk.agents import Agent, SequentialAgent
 from trends_and_insights_agent.shared_libraries import callbacks
 from trends_and_insights_agent.shared_libraries.config import config
 from trends_and_insights_agent.shared_libraries.callbacks import return_thoughts_only
-
+import functools
 
 
 campaign_web_planner = Agent(
@@ -51,10 +51,11 @@ campaign_web_planner = Agent(
     Generate a list of web queries that address the **Important Guidelines**.
     **CRITICAL RULE: Your output should just include a numbered list of queries. Nothing else.**
     """,
-    output_key="initial_campaign_queries",
-    # after_model_callback=return_thoughts_only,
+    # output_key="initial_campaign_queries",
+    after_model_callback=functools.partial(
+        return_thoughts_only, llm_text_state_key="initial_campaign_queries"
+    ),
 )
-
 
 campaign_web_searcher = Agent(
     model=config.worker_model,
@@ -68,11 +69,12 @@ campaign_web_searcher = Agent(
     Synthesize the results into a detailed summary.
     """,
     tools=[google_search],
-    output_key="campaign_web_search_insights",
+    # output_key="campaign_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
-    # after_model_callback=return_thoughts_only,
+    after_model_callback=functools.partial(
+        return_thoughts_only, llm_text_state_key="campaign_web_search_insights"
+    ),
 )
-
 
 ca_sequential_planner = SequentialAgent(
     name="ca_sequential_planner",

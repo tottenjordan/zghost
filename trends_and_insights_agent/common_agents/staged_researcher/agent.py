@@ -15,8 +15,10 @@ from .tools import save_draft_report_artifact
 from .sub_agents.campaign_web_researcher.agent import ca_sequential_planner
 from .sub_agents.search_web_researcher.agent import gs_sequential_planner
 from .sub_agents.youtube_web_researcher.agent import yt_sequential_planner
-from trends_and_insights_agent.shared_libraries.callbacks import return_thoughts_only
-
+from trends_and_insights_agent.shared_libraries.callbacks import (
+    return_thoughts_only,
+)
+import functools
 
 
 # --- PARALLEL RESEARCH SUBAGENTS --- #
@@ -61,7 +63,6 @@ merge_parallel_insights = SequentialAgent(
     description="Coordinates parallel research and synthesizes the results.",
 )
 
-
 # --- COMBINED RESEARCH SUBAGENTS --- #
 combined_web_evaluator = Agent(
     model=config.critic_model,
@@ -84,9 +85,9 @@ combined_web_evaluator = Agent(
     # output_schema=schema_types.CampaignFeedback,
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
-    output_key="combined_research_evaluation",
+    # output_key="combined_research_evaluation",
     before_model_callback=callbacks.rate_limit_callback,
-    # after_model_callback=return_thoughts_only,
+    after_model_callback=functools.partial(return_thoughts_only, llm_text_state_key="combined_research_evaluation"),
 )
 
 
@@ -105,9 +106,9 @@ enhanced_combined_searcher = Agent(
     4.  Your output MUST be the new, complete, and improved set of research insights for the trending Search terms, trending YouTube video, and campaign guide.
     """,
     tools=[google_search],
-    output_key="combined_web_search_insights",
+    # output_key="combined_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
-    # after_model_callback=return_thoughts_only,
+    after_model_callback=functools.partial(return_thoughts_only, llm_text_state_key="combined_web_search_insights"),
 )
 
 
@@ -181,4 +182,3 @@ combined_research_pipeline = SequentialAgent(
         combined_report_composer,
     ],
 )
-

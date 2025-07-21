@@ -273,33 +273,6 @@ def collect_research_sources_callback(callback_context: CallbackContext) -> None
     callback_context.state["sources"] = sources
 
 
-def return_thoughts_only(
-    callback_context: CallbackContext, llm_response: LlmResponse
-) -> LlmResponse:
-    """Callback function that returns only the thoughts of the agent.
-
-    Args:
-      callback_context: A CallbackContext object representing the active
-              callback context.
-
-    Returns:
-        types.Content: The thoughts of the agent.
-    """
-    if llm_response.content and llm_response.content.parts:
-        for part in llm_response.content.parts:
-            if part.thought and part.text:
-                return LlmResponse(
-                    content=types.Content(
-                        parts=[types.Part(text=part.text, thought=True)], role="model"
-                    )
-                )
-    return LlmResponse(
-        content=types.Content(
-            parts=[types.Part(text="Thinking...", thought=True)], role="model"
-        )
-    )
-
-
 def citation_replacement_callback(
     callback_context: CallbackContext,
 ) -> Optional[types.Content]:
@@ -334,7 +307,11 @@ def citation_replacement_callback(
     )
     processed_report = re.sub(r"\s+([.,;:])", r"\1", processed_report)
     callback_context.state["final_report_with_citations"] = processed_report
-    return types.Content(parts=[types.Part(text="PDF report saved to memory 📝, do you want to continue?")])
+    return types.Content(
+        parts=[
+            types.Part(text="PDF report saved to memory 📝, do you want to continue?")
+        ]
+    )
 
 
 # TODO: add logic for processing PDF contents for session state
@@ -397,3 +374,59 @@ async def before_agent_get_user_file(
     )
 
     return response
+
+
+# repetative callbacks here for the save thoughts... tried functools and lambda but context would not connect
+# "combined_web_search_insights", combined_research_evaluation, initial_campaign_queries
+# gs_web_search_insights, yt_web_search_insights, yt_video_analysis
+
+
+def return_thoughts_only(
+    callback_context: CallbackContext,
+    llm_response: LlmResponse,
+    llm_text_state_key: str,
+) -> LlmResponse:
+    """Callback function that returns only the thoughts of the agent.
+
+    Args:
+      callback_context: A CallbackContext object representing the active
+              callback context.
+      llm_response: LlmResponse,
+      llm_text_state_key: str the state key used to update the context object's state
+
+    Returns:
+        types.Content: The thoughts of the agent.
+    """
+    llm_text_state_key = "combined_web_search_insights"
+    # initialize session state if none
+    current_state = callback_context.state.get(llm_text_state_key, "")
+    if type(current_state) is not str:
+        current_state = str(current_state)
+
+    logging.info(f"llm_text_state_key: {llm_text_state_key}")
+    logging.info(f"llm_text_state_key value: {current_state}")
+
+    # if the model has thoughts, save them to the state key
+    # and return only the thoughts
+
+    if llm_response.content and llm_response.content.parts:
+        for part in llm_response.content.parts:
+            if part.thought and part.text:
+                return LlmResponse(
+                    content=types.Content(
+                        parts=[types.Part(text=part.text, thought=True)], role="model"
+                    )
+                )
+            else:  # export the session state key and append
+                callback_context.state[llm_text_state_key] = part.text
+    return LlmResponse(
+        content=types.Content(
+            parts=[
+                types.Part(
+                    text=f"🧠 Thinking... {llm_text_state_key} updated.", thought=True
+                )
+            ],
+            role="model",
+        )
+    )
+
