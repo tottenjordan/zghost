@@ -30,7 +30,8 @@ yt_analysis_generator_agent = Agent(
         - **Summary:** Provide a concise summary of the video content.
     """,
     tools=[
-        LongRunningFunctionTool(analyze_youtube_videos),
+        # LongRunningFunctionTool(analyze_youtube_videos),
+        analyze_youtube_videos,
     ],
     output_key="yt_video_analysis",
 )
@@ -39,11 +40,27 @@ yt_analysis_generator_agent = Agent(
 yt_web_planner = Agent(
     model=config.lite_planner_model,
     name="yt_web_planner",
+    include_contents="none",
     description="Generates initial queries to understand why the 'target_yt_trends' are trending.",
     instruction="""You are a research strategist. 
     Your job is to create high-level queries that will help marketers better understand the cultural significance of the selected trending YouTube video(s) in the 'target_yt_trends' state key.
     
-    1. Read the 'yt_video_analysis' state key to understand the trending YouTube video.
+    Review the trending YouTube video and analysis provided in the **Input Data**, then proceed to the **Instructions**.
+
+    ---
+    ### Input Data
+
+    <target_yt_trends>
+    {target_yt_trends}
+    </target_yt_trends>
+
+    <yt_video_analysis>
+    {yt_video_analysis}
+    </yt_video_analysis>
+
+    ---
+    ### Instructions
+    1. Read the 'target_yt_trends' and 'yt_video_analysis' state keys to understand the trending YouTube video.
     2. Generate 2-3 web queries to better understanding the context of the video.
     
     Your output should just include a numbered list of queries. Nothing else.

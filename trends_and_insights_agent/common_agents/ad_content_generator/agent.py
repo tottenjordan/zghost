@@ -34,6 +34,7 @@ ad_copy_drafter = Agent(
     - Incorporate key selling points for the {target_product}
     - Vary in tone, style, and approach
     - Are suitable for Instagram/TikTok platforms
+    - Reference at least one of the topics from the 'target_search_trends' or 'target_yt_trends' state keys.
 
     
     **Out of all the copy ideas you generate**, be sure to include:
@@ -46,7 +47,7 @@ ad_copy_drafter = Agent(
     - Headline (attention-grabbing)
     - Body text (concise and compelling)
     - Call-to-action
-    - Which trend(s) it references
+    - Which trend(s) it references e.g., 'target_search_trends' and 'target_yt_trends' state keys.
     - Brief rationale for target audience appeal
     - A candidate social media caption
 
@@ -93,7 +94,7 @@ ad_copy_critic = Agent(
     - Headline (attention-grabbing)
     - Body text (concise and compelling)
     - Call-to-action
-    - Which trend(s) it references
+    - Which trend(s) it references e.g., 'target_search_trends' and 'target_yt_trends' state keys.
     - Brief rationale for target audience appeal
     - A candidate social media caption
 
@@ -122,7 +123,7 @@ ad_copy_finalizer = Agent(
         - Headline (attention-grabbing)
         - Body text (concise and compelling)
         - Call-to-action
-        - Which trend(s) it references
+        - Which trend(s) it references e.g., 'target_search_trends' and 'target_yt_trends' state keys.
         - Brief rationale for target audience appeal
         - A candidate social media caption
     

@@ -264,6 +264,7 @@ async def save_vid_artifact_key(
     return {"status": "ok"}
 
 
+# TODO: add section to support video creatives
 async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
     """
     Saves generated PDF report bytes as an artifact.

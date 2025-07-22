@@ -124,7 +124,7 @@ combined_report_composer = Agent(
         {target_yt_trends}
 
     *   **YouTube Video Analysis:**
-        {yt_video_analysis}
+        {{ yt_video_analysis? }}
     
     *   **Final Research:**
         {combined_web_search_insights}
@@ -168,7 +168,7 @@ combined_report_composer = Agent(
 # --- COMPLETE RESEARCH PIPELINE SUBAGENT --- #
 combined_research_pipeline = SequentialAgent(
     name="combined_research_pipeline",
-    description="Executes a pipeline of web research related to the trending Search terms, trending YouTube videos, and the campaign guide. It performs iterative research, evaluation, and insight generation.",
+    description="Executes a pipeline of web research. It performs iterative research, evaluation, and insight generation.",
     sub_agents=[
         merge_parallel_insights,
         combined_web_evaluator,
