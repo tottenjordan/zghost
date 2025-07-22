@@ -124,7 +124,7 @@ combined_report_composer = Agent(
         {target_yt_trends}
 
     *   **YouTube Video Analysis:**
-        {{ yt_video_analysis? }}
+        {yt_video_analysis}
     
     *   **Final Research:**
         {combined_web_search_insights}

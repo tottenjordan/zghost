@@ -54,8 +54,8 @@ class SetupConfiguration:
             "vid_artifact_keys": {"vid_artifact_keys": []},
             "brand": "",
             "target_product": "",
-            "target_audience": [],
-            "key_selling_points": [],
+            "target_audience": "",
+            "key_selling_points": "",
             "target_search_trends": {"target_search_trends": []},
             "target_yt_trends": {"target_yt_trends": []},
         }

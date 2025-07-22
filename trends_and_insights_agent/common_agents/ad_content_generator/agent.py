@@ -47,7 +47,7 @@ ad_copy_drafter = Agent(
     - Headline (attention-grabbing)
     - Body text (concise and compelling)
     - Call-to-action
-    - Which trend(s) it references e.g., 'target_search_trends' and 'target_yt_trends' state keys.
+    - Which trend(s) it references (e.g., which trend from the 'target_search_trends' and 'target_yt_trends' state keys)
     - Brief rationale for target audience appeal
     - A candidate social media caption
 
@@ -94,7 +94,7 @@ ad_copy_critic = Agent(
     - Headline (attention-grabbing)
     - Body text (concise and compelling)
     - Call-to-action
-    - Which trend(s) it references e.g., 'target_search_trends' and 'target_yt_trends' state keys.
+    - Which trend(s) it references (e.g., which trend from the 'target_search_trends' and 'target_yt_trends' state keys)
     - Brief rationale for target audience appeal
     - A candidate social media caption
 
@@ -123,7 +123,7 @@ ad_copy_finalizer = Agent(
         - Headline (attention-grabbing)
         - Body text (concise and compelling)
         - Call-to-action
-        - Which trend(s) it references e.g., 'target_search_trends' and 'target_yt_trends' state keys.
+        - Which trend(s) it references (e.g., which trend from the 'target_search_trends' and 'target_yt_trends' state keys)
         - Brief rationale for target audience appeal
         - A candidate social media caption
     
@@ -167,7 +167,7 @@ visual_concept_drafter = Agent(
     For each visual concept, provide:
     -   Name (intuitive name of the concept)
     -   Type (image or video)
-    -   Which trend(s) it relates to e.g., 'target_search_trends' and 'target_yt_trends' state keys.
+    -   Which trend(s) it relates to (e.g., which trend from the 'target_search_trends' and 'target_yt_trends' state keys)
     -   Which ad copy it connects to
     -   Creative concept explanation
     -   A draft {config.image_gen_model} or {config.video_gen_model} prompt.
@@ -264,17 +264,18 @@ visual_generator = Agent(
     - `generate_image`: Generate images using Google's Imagen model.
     - `generate_video`: Generate videos using Google's Veo model.
     - `save_img_artifact_key`: Use this tool to update the 'img_artifact_keys' state key for each image generated with the `generate_image` tool.
+    - `save_vid_artifact_key`: Use this tool to update the 'vid_artifact_keys' state key for each video generated with the `generate_video` tool.
+    - `load_artifacts`: use this to load artifacts such as files, images, and videos
 
     **Instructions:**
-    1. For each ad copy in the 'final_visual_concepts' state key, generate the creative visual using the appropriate tool (generate_image or generate_video).
+    1. For each ad copy in the 'final_visual_concepts' state key, generate the creative visual using the appropriate tool (`generate_image` or `generate_video`).
         - For images, follow the instructions in the <IMAGE_GENERATION/> block. For each image generated, call the `save_img_artifact_key` tool to update the session state.
-        - For videos, follow the instructions in the <VIDEO_GENERATION/> block and consider prompting best practices in the <PROMPTING_BEST_PRACTICES/> block. For each image generated, call the `save_vid_artifact_key` tool to update the session state.
-    2. Present each generated visual to the user with:
+        - For videos, follow the instructions in the <VIDEO_GENERATION/> block and consider prompting best practices in the <PROMPTING_BEST_PRACTICES/> block. For each video generated, call the `save_vid_artifact_key` tool to update the session state.
+    2. Utilize the `load_artifacts` tool to present each generated visual to the user with:
         - The prompt used for generation
         - Brief explanation of the creative concept
         - How it connects to the selected ad copy
-
-    Utilize the `load_artifacts` tool to display the artifacts back to the user.
+        - How it connects to the selected trend
 
     After generating all visuals, ask the user to confirm their satisfaction.
 
