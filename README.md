@@ -119,8 +119,6 @@ SESSION_STATE_JSON_PATH=example_state_prs.json
 
 ## One-time setup
 
-Ensure ffmpeg is installed on your system or where the agent will be deployed. This is used for simple video editing purposes.
-
 ```bash
 git clone https://github.com/tottenjordan/zghost.git
 ```
@@ -129,8 +127,6 @@ git clone https://github.com/tottenjordan/zghost.git
   <summary>Create & activate virtual environment</summary>
 
 ```bash
-sudo apt-get install virtualenv python3-venv python3-pip
-
 python3 -m venv .venv && source .venv/bin/activate
 ```
 
@@ -139,14 +135,6 @@ python3 -m venv .venv && source .venv/bin/activate
 
 <details>
   <summary>Install packages</summary>
-
-*install `ffmpeg` for video editing...*
-
-```bash
-sudo apt update
-sudo apt install ffmpeg
-ffmpeg -version
-```
 
 *install python packages...*
 
