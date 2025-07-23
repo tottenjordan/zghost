@@ -333,7 +333,7 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
         report_filepath = f"{DIR}/{artifact_key}.pdf"
 
         # create PDF object
-        pdf = MarkdownPdf(toc_level=3)
+        pdf = MarkdownPdf(toc_level=4)
         pdf.add_section(Section(f" {processed_report}\n"))
         pdf.add_section(Section(f"# Ad Creatives\n\n{IMG_CREATIVE_STRING}"))
         pdf.meta["title"] = "trends-2-creatives Final Report"

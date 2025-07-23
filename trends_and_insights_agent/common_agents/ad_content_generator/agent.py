@@ -173,8 +173,6 @@ visual_concept_drafter = Agent(
     -   A draft {config.image_gen_model} or {config.video_gen_model} prompt.
     -   If this is a video concept:
         -   Consider generated videos are 8 seconds in length.
-        -   Include a storyboard that lists 2-4 scene descriptions. Create unique prompts for each scene description
-        -   Prompt for continuity between scenes in the storyboard prompts.
         -   Consider the prompting best practices in the <PROMPTING_BEST_PRACTICES/> block.
 
     Use the `google_search` tool to support your decisions.
@@ -187,6 +185,9 @@ visual_concept_drafter = Agent(
     generate_content_config=types.GenerateContentConfig(temperature=1.5),
     output_key="visual_draft",
 )
+
+        # -   Include a storyboard that lists 1-3 scene descriptions. Create unique prompts for each scene description
+        # -   Prompt for continuity between scenes in the storyboard prompts.
 
 
 visual_concept_critic = Agent(
@@ -271,13 +272,13 @@ visual_generator = Agent(
     1. For each ad copy in the 'final_visual_concepts' state key, generate the creative visual using the appropriate tool (`generate_image` or `generate_video`).
         - For images, follow the instructions in the <IMAGE_GENERATION/> block. For each image generated, call the `save_img_artifact_key` tool to update the session state.
         - For videos, follow the instructions in the <VIDEO_GENERATION/> block and consider prompting best practices in the <PROMPTING_BEST_PRACTICES/> block. For each video generated, call the `save_vid_artifact_key` tool to update the session state.
-    2. Utilize the `load_artifacts` tool to present each generated visual to the user with:
+    2. Present each generated visual to the user with:
         - The prompt used for generation
         - Brief explanation of the creative concept
         - How it connects to the selected ad copy
         - How it connects to the selected trend
-
-    After generating all visuals, ask the user to confirm their satisfaction.
+    
+    After generating all visuals, present a summary to the user and confirm their satisfaction.
 
     <IMAGE_GENERATION>
     - Create descriptive image prompts that visualize the ad copy concepts

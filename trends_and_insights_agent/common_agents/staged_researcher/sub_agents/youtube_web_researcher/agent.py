@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 from google.genai import types
 from google.adk.planners import BuiltInPlanner
 from google.adk.agents import Agent, SequentialAgent
-from google.adk.tools import LongRunningFunctionTool, google_search
+from google.adk.tools import google_search
 
 from trends_and_insights_agent.shared_libraries import callbacks
 from trends_and_insights_agent.shared_libraries.config import config
@@ -29,10 +29,7 @@ yt_analysis_generator_agent = Agent(
         - **Trend Context:** Why might this video be trending?
         - **Summary:** Provide a concise summary of the video content.
     """,
-    tools=[
-        # LongRunningFunctionTool(analyze_youtube_videos),
-        analyze_youtube_videos,
-    ],
+    tools=[analyze_youtube_videos],
     output_key="yt_video_analysis",
 )
 

@@ -21,7 +21,7 @@ class ResearchConfiguration:
     critic_model: str = "gemini-2.5-pro"  # "gemini-2.5-pro" | "gemini-2.5-flash"
     worker_model: str = "gemini-2.5-flash"  # "gemini-2.5-flash" | "gemini-2.0-flash"
     video_analysis_model: str = "gemini-2.5-pro"
-    lite_planner_model: str = "gemini-2.0-flash-001"
+    lite_planner_model: str = "gemini-2.0-flash-001" # "gemini-2.5-flash-lite" | "gemini-2.0-flash-001"
 
     # "imagen-4.0-ultra-generate-preview-06-06" "imagen-4.0-generate-preview-06-06"
     image_gen_model: str = "imagen-4.0-fast-generate-preview-06-06"
