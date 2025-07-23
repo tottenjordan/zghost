@@ -25,9 +25,9 @@ root_agent = Agent(
     sub_agents=[
         trends_and_insights_agent,
         ad_content_generator_agent,
-        combined_research_pipeline,
+        # combined_research_pipeline,
     ],
-    tools=[save_draft_report_artifact],
+    tools=[save_draft_report_artifact, AgentTool(agent=combined_research_pipeline)],
     generate_content_config=types.GenerateContentConfig(
         temperature=0.01,
         response_modalities=["TEXT"],
