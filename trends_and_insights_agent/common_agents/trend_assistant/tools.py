@@ -59,6 +59,9 @@ async def save_yt_trends_to_session_state(
             video_duration: str -> The user-selected video's duration.
             video_url: str -> The user-selected video's URL.
         tool_context: The tool context.
+
+    Returns:
+        A status message.
     """
     existing_target_yt_trends = tool_context.state.get("target_yt_trends")
     if existing_target_yt_trends is not {"target_yt_trends": []}:
@@ -126,6 +129,9 @@ async def save_search_trends_to_session_state(
             trend_rank: int -> The trend's `rank` in the markdown table. Should be the exact same number as seen in the markdown table.
             trend_refresh_date: str -> The trend's `refresh_date` from the markdown table. Should be the same date string as seen in the markdown table, and formatted as 'MM/DD/YYYY'
         tool_context: The tool context.
+
+    Returns:
+        A status message.
     """
     existing_target_search_trends = tool_context.state.get("target_search_trends")
     if existing_target_search_trends is not {"target_search_trends": []}:

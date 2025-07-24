@@ -70,7 +70,9 @@ yt_web_searcher = Agent(
     model=config.worker_model,
     name="yt_web_searcher",
     description="Performs web research to better understand the context of the trending YouTube video.",
-    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(include_thoughts=False)
+    ),
     instruction="""
     You are a diligent and exhaustive researcher. 
     Your task is to conduct initial web research for concepts described in the 'yt_video_analysis' state key.

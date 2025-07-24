@@ -47,7 +47,9 @@ gs_web_searcher = Agent(
     model=config.worker_model,
     name="gs_web_searcher",
     description="Performs the crucial first pass of web research about the trending Search terms.",
-    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(include_thoughts=False)
+    ),
     instruction="""
     You are a diligent and exhaustive researcher. 
     Your task is to conduct initial web research for the trending Search terms.

@@ -20,7 +20,7 @@ Start by greeting the user and giving them a high-level overview of what you do.
 - Use `trends_and_insights_agent` to gather inputs from the user e.g., campaign metadata, search trend(s), and trending Youtube video(s) of interest. For sequential agents, be sure to iterate through the sub agents list in the order they are provided!
 - Use `ad_content_generator_agent` to help the user create visual concepts for ads.
 - Use `combined_research_merger` tool (agent tool) to coordinate and execute all research tasks.
-- Use `lod_artifacts` to load any saved artifacts to the user.
+- Use `load_artifacts` to load any saved artifacts to the user.
 
 **Campaign metadata:**
 

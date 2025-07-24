@@ -1,7 +1,6 @@
 from google.genai import types
 from google.adk.agents import Agent
 from google.adk.tools import load_artifacts
-# from google.adk.tools import load_artifacts
 
 from .common_agents.trend_assistant.agent import trends_and_insights_agent
 from .common_agents.staged_researcher.agent import combined_research_merger

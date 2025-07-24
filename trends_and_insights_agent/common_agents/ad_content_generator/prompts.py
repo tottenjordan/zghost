@@ -78,7 +78,7 @@ AD_CONTENT_GENERATOR_NEW_INSTR = """**Role:** You are the orchestrator for a com
 1. First, transfer to the `ad_creative_pipeline` tool (agent tool) to generate a set of candidate ad copies. Remind the user they can get more detail about each option.
 2. Once the candidate ad copies are selected, transfer to the `visual_generation_pipeline` tool (agent tool) to create visual concepts and prompts for each selected ad copy. Remind the user they can get more detail about each option.
 3. Once the user has selected the visual concepts in the previous step, call the the `visual_generator` tool (agent tool) to generate the final visuals.
-4. Do a qa check on the generated artifacts using `load_artifacts` tool. Ask the user for any additional feedback.
+4. Do a quality assurance check on the generated artifacts using `load_artifacts` tool. Ask the user for any additional feedback.
 5. Once the user is satisfied with the creatives, use the `save_creatives_and_research_report` tool to build the final report and save it as an artifact.
 </WORKFLOW>
 
@@ -185,5 +185,3 @@ Ambient Noise: The general background noise that makes a location feel real (e.g
 Dialogue: Spoken words from characters or a narrator (e.g., "The man in the red hat says: 'Where is the rabbit?'" , "A voiceover with a polished British accent speaks in a serious, urgent tone" , "Two people discuss a movie" ).   
 </AUDIO>
 """
-
-

@@ -1,6 +1,5 @@
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.planners import BuiltInPlanner
-from google.adk.tools import load_artifacts
 from google.adk.tools import google_search, load_artifacts
 from google.genai import types
 from google.adk.tools.agent_tool import AgentTool
@@ -11,7 +10,6 @@ from trends_and_insights_agent.shared_libraries import callbacks
 from .tools import (
     generate_image,
     generate_video,
-    # concatenate_videos,
     save_img_artifact_key,
     save_vid_artifact_key,
     save_creatives_and_research_report,
@@ -27,7 +25,7 @@ ad_copy_drafter = Agent(
     model=config.worker_model,
     name="ad_copy_drafter",
     description="Generate 10-12 initial ad copy ideas based on campaign guidelines and trends",
-    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=False)),
     instruction="""You are a creative copywriter generating initial ad copy ideas.
     
     Review the research findings in the 'combined_final_cited_report' state key.
@@ -78,7 +76,7 @@ ad_copy_critic = Agent(
     model=config.critic_model,
     name="ad_copy_critic",
     description="Critique and narrow down ad copies based on product, audience, and trends",
-    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=False)),
     instruction="""You are a strategic marketing critic evaluating ad copy ideas.
     
     Review the candidates in the 'ad_copy_draft' state key and select the 6-8 BEST ad copies based on:
@@ -150,7 +148,7 @@ visual_concept_drafter = Agent(
     model=config.worker_model,
     name="visual_concept_drafter",
     description="Generate initial visual concepts for selected ad copies",
-    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=False)),
     instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
     
     Based on the user-selected ad copies in the 'final_ad_copies' state key, generate visual concepts that:
@@ -195,7 +193,7 @@ visual_concept_critic = Agent(
     model=config.critic_model,
     name="visual_concept_critic",
     description="Critique and narrow down visual concepts",
-    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=False)),
     instruction=f"""You are a creative director evaluating visual concepts and high quality prompts that result in high impact.
     
     Review the concepts in the 'visual_draft' state key and critique the draft prompts on:
@@ -273,13 +271,6 @@ visual_generator = Agent(
     1. For each ad copy in the 'final_visual_concepts' state key, generate the creative visual using the appropriate tool (`generate_image` or `generate_video`).
         - For images, follow the instructions in the <IMAGE_GENERATION/> block. For each image generated, call the `save_img_artifact_key` tool to update the session state.
         - For videos, follow the instructions in the <VIDEO_GENERATION/> block and consider prompting best practices in the <PROMPTING_BEST_PRACTICES/> block. For each video generated, call the `save_vid_artifact_key` tool to update the session state.
-    2. Present each generated visual to the user with:
-        - The prompt used for generation
-        - Brief explanation of the creative concept
-        - How it connects to the selected ad copy
-        - How it connects to the selected trend
-    
-    After generating all visuals, present a summary to the user and confirm their satisfaction.
 
     <IMAGE_GENERATION>
     - Create descriptive image prompts that visualize the ad copy concepts
@@ -310,6 +301,13 @@ visual_generator = Agent(
     before_model_callback=callbacks.rate_limit_callback,
 )
 
+# 2. Present each generated visual to the user with:
+#     - The prompt used for generation
+#     - Brief explanation of the creative concept
+#     - How it connects to the selected ad copy
+#     - How it connects to the selected trend
+
+# After generating all visuals, present a summary to the user and confirm their satisfaction.
 
 # Main orchestrator agent
 ad_content_generator_agent = Agent(
@@ -317,12 +315,12 @@ ad_content_generator_agent = Agent(
     name="ad_content_generator_agent",
     description="Orchestrate comprehensive ad campaign creation with multiple copy and visual options",
     instruction=AD_CONTENT_GENERATOR_NEW_INSTR,
-    # sub_agents=[visual_generator],
     tools=[
         save_creatives_and_research_report,
         AgentTool(agent=visual_generation_pipeline),
         AgentTool(agent=ad_creative_pipeline),
         AgentTool(agent=visual_generator),
+        load_artifacts,
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )

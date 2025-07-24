@@ -90,7 +90,7 @@ enhanced_combined_searcher = Agent(
     model=config.worker_model,
     name="enhanced_combined_searcher",
     description="Executes follow-up searches and integrates new findings.",
-    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=False)),
     instruction="""
     You are a specialist researcher executing a refinement pass.
     You are tasked to conduct a second round of web research and gather insights related to the trending YouTube video, the trending Search terms, the target audience, and the target product.
