@@ -1,12 +1,13 @@
 from google.genai import types
 from google.adk.agents import Agent
-
+from google.adk.tools import load_artifacts
 # from google.adk.tools import load_artifacts
 
 from .common_agents.trend_assistant.agent import trends_and_insights_agent
 from .common_agents.staged_researcher.agent import combined_research_merger
 from .common_agents.ad_content_generator.agent import ad_content_generator_agent
 
+from google.adk.tools.agent_tool import AgentTool
 from .shared_libraries import callbacks
 from .shared_libraries.config import config
 from .prompts import (
@@ -23,11 +24,11 @@ root_agent = Agent(
     sub_agents=[
         trends_and_insights_agent,
         ad_content_generator_agent,
-        combined_research_merger,
     ],
-    # tools=[
-    #     load_artifacts,
-    # ],
+    tools=[
+        AgentTool(agent=combined_research_merger),
+        load_artifacts
+    ],
     generate_content_config=types.GenerateContentConfig(
         temperature=0.01,
         response_modalities=["TEXT"],

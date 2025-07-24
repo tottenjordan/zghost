@@ -3,6 +3,7 @@ from google.adk.planners import BuiltInPlanner
 from google.adk.tools import load_artifacts
 from google.adk.tools import google_search, load_artifacts
 from google.genai import types
+from google.adk.tools.agent_tool import AgentTool
 
 from trends_and_insights_agent.shared_libraries.config import config
 from trends_and_insights_agent.shared_libraries import callbacks
@@ -186,8 +187,8 @@ visual_concept_drafter = Agent(
     output_key="visual_draft",
 )
 
-        # -   Include a storyboard that lists 1-3 scene descriptions. Create unique prompts for each scene description
-        # -   Prompt for continuity between scenes in the storyboard prompts.
+# -   Include a storyboard that lists 1-3 scene descriptions. Create unique prompts for each scene description
+# -   Prompt for continuity between scenes in the storyboard prompts.
 
 
 visual_concept_critic = Agent(
@@ -298,7 +299,13 @@ visual_generator = Agent(
      {VEO3_INSTR}
     </PROMPTING_BEST_PRACTICES>
     """,
-    tools=[generate_image, generate_video, load_artifacts, save_img_artifact_key, save_vid_artifact_key],
+    tools=[
+        generate_image,
+        generate_video,
+        load_artifacts,
+        save_img_artifact_key,
+        save_vid_artifact_key,
+    ],
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
     before_model_callback=callbacks.rate_limit_callback,
 )
@@ -310,7 +317,12 @@ ad_content_generator_agent = Agent(
     name="ad_content_generator_agent",
     description="Orchestrate comprehensive ad campaign creation with multiple copy and visual options",
     instruction=AD_CONTENT_GENERATOR_NEW_INSTR,
-    sub_agents=[ad_creative_pipeline, visual_generation_pipeline, visual_generator],
-    tools=[save_creatives_and_research_report],
+    # sub_agents=[visual_generator],
+    tools=[
+        save_creatives_and_research_report,
+        AgentTool(agent=visual_generation_pipeline),
+        AgentTool(agent=ad_creative_pipeline),
+        AgentTool(agent=visual_generator),
+    ],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )

@@ -75,10 +75,11 @@ AD_CONTENT_GENERATOR_NEW_INSTR = """**Role:** You are the orchestrator for a com
 3. Once these steps are complete, transfer back to the `root_agent`.
 
 <WORKFLOW>
-1. First, transfer to the `ad_creative_pipeline` sub-agent to generate a set of candidate ad copies.
-2. Once the candidate ad copies are selected, transfer to the `visual_generation_pipeline` sub-agent to create visual concepts and prompts for each selected ad copy.
-3. Once the user has selected the visual concepts in the previous step, call the `visual_generator` subagent to generate the final visuals.
-4. Once the user is satisfied with the creatives, use the `save_creatives_and_research_report` tool to build the final report and save it as an artifact.
+1. First, transfer to the `ad_creative_pipeline` tool (agent tool) to generate a set of candidate ad copies. Remind the user they can get more detail about each option.
+2. Once the candidate ad copies are selected, transfer to the `visual_generation_pipeline` tool (agent tool) to create visual concepts and prompts for each selected ad copy. Remind the user they can get more detail about each option.
+3. Once the user has selected the visual concepts in the previous step, call the the `visual_generator` tool (agent tool) to generate the final visuals.
+4. Do a qa check on the generated artifacts using `load_artifacts` tool. Ask the user for any additional feedback.
+5. Once the user is satisfied with the creatives, use the `save_creatives_and_research_report` tool to build the final report and save it as an artifact.
 </WORKFLOW>
 
 **Key Responsibilities:**
