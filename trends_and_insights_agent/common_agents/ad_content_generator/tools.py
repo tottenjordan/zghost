@@ -1,3 +1,4 @@
+import cv2
 import logging
 from PIL import Image
 from io import BytesIO
@@ -19,8 +20,72 @@ from ...shared_libraries.utils import (
     download_image_from_gcs,
 )
 
+# Get the cloud storage bucket from the environment variable
+try:
+    GCS_BUCKET = os.environ["BUCKET"]
+except KeyError:
+    raise Exception("BUCKET environment variable not set")
+
 client = genai.Client()
 storage_client = storage.Client()
+
+
+def save_select_ad_copy(select_ad_copy_dict: dict, tool_context: ToolContext) -> dict:
+    """
+    Tool to save `select_ad_copy_dict` to the 'final_select_ad_copies' state key.
+    Use this tool after the user has selected one or more ad copies to proceed with in ad generation.
+
+    Args:
+        select_ad_copy_dict (dict): A dict representing an ad copy specifically selected by the user for ad generation. Use the `tool_context` to extract the following schema:
+            name (str): An intuitive name of the ad copy concept.
+            headline (str): A concise, attention-grabbing phrase.
+            call_to_action (str): A catchy, action-oriented phrase intended for the target audience.
+            caption (str): The candidate social media caption proposed for the ad copy.
+            body_text (str): The main body of the ad copy. Should be compelling.
+            trend_ref (str): The trend(s) referenced in this ad copy (e.g., from the 'target_search_trends' and 'target_yt_trends' state keys).
+            rationale (str): A brief rationale explaining why this ad copy will perform well.
+        tool_context: The tool context.
+
+    Returns:
+        A status message.
+    """
+    existing_ad_copies = tool_context.state.get("final_select_ad_copies")
+    if existing_ad_copies is not {"final_select_ad_copies": []}:
+        existing_ad_copies["final_select_ad_copies"].append(select_ad_copy_dict)
+    tool_context.state["final_select_ad_copies"] = existing_ad_copies
+    return {"status": "ok"}
+
+
+def save_select_visual_concept(
+    select_vis_concept_dict: dict, tool_context: ToolContext
+) -> dict:
+    """
+    Tool to save `select_vis_concept_dict` to the 'final_select_vis_concepts' state key.
+    Use this tool after the user has selected one or more visual concepts to proceed with in ad generation.
+
+    Args:
+        select_vis_concept_dict (dict): A dict representing a visual concept specifically selected by the user for ad generation. Use the `tool_context` to extract the following schema:
+            name (str): An intuitive name of the visual concept.
+            type (str): the intended type of creative e.g., "image" or "video".
+            trend_ref (str): The trend(s) referenced in this visual concept (e.g., from the 'target_search_trends' and 'target_yt_trends' state keys).
+            headline (str): A concise, attention-grabbing phrase.
+            call_to_action (str): A catchy, action-oriented phrase intended for the target audience.
+            caption (str): The candidate social media caption proposed for the visual concept.
+            creative_explain (str): A brief explanation connecting the visual concept to the proposed creative direction.
+            rationale (str): A brief rationale explaining why this visual concept will perform well.
+            prompt (str): The suggested prompt to generate this creative.
+        tool_context: The tool context.
+
+    Returns:
+        A status message.
+    """
+    existing_vis_concepts = tool_context.state.get("final_select_vis_concepts")
+    if existing_vis_concepts is not {"final_select_vis_concepts": []}:
+        existing_vis_concepts["final_select_vis_concepts"].append(
+            select_vis_concept_dict
+        )
+    tool_context.state["final_select_vis_concepts"] = existing_vis_concepts
+    return {"status": "ok"}
 
 
 async def generate_image(
@@ -51,7 +116,7 @@ async def generate_image(
 
     # Create output filename
     if concept_name:
-        filename_prefix = f"{concept_name.replace(" ", "_")}"
+        filename_prefix = f"{concept_name.replace(",", "").replace(" ", "_")}"
     else:
         filename_prefix = f"{str(uuid.uuid4())[:8]}"
 
@@ -90,15 +155,13 @@ async def generate_image(
                     f"Saved image artifact '{artifact_key}' to folder '{gcs_folder}'"
                 )
 
-                try:
-                    shutil.rmtree(DIR)
-                    logging.info(
-                        f"Directory '{DIR}' and its contents removed successfully"
-                    )
-                except FileNotFoundError:
-                    logging.exception(f"Directory '{DIR}' not found")
-                except OSError as e:
-                    logging.exception(f"Error removing directory '{DIR}': {e}")
+    try:
+        shutil.rmtree(DIR)
+        logging.info(f"Directory '{DIR}' and its contents removed successfully")
+    except FileNotFoundError:
+        logging.exception(f"Directory '{DIR}' not found")
+    except OSError as e:
+        logging.exception(f"Error removing directory '{DIR}': {e}")
 
     return {"status": "ok", "artifact_key": f"{artifact_key}"}
 
@@ -126,7 +189,7 @@ async def generate_video(
     """
     # Create output filename
     if concept_name:
-        filename_prefix = f"{concept_name.replace(" ", "_")}"
+        filename_prefix = f"{concept_name.replace(",", "").replace(" ", "_")}"
     else:
         filename_prefix = f"{str(uuid.uuid4())[:8]}"
 
@@ -217,19 +280,19 @@ async def save_img_artifact_key(
     Use this tool after generating an image with the `generate_image` tool.
 
     Args:
-        artifact_key_dict (dict): A dict representing an image artifact generated during this session. Use the `tool_context` to extract the following schema:
-            artifact_key (str): The filename used to identify the image artifact. This value is returned in the `generate_image` tool response.
+        artifact_key_dict (dict): A dict representing a generated image artifact. Use the `tool_context` to extract the following schema:
+            artifact_key (str): The filename used to identify the image artifact; the value returned in `generate_image` tool response.
             img_prompt (str): The prompt used to generate the image artifact.
             concept (str): A brief explanation of the creative concept used to generate this artifact.
             headline (str): The attention-grabbing headline proposed for the artifact's ad-copy.
             caption (str): The candidate social media caption proposed for the artifact's ad-copy.
             trend (str): The trend(s) referenced by this creative.
         tool_context (ToolContext) The tool context.
+
     Returns:
         dict: the status of this functions overall outcome.
     """
     existing_img_artifact_keys = tool_context.state.get("img_artifact_keys")
-    logging.info(f"\n\nExisting `img_artifact_keys`: {existing_img_artifact_keys}\n\n")
     if existing_img_artifact_keys is not {"img_artifact_keys": []}:
         existing_img_artifact_keys["img_artifact_keys"].append(artifact_key_dict)
     tool_context.state["img_artifact_keys"] = existing_img_artifact_keys
@@ -245,26 +308,60 @@ async def save_vid_artifact_key(
     Use this tool after generating an video with the `generate_video` tool.
 
     Args:
-        artifact_key_dict (dict): A dict representing a video artifact generated during this session. Use the `tool_context` to extract the following schema:
-            artifact_key (str): The filename used to identify the video artifact. This value is returned in the `generate_video` tool response.
+        artifact_key_dict (dict): A dict representing a generated video artifact. Use the `tool_context` to extract the following schema:
+            artifact_key (str): The filename used to identify the video artifact; the value returned in `generate_video` tool response.
             vid_prompt (str): The prompt used to generate the video artifact.
             concept (str): A brief explanation of the creative concept used to generate this artifact.
             headline (str): The attention-grabbing headline proposed for the artifact's ad-copy.
             caption (str): The candidate social media caption proposed for the artifact's ad-copy.
             trend (str): The trend(s) referenced by this creative.
         tool_context (ToolContext) The tool context.
+
     Returns:
         dict: the status of this functions overall outcome.
     """
     existing_vid_artifact_keys = tool_context.state.get("vid_artifact_keys")
-    logging.info(f"\n\nExisting `vid_artifact_keys`: {existing_vid_artifact_keys}\n\n")
     if existing_vid_artifact_keys is not {"vid_artifact_keys": []}:
         existing_vid_artifact_keys["vid_artifact_keys"].append(artifact_key_dict)
     tool_context.state["vid_artifact_keys"] = existing_vid_artifact_keys
     return {"status": "ok"}
 
 
-# TODO: add section to support video creatives
+def extract_single_frame(video_path, frame_number, output_image_path) -> str:
+    """
+    Extracts a single frame from a video at a specified frame number.
+
+    Args:
+        video_path (str): The path to the input MP4 video file.
+        frame_number (int): The number of the frame to extract (0-indexed).
+        output_image_path (str): The path to save the extracted image (e.g., 'frame.jpg').
+
+    Returns:
+        str: local path to the extracted image (i.e., frame)
+    """
+    cap = cv2.VideoCapture(video_path)
+
+    if not cap.isOpened():
+        logging.info(f"Error: Could not open video file {video_path}")
+        return f"Error: Could not open video file {video_path}"
+
+    # Set the frame position
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+
+    ret, frame = cap.read()
+
+    if ret:
+        cv2.imwrite(output_image_path, frame)
+        logging.info(f"Frame {frame_number} extracted and saved to {output_image_path}")
+    else:
+        logging.info(f"Error: Could not read frame {frame_number} from {video_path}")
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+    return output_image_path
+
+
 async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
     """
     Saves generated PDF report bytes as an artifact.
@@ -280,8 +377,11 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
 
     try:
 
-        # create local dir to save imgs
-        DIR = f"session_report"
+        DIR = f"report_creatives"
+
+        # ==================== #
+        # get image creatives
+        # ==================== #
         IMG_SUBDIR = f"{DIR}/imgs"
         if not os.path.exists(IMG_SUBDIR):
             os.makedirs(IMG_SUBDIR)
@@ -289,7 +389,6 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
         # get artifact details
         img_artifact_state_dict = tool_context.state.get("img_artifact_keys")
         img_artifact_list = img_artifact_state_dict["img_artifact_keys"]
-        logging.info(f"\n\n img_artifact_list: {img_artifact_list}\n\n")
 
         IMG_CREATIVE_STRING = ""
         for entry in img_artifact_list:
@@ -303,8 +402,8 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
             )
             # TODO: optimize
             path_str = f"![Example Image]({LOCAL_FILE_PATH})\n"
-            str_1 = f"## {ARTIFACT_KEY_NAME}\n"
-            str_2 = f"**{entry["headline"]}**\n\n"
+            str_1 = f"## {entry["headline"]}\n"
+            str_2 = f"*{os.path.join(GCS_BUCKET, gcs_folder, entry["artifact_key"])}*\n\n"
             str_3 = f"{path_str}\n\n"
             str_4 = f"**{entry["caption"]}**\n\n"
             str_5 = f"**Trend(s):** {entry["trend"]}\n\n"
@@ -328,15 +427,70 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
 
             IMG_CREATIVE_STRING += result
 
+        # ==================== #
+        # get video creatives
+        # ==================== #
+        VID_SUBDIR = f"{DIR}/vids"
+        if not os.path.exists(VID_SUBDIR):
+            os.makedirs(VID_SUBDIR)
+
+        # get artifact details
+        vid_artifact_state_dict = tool_context.state.get("vid_artifact_keys")
+        vid_artifact_list = vid_artifact_state_dict["vid_artifact_keys"]
+
+        VID_CREATIVE_STRING = ""
+        for entry in vid_artifact_list:
+            logging.info(entry)
+            LOCAL_VID_PATH = os.path.join(VID_SUBDIR, entry["artifact_key"])
+            ARTIFACT_KEY_NAME = entry["artifact_key"].replace(".mp4", "")
+            # download locally
+            download_image_from_gcs(
+                source_blob_name=os.path.join(gcs_folder, entry["artifact_key"]),
+                destination_file_name=LOCAL_VID_PATH,
+            )
+            LOCAL_FRAME_PATH = os.path.join(VID_SUBDIR, f"{ARTIFACT_KEY_NAME}.png")
+            LOCAL_VID_FRAME = extract_single_frame(LOCAL_VID_PATH, 1, LOCAL_FRAME_PATH)
+
+            path_str = f"![Thumbnail Image]({LOCAL_VID_FRAME})\n"
+            str_1 = f"## {entry["headline"]}\n"
+            str_2 = f"*{os.path.join(GCS_BUCKET, gcs_folder, entry["artifact_key"])}*\n\n"
+            str_3 = f"{path_str}\n\n"
+            str_4 = f"**{entry["caption"]}**\n\n"
+            str_5 = f"**Trend(s):** {entry["trend"]}\n\n"
+            str_6 = f"**Visual Concept:** {entry["concept"]}\n\n"
+            str_7 = f"**Prompt:** {entry["vid_prompt"]}\n\n"
+
+            result = (
+                str_1
+                + " "
+                + str_2
+                + " "
+                + str_3
+                + " "
+                + str_4
+                + " "
+                + str_5
+                + " "
+                + str_6
+                + " "
+                + str_7
+            )
+
+            VID_CREATIVE_STRING += result
+
+        # ==================== #
         # create local PDF file
+        # ==================== #
         artifact_key = "final_trends_and_creatives_report.pdf"
-        report_filepath = f"{DIR}/{artifact_key}.pdf"
+        report_filepath = f"{DIR}/{artifact_key}"
 
         # create PDF object
         pdf = MarkdownPdf(toc_level=4)
         pdf.add_section(Section(f" {processed_report}\n"))
-        pdf.add_section(Section(f"# Ad Creatives\n\n{IMG_CREATIVE_STRING}"))
-        pdf.meta["title"] = "trends-2-creatives Final Report"
+        pdf.add_section(
+            Section(f"# Ad Creatives\n\n{IMG_CREATIVE_STRING}\n\n{VID_CREATIVE_STRING}")
+        )
+        pdf.meta["title"] = "[Final] trends-2-creatives Report"
         pdf.save(report_filepath)
 
         # open pdf and read bytes for types.Part() object
