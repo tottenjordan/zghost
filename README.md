@@ -299,7 +299,9 @@ lsof -i :8000
 
 # Sub-agents & Tools
 
-> Updated version coming soon!
+<p align="center">
+  <img src='media/t2a_subagent_overview_0725.png' width="800"/>
+</p>
 
 
 <details>
