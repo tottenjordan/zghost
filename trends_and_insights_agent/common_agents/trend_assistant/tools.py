@@ -50,14 +50,14 @@ async def save_yt_trends_to_session_state(
     selected_trends: dict, tool_context: ToolContext
 ) -> dict:
     """
-    Tool to save `selected_trends` to the `target_yt_trends` in the session state.
+    Tool to save `selected_trends` to the 'target_yt_trends' state key.
     Use this tool after the user has selected trending YouTube content to target for the campaign.
 
     Args:
         selected_trends: dict -> The selected trends from the markdown table.
-            video_title: str -> The title of the user-selected video from YouTube Trends.
-            video_duration: str -> The user-selected video's duration.
-            video_url: str -> The user-selected video's URL.
+            video_title: str -> The title of the user-selected video from YouTube Trends (`videoTitle`).
+            video_duration: str -> The user-selected video's duration (`duration`).
+            video_url: str -> The user-selected video's URL (`videoURL`).
         tool_context: The tool context.
 
     Returns:
@@ -120,7 +120,7 @@ async def save_search_trends_to_session_state(
     new_trends: dict, tool_context: ToolContext
 ) -> dict:
     """
-    Tool to save `new_trends` to the `target_search_trends` in the session state.
+    Tool to save `new_trends` to the 'target_search_trends' state key.
     Use this tool after the user has selected a Trending Search topic to target for the campaign.
 
     Args:
@@ -196,5 +196,5 @@ def get_daily_gtrends(today_date: str = max_date) -> dict:
 
     return {
         "status": "ok",
-        f"markdown_string_for_today_up_to_{max_date}": markdown_string,
+        f"markdown_table": markdown_string,
     }

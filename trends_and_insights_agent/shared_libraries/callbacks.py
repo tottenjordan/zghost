@@ -1,12 +1,12 @@
 """callbacks - currently exploring how these work by observing log output"""
 
-import os, re, json, time, uuid
+from typing import Dict, Any, Optional
+import os, re, json, time
 import pandas as pd
 import requests
 import logging
 
 logging.basicConfig(level=logging.INFO)
-from typing import Dict, Any, Optional
 
 from google.genai import types
 from google.adk.sessions.state import State
@@ -14,6 +14,13 @@ from google.adk.models.llm_request import LlmRequest
 from google.adk.agents.callback_context import CallbackContext
 
 from .config import config, setup_config
+
+
+# Get the cloud storage bucket from the environment variable
+try:
+    GCS_BUCKET = os.environ["BUCKET"]
+except KeyError:
+    raise Exception("BUCKET environment variable not set")
 
 
 # get initial session state json
@@ -26,11 +33,6 @@ if SESSION_STATE_JSON_PATH:
     FULL_JSON_PATH = os.path.join(PROFILE_PATH, SESSION_STATE_JSON_PATH)
 else:
     FULL_JSON_PATH = None
-
-# Adjust these values to limit the rate at which the agent
-# queries the LLM API.
-RATE_LIMIT_SECS = config.rate_limit_seconds
-RPM_QUOTA = config.rpm_quota
 
 
 def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
@@ -99,8 +101,8 @@ def rate_limit_callback(
         elapsed_secs,
     )
 
-    if request_count > RPM_QUOTA:
-        delay = RATE_LIMIT_SECS - elapsed_secs + 1
+    if request_count > config.rpm_quota:
+        delay = config.rate_limit_seconds - elapsed_secs + 1
         if delay > 0:
             logging.debug("Sleeping for %i seconds", delay)
             time.sleep(delay)
@@ -125,6 +127,8 @@ def campaign_callback_function(
         *   vid_artifact_keys
         *   target_search_trends
         *   target_yt_trends
+        *   final_select_ad_copies
+        *   final_select_vis_concepts
     """
 
     agent_name = callback_context.agent_name
@@ -136,6 +140,8 @@ def campaign_callback_function(
     target_audience = callback_context.state.get("target_audience")
     target_product = callback_context.state.get("target_product")
     key_selling_points = callback_context.state.get("key_selling_points")
+    final_select_ad_copies = callback_context.state.get("final_select_ad_copies")
+    final_select_vis_concepts = callback_context.state.get("final_select_vis_concepts")
     img_artifact_keys = callback_context.state.get("img_artifact_keys")
     vid_artifact_keys = callback_context.state.get("vid_artifact_keys")
     target_yt_trends = callback_context.state.get("target_yt_trends")
@@ -167,6 +173,24 @@ def campaign_callback_function(
             return_content = "key_selling_points"
         else:
             return_content += ", key_selling_points"
+
+    if final_select_ad_copies is None:
+        callback_context.state["final_select_ad_copies"] = {
+            "final_select_ad_copies": []
+        }
+        if return_content is None:
+            return_content = "final_select_ad_copies"
+        else:
+            return_content += ", final_select_ad_copies"
+
+    if final_select_vis_concepts is None:
+        callback_context.state["final_select_vis_concepts"] = {
+            "final_select_vis_concepts": []
+        }
+        if return_content is None:
+            return_content = "final_select_vis_concepts"
+        else:
+            return_content += ", final_select_vis_concepts"
 
     if img_artifact_keys is None:
         callback_context.state["img_artifact_keys"] = {"img_artifact_keys": []}

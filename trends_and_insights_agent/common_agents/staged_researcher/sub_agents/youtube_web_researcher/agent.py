@@ -1,6 +1,3 @@
-import os
-import re
-import datetime
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -20,9 +17,13 @@ yt_analysis_generator_agent = Agent(
     name="yt_analysis_generator_agent",
     description="Process YouTube videos, extract key details, and provide an overall summary.",
     instruction="""
-    Your goal is to **understand the content** of the trending YouTube video in the 'target_yt_trends' state key.
+    Your goal is to **understand the content** of the trending YouTube video in the 'target_yt_trends' state key:
+
+    <target_yt_trends>
+    {target_yt_trends}
+    </target_yt_trends>
     
-    1. Review the 'target_yt_trends' state key and use the `analyze_youtube_videos` tool to analyze the 'video_url'.
+    1. Use the `analyze_youtube_videos` tool to analyze the `video_url` in the 'target_yt_trends' state variable.
     2. Provide a concise summary covering:
         - **Main Thesis/Claim:** What is the video about? What is being discussed?
         - **Key Entities:** Describe any key entities (e.g., people, places, things) involved and how they are related. 

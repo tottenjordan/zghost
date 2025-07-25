@@ -6,39 +6,27 @@ from google.genai import types
 from google.adk.agents import Agent
 
 from .tools import (
+    memorize,
     get_daily_gtrends,
     get_youtube_trends,
     save_yt_trends_to_session_state,
     save_search_trends_to_session_state,
-    memorize,
 )
-from .prompts import AUTO_TREND_AGENT_INSTR_v2
+from .prompts import AUTO_TREND_AGENT_INSTR
 from ...shared_libraries.config import config
 
-# TODO: add this here
-# pdf_data_extract = Agent(
-#     model=config.worker_model,
-#     name="pdf_data_extract",
-#     description="Captures campaign details if user uploads PDF.",
-#     instruction=GUIDE_DATA_EXTRACT_INSTR,
-#     disallow_transfer_to_parent=True,
-#     disallow_transfer_to_peers=True,
-#     generate_content_config=schema_types.json_response_config,
-#     output_schema=schema_types.MarketingCampaignGuide,
-#     output_key="XXXX",
-# )
 
 trends_and_insights_agent = Agent(
     model=config.worker_model,
     name="trends_and_insights_agent",
     description="Captures campaign metadata and displays trending topics from Google Search and trending videos from YouTube.",
-    instruction=AUTO_TREND_AGENT_INSTR_v2,
+    instruction=AUTO_TREND_AGENT_INSTR,
     tools=[
+        memorize,
         get_daily_gtrends,
         get_youtube_trends,
         save_yt_trends_to_session_state,
         save_search_trends_to_session_state,
-        memorize,
     ],
     generate_content_config=types.GenerateContentConfig(
         temperature=1.0,

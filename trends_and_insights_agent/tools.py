@@ -1,10 +1,10 @@
 import os
 import logging
+import pandas as pd
+from typing import Optional
 
 logging.basicConfig(level=logging.INFO)
 
-import pandas as pd
-from typing import Optional
 import googleapiclient.discovery
 from google.genai import types, Client
 
@@ -116,7 +116,8 @@ def analyze_youtube_videos(
 
     Args:
         prompt (str): The prompt to use for the analysis.
-        youtube_url (str): The url to check for youtube.com
+        youtube_url (str): The url of a YouTube video to analyze.
+            The URL should be formatted similarly to: `https://www.youtube.com/watch?v=dmF8oJ5JAVE`, where 'dmF8oJ5JAVE' is the video's ID.
     Returns:
         Results from the youtube video analysis prompt.
     """

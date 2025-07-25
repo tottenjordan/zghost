@@ -21,7 +21,7 @@
 - Draft ad creatives (e.g., image and video) based on trends, campaign themes, or specific prompts
 
 <p align="center">
-  <img src='media/t2a_high_level_v3.png' width="800"/>
+  <img src='media/t2a_overview_725.png' width="800"/>
 </p>
 
 
@@ -299,9 +299,7 @@ lsof -i :8000
 
 # Sub-agents & Tools
 
-<p align="center">
-  <img src='media/t2a_overview_of_tools.png' width="800"/>
-</p>
+> Updated version coming soon!
 
 
 <details>

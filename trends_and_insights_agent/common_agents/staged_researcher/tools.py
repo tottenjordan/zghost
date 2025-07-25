@@ -31,12 +31,12 @@ async def save_draft_report_artifact(tool_context: ToolContext) -> dict:
         if not os.path.exists(SUBDIR):
             os.makedirs(SUBDIR)
 
-        artifact_key = "research_report_with_citations.pdf"
+        artifact_key = "draft_research_report_with_citations.pdf"
         filepath = f"{SUBDIR}/{artifact_key}"
 
         pdf = MarkdownPdf(toc_level=4)
         pdf.add_section(Section(f" {processed_report}\n"))
-        pdf.meta["title"] = "[draft] Trend & Campaign Research Report"
+        pdf.meta["title"] = "[Draft] Trend & Campaign Research Report"
         pdf.save(filepath)
 
         # open pdf and read bytes for types.Part() object
