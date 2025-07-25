@@ -287,6 +287,9 @@ async def save_img_artifact_key(
             headline (str): The attention-grabbing headline proposed for the artifact's ad-copy.
             caption (str): The candidate social media caption proposed for the artifact's ad-copy.
             trend (str): The trend(s) referenced by this creative.
+            rationale_perf (str): A brief rationale explaining why this ad copy will perform well.
+            audience_appeal (str): A brief explanation for the target audience appeal.
+            markets_product (str): A brief explanation of how this markets the target product.
         tool_context (ToolContext) The tool context.
 
     Returns:
@@ -315,6 +318,9 @@ async def save_vid_artifact_key(
             headline (str): The attention-grabbing headline proposed for the artifact's ad-copy.
             caption (str): The candidate social media caption proposed for the artifact's ad-copy.
             trend (str): The trend(s) referenced by this creative.
+            rationale_perf (str): A brief rationale explaining why this ad copy will perform well.
+            audience_appeal (str): A brief explanation for the target audience appeal.
+            markets_product (str): A brief explanation of how this markets the target product.
         tool_context (ToolContext) The tool context.
 
     Returns:
@@ -403,12 +409,17 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
             # TODO: optimize
             path_str = f"![Example Image]({LOCAL_FILE_PATH})\n"
             str_1 = f"## {entry["headline"]}\n"
-            str_2 = f"*{os.path.join(GCS_BUCKET, gcs_folder, entry["artifact_key"])}*\n\n"
+            str_2 = (
+                f"*{os.path.join(GCS_BUCKET, gcs_folder, entry["artifact_key"])}*\n\n"
+            )
             str_3 = f"{path_str}\n\n"
             str_4 = f"**{entry["caption"]}**\n\n"
             str_5 = f"**Trend(s):** {entry["trend"]}\n\n"
             str_6 = f"**Visual Concept:** {entry["concept"]}\n\n"
-            str_7 = f"**Prompt:** {entry["img_prompt"]}\n\n"
+            str_7 = f"**How it markets target product:** {entry["markets_product"]}\n\n"
+            str_8 = f"**Target audience appeal:** {entry["audience_appeal"]}\n\n"
+            str_9 = f"**Why this will perform well:** {entry["rationale_perf"]}\n\n"
+            str_10 = f"**Prompt:** {entry["img_prompt"]}\n\n"
             result = (
                 str_1
                 + " "
@@ -423,6 +434,12 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
                 + str_6
                 + " "
                 + str_7
+                + " "
+                + str_8
+                + " "
+                + str_9
+                + " "
+                + str_10
             )
 
             IMG_CREATIVE_STRING += result
@@ -453,12 +470,17 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
 
             path_str = f"![Thumbnail Image]({LOCAL_VID_FRAME})\n"
             str_1 = f"## {entry["headline"]}\n"
-            str_2 = f"*{os.path.join(GCS_BUCKET, gcs_folder, entry["artifact_key"])}*\n\n"
+            str_2 = (
+                f"*{os.path.join(GCS_BUCKET, gcs_folder, entry["artifact_key"])}*\n\n"
+            )
             str_3 = f"{path_str}\n\n"
             str_4 = f"**{entry["caption"]}**\n\n"
             str_5 = f"**Trend(s):** {entry["trend"]}\n\n"
             str_6 = f"**Visual Concept:** {entry["concept"]}\n\n"
-            str_7 = f"**Prompt:** {entry["vid_prompt"]}\n\n"
+            str_7 = f"**How it markets target product:** {entry["markets_product"]}\n\n"
+            str_8 = f"**Target audience appeal:** {entry["audience_appeal"]}\n\n"
+            str_9 = f"**Why this will perform well:** {entry["rationale_perf"]}\n\n"
+            str_10 = f"**Prompt:** {entry["vid_prompt"]}\n\n"
 
             result = (
                 str_1
@@ -474,6 +496,12 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
                 + str_6
                 + " "
                 + str_7
+                + " "
+                + str_8
+                + " "
+                + str_9
+                + " "
+                + str_10
             )
 
             VID_CREATIVE_STRING += result
