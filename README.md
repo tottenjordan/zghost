@@ -299,16 +299,50 @@ lsof -i :8000
 
 # Sub-agents & Tools
 
+```
+root_agent (orchestrator)
+├── trends_and_insights_agent              # Display/capture trend selections
+├── research_orchestrator                  # Coordinate research pipeline
+│   ├── combined_research_pipeline         # Sub-agent for SequentialAgent workflow
+│   │   ├── merge_parallel_insights        # Parallel research coordination
+│   │   │   ├── parallel_planner_agent     # Runs 3 research types simultaneously
+│   │   │   │   ├── yt_sequential_planner  # YouTube trend analysis
+│   │   │   │   ├── gs_sequential_planner  # Google Search trend analysis
+│   │   │   │   └── ca_sequential_planner  # Campaign research
+│   │   │   └── merge_planners             # Combines research plans
+│   │   ├── combined_web_evaluator         # Quality check
+│   │   ├── enhanced_combined_searcher     # Expand web search
+│   │   └── combined_report_composer       # Generate unified research report
+├── ad_content_generator_agent             # Create comprehensive ad campaigns
+│   ├── ad_creative_pipeline                # Ad copy actor-critic framework
+│   │   ├── ad_copy_drafter
+│   │   ├── ad_copy_critic
+│   ├── visual_generation_pipeline         # Visual concept actor-critic framework
+│   │   ├── visual_concept_drafter
+│   │   ├── visual_concept_critic
+│   │   └── visual_concept_finalizer
+│   └── visual_generator                   # Image/video generation
+└── save_creatives_and_research_report     # Compile PDF reports
+
+```
+
+Expand sections below to visualize complex research pipelines in `enhanced_combined_searcher`
+
+<details>
+  <summary>Sub-agents</summary>
+
 <p align="center">
   <img src='media/t2a_subagent_overview_0725.png' width="800"/>
 </p>
 
+</details>
+
 
 <details>
-  <summary>Staged Research Pipeline</summary>
+  <summary>Research Orchestrator Pipeline</summary>
 
 <p align="center">
-  <img src='media/t2a_staged_research_overview_2.png' width="800"/>
+  <img src='media/t2a_new_research_orchestration.png' width="800"/>
 </p>
 
 </details>
