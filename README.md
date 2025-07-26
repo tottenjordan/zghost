@@ -21,7 +21,7 @@
 - Draft ad creatives (e.g., image and video) based on trends, campaign themes, or specific prompts
 
 <p align="center">
-  <img src='media/t2a_overview_725.png' width="800"/>
+  <img src='media/t2a_overview_0725_v2.png' width="800"/>
 </p>
 
 
@@ -314,7 +314,7 @@ root_agent (orchestrator)
 │   │   ├── enhanced_combined_searcher     # Expand web search
 │   │   └── combined_report_composer       # Generate unified research report
 ├── ad_content_generator_agent             # Create comprehensive ad campaigns
-│   ├── ad_creative_pipeline                # Ad copy actor-critic framework
+│   ├── ad_creative_pipeline               # Ad copy actor-critic framework
 │   │   ├── ad_copy_drafter
 │   │   ├── ad_copy_critic
 │   ├── visual_generation_pipeline         # Visual concept actor-critic framework
@@ -326,14 +326,16 @@ root_agent (orchestrator)
 
 ```
 
-Expand sections below to visualize complex research pipelines in `enhanced_combined_searcher`
+Expand sections below to visualize complex agent workflows
 
 <details>
-  <summary>Sub-agents</summary>
+  <summary>Trend and Insight Agent</summary>
 
 <p align="center">
-  <img src='media/t2a_subagent_overview_0725.png' width="800"/>
+  <img src='media/t2a_trend_ast_overview_0725.png' width="800"/>
 </p>
+
+This agent is responsible for gathering input from the user. 
 
 </details>
 
@@ -342,8 +344,15 @@ Expand sections below to visualize complex research pipelines in `enhanced_combi
   <summary>Research Orchestrator Pipeline</summary>
 
 <p align="center">
-  <img src='media/t2a_new_research_orchestration.png' width="800"/>
+  <img src='media/t2a_research_overview_0725.png' width="800"/>
 </p>
+
+The research workflow has two phases:
+
+1. Parallel web research for individual topics: search trend, YouTube video, and campaign metadata e.g., target audience, product, brand, etc.
+2. Combined web research for the intersection of individual topics
+
+This structure helps us achieve a deeper understanding of each subject first. And this helps us ask better questions for a second round of research where we are solely focused on finding any culturally relevant overlaps to exploit for ad creatives. 
 
 </details>
 
@@ -352,8 +361,10 @@ Expand sections below to visualize complex research pipelines in `enhanced_combi
   <summary>Ad Content Generator Pipeline</summary>
 
 <p align="center">
-  <img src='media/t2a_ad_content_overview_2.png' width="800"/>
+  <img src='media/t2a_ad_overview_0725.png' width="800"/>
 </p>
+
+> TODO: brief explain
 
 </details>
 
