@@ -217,7 +217,7 @@ GOOGLE_CLOUD_PROJECT_NUMBER=<YOUR_GCP_PROJECT_NUMBER> # e.g., 1234756
 GOOGLE_CLOUD_LOCATION=<YOUR_LOCATION> # e.g., us-central1
 BUCKET=gs://<YOUR_GCS_BUCKET_NAME> # create a GCS bucket
 YT_SECRET_MNGR_NAME=<YOUR_SECRET_NAME> # e.g., yt-data-api
-SESSION_STATE_JSON_PATH=example_state_pixel.json
+# SESSION_STATE_JSON_PATH=example_state_pixel.json # uncomment to use default config values
 ```
 
 *(3) copy `.env` file to `root_agent` dir:*
@@ -331,11 +331,11 @@ Expand sections below to visualize complex agent workflows
 <details>
   <summary>Trend and Insight Agent</summary>
 
+> This agent is responsible for gathering input from the user. 
+
 <p align="center">
   <img src='media/t2a_trend_ast_overview_0725.png' width="800"/>
 </p>
-
-This agent is responsible for gathering input from the user. 
 
 </details>
 
@@ -343,16 +343,15 @@ This agent is responsible for gathering input from the user.
 <details>
   <summary>Research Orchestrator Pipeline</summary>
 
-<p align="center">
-  <img src='media/t2a_research_overview_0725.png' width="800"/>
-</p>
-
-The research workflow has two phases:
-
+**The research workflow has two phases:**
 1. Parallel web research for individual topics: search trend, YouTube video, and campaign metadata e.g., target audience, product, brand, etc.
 2. Combined web research for the intersection of individual topics
 
-This structure helps us achieve a deeper understanding of each subject first. And this helps us ask better questions for a second round of research where we are solely focused on finding any culturally relevant overlaps to exploit for ad creatives. 
+> This structure helps us achieve a deeper understanding of each subject first. And this helps us ask better questions for a second round of research where we are solely focused on finding any culturally relevant overlaps to exploit for ad creatives. 
+
+<p align="center">
+  <img src='media/t2a_research_overview_0725.png' width="800"/>
+</p>
 
 </details>
 
@@ -360,11 +359,11 @@ This structure helps us achieve a deeper understanding of each subject first. An
 <details>
   <summary>Ad Content Generator Pipeline</summary>
 
+> This agent uses the research report to generate relevant ad copy, visual concepts, and creatives (image and video). 
+
 <p align="center">
   <img src='media/t2a_ad_overview_0725.png' width="800"/>
 </p>
-
-> TODO: brief explain
 
 </details>
 

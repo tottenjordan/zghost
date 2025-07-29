@@ -545,7 +545,12 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
         # clean up
         shutil.rmtree(DIR)
         logging.info(f"Directory '{DIR}' and its contents removed successfully")
-        return {"status": "ok", "artifact_key": artifact_key}
+        return {
+            "status": "ok",
+            "gcs_bucket": GCS_BUCKET,
+            "gcs_folder": gcs_folder,
+            "artifact_key": artifact_key,
+        }
     except Exception as e:
         logging.error(f"Error saving artifact: {e}")
         return {"status": "failed", "error": str(e)}
