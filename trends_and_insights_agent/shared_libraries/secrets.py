@@ -1,6 +1,8 @@
 import os
 import google_crc32c
+from typing import Optional
 from google.cloud import secretmanager as sm
+
 
 # Get the project ID from the environment variable
 try:
@@ -14,7 +16,7 @@ except KeyError:
 
 def access_secret_version(
     secret_id: str, version_id: str
-) -> sm.AccessSecretVersionResponse:
+) -> Optional[sm.AccessSecretVersionResponse | str]:
     """
     Access the payload for the given secret version if one exists. The version
     can be a version number as a string (e.g. "5") or an alias (e.g. "latest").

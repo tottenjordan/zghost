@@ -21,7 +21,7 @@
 - Draft ad creatives (e.g., image and video) based on trends, campaign themes, or specific prompts
 
 <p align="center">
-  <img src='media/t2a_high_level_v3.png' width="800"/>
+  <img src='media/t2a_overview_0725_v2.png' width="800"/>
 </p>
 
 
@@ -36,22 +36,31 @@
 
 **[entry point]** 
 
-First we need a "campaign guide", which typically includes target product, target audience, key selling points, campaign objectives, etc.
+First we need **campaign metadata** e.g., `brand`, `target product`, `target audience`, `key selling points`, etc.
 
-three options:
-1. Use default values in one of the provided example state configs [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json) (make sure path in `.env` file) 
-2. Manually edit one of these files or create a similar `json` with something you're more familiar with
-3. Upload a `campaign_guide` in PDF format e.g., [marketing_guide_Pixel_9.pdf](trends_and_insights_agent/marketing_guide_Pixel_9.pdf)
-    * TODO: fix support for user-uploaded PDF 
+two options:
+1. [Default] Agent will ask user for **campaign metadata** in the UI
+2. [Optional] to preload these values, use the example json configs [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json) or upload your own. The json config you wish to reference should be set in your `.env` file like so:
+
+```
+SESSION_STATE_JSON_PATH=example_state_prs.json
+```
+
+*Note: remove or comment out this variable to use default option (1)*
 
 
 ```
 > [user]: Hello...
-```
 
-**[trends]** 
+> [agent]: Hello! I'm your AI Marketing Research & Strategy Assistant... To start, what please provide the following campaign metadata:
 
-```
+    * Brand
+    * Target Product
+    * Key Selling Points
+    * Target Audience
+
+> [user]: <provides campaign metadata>
+
 > [agent]: [displays Search Trends]
 
 > [user]: <selects interesting Search trend(s)>
@@ -66,13 +75,13 @@ three options:
 ```
 > [agent]: <executes pipeline of parallel research tasks>
 
-> [agent]: [Displays combined research report and saves as PDF artifact]
+> [agent]: [displays combined research report and saves as PDF artifact]
 ```
 
 
 **[creative gen]** 
 
-Note: this section is configured for **human-in-the-loop** i.e., agent will iterate with user when generating image and video creatives
+> Note: this section is configured for **human-in-the-loop** i.e., agent will iterate with user when generating image and video creatives
 
 ```
 > [agent]: Now that I have all the research, I'll use the ad_content_generator_agent to help generate ad creatives based on the campaign themes, trend analysis, web research insights, and specific prompts.
@@ -92,7 +101,7 @@ Note: this section is configured for **human-in-the-loop** i.e., agent will iter
 </details>
 
 
-**sample output**
+**sample ad creative**
 
 
 <p align="center">
@@ -103,23 +112,12 @@ Note: this section is configured for **human-in-the-loop** i.e., agent will iter
 # How to use this repo
 
 1. Clone this repo (to local or Vertex AI Workbench Instance)
-2. Create and store YouTube API key
-3. Open terminal, run commands under **One-time setup**
+2. Open terminal, run commands under **One-time setup**
+3. Create and store YouTube API key
 4. Run commands under **Start a session**
 
 
-## Create and store YouTube API key
-
-1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
-
-2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (see `YT_SECRET_MNGR_NAME` in `.env` file)
-
-   > For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
-
-
 ## One-time setup
-
-Ensure ffmpeg is installed on your system or where the agent will be deployed. This is used for simple video editing purposes.
 
 ```bash
 git clone https://github.com/tottenjordan/zghost.git
@@ -129,8 +127,6 @@ git clone https://github.com/tottenjordan/zghost.git
   <summary>Create & activate virtual environment</summary>
 
 ```bash
-sudo apt-get install virtualenv python3-venv python3-pip
-
 python3 -m venv .venv && source .venv/bin/activate
 ```
 
@@ -139,14 +135,6 @@ python3 -m venv .venv && source .venv/bin/activate
 
 <details>
   <summary>Install packages</summary>
-
-*install `ffmpeg` for video editing...*
-
-```bash
-sudo apt update
-sudo apt install ffmpeg
-ffmpeg -version
-```
 
 *install python packages...*
 
@@ -174,8 +162,21 @@ gcloud services enable artifactregistry.googleapis.com \
     eventarc.googleapis.com \
     serviceusage.googleapis.com \
     secretmanager.googleapis.com \
-    aiplatform.googleapis.com
+    aiplatform.googleapis.com \
+    youtube.googleapis.com
 ```
+
+</details>
+
+
+<details>
+  <summary>Create and store YouTube API key</summary>
+
+1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
+
+2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (see `YT_SECRET_MNGR_NAME` in `.env` file)
+
+   > For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
 
 </details>
 
@@ -183,16 +184,7 @@ gcloud services enable artifactregistry.googleapis.com \
 <details>
   <summary>Optionally, create notebook kernel</summary>
 
-*create kernel with required packages for notebooks hosted locally or in [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction)* 
-
-**Notebook hosted locally**
-
-```bash
-export ENV_NAME=py312_venv
-python3 -m ipykernel install --user --name $ENV_NAME --display-name $ENV_NAME
-```
-
-**Notebook hosted in Vertex AI Workbench**
+*create kernel with required packages for notebooks hosted in [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction)* 
 
 *run this in instance terminal window:*
 
@@ -204,8 +196,6 @@ echo $DL_ANACONDA_ENV_HOME
 python3 -m ipykernel install --prefix "${DL_ANACONDA_ENV_HOME}" --name $ENV_NAME --display-name $ENV_NAME
 ```
 
-*In either option, open a notebook file and select your kernel (top right). Should see `$ENV_NAME` as an available kernel* 
-
 </details>
 
 
@@ -216,19 +206,18 @@ python3 -m ipykernel install --prefix "${DL_ANACONDA_ENV_HOME}" --name $ENV_NAME
 
 ```bash
 touch .env
-nano .env
 ```
 
 *(2) edit variables as needed:*
 
 ```bash
 GOOGLE_GENAI_USE_VERTEXAI=1
-GOOGLE_CLOUD_PROJECT=YOUR_GCP_PROJECT_ID
-GOOGLE_CLOUD_PROJECT_NUMBER=YOUR_GCP_PROJECT_NUMBER # e.g., 1234756
-GOOGLE_CLOUD_LOCATION=YOUR_LOCATION # e.g., us-central1
-BUCKET=gs://YOUR_GCS_BUCKET_NAME # create a GCS bucket
-YT_SECRET_MNGR_NAME=YOUR_SECRET_NAME # e.g., yt-data-api
-SESSION_STATE_JSON_PATH=trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json
+GOOGLE_CLOUD_PROJECT=<YOUR_GCP_PROJECT_ID>
+GOOGLE_CLOUD_PROJECT_NUMBER=<YOUR_GCP_PROJECT_NUMBER> # e.g., 1234756
+GOOGLE_CLOUD_LOCATION=<YOUR_LOCATION> # e.g., us-central1
+BUCKET=gs://<YOUR_GCS_BUCKET_NAME> # create a GCS bucket
+YT_SECRET_MNGR_NAME=<YOUR_SECRET_NAME> # e.g., yt-data-api
+# SESSION_STATE_JSON_PATH=example_state_pixel.json # uncomment to use default config values
 ```
 
 *(3) copy `.env` file to `root_agent` dir:*
@@ -253,12 +242,8 @@ source .env
 *create Cloud Storage bucket:*
 
 ```bash
-gcloud storage buckets create gs://$BUCKET --location=$GOOGLE_CLOUD_LOCATION
+gcloud storage buckets create $BUCKET --location=$GOOGLE_CLOUD_LOCATION
 ```
-
-**TODOs:**
-* create BigQuery tables for Trends dataset
-* create commands for granting proper IAM to each asset
 
 </details>
 
@@ -314,24 +299,73 @@ lsof -i :8000
 
 # Sub-agents & Tools
 
+```
+root_agent (orchestrator)
+├── trends_and_insights_agent              # Display/capture trend selections
+├── research_orchestrator                  # Coordinate research pipeline
+│   ├── combined_research_pipeline         # Sub-agent for SequentialAgent workflow
+│   │   ├── merge_parallel_insights        # Parallel research coordination
+│   │   │   ├── parallel_planner_agent     # Runs 3 research types simultaneously
+│   │   │   │   ├── yt_sequential_planner  # YouTube trend analysis
+│   │   │   │   ├── gs_sequential_planner  # Google Search trend analysis
+│   │   │   │   └── ca_sequential_planner  # Campaign research
+│   │   │   └── merge_planners             # Combines research plans
+│   │   ├── combined_web_evaluator         # Quality check
+│   │   ├── enhanced_combined_searcher     # Expand web search
+│   │   └── combined_report_composer       # Generate unified research report
+├── ad_content_generator_agent             # Create comprehensive ad campaigns
+│   ├── ad_creative_pipeline               # Ad copy actor-critic framework
+│   │   ├── ad_copy_drafter
+│   │   ├── ad_copy_critic
+│   ├── visual_generation_pipeline         # Visual concept actor-critic framework
+│   │   ├── visual_concept_drafter
+│   │   ├── visual_concept_critic
+│   │   └── visual_concept_finalizer
+│   └── visual_generator                   # Image/video generation
+└── save_creatives_and_research_report     # Compile PDF reports
+
+```
+
+Expand sections below to visualize complex agent workflows
+
+<details>
+  <summary>Trend and Insight Agent</summary>
+
+> This agent is responsible for gathering input from the user. 
+
 <p align="center">
-  <img src='media/t2a_high_level_Defined.png' width="800"/>
+  <img src='media/t2a_trend_ast_overview_0725.png' width="800"/>
 </p>
 
+</details>
 
-## Staged Research Pipeline
+
+<details>
+  <summary>Research Orchestrator Pipeline</summary>
+
+**The research workflow has two phases:**
+1. Parallel web research for individual topics: search trend, YouTube video, and campaign metadata e.g., target audience, product, brand, etc.
+2. Combined web research for the intersection of individual topics
+
+> This structure helps us achieve a deeper understanding of each subject first. And this helps us ask better questions for a second round of research where we are solely focused on finding any culturally relevant overlaps to exploit for ad creatives. 
 
 <p align="center">
-  <img src='media/t2a_staged_research_overview_1.png' width="800"/>
+  <img src='media/t2a_research_overview_0725.png' width="800"/>
 </p>
 
+</details>
 
-## Ad Content Generator Pipeline
+
+<details>
+  <summary>Ad Content Generator Pipeline</summary>
+
+> This agent uses the research report to generate relevant ad copy, visual concepts, and creatives (image and video). 
 
 <p align="center">
-  <img src='media/t2a_ad_content_overview_1.png' width="800"/>
+  <img src='media/t2a_ad_overview_0725.png' width="800"/>
 </p>
 
+</details>
 
 
 # CI And Testing
@@ -381,8 +415,71 @@ adk deploy cloud_run \
   trends_and_insights_agent/
 ```
 
-### Deployment to Agentspace
+# Deployment to Agentspace
 
-1. Configure `publish_to_agentspace.sh`
-2. Run the `notebooks/deployment_guide.ipynb` notebook
-3. Run `bash publish_to_agentspace.sh`
+
+Create an Agent Engine in the `notebooks/deployment_guide.ipynb` notebook
+
+Then note the Agent Engine ID (last numeric portion of the Resource Name). e.g.:
+
+```bash
+agent_engine = vertexai.agent_engines.get('projects/679926387543/locations/us-central1/reasoningEngines/1093257605637210112')
+```
+
+Update the `agent_config_example.json`, then run:
+
+```bash
+./publish_to_agentspace_v2.sh --action create --config agent_config.json
+```
+
+Usage: `./publish_to_agentspace_v2.sh [OPTIONS]`
+
+```bash
+Options:
+  -a, --action <create|update|list|delete>  Action to perform (required)
+  -c, --config <file>              JSON configuration file
+  -p, --project-id <id>            Google Cloud project ID
+  -n, --project-number <number>    Google Cloud project number
+  -e, --app-id <id>                Agent Space application ID
+  -r, --reasoning-engine <id>      Reasoning Engine ID (required for create/update)
+  -d, --display-name <name>        Agent display name (required for create/update)
+  -s, --description <desc>         Agent description (required for create)
+  -i, --agent-id <id>              Agent ID (required for update/delete)
+  -t, --instructions <text>        Agent instructions/tool description (required for create)
+  -u, --icon-uri <uri>             Icon URI (optional)
+  -l, --location <location>        Location (default: us)
+  -h, --help                       Display this help message
+```
+
+### Example with config file:
+```bash
+./publish_to_agentspace_v2.sh --action create --config agent_config.json
+./publish_to_agentspace_v2.sh --action update --config agent_config.json
+./publish_to_agentspace_v2.sh --action list --config agent_config.json
+./publish_to_agentspace_v2.sh --action delete --config agent_config.json
+```
+### Example with command line args:
+
+Create agent:
+```bash
+./publish_to_agentspace_v2.sh --action create --project-id my-project --project-number 12345 \
+--app-id my-app --reasoning-engine 67890 --display-name 'My Agent' \
+--description 'Agent description' --instructions 'Agent instructions here'
+```
+  Update agent:
+```bash
+./publish_to_agentspace_v2.sh --action update --project-id my-project --project-number 12345 \
+--app-id my-app --reasoning-engine 67890 --display-name 'My Agent' \
+--agent-id 123456789 --description 'Updated description'
+```
+  List agents:
+```bash
+./publish_to_agentspace_v2.sh --action list --project-id my-project --project-number 12345 \
+--app-id my-app
+```
+
+  Delete agent:
+```bash
+./publish_to_agentspace_v2.sh --action delete --project-id my-project --project-number 12345 \
+--app-id my-app --agent-id 123456789
+```

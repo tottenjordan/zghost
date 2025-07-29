@@ -1,0 +1,86 @@
+{
+  "xyChart": {
+    "dataSets": [
+      {
+        "timeSeriesQuery": {
+          "timeSeriesFilter": {
+            "filter": "metric.type=\"aiplatform.googleapis.com/quota/online_prediction_input_tokens_per_minute_per_base_model/exceeded\" resource.type=\"aiplatform.googleapis.com/Location\"",
+            "aggregation": {
+              "perSeriesAligner": "ALIGN_RATE",
+              "crossSeriesReducer": "REDUCE_SUM",
+              "groupByFields": [
+                "metric.label.\"limit_name\"",
+                "metric.label.\"base_model\""
+              ],
+              "alignmentPeriod": "60s"
+            },
+            "pickTimeSeriesFilter": {
+              "rankingMethod": "METHOD_MEAN",
+              "numTimeSeries": 30,
+              "direction": "TOP"
+            }
+          }
+        },
+        "plotType": "LINE",
+        "targetAxis": "Y1",
+        "minAlignmentPeriod": "60s"
+      },
+      {
+        "timeSeriesQuery": {
+          "timeSeriesFilter": {
+            "filter": "metric.type=\"aiplatform.googleapis.com/quota/online_prediction_output_tokens_per_minute_per_base_model/exceeded\" resource.type=\"aiplatform.googleapis.com/Location\"",
+            "aggregation": {
+              "perSeriesAligner": "ALIGN_RATE",
+              "crossSeriesReducer": "REDUCE_SUM",
+              "groupByFields": [
+                "metric.label.\"limit_name\"",
+                "metric.label.\"base_model\""
+              ],
+              "alignmentPeriod": "60s"
+            },
+            "pickTimeSeriesFilter": {
+              "rankingMethod": "METHOD_MEAN",
+              "numTimeSeries": 30,
+              "direction": "TOP"
+            }
+          }
+        },
+        "plotType": "LINE",
+        "targetAxis": "Y1",
+        "minAlignmentPeriod": "60s"
+      },
+      {
+        "timeSeriesQuery": {
+          "timeSeriesFilter": {
+            "filter": "metric.type=\"aiplatform.googleapis.com/quota/online_prediction_output_tokens_per_minute_per_base_model/exceeded\" resource.type=\"aiplatform.googleapis.com/Location\"",
+            "aggregation": {
+              "perSeriesAligner": "ALIGN_RATE",
+              "crossSeriesReducer": "REDUCE_SUM",
+              "groupByFields": [
+                "metric.label.\"limit_name\"",
+                "metric.label.\"base_model\""
+              ],
+              "alignmentPeriod": "60s"
+            },
+            "pickTimeSeriesFilter": {
+              "rankingMethod": "METHOD_MEAN",
+              "numTimeSeries": 30,
+              "direction": "TOP"
+            }
+          }
+        },
+        "plotType": "LINE",
+        "targetAxis": "Y1",
+        "minAlignmentPeriod": "60s"
+      }
+    ],
+    "chartOptions": {
+      "mode": "COLOR",
+      "displayHorizontal": false
+    },
+    "thresholds": [],
+    "yAxis": {
+      "scale": "LINEAR"
+    }
+  }
+}

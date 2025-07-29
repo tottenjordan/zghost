@@ -36,12 +36,11 @@ class CampaignFeedback(BaseModel):
 # ==========================
 # Marketing Guide Data Gen
 # ==========================
-# used by `campaign_guide_data_generation_agent``
 class MarketingCampaignGuide(BaseModel):
     "Data model for the marketing campaign guide."
 
     campaign_name: str = Field(
-        description="given name of campaign; could be title of uploaded `campaign_guide`"
+        description="given name of campaign; could be title of uploaded campaign metadata"
     )
     brand: str = Field(description="target product's brand")
     target_product: str = Field(
@@ -121,7 +120,7 @@ class YT_Trend(BaseModel):
         description="the relationships between any Key Entities"
     )
     key_audiences: list[str] = Field(
-        description="ideas for relating this trend to the target audiences described in the `campaign_guide`"
+        description="ideas for relating this trend to the target audiences described in the campaign metadata"
     )
     key_product_insights: list[str] = Field(
         description="a few insights from the intersection of the trending content and the target product."
@@ -158,7 +157,7 @@ class Search_Trend(BaseModel):
         description="Relationships between the Key Entities, especially as they relate to the `search_trend`."
     )
     key_audiences: list[str] = Field(
-        description="Ideas or angles for helping this trend resonate with the target audience described in the `campaign_guide`."
+        description="Ideas or angles for helping this trend resonate with the target audience described in the campaign metadata."
     )
     key_product_insights: list[str] = Field(
         description="Suggestions for finding the intersection of this `search_trend` with the target product."

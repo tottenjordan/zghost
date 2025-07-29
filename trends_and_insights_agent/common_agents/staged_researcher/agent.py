@@ -6,12 +6,13 @@ logging.basicConfig(level=logging.INFO)
 from google.genai import types
 from google.adk.tools import google_search
 from google.adk.planners import BuiltInPlanner
-from google.adk.agents import Agent, LlmAgent, SequentialAgent, ParallelAgent
+from google.adk.tools.agent_tool import AgentTool
+from google.adk.agents import Agent, SequentialAgent, ParallelAgent
 
 from trends_and_insights_agent.shared_libraries.config import config
 from trends_and_insights_agent.shared_libraries import callbacks, schema_types
 
-from .tools import save_final_report_artifact
+from .tools import save_draft_report_artifact
 from .sub_agents.campaign_web_researcher.agent import ca_sequential_planner
 from .sub_agents.search_web_researcher.agent import gs_sequential_planner
 from .sub_agents.youtube_web_researcher.agent import yt_sequential_planner
@@ -90,7 +91,9 @@ enhanced_combined_searcher = Agent(
     model=config.worker_model,
     name="enhanced_combined_searcher",
     description="Executes follow-up searches and integrates new findings.",
-    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(include_thoughts=False)
+    ),
     instruction="""
     You are a specialist researcher executing a refinement pass.
     You are tasked to conduct a second round of web research and gather insights related to the trending YouTube video, the trending Search terms, the target audience, and the target product.
@@ -149,7 +152,7 @@ combined_report_composer = Agent(
     You can use any format you prefer, but here's a suggested structure:
     # Campaign Title
     ## Section Name
-    An overview of what this section covers
+    An overview of what this section covers, including specific insights from web research.
     Feel free to add subsections or bullet points if needed to better organize the content.
     Make sure your outline is clear and easy to follow.
 
@@ -168,7 +171,7 @@ combined_report_composer = Agent(
 # --- COMPLETE RESEARCH PIPELINE SUBAGENT --- #
 combined_research_pipeline = SequentialAgent(
     name="combined_research_pipeline",
-    description="Executes a pipeline of web research related to the trending Search terms, trending YouTube videos, and the campaign guide. It performs iterative research, evaluation, and insight generation.",
+    description="Executes a pipeline of web research. It performs iterative research, evaluation, and insight generation.",
     sub_agents=[
         merge_parallel_insights,
         combined_web_evaluator,
@@ -178,44 +181,24 @@ combined_research_pipeline = SequentialAgent(
 )
 
 
-combined_report_agent = LlmAgent(
-    name="combined_report_agent",
+# Main orchestrator agent
+research_orchestrator = Agent(
     model=config.worker_model,
-    description="Combines research findings into a report and saves it as an artifact.",
-    instruction="""You are an AI Assistant responsible for combining research findings into a structured report.
+    name="research_orchestrator",
+    description="Orchestrate comprehensive research for the campaign metadata and trending topics.",
+    instruction="""**Role:** You are the orchestrator for a comprehensive research workflow.
+    
+    **Objective:** Your task is to facilitate several research tasks and produce a draft research report.
 
-    ### Instructions
-    1. Use the `save_final_report_artifact` tool to save the research report as an artifact. Only use this tool once.
-    2. Once Step 1 is complete, transfer to the `ad_content_generator_agent` agent.
+    **Workflow:**
+    1. First, use the `combined_research_pipeline` tool (agent tool) to conduct web research on the campaign metadata and selected trends.
+    2. Once all research tasks are complete, use the `save_draft_report_artifact` tool to save a PDF draft of the research.
+    3. Finally, transfer back to the `root_agent`.
+
     """,
     tools=[
-        # LongRunningFunctionTool(save_final_report_artifact),
-        save_final_report_artifact,
+        save_draft_report_artifact,
+        AgentTool(agent=combined_research_pipeline),
     ],
+    generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )
-
-
-combined_research_merger = SequentialAgent(
-    name="combined_research_merger",
-    sub_agents=[combined_research_pipeline, combined_report_agent],
-    description="Coordinates research pipeline and synthesizes the results.",
-)
-
-
-# # Main orchestrator agent
-# stage_1_research_merger = Agent(
-#     model="gemini-2.5-pro",
-#     name="stage_1_research_merger",
-#     description="Orchestrate comprehensive research for the campaign guide and trending topics.",
-#     instruction="""**Role:** You are the orchestrator for a comprehensive research workflow.
-#     **Objective:** Coordinate the use subagents and tools to conduct research and save the results as an artifact.
-
-#     **Workflow:**
-#     1. First, call the `combined_research_pipeline` subagent to conduct web research on the campaign guide and selected trends.
-#     2. Once the research tasks are complete, use the `save_final_report_artifact` tool to save the research report as an artifact.
-#     3. Transfer back to the `root_agent`.
-#     """,
-#     sub_agents=[combined_research_pipeline],
-#     tools=[save_final_report_artifact],
-#     generate_content_config=types.GenerateContentConfig(temperature=1.0),
-# )

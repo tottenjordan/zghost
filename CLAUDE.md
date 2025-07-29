@@ -49,13 +49,32 @@ poetry install               # Install from lock file
 
 ### Agent Hierarchy
 ```
-Root Agent (orchestrator)
+root_agent (orchestrator)
 ├── campaign_guide_data_generation_agent  # Extract campaign data from PDFs
+│   └── campaign_guide_data_extract_agent # LLM agent for detail extraction
 ├── trends_and_insights_agent            # Display/capture trend selections
-├── campaign_researcher_agent            # Deep web research with citations
-├── yt_researcher_agent                  # YouTube trend analysis
-├── gs_researcher_agent                  # Google Search trend analysis
-├── ad_content_generator_agent           # Create images/videos
+├── combined_research_merger             # Coordinates research pipeline
+│   ├── combined_research_pipeline       # Sequential research flow
+│   │   ├── merge_parallel_insights      # Parallel research coordination
+│   │   │   ├── parallel_planner_agent   # Runs 3 research types simultaneously
+│   │   │   │   ├── yt_sequential_planner # YouTube trend analysis
+│   │   │   │   ├── gs_sequential_planner # Google Search trend analysis
+│   │   │   │   └── ca_sequential_planner # Campaign research
+│   │   │   └── merge_planners           # Combines research plans
+│   │   ├── combined_web_evaluator       # Quality check
+│   │   ├── enhanced_combined_searcher   # Refine search
+│   │   └── combined_report_composer     # Generate unified report
+│   └── combined_report_agent            # Final report synthesis
+├── ad_content_generator_agent           # Create comprehensive ad campaigns
+│   ├── ad_creative_pipeline             # Ad copy generation flow
+│   │   ├── ad_copy_drafter
+│   │   ├── ad_copy_critic
+│   │   └── ad_copy_finalizer
+│   ├── visual_generation_pipeline       # Visual concept development
+│   │   ├── visual_concept_drafter
+│   │   ├── visual_concept_critic
+│   │   └── visual_concept_finalizer
+│   └── visual_generator                 # Image/video generation
 └── report_generator_agent               # Compile PDF reports
 ```
 
@@ -76,12 +95,15 @@ Root Agent (orchestrator)
 4. **Async Operations**: Web scraping uses concurrent requests
 
 ### Research Pipeline Architecture
-The campaign_researcher uses a SequentialAgent pipeline:
-1. `campaign_web_planner` → Generate queries
-2. `campaign_web_searcher` → Initial search
-3. `campaign_web_evaluator` → Quality check
-4. `enhanced_campaign_searcher` → Refine search
-5. `campaign_report_composer` → Generate report
+The combined_research_merger coordinates parallel research:
+1. **Parallel Research Phase**: All three research types run simultaneously
+   - YouTube: `yt_analysis_generator` → `yt_web_planner` → `yt_web_searcher`
+   - Google Search: `gs_web_planner` → `gs_web_searcher`
+   - Campaign: `campaign_web_planner` → `campaign_web_searcher`
+2. **Merge Phase**: `merge_planners` combines all research plans
+3. **Evaluation**: `combined_web_evaluator` checks quality
+4. **Enhancement**: `enhanced_combined_searcher` refines results
+5. **Composition**: `combined_report_composer` generates unified report
 
 ## Environment Variables
 Required in `.env`:
@@ -98,6 +120,9 @@ Required in `.env`:
 3. **Model Config**: Centralized in `utils.py`
 4. **Error Handling**: Use structured logging throughout
 5. **Citations**: Research agents must track sources
+6. **Parallel Processing**: Research runs concurrently for better performance
+7. **Pipeline Pattern**: Complex tasks use Sequential/Parallel agent compositions
+8. **Critique Pattern**: Ad generation uses draft→critique→finalize workflow
 
 ## Deployment Notes
 - Cloud Run deployment includes UI (`--with_ui`)

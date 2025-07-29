@@ -1,13 +1,12 @@
 """callbacks - currently exploring how these work by observing log output"""
 
-import os
-import re
-import json
-import time
+from typing import Dict, Any, Optional
+import os, re, json, time
+import pandas as pd
+import requests
 import logging
 
 logging.basicConfig(level=logging.INFO)
-from typing import Dict, Any, Optional
 
 from google.genai import types
 from google.adk.sessions.state import State
@@ -17,14 +16,23 @@ from google.adk.agents.callback_context import CallbackContext
 from .config import config, setup_config
 
 
+# Get the cloud storage bucket from the environment variable
+try:
+    GCS_BUCKET = os.environ["BUCKET"]
+except KeyError:
+    raise Exception("BUCKET environment variable not set")
+
+
 # get initial session state json
 SESSION_STATE_JSON_PATH = os.getenv("SESSION_STATE_JSON_PATH", default=None)
 logging.info(f"\n\n`SESSION_STATE_JSON_PATH`: {SESSION_STATE_JSON_PATH}\n\n")
 
-# Adjust these values to limit the rate at which the agent
-# queries the LLM API.
-RATE_LIMIT_SECS = config.rate_limit_seconds
-RPM_QUOTA = config.rpm_quota
+# TODO: this is a short term fix for deployment to agent space
+if SESSION_STATE_JSON_PATH:
+    PROFILE_PATH = "http://raw.githubusercontent.com/tottenjordan/zghost/refs/heads/deployment-fix-july-25/trends_and_insights_agent/shared_libraries/profiles"
+    FULL_JSON_PATH = os.path.join(PROFILE_PATH, SESSION_STATE_JSON_PATH)
+else:
+    FULL_JSON_PATH = None
 
 
 def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
@@ -37,6 +45,7 @@ def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
     """
     if setup_config.state_init not in target:
         target[setup_config.state_init] = True
+        target["gcs_folder"] = pd.Timestamp.utcnow().strftime("%Y_%m_%d_%H_%M")
 
         target.update(source)
 
@@ -51,10 +60,10 @@ def _load_session_state(callback_context: CallbackContext):
         callback_context: The callback context.
     """
     data = {}
-    if SESSION_STATE_JSON_PATH:
-        with open(SESSION_STATE_JSON_PATH, "r") as file:
-            data = json.load(file)
-            logging.info(f"\n\nLoading Initial State: {data}\n\n")
+    if FULL_JSON_PATH:
+        resp = requests.get(FULL_JSON_PATH)
+        data = json.loads(resp.text)
+        logging.info(f"\n\nLoading Initial State: {data}\n\n")
     else:
         data = setup_config.empty_session_state
         logging.info(f"\n\nLoading Initial State (empty): {data}\n\n")
@@ -92,8 +101,8 @@ def rate_limit_callback(
         elapsed_secs,
     )
 
-    if request_count > RPM_QUOTA:
-        delay = RATE_LIMIT_SECS - elapsed_secs + 1
+    if request_count > config.rpm_quota:
+        delay = config.rate_limit_seconds - elapsed_secs + 1
         if delay > 0:
             logging.debug("Sleeping for %i seconds", delay)
             time.sleep(delay)
@@ -110,36 +119,92 @@ def campaign_callback_function(
 ) -> Optional[types.Content]:
     """
     This sets default values for:
-        *   campaign_guide
+        *   brand
+        *   target_audience
+        *   target_product
+        *   key_selling_points
+        *   img_artifact_keys
+        *   vid_artifact_keys
         *   target_search_trends
         *   target_yt_trends
-        *   artifact_keys
+        *   final_select_ad_copies
+        *   final_select_vis_concepts
     """
 
     agent_name = callback_context.agent_name
-    invocation_id = callback_context.invocation_id
-    current_state = callback_context.state.to_dict()
+    # invocation_id = callback_context.invocation_id
+    # current_state = callback_context.state.to_dict()
 
     # Check the condition in session state dictionary
-    artifact_keys = callback_context.state.get("artifact_keys")
-    campaign_guide = callback_context.state.get("campaign_guide")
+    brand = callback_context.state.get("brand")
+    target_audience = callback_context.state.get("target_audience")
+    target_product = callback_context.state.get("target_product")
+    key_selling_points = callback_context.state.get("key_selling_points")
+    final_select_ad_copies = callback_context.state.get("final_select_ad_copies")
+    final_select_vis_concepts = callback_context.state.get("final_select_vis_concepts")
+    img_artifact_keys = callback_context.state.get("img_artifact_keys")
+    vid_artifact_keys = callback_context.state.get("vid_artifact_keys")
     target_yt_trends = callback_context.state.get("target_yt_trends")
     target_search_trends = callback_context.state.get("target_search_trends")
 
     return_content = None  # placeholder for optional returned parts
 
-    if campaign_guide is None:
-        return_content = "campaign_guide"
-        callback_context.state["campaign_guide"] = "not yet populated"
+    if brand is None:
+        return_content = "brand"
+        callback_context.state["brand"] = ""
 
-    if artifact_keys is None:
-        callback_context.state["artifact_keys"] = {}
-        callback_context.state["artifact_keys"]["image_creatives"] = {}
-        callback_context.state["artifact_keys"]["video_creatives"] = {}
+    if target_audience is None:
+        callback_context.state["target_audience"] = ""
         if return_content is None:
-            return_content = "artifact_keys"
+            return_content = "target_audience"
         else:
-            return_content += ", artifact_keys"
+            return_content += ", target_audience"
+
+    if target_product is None:
+        callback_context.state["target_product"] = ""
+        if return_content is None:
+            return_content = "target_product"
+        else:
+            return_content += ", target_product"
+
+    if key_selling_points is None:
+        callback_context.state["key_selling_points"] = ""
+        if return_content is None:
+            return_content = "key_selling_points"
+        else:
+            return_content += ", key_selling_points"
+
+    if final_select_ad_copies is None:
+        callback_context.state["final_select_ad_copies"] = {
+            "final_select_ad_copies": []
+        }
+        if return_content is None:
+            return_content = "final_select_ad_copies"
+        else:
+            return_content += ", final_select_ad_copies"
+
+    if final_select_vis_concepts is None:
+        callback_context.state["final_select_vis_concepts"] = {
+            "final_select_vis_concepts": []
+        }
+        if return_content is None:
+            return_content = "final_select_vis_concepts"
+        else:
+            return_content += ", final_select_vis_concepts"
+
+    if img_artifact_keys is None:
+        callback_context.state["img_artifact_keys"] = {"img_artifact_keys": []}
+        if return_content is None:
+            return_content = "img_artifact_keys"
+        else:
+            return_content += ", img_artifact_keys"
+
+    if vid_artifact_keys is None:
+        callback_context.state["vid_artifact_keys"] = {"vid_artifact_keys": []}
+        if return_content is None:
+            return_content = "vid_artifact_keys"
+        else:
+            return_content += ", vid_artifact_keys"
 
     if target_search_trends is None:
         callback_context.state["target_search_trends"] = {"target_search_trends": []}
@@ -265,4 +330,67 @@ def citation_replacement_callback(
     )
     processed_report = re.sub(r"\s+([.,;:])", r"\1", processed_report)
     callback_context.state["final_report_with_citations"] = processed_report
-    return types.Content(parts=[types.Part(text=processed_report)])
+    # return types.Content(parts=[types.Part(text=processed_report)])
+    return types.Content(parts=[types.Part(text="PDF report saved to memory 📝 !!")])
+
+
+# TODO: add logic for processing PDF contents for session state
+async def before_agent_get_user_file(
+    callback_context: CallbackContext,
+) -> Optional[types.Content]:
+    """
+    Checks for a user-uploaded file before the agent runs.
+
+    If a file is found in the user's message, this callback processes it,
+    converts it to a PNG (if it's a PDF), and saves it as an artifact named
+    'user_uploaded_file'. It then returns a direct confirmation message to the
+    user and halts further agent processing for the current turn.
+
+    If no file is found, it returns None, allowing the agent to proceed normally.
+    """
+
+    parts = []
+    if callback_context.user_content and callback_context.user_content.parts:
+        parts = [
+            p for p in callback_context.user_content.parts if p.inline_data is not None
+        ]
+
+    # if no file then continue to agent by returning empty
+    if not parts:
+        return None
+
+    # if file then save as artifact
+    part = parts[-1]
+    if part.inline_data and part.inline_data.data and part.inline_data.mime_type:
+        artifact_key = "user_uploaded_file"
+        file_bytes = part.inline_data.data
+        file_type = part.inline_data.mime_type
+
+        # confirm file_type is pdf, else let user know the expected type
+        if file_type not in ["application/pdf"]:
+            issue_message = f"The file you provided is of type {file_type} which is not supported here. Please provide a PDF."
+            response = types.Content(
+                parts=[types.Part(text=issue_message)], role="model"
+            )
+            return response
+
+        # create & save artifact
+        artifact = types.Part.from_bytes(data=file_bytes, mime_type=file_type)
+        version = await callback_context.save_artifact(
+            filename=artifact_key, artifact=artifact
+        )
+        callback_context.state["user_document_artifact_key"] = artifact_key
+
+    # Formulate a confirmation message
+    confirmation_message = (
+        f"Thank you! I've successfully processed your uploaded file.\n\n"
+        f"It's now stored as an artifact with key "
+        f"'{artifact_key}' (version: {version}, size: {len(file_bytes)} bytes).\n\n"
+        f"What would you like to do with it?"
+    )
+
+    response = types.Content(
+        parts=[types.Part(text=confirmation_message)], role="model"
+    )
+
+    return response

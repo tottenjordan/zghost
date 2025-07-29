@@ -14,21 +14,22 @@ from trends_and_insights_agent.shared_libraries.config import config
 gs_web_planner = Agent(
     model=config.lite_planner_model,
     name="gs_web_planner",
+    include_contents="none",
     description="Generates initial queries to understand why the 'target_search_trends' are trending.",
     instruction="""You are a research strategist. 
-    Your job is to create high-level queries that will help marketers better understand the cultural significance of trends from Google Search.
+    Your job is to create high-level queries that will help marketers better understand the cultural significance of Google Search trends in the 'target_search_trends' state key.
 
-    Review the search trend(s) provided in the **Input Data**, then proceed to the **Instructions**.
+    Review the search trend provided in the **Input Data**, then proceed to the **Instructions**.
 
     ---
-    **Input Data**
+    ### Input Data
 
-    <SEARCH_TRENDS>
+    <target_search_trends>
     {target_search_trends}
-    </SEARCH_TRENDS>
+    </target_search_trends>
     
     ---
-    **Instructions**
+    ### Instructions
     1. Read the 'target_search_trends' state key to get the Search trend.
     2. Generate 4-5 queries that will provide more context for this trend, and answer questions like:
         - Why are these search terms trending? Who is involved?
@@ -46,7 +47,9 @@ gs_web_searcher = Agent(
     model=config.worker_model,
     name="gs_web_searcher",
     description="Performs the crucial first pass of web research about the trending Search terms.",
-    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(include_thoughts=False)
+    ),
     instruction="""
     You are a diligent and exhaustive researcher. 
     Your task is to conduct initial web research for the trending Search terms.
