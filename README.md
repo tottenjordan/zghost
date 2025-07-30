@@ -13,7 +13,7 @@
 
 ## About
 
-*trends-2-creatives* is a marketing tool for developing data-driven and culturally relevant marketing strategies. Built with Google’s [Agent Development Kit (ADK)](https://google.github.io/adk-docs/), this multi-agent system helps users generate ad creatives from trending themes found in Google Search and YouTube.
+*trends-2-creatives* is a marketing tool for developing data-driven and culturally relevant marketing content. Built with Google’s [Agent Development Kit (ADK)](https://google.github.io/adk-docs/), this multi-agent system helps users generate ad creatives from trending themes in Google Search and YouTube.
 
 - Build LLM-based agents with [models supported in Vertex AI's Model Garden](https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/available-models)
 - Explore [trending Search terms](https://cloud.google.com/blog/products/data-analytics/top-25-google-search-terms-now-in-bigquery?e=48754805) and [trending YouTube videos](https://developers.google.com/youtube/v3/docs/videos/list)
@@ -24,132 +24,26 @@
   <img src='media/t2a_overview_0725_v2.png' width="800"/>
 </p>
 
+## How to use this repo
 
-## Example usage
-
-<details>
-  <summary>sample interaction</summary>
-
----
-
-*In the ADK dev UI, follow these prompts to go from trends to creatives in ~5 mins*
-
-**[entry point]** 
-
-First we need **campaign metadata** e.g., `brand`, `target product`, `target audience`, `key selling points`, etc.
-
-two options:
-1. [Default] Agent will ask user for **campaign metadata** in the UI
-2. [Optional] to preload these values, use the example json configs [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json) or upload your own. The json config you wish to reference should be set in your `.env` file like so:
-
-```
-SESSION_STATE_JSON_PATH=example_state_prs.json
-```
-
-*Note: remove or comment out this variable to use default option (1)*
-
-
-```
-> [user]: Hello...
-
-> [agent]: Hello! I'm your AI Marketing Research & Strategy Assistant... To start, what please provide the following campaign metadata:
-
-    * Brand
-    * Target Product
-    * Key Selling Points
-    * Target Audience
-
-> [user]: <provides campaign metadata>
-
-> [agent]: [displays Search Trends]
-
-> [user]: <selects interesting Search trend(s)>
-
-> [agent]: [displays YouTube Trends]
-
-> [user]: <selects interesting YouTube trend(s)>
-```
-
-**[campaign & trend research]** 
-
-```
-> [agent]: <executes pipeline of parallel research tasks>
-
-> [agent]: [displays combined research report and saves as PDF artifact]
-```
-
-
-**[creative gen]** 
-
-> Note: this section is configured for **human-in-the-loop** i.e., agent will iterate with user when generating image and video creatives
-
-```
-> [agent]: Now that I have all the research, I'll use the ad_content_generator_agent to help generate ad creatives based on the campaign themes, trend analysis, web research insights, and specific prompts.
-```
-
-1. Choose from a set of ad copies. Or create new ones from scratch
-2. Edit suggested image prompts for the selected Ad Copy
-3. Edit suggested video prompts for the generated image
-4. Select attention-grabbing captions for the creatives
-
-**[report gen]** 
-
-```
-> [agent]: Okay, we've gathered all the necessary research and generated the ad content. Now, I'll generate a comprehensive report outlining the campaign guide, search trends, YouTube trends, and insights from this session.
-```
-
-</details>
-
-
-**sample ad creative**
-
-
-<p align="center">
-  <img src='media/t2a_hulk_call_Screen_v2.png' width="700"/>
-</p>
-
-
-# How to use this repo
-
-1. Clone this repo (to local or Vertex AI Workbench Instance)
-2. Open terminal, run commands under **One-time setup**
-3. Create and store YouTube API key
-4. Run commands under **Start a session**
-
-
-## One-time setup
+1. **Clone the repository**
 
 ```bash
 git clone https://github.com/tottenjordan/zghost.git
 ```
 
-<details>
-  <summary>Create & activate virtual environment</summary>
+2. **Create a virtual environment and install dependencies**
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-```
 
-</details>
-
-
-<details>
-  <summary>Install packages</summary>
-
-*install python packages...*
-
-```bash
 pip install pipx
 pip install -U poetry packaging ipykernel
 
 poetry install
 ```
 
-</details>
-
-
-<details>
-  <summary>Authenticate and Enable Google Cloud APIs</summary>
+3. **Authenticate and Enable Google Cloud APIs**
 
 ```bash
 gcloud auth application-default login
@@ -166,49 +60,14 @@ gcloud services enable artifactregistry.googleapis.com \
     youtube.googleapis.com
 ```
 
-</details>
+4. **Create and store YouTube API key**
+
+  - See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
+  - Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (see `YT_SECRET_MNGR_NAME` in `.env` file)
+     - For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
 
 
-<details>
-  <summary>Create and store YouTube API key</summary>
-
-1. See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
-
-2. Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (see `YT_SECRET_MNGR_NAME` in `.env` file)
-
-   > For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
-
-</details>
-
-
-<details>
-  <summary>Optionally, create notebook kernel</summary>
-
-*create kernel with required packages for notebooks hosted in [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction)* 
-
-*run this in instance terminal window:*
-
-```bash
-export ENV_NAME=py312_venv
-DL_ANACONDA_ENV_HOME="${DL_ANACONDA_HOME}/envs/$ENV_NAME"
-echo $DL_ANACONDA_ENV_HOME
-
-python3 -m ipykernel install --prefix "${DL_ANACONDA_ENV_HOME}" --name $ENV_NAME --display-name $ENV_NAME
-```
-
-</details>
-
-
-<details>
-  <summary>Create and populate `.env` file(s)</summary>
-
-*(1) create `.env` file for `root_agent`:*
-
-```bash
-touch .env
-```
-
-*(2) edit variables as needed:*
+5. **Create and populate `.env` file(s)**
 
 ```bash
 GOOGLE_GENAI_USE_VERTEXAI=1
@@ -220,55 +79,28 @@ YT_SECRET_MNGR_NAME=<YOUR_SECRET_NAME> # e.g., yt-data-api
 # SESSION_STATE_JSON_PATH=example_state_pixel.json # uncomment to use default config values
 ```
 
-*(3) copy `.env` file to `root_agent` dir:*
+*copy `.env` file to `root_agent` dir:*
 
 ```bash
 cp .env trends_and_insights_agent/.env
 cat trends_and_insights_agent/.env
-```
 
-*(4) read and execute `.env` file:*
-
-```bash
 source .env
 ```
 
-</details>
-
-
-<details>
-  <summary>Create GCP assets and grant IAM</summary>
-
-*create Cloud Storage bucket:*
+ 6. **Create Cloud Storage bucket**
 
 ```bash
 gcloud storage buckets create $BUCKET --location=$GOOGLE_CLOUD_LOCATION
 ```
 
-</details>
-
-
-## Start a session
-
-When starting a new session (e.g., after a new code commit, package update/add, etc.):
-
-1. activate the `virtual environment` 
-2. `source` the `.env` file 
-
-```bash
-source .venv/bin/activate`
-
-source .env
-echo $BUCKET
-```
-
-3. launch the adk developer UI
+7. **Launch the adk developer UI**
 
 ```bash
 poetry run adk web
 ```
 
-4. To start interacting with your agents, open the provided `localhost` link (e.g., `http://localhost:8000`) and select an agent from the drop-down (top left)
+Open your browser and navigate to [http://localhost:8000](http://localhost:8000) and select an agent from the drop-down (top left)
 
 ```bash
 INFO:     Started server process [750453]
@@ -284,7 +116,10 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 ```
 
-5. *Note: if port in use, find any processes listening to port `:8000`, kill them, then return to step (3):*
+<details>
+  <summary>If port :8000 in use</summary>
+
+*find any processes listening to port `:8000`, kill them, then return to step (7):*
 
 ```bash
 lsof -i :8000
@@ -292,12 +127,100 @@ kill -9 $PID
 lsof -i :8000
 ```
 
-# Video walkthrough
+</details>
+
+## How it works
+
+<details>
+  <summary> Example usage </summary>
+
+#### [1] Capture campaign metadata & user-selected trends
+
+Agent will ask user for **campaign metadata** in the UI
+
+```
+> [agent]: Hello! I'm your AI Marketing Research & Strategy Assistant... To start, what please provide the following campaign metadata:
+
+    * Brand
+    * Target Product
+    * Key Selling Points
+    * Target Audience
+```
+
+<details>
+  <summary> [Optional] preload campaign metadata </summary>
+
+preload these values using one of the example json configs e.g., [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json) or upload your own. The json config you wish to reference should be set in your `.env` file like below. *Note: remove or comment out this variable to use default option (1)*
+
+```
+SESSION_STATE_JSON_PATH=example_state_prs.json
+```
+</details>
+
+
+#### [2] Autonomous research workflow
+
+#### [3] Interactive ad content generator
+
+> Note: this section is configured for **human-in-the-loop** i.e., agent will iterate with user when generating image and video creatives
+
+  - Choose a subset of ad copies to proceed with
+  - Choose a subset of visual concepts to proceed with
+  - Generate image and video creatives with visual concepts
+
+#### [4] Compile final research and creative report
+
+</details>
+
+## Example ad creatives
+
+<details>
+  <summary>Hulkamania & Pixel 9's Call Assist</summary>
+
+<p align="center">
+  <img src='media/t2a_hulk_call_Screen_v2.png' width="800"/>
+</p>
+
+</details>
+
+
+<details>
+  <summary>Titanic & PRS Guitars</summary>
+
+<p align="center">
+  <img src='media/titanic_prs.png' width="800"/>
+</p>
+
+</details>
+
+
+<details>
+  <summary>Adam Sandler (Waterboy) & PRS Guitars</summary>
+
+<p align="center">
+  <img src='media/waterboy_prs.png' width="800"/>
+</p>
+
+</details>
+
+
+<details>
+  <summary>Mad Again & Pixel 9' Call Assist</summary>
+
+<p align="center">
+  <img src='media/mad_again_pixel.png' width="800"/>
+</p>
+
+</details>
+
+
+
+## Video walkthrough
 
 > Updated version coming soon!
 
 
-# Sub-agents & Tools
+## Sub-agents & Tools
 
 ```
 root_agent (orchestrator)
@@ -415,7 +338,7 @@ adk deploy cloud_run \
   trends_and_insights_agent/
 ```
 
-# Deployment to Agentspace
+## Deployment to Agentspace
 
 
 Create an Agent Engine in the `notebooks/deployment_guide.ipynb` notebook

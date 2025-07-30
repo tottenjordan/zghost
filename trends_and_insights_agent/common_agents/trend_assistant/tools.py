@@ -170,7 +170,7 @@ def get_daily_gtrends(today_date: str = max_date) -> dict:
     """
     # get latest refresh date
     max_date = get_gtrends_max_date()
-    # max_date = "06/18/2025"
+    # max_date = "07/15/2025"
     logging.info(f"\n\nmax_date in trends_assistant: {max_date}\n\n")
 
     query = f"""
