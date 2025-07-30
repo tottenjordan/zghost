@@ -1,7 +1,7 @@
 # Marketing Campaign Research Report: Hulkamania vs. Spam Calls: A Pixel 9 Takedown
 
 <p align="center" width="100%">
-    <img width="90%" src="../media/example_out_hulk_1.png">
+    <img width="90%" src="../media/t2a_hulk_call_Screen_v2.png">
 </p>
 
 ## Campaign Guide Summary:
