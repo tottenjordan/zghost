@@ -17,7 +17,8 @@ AGENT_DESCRIPTION=""
 AGENT_ID=""
 AGENT_INSTRUCTIONS=""
 ICON_URI="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/corporate_fare/default/24px.svg"
-LOCATION="us"
+AGENTSPACE_LOCATION="us"
+AGENT_ENGINE_LOCATION="us-central1"
 
 # Function to display usage
 usage() {
@@ -35,7 +36,8 @@ usage() {
     echo "  -i, --agent-id <id>              Agent ID (required for update/delete)"
     echo "  -t, --instructions <text>        Agent instructions/tool description (required for create)"
     echo "  -u, --icon-uri <uri>             Icon URI (optional)"
-    echo "  -l, --location <location>        Location (default: us)"
+    echo "  -asl, --agentspace-location <location>        Agentspace App Location (default: us)"
+    echo "  -ael, --agent-engine-location <location>        Agent Engine Location (default: us-central1)"
     echo "  -h, --help                       Display this help message"
     echo ""
     echo "Example with config file:"
@@ -91,7 +93,8 @@ load_config() {
     [[ -z "$AGENT_ID" ]] && AGENT_ID=$(jq -r '.agent_id // empty' "$config_file")
     [[ -z "$AGENT_INSTRUCTIONS" ]] && AGENT_INSTRUCTIONS=$(jq -r '.instructions // empty' "$config_file")
     [[ -z "$ICON_URI" ]] || ICON_URI=$(jq -r '.icon_uri // empty' "$config_file")
-    [[ -z "$LOCATION" ]] || LOCATION=$(jq -r '.location // "us"' "$config_file")
+    [[ -z "$AGENTSPACE_LOCATION" ]] || AGENTSPACE_LOCATION=$(jq -r '.agentspace_location // "us"' "$config_file")
+    [[ -z "$AGENT_ENGINE_LOCATION" ]] || AGENT_ENGINE_LOCATION=$(jq -r '.agent_engine_location // "us-central1"' "$config_file")
 }
 
 # Parse command line arguments
@@ -141,8 +144,12 @@ while [[ $# -gt 0 ]]; do
             ICON_URI="$2"
             shift 2
             ;;
-        -l|--location)
-            LOCATION="$2"
+        -l|--agentspace-location)
+            AGENTSPACE_LOCATION="$2"
+            shift 2
+            ;;
+        -l|--agent-engine-location)
+            AGENT_ENGINE_LOCATION="$2"
             shift 2
             ;;
         -h|--help)
@@ -186,7 +193,7 @@ elif [[ "$ACTION" == "delete" ]]; then
     [[ -z "$PROJECT_NUMBER" ]] && missing_params+=("project-number")
     [[ -z "$AS_APP" ]] && missing_params+=("app-id")
     [[ -z "$AGENT_ID" ]] && missing_params+=("agent-id")
-else
+elif [[ "$ACTION" == "update" ]]; then
     # For create and update actions, we need all parameters
     [[ -z "$PROJECT_ID" ]] && missing_params+=("project-id")
     [[ -z "$PROJECT_NUMBER" ]] && missing_params+=("project-number")
@@ -194,6 +201,13 @@ else
     [[ -z "$REASONING_ENGINE_ID" ]] && missing_params+=("reasoning-engine")
     [[ -z "$AGENT_DISPLAY_NAME" ]] && missing_params+=("display-name")
     [[ -z "$AGENT_ID" ]] && missing_params+=("agent-id")
+else
+    # For create and update actions, we need all parameters
+    [[ -z "$PROJECT_ID" ]] && missing_params+=("project-id")
+    [[ -z "$PROJECT_NUMBER" ]] && missing_params+=("project-number")
+    [[ -z "$AS_APP" ]] && missing_params+=("app-id")
+    [[ -z "$REASONING_ENGINE_ID" ]] && missing_params+=("reasoning-engine")
+    [[ -z "$AGENT_DISPLAY_NAME" ]] && missing_params+=("display-name")
 
     if [[ "$ACTION" == "create" ]]; then
         [[ -z "$AGENT_INSTRUCTIONS" ]] && missing_params+=("instructions")
@@ -209,7 +223,7 @@ fi
 
 # Build reasoning engine path (only for create/update actions)
 if [[ "$ACTION" == "create" || "$ACTION" == "update" ]]; then
-    REASONING_ENGINE="projects/${PROJECT_NUMBER}/locations/${LOCATION}-central1/reasoningEngines/${REASONING_ENGINE_ID}"
+    REASONING_ENGINE="projects/${PROJECT_NUMBER}/locations/${AGENT_ENGINE_LOCATION}/reasoningEngines/${REASONING_ENGINE_ID}"
 fi
 
 # Display configuration
@@ -220,7 +234,8 @@ echo "Action: $ACTION"
 echo "Project ID: $PROJECT_ID"
 echo "Project Number: $PROJECT_NUMBER"
 echo "App ID: $AS_APP"
-echo "Location: $LOCATION"
+echo "Agentspace Location: $AGENTSPACE_LOCATION"
+echo "Agent Engine Location: $AGENT_ENGINE_LOCATION"
 
 if [[ "$ACTION" == "create" || "$ACTION" == "update" ]]; then
     echo "Reasoning Engine: $REASONING_ENGINE"
@@ -258,7 +273,7 @@ if [[ "$ACTION" == "create" ]]; then
         -H "Authorization: Bearer ${ACCESS_TOKEN}" \
         -H "Content-Type: application/json" \
         -H "X-Goog-User-Project: ${PROJECT_ID}" \
-        "https://${LOCATION}-discoveryengine.googleapis.com/v1alpha/projects/${PROJECT_NUMBER}/locations/${LOCATION}/collections/default_collection/engines/${AS_APP}/assistants/default_assistant/agents" \
+        "https://${AGENTSPACE_LOCATION}-discoveryengine.googleapis.com/v1alpha/projects/${PROJECT_NUMBER}/locations/${AGENTSPACE_LOCATION}/collections/default_collection/engines/${AS_APP}/assistants/default_assistant/agents" \
         -d '{
             "displayName": "'"${AGENT_DISPLAY_NAME}"'",
             "description": "'"${AGENT_DESCRIPTION}"'",
@@ -289,14 +304,14 @@ elif [[ "$ACTION" == "update" ]]; then
     echo "Updating existing agent..."
     
     # Build agent resource name
-    AGENT_RESOURCE_NAME="projects/${PROJECT_NUMBER}/locations/${LOCATION}/collections/default_collection/engines/${AS_APP}/assistants/default_assistant/agents/${AGENT_ID}"
+    AGENT_RESOURCE_NAME="projects/${PROJECT_NUMBER}/locations/${AGENTSPACE_LOCATION}/collections/default_collection/engines/${AS_APP}/assistants/default_assistant/agents/${AGENT_ID}"
     
     # Update agent using PATCH request with new structure
     response=$(curl -X PATCH \
         -H "Authorization: Bearer ${ACCESS_TOKEN}" \
         -H "Content-Type: application/json" \
         -H "X-Goog-User-Project: ${PROJECT_ID}" \
-        "https://${LOCATION}-discoveryengine.googleapis.com/v1alpha/${AGENT_RESOURCE_NAME}" \
+        "https://${AGENTSPACE_LOCATION}-discoveryengine.googleapis.com/v1alpha/${AGENT_RESOURCE_NAME}" \
         -d '{
             "displayName": "'"${AGENT_DISPLAY_NAME}"'",
             "description": "'"${AGENT_DESCRIPTION}"'",
@@ -328,7 +343,7 @@ elif [[ "$ACTION" == "list" ]]; then
         -H "Authorization: Bearer ${ACCESS_TOKEN}" \
         -H "Content-Type: application/json" \
         -H "X-Goog-User-Project: ${PROJECT_ID}" \
-        "https://${LOCATION}-discoveryengine.googleapis.com/v1alpha/projects/${PROJECT_NUMBER}/locations/${LOCATION}/collections/default_collection/engines/${AS_APP}/assistants/default_assistant/agents" 2>&1)
+        "https://${AGENTSPACE_LOCATION}-discoveryengine.googleapis.com/v1alpha/projects/${PROJECT_NUMBER}/locations/${AGENTSPACE_LOCATION}/collections/default_collection/engines/${AS_APP}/assistants/default_assistant/agents" 2>&1)
     
     # Check if the request was successful
     if echo "$response" | grep -q '"agents"'; then
@@ -352,14 +367,14 @@ elif [[ "$ACTION" == "delete" ]]; then
     echo "Deleting agent..."
     
     # Build agent resource name
-    AGENT_RESOURCE_NAME="projects/${PROJECT_NUMBER}/locations/${LOCATION}/collections/default_collection/engines/${AS_APP}/assistants/default_assistant/agents/${AGENT_ID}"
+    AGENT_RESOURCE_NAME="projects/${PROJECT_NUMBER}/locations/${AGENTSPACE_LOCATION}/collections/default_collection/engines/${AS_APP}/assistants/default_assistant/agents/${AGENT_ID}"
     
     # Delete agent using DELETE request
     response=$(curl -X DELETE \
         -H "Authorization: Bearer ${ACCESS_TOKEN}" \
         -H "Content-Type: application/json" \
         -H "X-Goog-User-Project: ${PROJECT_ID}" \
-        "https://${LOCATION}-discoveryengine.googleapis.com/v1alpha/${AGENT_RESOURCE_NAME}" 2>&1)
+        "https://${AGENTSPACE_LOCATION}-discoveryengine.googleapis.com/v1alpha/${AGENT_RESOURCE_NAME}" 2>&1)
     
     # Check if the request was successful
     # DELETE requests might return empty response on success

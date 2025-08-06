@@ -8,10 +8,10 @@ set -e
 echo "Installing ffmpeg on Ubuntu..."
 
 # Update package list
-sudo apt-get update
+apt-get update
 
 # Install ffmpeg
-sudo apt-get install -y ffmpeg
+apt-get install -y ffmpeg
 
 # Verify installation
 if command -v ffmpeg &> /dev/null; then
