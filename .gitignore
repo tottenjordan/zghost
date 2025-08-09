@@ -1,12 +1,71 @@
+# Python
 .venv
-/google-cloud-cli-linux-x86_64.tar.gz
-/google-cloud-sdk
 *.pyc
-*.env
 **/__pycache__/
 __pycache__/
 *.whl
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+*.env
+.env.*
+
+# Google Cloud
+/google-cloud-cli-linux-x86_64.tar.gz
+/google-cloud-sdk
+
+# Project specific
 trends_and_insights_agent/.adk/*
 *.evalset.json
 stash/*
 files/*
+
+# Node.js / Frontend
+node_modules/
+frontend/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+
+# Frontend build
+frontend/dist/
+frontend/build/
+.parcel-cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Testing
+coverage/
+.coverage
+htmlcov/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+temp_*
+
+# OS files
+Thumbs.db
+
+# Poetry
+poetry.lock
+
+# Test files
+test_request.json
+response.json

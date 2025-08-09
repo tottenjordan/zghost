@@ -94,7 +94,50 @@ source .env
 gcloud storage buckets create $BUCKET --location=$GOOGLE_CLOUD_LOCATION
 ```
 
-7. **Launch the adk developer UI**
+7. **Launch the application**
+
+The application now includes a modern React frontend based on the [Gemini Fullstack example](https://github.com/google/adk-samples/tree/main/python/agents/gemini-fullstack) from Google's ADK samples. You have several options to run it:
+
+### Option A: Run all services together (recommended)
+
+```bash
+# Install all dependencies first
+make install
+
+# Run backend, artifact server, and frontend together
+make dev
+```
+
+This will:
+- Start the backend agent server on [http://localhost:8000](http://localhost:8000)
+- Start the artifact server on [http://localhost:8001](http://localhost:8001)
+- Start the frontend React app on [http://localhost:5173](http://localhost:5173)
+- The frontend will proxy API requests to the backend automatically
+
+### Option B: Run services separately
+
+In terminal 1 - Backend:
+```bash
+make backend
+# OR
+poetry run adk api_server .
+```
+
+In terminal 2 - Artifact Server:
+```bash
+make artifact-server
+# OR
+poetry run python artifact_server.py
+```
+
+In terminal 3 - Frontend:
+```bash
+make frontend
+# OR
+cd frontend && npm run dev
+```
+
+### Option C: Use the classic ADK web interface
 
 ```bash
 poetry run adk web
@@ -102,32 +145,138 @@ poetry run adk web
 
 Open your browser and navigate to [http://localhost:8000](http://localhost:8000) and select an agent from the drop-down (top left)
 
-```bash
-INFO:     Started server process [750453]
-INFO:     Waiting for application startup.
-
-+-----------------------------------------------------------------------------+
-| ADK Web Server started                                                      |
-|                                                                             |
-| For local testing, access at http://localhost:8000.                         |
-+-----------------------------------------------------------------------------+
-
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-```
-
 <details>
-  <summary>If port :8000 in use</summary>
+  <summary>If port :8000, :8001, or :5173 is in use</summary>
 
-*find any processes listening to port `:8000`, kill them, then return to step (7):*
+*find any processes listening to these ports, kill them, then restart:*
 
 ```bash
+# For backend port
 lsof -i :8000
 kill -9 $PID
-lsof -i :8000
+
+# For artifact server port
+lsof -i :8001
+kill -9 $PID
+
+# For frontend port
+lsof -i :5173
+kill -9 $PID
 ```
 
 </details>
+
+## Frontend Features
+
+The React frontend provides an enhanced user experience for interacting with the marketing intelligence agents:
+
+### Key Features
+- **Interactive Welcome Screen**: Quick start guide and example queries to get you started
+- **Real-time Agent Visualization**: See which agents are working and their progress in real-time
+- **Trend Selection UI**: Visual cards for selecting Google Search and YouTube trends
+- **PDF Upload**: Drag-and-drop or click to upload marketing guide PDFs
+- **Activity Timeline**: Track agent processing steps with visual indicators
+- **Dark Theme**: Modern, eye-friendly interface for extended use
+- **Session Management**: Automatic session creation and persistence
+
+### Frontend Architecture
+
+The frontend is built with modern web technologies:
+- **React 19** + **TypeScript** for type-safe component development
+- **Vite** for lightning-fast development and hot module replacement
+- **Tailwind CSS** for responsive, utility-first styling
+- **Server-Sent Events (SSE)** for real-time streaming updates from agents
+- **Radix UI** for accessible, unstyled UI components
+
+### Development Guide
+
+To work on the frontend:
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+### Frontend Structure
+```
+frontend/
+├── src/
+│   ├── components/        # React components
+│   │   ├── ui/           # Reusable UI components
+│   │   ├── WelcomeScreen.tsx
+│   │   ├── ChatMessagesView.tsx
+│   │   ├── ActivityTimeline.tsx
+│   │   └── TrendSelector.tsx
+│   ├── App.tsx           # Main application component
+│   ├── config.ts         # Configuration settings
+│   └── utils.ts          # Utility functions
+├── package.json          # Dependencies and scripts
+├── vite.config.ts        # Vite configuration
+└── tsconfig.json         # TypeScript configuration
+```
+
+### API Integration
+
+The frontend communicates with the ADK API server through a proxy configuration in Vite, ensuring seamless development:
+
+- All `/api/*` requests are proxied to `http://localhost:8000`
+- Session management is handled automatically
+- Real-time updates via SSE for agent responses
+
+### Credits
+
+The frontend implementation is inspired by and adapted from the [Gemini Fullstack example](https://github.com/google/adk-samples/tree/main/python/agents/gemini-fullstack) in Google's ADK samples repository.
+
+## Artifact Server
+
+The application includes a custom artifact server that makes generated images and videos directly accessible via HTTP URLs. This enables:
+
+- **Direct browser access**: View artifacts without base64 decoding
+- **Shareable URLs**: Share artifact links that work in any browser
+- **Better performance**: Stream large files directly instead of embedding in JSON
+- **Content-type handling**: Proper MIME types for images and videos
+
+### How it works
+
+The artifact server (running on port 8001) acts as a proxy between the frontend and ADK's artifact storage:
+
+1. Fetches artifacts from the ADK backend
+2. Decodes base64 data with robust error handling
+3. Serves files with appropriate content types
+4. Provides shareable HTTP URLs for all artifacts
+
+### Artifact URLs
+
+Generated artifacts are accessible at:
+```
+http://localhost:8001/artifact/trends_and_insights_agent/users/{userId}/sessions/{sessionId}/artifacts/{artifactKey}
+```
+
+Example:
+```
+http://localhost:8001/artifact/trends_and_insights_agent/users/u_999/sessions/abc123/artifacts/Vice_City_Doodle_Drive_0.mp4
+```
+
+### Configuration
+
+The artifact server is configured in `frontend/src/config.ts`:
+```typescript
+artifactUrl: import.meta.env.VITE_ARTIFACT_URL || 'http://localhost:8001'
+```
+
+For production deployments, set the `VITE_ARTIFACT_URL` environment variable to your artifact server URL.
 
 ## How it works
 
@@ -136,16 +285,19 @@ lsof -i :8000
 
 #### [1] Capture campaign metadata & user-selected trends
 
-Agent will ask user for **campaign metadata** in the UI
+Using the new frontend interface:
 
-```
-> [agent]: Hello! I'm your AI Marketing Research & Strategy Assistant... To start, what please provide the following campaign metadata:
+1. **Start your session**: Type "hello" in the chat interface
+2. **Upload campaign guide**: Click "Upload PDF" or drag and drop your marketing guide PDF
+3. **Select trends**: Choose from visual cards showing Google Search and YouTube trends
+4. **Watch agents work**: See real-time progress as agents research and generate content
+5. **Receive results**: Get comprehensive reports and ad campaigns
 
-    * Brand
-    * Target Product
-    * Key Selling Points
-    * Target Audience
-```
+The agent will interactively guide you through providing:
+- Brand information
+- Target Product details
+- Key Selling Points
+- Target Audience demographics
 
 <details>
   <summary> [Optional] preload campaign metadata </summary>

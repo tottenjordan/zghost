@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Base64 Decoding</title>
+</head>
+<body>
+    <h1>Testing Base64 Image Decoding</h1>
+    <div id="status">Loading...</div>
+    <div id="image-container"></div>
+    
+    <script>
+        async function testBase64() {
+            const statusEl = document.getElementById('status');
+            const containerEl = document.getElementById('image-container');
+            
+            try {
+                // Fetch the artifact
+                const response = await fetch('http://localhost:8000/apps/trends_and_insights_agent/users/u_999/sessions/3e369922-0a9c-4c99-8aff-2ff0de973d93/artifacts/The_Real_Upgrade_0.png');
+                const data = await response.json();
+                
+                statusEl.textContent = `Got base64 data: ${data.inlineData.data.length} chars`;
+                
+                // Method 1: Using data URL with fetch
+                try {
+                    const base64Response = await fetch(`data:image/png;base64,${data.inlineData.data}`);
+                    const blob = await base64Response.blob();
+                    const url = URL.createObjectURL(blob);
+                    
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.style.maxWidth = '500px';
+                    containerEl.appendChild(img);
+                    
+                    statusEl.textContent += ' - Success with fetch method!';
+                } catch (e) {
+                    console.error('Fetch method failed:', e);
+                    statusEl.textContent += ' - Fetch method failed: ' + e.message;
+                    
+                    // Method 2: Direct data URL
+                    try {
+                        const img = document.createElement('img');
+                        img.src = `data:image/png;base64,${data.inlineData.data}`;
+                        img.style.maxWidth = '500px';
+                        containerEl.appendChild(img);
+                        
+                        statusEl.textContent += ' - Success with direct data URL!';
+                    } catch (e2) {
+                        console.error('Direct method failed:', e2);
+                        statusEl.textContent += ' - Direct method also failed: ' + e2.message;
+                    }
+                }
+            } catch (error) {
+                statusEl.textContent = 'Error: ' + error.message;
+                console.error(error);
+            }
+        }
+        
+        testBase64();
+    </script>
+</body>
+</html>

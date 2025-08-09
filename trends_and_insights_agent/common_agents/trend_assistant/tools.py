@@ -71,6 +71,7 @@ async def save_yt_trends_to_session_state(
 
 
 def get_youtube_trends(
+    tool_context: ToolContext,
     region_code: str = "US",
     max_results: int = config.max_results_yt_trends,
 ) -> dict:
@@ -79,6 +80,7 @@ def get_youtube_trends(
     Returns a dictionary of videos that match the API request parameters e.g., trending videos
 
     Args:
+        tool_context: The ADK tool context.
         region_code (str): selects a video chart available in the specified region. Values are ISO 3166-1 alpha-2 country codes.
             For example, the region_code for the United Kingdom would be 'GB', whereas 'US' would represent The United States.
         max_results (int): The number of video results to return.
@@ -98,21 +100,34 @@ def get_youtube_trends(
 
     # TODO: only return select fields
     trend_dict = {}
+    trends_list = []  # For frontend display
     i = 1
     for video in trend_response["items"]:
         row_name = f"row_{i}"
-        trend_dict.update(
-            {
-                row_name: {
-                    "videoId": video["id"],
-                    "videoTitle": video["snippet"]["title"],
-                    # 'videoDescription': video['snippet']['description'],
-                    "duration": video["contentDetails"]["duration"],
-                    "videoURL": f"https://www.youtube.com/watch?v={video['id']}",
-                }
-            }
-        )
+        video_data = {
+            "videoId": video["id"],
+            "videoTitle": video["snippet"]["title"],
+            # 'videoDescription': video['snippet']['description'],
+            "duration": video["contentDetails"]["duration"],
+            "videoURL": f"https://www.youtube.com/watch?v={video['id']}",
+        }
+        trend_dict.update({row_name: video_data})
+        
+        # Format for frontend
+        trends_list.append({
+            "id": video["id"],
+            "title": video["snippet"]["title"],
+            "channel": video["snippet"].get("channelTitle", ""),
+            "description": video["snippet"].get("description", "")[:200] + "..." if len(video["snippet"].get("description", "")) > 200 else video["snippet"].get("description", ""),
+            "duration": video["contentDetails"]["duration"],
+            "url": f"https://www.youtube.com/watch?v={video['id']}",
+        })
         i += 1
+    
+    # Save to session state for frontend
+    tool_context.state["youtube_trends"] = trends_list
+    logging.info(f"Saved {len(trends_list)} YouTube trends to state")
+    
     return trend_dict
 
 
@@ -150,17 +165,18 @@ def get_gtrends_max_date() -> str:
         FROM `bigquery-public-data.google_trends.top_terms`
     """
     max_date = bq_client.query(query).to_dataframe()
-    return max_date.iloc[0][0].strftime("%m/%d/%Y")
+    return max_date.iloc[0, 0].strftime("%m/%d/%Y")
 
 
 max_date = get_gtrends_max_date()
 
 
-def get_daily_gtrends(today_date: str = max_date) -> dict:
+def get_daily_gtrends(tool_context: ToolContext, today_date: str = max_date) -> dict:
     """
     Retrieves the top 25 Google Search Trends (term, rank, refresh_date).
 
     Args:
+        tool_context: The ADK tool context.
         today_date: Today's date in the format 'MM/DD/YYYY'. Use the default value provided.
 
     Returns:
@@ -194,7 +210,18 @@ def get_daily_gtrends(today_date: str = max_date) -> dict:
     except Exception as e:
         return {"status": "error", "error_message": str(e)}
 
+    # Save trends for frontend
+    google_trends_list = []
+    for _, row in df_t.iterrows():
+        google_trends_list.append({
+            "name": row["term"],
+            "rank": int(row["rank"]),
+            "refresh_date": row["refresh_date"].strftime("%m/%d/%Y") if hasattr(row["refresh_date"], 'strftime') else str(row["refresh_date"]),
+        })
+    tool_context.state["google_trends"] = google_trends_list
+    logging.info(f"Saved {len(google_trends_list)} Google trends to state")
+    
     return {
         "status": "ok",
-        f"markdown_table": markdown_string,
+        "markdown_table": markdown_string,
     }

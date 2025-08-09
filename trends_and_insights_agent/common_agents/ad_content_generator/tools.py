@@ -131,18 +131,40 @@ async def generate_image(
 
                 image_bytes = image_results.image.image_bytes
                 artifact_key = f"{filename_prefix}_{index}.png"
+                
+                local_filepath = f"{SUBDIR}/{artifact_key}"
 
+                # Process the image to ensure no transparency
+                image = Image.open(BytesIO(image_bytes))
+                
+                # Ensure PNG is saved without transparency
+                if image.mode in ('RGBA', 'LA') or (image.mode == 'P' and 'transparency' in image.info):
+                    # Create a white background
+                    background = Image.new('RGB', image.size, (255, 255, 255))
+                    # Paste the image on the white background
+                    if image.mode == 'P':
+                        image = image.convert('RGBA')
+                    background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+                    image = background
+                elif image.mode != 'RGB':
+                    # Convert to RGB if not already
+                    image = image.convert('RGB')
+                
+                image.save(local_filepath, 'PNG')
+                
+                # Convert processed image back to bytes for artifact storage
+                processed_bytes = BytesIO()
+                image.save(processed_bytes, 'PNG')
+                processed_bytes.seek(0)
+                
+                # Save the processed image as artifact
                 await tool_context.save_artifact(
                     filename=artifact_key,
                     artifact=types.Part.from_bytes(
-                        data=image_bytes, mime_type="image/png"
+                        data=processed_bytes.read(), mime_type="image/png"
                     ),
                 )
-                local_filepath = f"{SUBDIR}/{artifact_key}"
-
-                # save the file locally for gcs upload
-                image = Image.open(BytesIO(image_bytes))
-                image.save(local_filepath)
+                
                 gcs_folder = tool_context.state["gcs_folder"]
                 artifact_path = os.path.join(gcs_folder, artifact_key)
                 logging.info(f"\n\n `generate_image` listdir: {os.listdir('.')}\n\n")
