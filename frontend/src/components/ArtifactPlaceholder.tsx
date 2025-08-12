@@ -4,7 +4,7 @@ import { getGCSArtifactUrl, parseSessionInfo } from '../lib/gcs-utils';
 
 interface ArtifactPlaceholderProps {
   artifactKey: string;
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'pdf';
   sessionId?: string | null;
   userId?: string | null;
 }

@@ -210,6 +210,22 @@ export function TrendSelector({
                           Views: {trend.views}
                         </p>
                       )}
+                      {trend.duration && (
+                        <p className="text-xs text-neutral-500">
+                          Duration: {trend.duration}
+                        </p>
+                      )}
+                      {trend.url && (
+                        <a 
+                          href={trend.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-400 hover:text-blue-300 mt-1 inline-block"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Watch on YouTube →
+                        </a>
+                      )}
                     </div>
                     <Button
                       size="sm"

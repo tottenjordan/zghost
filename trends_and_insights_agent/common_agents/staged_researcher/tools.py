@@ -65,6 +65,14 @@ async def save_draft_report_artifact(tool_context: ToolContext) -> dict:
             f"\n\nSaved artifact doc '{artifact_key}', version {version}, to folder '{gcs_folder}' \n\n"
         )
 
+        # Add PDF artifact to state
+        pdf_artifacts = tool_context.state.get("pdf_artifact_keys", {"pdf_artifact_keys": []})
+        pdf_artifacts["pdf_artifact_keys"].append({
+            "artifact_key": artifact_key,
+            "version": version
+        })
+        tool_context.state["pdf_artifact_keys"] = pdf_artifacts
+        
         shutil.rmtree(DIR)
         return {
             "status": "ok",

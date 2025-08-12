@@ -15,7 +15,7 @@ interface MessageWithAgent {
   pdfData?: string;
   artifacts?: Array<{
     key: string;
-    type: 'image' | 'video';
+    type: 'image' | 'video' | 'pdf';
     url?: string;
     gcsUrl?: string;
   }>;
@@ -265,6 +265,31 @@ export default function App() {
               type: 'video' as const,
               url: artifact.artifact_key
             });
+          });
+        }
+        
+        // Check for PDF artifacts (reports)
+        if (parsed.actions.stateDelta.pdf_artifact_keys) {
+          console.log('[SSE EXTRACT] pdf_artifact_keys:', parsed.actions.stateDelta.pdf_artifact_keys);
+          const pdfArtifacts = parsed.actions.stateDelta.pdf_artifact_keys.pdf_artifact_keys || [];
+          if (!artifacts) artifacts = [];
+          pdfArtifacts.forEach((artifact: any) => {
+            artifacts.push({
+              key: artifact.artifact_key,
+              type: 'pdf' as const,
+              url: artifact.artifact_key
+            });
+          });
+        }
+        
+        // Also check for specific report artifacts
+        if (parsed.actions.stateDelta.report_artifact_key) {
+          console.log('[SSE EXTRACT] report_artifact_key:', parsed.actions.stateDelta.report_artifact_key);
+          if (!artifacts) artifacts = [];
+          artifacts.push({
+            key: parsed.actions.stateDelta.report_artifact_key,
+            type: 'pdf' as const,
+            url: parsed.actions.stateDelta.report_artifact_key
           });
         }
       }
@@ -540,7 +565,8 @@ export default function App() {
       
       // Add artifacts to timeline events
       artifactsWithUrls.forEach(artifact => {
-        const artifactTitle = artifact.type === 'image' ? 'Generated Image' : 'Generated Video';
+        const artifactTitle = artifact.type === 'image' ? 'Generated Image' : 
+                              artifact.type === 'video' ? 'Generated Video' : 'PDF Report';
         setMessageEvents(prev => new Map(prev).set(aiMessageId, [...(prev.get(aiMessageId) || []), {
           title: artifactTitle,
           data: { type: 'artifact', artifact }
@@ -572,9 +598,11 @@ export default function App() {
       }
 
       let finalQuery = query;
+      let pdfData: string | undefined;
+      
       if (pdfFile) {
         const reader = new FileReader();
-        const pdfData = await new Promise<string>((resolve, reject) => {
+        pdfData = await new Promise<string>((resolve, reject) => {
           reader.onload = (e) => resolve(e.target?.result as string);
           reader.onerror = reject;
           reader.readAsDataURL(pdfFile);
@@ -617,7 +645,10 @@ export default function App() {
             userId: currentUserId,
             sessionId: currentSessionId,
             newMessage: {
-              parts: [{ text: finalQuery }],
+              parts: pdfData ? [
+                { text: finalQuery },
+                { inlineData: { data: pdfData.split(',')[1], mimeType: 'application/pdf' } }
+              ] : [{ text: finalQuery }],
               role: "user"
             },
             streaming: false

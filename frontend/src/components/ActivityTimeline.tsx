@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock, Search, FileText, Code, Globe, ChevronDown, ChevronRight, Image, Video } from 'lucide-react';
+import { Clock, Search, FileText, Code, Globe, ChevronDown, ChevronRight, Image, Video, FileType } from 'lucide-react';
 import { ArtifactPlaceholder } from './ArtifactPlaceholder';
 
 interface ProcessedEvent {
@@ -18,6 +18,7 @@ export function ActivityTimeline({ events }: ActivityTimelineProps) {
   const getEventIcon = (title: string, eventData?: any) => {
     if (title.includes('Generated Image')) return Image;
     if (title.includes('Generated Video')) return Video;
+    if (title.includes('PDF Report')) return FileType;
     if (title.includes('Search') || title.includes('Research')) return Search;
     if (title.includes('Function')) return Code;
     if (title.includes('Sources')) return Globe;
@@ -26,7 +27,7 @@ export function ActivityTimeline({ events }: ActivityTimelineProps) {
   };
 
   const getEventColor = (title: string) => {
-    if (title.includes('Generated Image') || title.includes('Generated Video')) return 'text-pink-400 bg-pink-400/10';
+    if (title.includes('Generated Image') || title.includes('Generated Video') || title.includes('PDF Report')) return 'text-pink-400 bg-pink-400/10';
     if (title.includes('Planning')) return 'text-blue-400 bg-blue-400/10';
     if (title.includes('Research') || title.includes('Search')) return 'text-purple-400 bg-purple-400/10';
     if (title.includes('Quality') || title.includes('Evaluating')) return 'text-yellow-400 bg-yellow-400/10';

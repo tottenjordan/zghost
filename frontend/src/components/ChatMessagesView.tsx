@@ -4,6 +4,7 @@ import { ActivityTimeline } from './ActivityTimeline';
 import { InputForm } from './InputForm';
 import { TrendSelector } from './TrendSelector';
 import { ArtifactPlaceholder } from './ArtifactPlaceholder';
+import { PdfViewer } from './PdfViewer';
 import { SessionSelector } from './SessionSelector';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -24,7 +25,7 @@ interface MessageWithAgent {
   pdfData?: string;
   artifacts?: Array<{
     key: string;
-    type: 'image' | 'video';
+    type: 'image' | 'video' | 'pdf';
     url?: string;
   }>;
 }
@@ -481,12 +482,20 @@ export function ChatMessagesView({
                       <div className="mt-4 space-y-3">
                         {message.artifacts.map((artifact, index) => (
                           <div key={`${artifact.key}-${index}`}>
-                            <ArtifactPlaceholder
-                              artifactKey={artifact.key}
-                              type={artifact.type}
-                              sessionId={sessionId}
-                              userId={userId}
-                            />
+                            {artifact.type === 'pdf' ? (
+                              <PdfViewer
+                                artifactKey={artifact.key}
+                                sessionId={sessionId}
+                                userId={userId}
+                              />
+                            ) : (
+                              <ArtifactPlaceholder
+                                artifactKey={artifact.key}
+                                type={artifact.type}
+                                sessionId={sessionId}
+                                userId={userId}
+                              />
+                            )}
                           </div>
                         ))}
                       </div>

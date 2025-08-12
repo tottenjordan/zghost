@@ -125,6 +125,7 @@ def campaign_callback_function(
         *   key_selling_points
         *   img_artifact_keys
         *   vid_artifact_keys
+        *   pdf_artifact_keys
         *   target_search_trends
         *   target_yt_trends
         *   final_select_ad_copies
@@ -144,6 +145,7 @@ def campaign_callback_function(
     final_select_vis_concepts = callback_context.state.get("final_select_vis_concepts")
     img_artifact_keys = callback_context.state.get("img_artifact_keys")
     vid_artifact_keys = callback_context.state.get("vid_artifact_keys")
+    pdf_artifact_keys = callback_context.state.get("pdf_artifact_keys")
     target_yt_trends = callback_context.state.get("target_yt_trends")
     target_search_trends = callback_context.state.get("target_search_trends")
 
@@ -205,6 +207,13 @@ def campaign_callback_function(
             return_content = "vid_artifact_keys"
         else:
             return_content += ", vid_artifact_keys"
+
+    if pdf_artifact_keys is None:
+        callback_context.state["pdf_artifact_keys"] = {"pdf_artifact_keys": []}
+        if return_content is None:
+            return_content = "pdf_artifact_keys"
+        else:
+            return_content += ", pdf_artifact_keys"
 
     if target_search_trends is None:
         callback_context.state["target_search_trends"] = {"target_search_trends": []}
@@ -362,7 +371,21 @@ async def before_agent_get_user_file(
     # if file then save as artifact
     part = parts[-1]
     if part.inline_data and part.inline_data.data and part.inline_data.mime_type:
-        artifact_key = "user_uploaded_file"
+        # Extract filename from user message if available
+        user_text = ""
+        for p in callback_context.user_content.parts:
+            if p.text:
+                user_text = p.text
+                break
+        
+        # Try to extract filename from "use this pdf filename.pdf" pattern
+        import re
+        filename_match = re.search(r'use this pdf\s+(.+\.pdf)', user_text, re.IGNORECASE)
+        if filename_match:
+            artifact_key = filename_match.group(1).replace(' ', '_')
+        else:
+            artifact_key = "user_uploaded_file.pdf"
+            
         file_bytes = part.inline_data.data
         file_type = part.inline_data.mime_type
 
@@ -380,6 +403,14 @@ async def before_agent_get_user_file(
             filename=artifact_key, artifact=artifact
         )
         callback_context.state["user_document_artifact_key"] = artifact_key
+        
+        # Add to PDF artifacts list for frontend display
+        pdf_artifacts = callback_context.state.get("pdf_artifact_keys", {"pdf_artifact_keys": []})
+        pdf_artifacts["pdf_artifact_keys"].append({
+            "artifact_key": artifact_key,
+            "version": version
+        })
+        callback_context.state["pdf_artifact_keys"] = pdf_artifacts
 
     # Formulate a confirmation message
     confirmation_message = (
