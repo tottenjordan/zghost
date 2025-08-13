@@ -5,6 +5,7 @@ import { InputForm } from './InputForm';
 import { TrendSelector } from './TrendSelector';
 import { ArtifactPlaceholder } from './ArtifactPlaceholder';
 import { PdfViewer } from './PdfViewer';
+import { ProcessingStatus } from './ProcessingStatus';
 import { SessionSelector } from './SessionSelector';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -387,10 +388,37 @@ export function ChatMessagesView({
                         </div>
                       </div>
                     ) : (
-                      <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]}
-                        className={`prose ${message.type === 'human' ? 'prose-invert' : 'prose-invert'} max-w-none`}
-                        components={{
+                      <>
+                        {/* Show ProcessingStatus for AI messages that are loading */}
+                        {isLoading && message.type === 'ai' && message.id.includes('_ai') && (!message.content || message.content.includes('Processing')) ? (
+                          <ProcessingStatus 
+                            currentAgent={(() => {
+                              const events = messageEvents.get(message.id);
+                              let agent = message.agent;
+                              
+                              if (events && events.length > 0) {
+                                // Search from the end to find the most recent agent
+                                for (let i = events.length - 1; i >= 0; i--) {
+                                  const event = events[i];
+                                  if (event.data?.type === 'agentActivity' && event.data.agent) {
+                                    agent = event.data.agent;
+                                    break;
+                                  } else if (event.data?.type === 'functionCall' && event.data.name?.includes('_agent')) {
+                                    agent = event.data.name;
+                                    break;
+                                  }
+                                }
+                              }
+                              
+                              return agent;
+                            })()}
+                            isLoading={isLoading}
+                          />
+                        ) : (
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkGfm]}
+                            className={`prose ${message.type === 'human' ? 'prose-invert' : 'prose-invert'} max-w-none`}
+                            components={{
                           p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
                           ul: ({children}) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
                           ol: ({children}) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
@@ -421,54 +449,10 @@ export function ChatMessagesView({
                           }
                         }}
                       >
-                        {(() => {
-                          // Check if this is a processing message
-                          if (isLoading && message.id.includes('_ai') && (!message.content || message.content.includes('Processing'))) {
-                            // Check events for the current processing agent
-                            const events = messageEvents.get(message.id);
-                            let currentProcessingAgent = message.agent;
-                            
-                            // Look for the latest agent from events
-                            if (events && events.length > 0) {
-                              // Search from the end to find the most recent agent activity
-                              for (let i = events.length - 1; i >= 0; i--) {
-                                const event = events[i];
-                                if (event.data) {
-                                  // Check for agent activity events
-                                  if (event.data.type === 'agentActivity' && event.data.agent) {
-                                    currentProcessingAgent = event.data.agent;
-                                    const activity = event.data.activity;
-                                    return getProcessingMessage(currentProcessingAgent, activity);
-                                  }
-                                  // Also check function calls
-                                  else if (event.data.type === 'functionCall' && event.data.name) {
-                                    // Try to infer activity from function name
-                                    const activity = event.data.name.replace(/_/g, ' ');
-                                    return getProcessingMessage(currentProcessingAgent, activity);
-                                  }
-                                }
-                              }
-                              
-                              const latestEvent = events[events.length - 1];
-                              // If we have event data, show more specific info
-                              if (latestEvent.data) {
-                                if (latestEvent.data.sources_found) {
-                                  return `${getProcessingMessage(currentProcessingAgent)} Found ${latestEvent.data.sources_found} sources...`;
-                                } else if (latestEvent.data.status) {
-                                  return `${getProcessingMessage(currentProcessingAgent)} ${latestEvent.data.status}`;
-                                }
-                              }
-                              
-                              return `Processing: ${latestEvent.title}...`;
-                            }
-                            
-                            return getProcessingMessage(currentProcessingAgent);
-                          }
-                          
-                          // Otherwise show the actual content
-                          return message.content;
-                        })()}
+                        {message.content}
                       </ReactMarkdown>
+                        )}
+                      </>
                     )}
                     
                     {message.agent && (

@@ -428,6 +428,11 @@ export default function App() {
 
     if (agent && agent !== currentAgentRef.current) {
       currentAgentRef.current = agent;
+      // Also add event for initial agent detection
+      setMessageEvents(prev => new Map(prev).set(aiMessageId, [...(prev.get(aiMessageId) || []), {
+        title: `Agent: ${agent}`,
+        data: { type: 'agentActivity', agent: agent }
+      }]));
     }
     
     if (activity) {
@@ -471,6 +476,13 @@ export default function App() {
     if (agent && agent !== currentAgentRef.current) {
       console.log('[AGENT UPDATE] Changing from', currentAgentRef.current, 'to', agent);
       currentAgentRef.current = agent;
+      
+      // Add agent activity event for ProcessingStatus to detect
+      setMessageEvents(prev => new Map(prev).set(aiMessageId, [...(prev.get(aiMessageId) || []), {
+        title: `Agent: ${agent}`,
+        data: { type: 'agentActivity', agent: agent }
+      }]));
+      
       setMessages(prev => {
         const newContent = accumulatedTextRef.current || getProcessingMessage(agent, currentActivityRef.current);
         console.log(`[MESSAGE UPDATE] Agent ${agent} update:`, newContent);
@@ -559,9 +571,16 @@ export default function App() {
       }));
       
       console.log('[SSE HANDLER] Adding artifacts to message:', artifactsWithUrls);
-      setMessages(prev => prev.map(msg =>
-        msg.id === aiMessageId ? { ...msg, artifacts: [...(msg.artifacts || []), ...artifactsWithUrls] } : msg
-      ));
+      setMessages(prev => prev.map(msg => {
+        if (msg.id === aiMessageId) {
+          // Deduplicate artifacts by key
+          const existingArtifacts = msg.artifacts || [];
+          const existingKeys = new Set(existingArtifacts.map(a => a.key));
+          const newArtifacts = artifactsWithUrls.filter(a => !existingKeys.has(a.key));
+          return { ...msg, artifacts: [...existingArtifacts, ...newArtifacts] };
+        }
+        return msg;
+      }));
       
       // Add artifacts to timeline events
       artifactsWithUrls.forEach(artifact => {
@@ -627,7 +646,7 @@ export default function App() {
 
       const initialMessage = {
         type: "ai" as const,
-        content: "🔄 Processing your request...",
+        content: "",  // Empty content will trigger ProcessingStatus component
         id: aiMessageId,
         agent: '',
       };

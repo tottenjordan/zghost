@@ -317,9 +317,8 @@ async def save_img_artifact_key(
     Returns:
         dict: the status of this functions overall outcome.
     """
-    existing_img_artifact_keys = tool_context.state.get("img_artifact_keys")
-    if existing_img_artifact_keys is not {"img_artifact_keys": []}:
-        existing_img_artifact_keys["img_artifact_keys"].append(artifact_key_dict)
+    existing_img_artifact_keys = tool_context.state.get("img_artifact_keys", {"img_artifact_keys": []})
+    existing_img_artifact_keys["img_artifact_keys"].append(artifact_key_dict)
     tool_context.state["img_artifact_keys"] = existing_img_artifact_keys
     return {"status": "ok"}
 
@@ -348,9 +347,8 @@ async def save_vid_artifact_key(
     Returns:
         dict: the status of this functions overall outcome.
     """
-    existing_vid_artifact_keys = tool_context.state.get("vid_artifact_keys")
-    if existing_vid_artifact_keys is not {"vid_artifact_keys": []}:
-        existing_vid_artifact_keys["vid_artifact_keys"].append(artifact_key_dict)
+    existing_vid_artifact_keys = tool_context.state.get("vid_artifact_keys", {"vid_artifact_keys": []})
+    existing_vid_artifact_keys["vid_artifact_keys"].append(artifact_key_dict)
     tool_context.state["vid_artifact_keys"] = existing_vid_artifact_keys
     return {"status": "ok"}
 
