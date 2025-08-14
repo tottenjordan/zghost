@@ -24,9 +24,9 @@ class ResearchConfiguration:
     lite_planner_model: str = (
         "gemini-2.0-flash-001"  # "gemini-2.5-flash-lite" | "gemini-2.0-flash-001"
     )
-    image_gen_model: str = "imagen-4.0-fast-generate-preview-06-06"
+    image_gen_model: str = "imagen-4.0-ultra-generate-preview-06-06" # "imagen-4.0-fast-generate-preview-06-06"
     video_gen_model: str = (
-        "veo-3.0-generate-preview"  # "veo-2.0-generate-001" | veo-3.0-generate-preview
+        "veo-3.0-generate-001"  # "veo-2.0-generate-001" | veo-3.0-generate-preview
     )
 
     max_results_yt_trends: int = 45
