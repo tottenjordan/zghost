@@ -38,33 +38,60 @@ cd ..
 
 ### Running the Application
 
-#### Option A: Run all services together (recommended)
+#### Option A: Run with A2A architecture (recommended for production)
+```bash
+make a2a-dev
+```
+This starts:
+- A2A server agents (ports 9000-9002)
+- Backend API server (port 8000)
+- Artifact server (port 8001)
+- Frontend dev server (port 5173)
+
+#### Option B: Run without A2A servers (simpler setup)
 ```bash
 make dev
 ```
 This starts backend (8000), artifact server (8001), and frontend (5173)
 
-#### Option B: Run separately
+#### Option C: Run components separately
 ```bash
-# Terminal 1 - Backend API server
+# Terminal 1 - A2A server agents (optional)
+make a2a-servers
+# OR
+./run_a2a_servers.sh
+
+# Terminal 2 - Backend API server
 make backend
 # OR
 poetry run adk api_server .
 
-# Terminal 2 - Artifact server
+# Terminal 3 - Artifact server
 make artifact-server
 # OR
 poetry run python artifact_server.py
 
-# Terminal 3 - Frontend dev server  
+# Terminal 4 - Frontend dev server  
 make frontend
 # OR
 cd frontend && npm run dev
 ```
 
-#### Option C: Classic ADK CLI interface
+#### Option D: Classic ADK CLI interface
 ```bash
 poetry run adk run trends_and_insights_agent
+```
+
+#### Option E: Run individual a2a servers
+```bash
+# Research orchestrator
+poetry run adk api_server a2a_agents.research_orchestrator --a2a --port 9000
+
+# Trends insights
+poetry run adk api_server a2a_agents.trends_insights --a2a --port 9001
+
+# Ad generator
+poetry run adk api_server a2a_agents.ad_generator --a2a --port 9002
 ```
 
 ### Common User Flows (via Frontend UI)
@@ -85,7 +112,51 @@ poetry install               # Install from lock file
 
 ## Architecture
 
-### Agent Hierarchy
+### A2A Protocol Architecture (New)
+The system now supports the a2a (agent-to-agent) protocol, enabling modular, distributed agent deployment:
+
+```
+root_agent (orchestrator) 
+├── trends_insights (a2a server on port 9001)
+│   ├── Trend selection interface
+│   ├── PDF campaign guide extraction  
+│   └── YouTube video summarization
+├── research_orchestrator (a2a server on port 9000)
+│   ├── Parallel research coordination
+│   │   ├── YouTube trend analysis
+│   │   ├── Google Search trend analysis
+│   │   └── Campaign research
+│   ├── Research quality evaluation
+│   ├── Follow-up search refinement
+│   └── Report synthesis with citations
+└── ad_generator (a2a server on port 9002)
+    ├── Ad copy generation pipeline
+    │   ├── Draft → Critique → Finalize
+    ├── Visual concept development
+    │   ├── Draft → Critique → Finalize
+    └── Media generation (Imagen/Veo)
+```
+
+### Agent Integration Options
+The refactored architecture supports three integration patterns:
+
+1. **Direct Sub-Agent Integration** (`agent_with_subagents.py`)
+   - Agents run in-process as sub-agents
+   - Uses `transfer_to_agent` tool for coordination
+   - Best for single-machine deployments
+
+2. **A2A Server Architecture** (`agent_a2a_client.py` + a2a servers)
+   - Agents run as separate HTTP services
+   - Communicates via a2a protocol over HTTP
+   - Enables distributed deployment and scaling
+   - Run with: `make a2a-dev`
+
+3. **Classic Monolithic** (`agent.py`)
+   - Original single-process architecture
+   - All agents embedded in root orchestrator
+   - Simplest deployment model
+
+### Legacy Agent Hierarchy
 ```
 root_agent (orchestrator)
 ├── campaign_guide_data_generation_agent  # Extract campaign data from PDFs
@@ -118,11 +189,18 @@ root_agent (orchestrator)
 
 ### Key Directories
 - `trends_and_insights_agent/` - Main agent module
-  - `agent.py` - Root orchestrator
+  - `agent.py` - Original root orchestrator
+  - `agent_with_subagents.py` - Root with direct sub-agent integration
+  - `agent_a2a_client.py` - Root with a2a client integration
+  - `a2a_client.py` - A2A client implementation
   - `common_agents/` - Sub-agent definitions
   - `shared_libraries/` - Shared utilities and schemas
   - `tools.py` - Tool implementations
   - `prompts.py` - Agent instructions
+- `a2a_agents/` - A2A server agents
+  - `research_orchestrator/` - Research coordination a2a server
+  - `trends_insights/` - Trends analysis a2a server
+  - `ad_generator/` - Ad generation a2a server
 - `frontend/` - React frontend application
   - `src/` - Source code
     - `components/` - React components

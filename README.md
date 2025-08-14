@@ -13,12 +13,13 @@
 
 ## About
 
-*trends-2-creatives* is a marketing tool for developing data-driven and culturally relevant marketing content. Built with Google’s [Agent Development Kit (ADK)](https://google.github.io/adk-docs/), this multi-agent system helps users generate ad creatives from trending themes in Google Search and YouTube.
+*trends-2-creatives* is a marketing tool for developing data-driven and culturally relevant marketing content. Built with Google's [Agent Development Kit (ADK)](https://google.github.io/adk-docs/), this multi-agent system helps users generate ad creatives from trending themes in Google Search and YouTube.
 
 - Build LLM-based agents with [models supported in Vertex AI's Model Garden](https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/available-models)
 - Explore [trending Search terms](https://cloud.google.com/blog/products/data-analytics/top-25-google-search-terms-now-in-bigquery?e=48754805) and [trending YouTube videos](https://developers.google.com/youtube/v3/docs/videos/list)
 - Conduct web research to better understand the campaign, Search trend, and trending YouTube video
 - Draft ad creatives (e.g., image and video) based on trends, campaign themes, or specific prompts
+- **NEW**: Supports the [a2a protocol](https://a2a-protocol.org/) for modular, distributed agent deployment
 
 <p align="center">
   <img src='media/t2a_overview_0725_v2.png' width="800"/>
@@ -96,25 +97,38 @@ gcloud storage buckets create $BUCKET --location=$GOOGLE_CLOUD_LOCATION
 
 7. **Launch the application**
 
-The application now includes a modern React frontend based on the [Gemini Fullstack example](https://github.com/google/adk-samples/tree/main/python/agents/gemini-fullstack) from Google's ADK samples. You have several options to run it:
+The application now includes a modern React frontend and supports the **a2a (agent-to-agent) protocol** for modular, distributed agent deployment. You have several options to run it:
 
-### Option A: Run all services together (recommended)
+### Option A: Run with A2A Architecture (recommended for production)
 
 ```bash
 # Install all dependencies first
 make install
 
-# Run backend, artifact server, and frontend together
-make dev
+# Run all services with a2a architecture
+make a2a-dev
 ```
 
 This will:
+- Start a2a server agents on ports 9000-9002:
+  - Research Orchestrator: [http://localhost:9000](http://localhost:9000)
+  - Trends & Insights: [http://localhost:9001](http://localhost:9001)
+  - Ad Generator: [http://localhost:9002](http://localhost:9002)
 - Start the backend agent server on [http://localhost:8000](http://localhost:8000)
 - Start the artifact server on [http://localhost:8001](http://localhost:8001)
 - Start the frontend React app on [http://localhost:5173](http://localhost:5173)
-- The frontend will proxy API requests to the backend automatically
 
-### Option B: Run services separately
+### Option B: Run without A2A servers (simpler setup)
+
+```bash
+# Install dependencies and run traditional architecture
+make install
+make dev
+```
+
+This uses the classic monolithic architecture with all agents in-process
+
+### Option C: Run services separately
 
 In terminal 1 - Backend:
 ```bash
@@ -137,13 +151,26 @@ make frontend
 cd frontend && npm run dev
 ```
 
-### Option C: Use the classic ADK web interface
+### Option D: Use the classic ADK web interface
 
 ```bash
 poetry run adk web
 ```
 
 Open your browser and navigate to [http://localhost:8000](http://localhost:8000) and select an agent from the drop-down (top left)
+
+### Option E: Run A2A servers individually
+
+```bash
+# Research Orchestrator
+poetry run adk api_server a2a_agents.research_orchestrator --a2a --port 9000
+
+# Trends & Insights
+poetry run adk api_server a2a_agents.trends_insights --a2a --port 9001
+
+# Ad Generator
+poetry run adk api_server a2a_agents.ad_generator --a2a --port 9002
+```
 
 <details>
   <summary>If port :8000, :8001, or :5173 is in use</summary>
@@ -165,6 +192,45 @@ kill -9 $PID
 ```
 
 </details>
+
+## A2A Protocol Architecture
+
+The application now supports the **a2a (agent-to-agent) protocol**, enabling modular and distributed deployment of agents. This architecture provides:
+
+### Benefits of A2A Architecture
+
+- **Modularity**: Each agent runs as an independent service with its own API
+- **Scalability**: Agents can be scaled independently based on demand
+- **Flexibility**: Mix and match agents, replace implementations without affecting others
+- **Distributed Deployment**: Run agents on different machines or cloud services
+- **Language Agnostic**: Agents can be implemented in any language that supports HTTP
+
+### A2A Agent Services
+
+The system includes three core a2a server agents:
+
+1. **Research Orchestrator** (port 9000)
+   - Coordinates parallel research across multiple sources
+   - Evaluates research quality and executes follow-up searches
+   - Synthesizes findings into comprehensive reports with citations
+
+2. **Trends & Insights** (port 9001)
+   - Handles trend selection and display
+   - Extracts data from campaign guide PDFs
+   - Generates YouTube video summaries
+
+3. **Ad Generator** (port 9002)
+   - Creates ad copy through iterative refinement
+   - Develops visual concepts
+   - Generates images with Imagen 4.0 and videos with Veo 2.0
+
+### Integration Patterns
+
+The refactored architecture supports three integration patterns:
+
+- **A2A Server Architecture**: Agents run as separate HTTP services (recommended for production)
+- **Direct Sub-Agent Integration**: Agents run in-process as sub-agents (simpler deployment)
+- **Classic Monolithic**: Original single-process architecture (simplest setup)
 
 ## Frontend Features
 
