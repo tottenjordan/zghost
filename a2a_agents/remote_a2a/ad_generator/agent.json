@@ -5,14 +5,29 @@
   "author": "ZGhost Team",
   "license": "Apache-2.0",
   "tags": ["advertising", "creative", "image-generation", "video-generation", "copywriting"],
-  "capabilities": [
-    "Ad copy generation",
-    "Creative critique and refinement",
-    "Visual concept development",
-    "Image generation with Imagen 4.0",
-    "Video generation with Veo 2.0",
-    "Creative package assembly",
-    "Multi-format ad campaigns"
+  "url": "http://localhost:9002/a2a/ad_generator",
+  "capabilities": {},
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "ad_copy_generation",
+      "name": "Ad Copy Generation",
+      "description": "Generates compelling ad copy with headline, body, and CTA for various platforms",
+      "tags": ["copywriting", "advertising", "creative"]
+    },
+    {
+      "id": "visual_concept_development",
+      "name": "Visual Concept Development", 
+      "description": "Creates detailed visual concepts with mood, color palette, and key elements",
+      "tags": ["design", "creative", "visual"]
+    },
+    {
+      "id": "media_generation",
+      "name": "Media Generation",
+      "description": "Generates images with Imagen 4.0 and videos with Veo 2.0 based on creative concepts",
+      "tags": ["image-generation", "video-generation", "ai-media"]
+    }
   ],
   "required_environment": {
     "python": ">=3.11",

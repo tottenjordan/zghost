@@ -1,0 +1,200 @@
+{
+  "name": "trends_insights",
+  "description": "Handles trend selection, campaign guide data extraction, and initial insights generation.",
+  "version": "1.0.0",
+  "author": "ZGhost Team",
+  "license": "Apache-2.0",
+  "tags": ["trends", "insights", "pdf-extraction", "youtube", "google-search"],
+  "url": "http://localhost:9001/a2a/trends_insights",
+  "capabilities": {},
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "trend_selection",
+      "name": "Interactive Trend Selection",
+      "description": "Provides interactive selection of Google Search and YouTube trends",
+      "tags": ["trends", "interactive", "ui"]
+    },
+    {
+      "id": "pdf_extraction",
+      "name": "PDF Campaign Guide Extraction",
+      "description": "Extracts campaign data from uploaded PDF files including brand guidelines and objectives",
+      "tags": ["pdf", "extraction", "campaign-guide"]
+    },
+    {
+      "id": "youtube_analysis",
+      "name": "YouTube Video Analysis",
+      "description": "Analyzes and summarizes YouTube videos related to selected trends",
+      "tags": ["youtube", "video-analysis", "summarization"]
+    }
+  ],
+  "required_environment": {
+    "python": ">=3.11",
+    "dependencies": [
+      "google-genai",
+      "google-adk>=1.7.0",
+      "pydantic",
+      "pypdf"
+    ]
+  },
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "user_message": {
+        "type": "string",
+        "description": "User's message or request"
+      },
+      "uploaded_files": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "List of uploaded file paths (PDFs)"
+      },
+      "selected_trend": {
+        "type": "string",
+        "description": "User's selected trend from the available options"
+      }
+    },
+    "required": ["user_message"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "target_search_trends": {
+        "type": "object",
+        "description": "Selected Google Search trends",
+        "properties": {
+          "trend_name": {
+            "type": "string",
+            "description": "Name of the selected search trend"
+          },
+          "trend_details": {
+            "type": "string",
+            "description": "Additional details about the trend"
+          }
+        }
+      },
+      "target_yt_trends": {
+        "type": "object",
+        "description": "Selected YouTube trends",
+        "properties": {
+          "trend_name": {
+            "type": "string",
+            "description": "Name of the selected YouTube trend"
+          },
+          "trend_details": {
+            "type": "string",
+            "description": "Additional details about the trend"
+          }
+        }
+      },
+      "yt_video_analysis": {
+        "type": "string",
+        "description": "YouTube video summary and analysis"
+      },
+      "campaign_guide_data": {
+        "type": "object",
+        "description": "Extracted campaign guide information",
+        "properties": {
+          "brand_guidelines": {
+            "type": "string",
+            "description": "Extracted brand guidelines"
+          },
+          "campaign_objectives": {
+            "type": "string",
+            "description": "Extracted campaign objectives"
+          },
+          "target_demographics": {
+            "type": "string",
+            "description": "Extracted target demographics"
+          }
+        }
+      },
+      "target_product": {
+        "type": "string",
+        "description": "Identified product from campaign guide"
+      },
+      "target_audience": {
+        "type": "string",
+        "description": "Identified target audience"
+      },
+      "available_trends": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "trend_type": {
+              "type": "string",
+              "enum": ["google_search", "youtube"],
+              "description": "Type of trend"
+            },
+            "trend_name": {
+              "type": "string",
+              "description": "Name of the trend"
+            },
+            "trend_description": {
+              "type": "string",
+              "description": "Brief description of the trend"
+            }
+          }
+        },
+        "description": "List of available trends for selection"
+      }
+    },
+    "required": ["target_search_trends", "target_yt_trends", "target_product", "target_audience"]
+  },
+  "examples": [
+    {
+      "input": {
+        "user_message": "Hello, I'd like to create a marketing campaign",
+        "uploaded_files": ["/path/to/campaign_guide.pdf"],
+        "selected_trend": "sustainable fashion"
+      },
+      "output": {
+        "target_search_trends": {
+          "trend_name": "sustainable fashion",
+          "trend_details": "Growing consumer interest in eco-friendly clothing"
+        },
+        "target_yt_trends": {
+          "trend_name": "thrift flip tutorials",
+          "trend_details": "DIY fashion transformation content trending on YouTube"
+        },
+        "yt_video_analysis": "Analysis of top YouTube videos shows focus on affordability and creativity...",
+        "campaign_guide_data": {
+          "brand_guidelines": "Emphasize sustainability, transparency, and ethical production",
+          "campaign_objectives": "Increase brand awareness among eco-conscious consumers",
+          "target_demographics": "Ages 18-35, urban, environmentally aware"
+        },
+        "target_product": "EcoWear Sustainable Fashion Line",
+        "target_audience": "Environmentally conscious millennials and Gen Z consumers",
+        "available_trends": [
+          {
+            "trend_type": "google_search",
+            "trend_name": "sustainable fashion",
+            "trend_description": "Eco-friendly clothing and ethical fashion practices"
+          },
+          {
+            "trend_type": "youtube",
+            "trend_name": "thrift flip",
+            "trend_description": "DIY fashion transformation videos"
+          }
+        ]
+      }
+    }
+  ],
+  "error_handling": {
+    "timeout": 120,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff_multiplier": 2
+    }
+  },
+  "ui_hints": {
+    "display_format": "interactive",
+    "supports_file_upload": true,
+    "supported_file_types": ["application/pdf"],
+    "requires_user_interaction": true
+  }
+}

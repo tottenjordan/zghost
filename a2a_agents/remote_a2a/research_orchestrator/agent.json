@@ -5,14 +5,29 @@
   "author": "ZGhost Team",
   "license": "Apache-2.0",
   "tags": ["research", "analysis", "synthesis", "web-search", "trends"],
-  "capabilities": [
-    "Parallel research coordination",
-    "YouTube trend analysis",
-    "Google Search trend analysis",
-    "Campaign material research",
-    "Research quality evaluation",
-    "Follow-up search execution",
-    "Report synthesis with citations"
+  "url": "http://localhost:9000/a2a/research_orchestrator",
+  "capabilities": {},
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "parallel_research",
+      "name": "Parallel Research Coordination",
+      "description": "Coordinates multiple research streams simultaneously for YouTube, Google Search, and campaign materials",
+      "tags": ["research", "coordination", "parallel-processing"]
+    },
+    {
+      "id": "trend_analysis",
+      "name": "Trend Analysis",
+      "description": "Analyzes YouTube and Google Search trends to extract actionable insights",
+      "tags": ["trends", "analysis", "insights"]
+    },
+    {
+      "id": "report_synthesis",
+      "name": "Report Synthesis",
+      "description": "Synthesizes research findings into comprehensive reports with proper citations",
+      "tags": ["synthesis", "reporting", "citations"]
+    }
   ],
   "required_environment": {
     "python": ">=3.11",
