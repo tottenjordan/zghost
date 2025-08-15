@@ -1,12 +1,15 @@
 """A2A Orchestrator Consumer Agent.
 
-This agent consumes the three A2A server agents (trends_insights, research_orchestrator, 
+This agent consumes the three A2A server agents (trends_insights, research_orchestrator,
 and ad_generator) to provide a complete marketing intelligence workflow.
 """
 
 import os
 import logging
-from google.adk.agents.remote_a2a_agent import RemoteA2aAgent, AGENT_CARD_WELL_KNOWN_PATH
+from google.adk.agents.remote_a2a_agent import (
+    RemoteA2aAgent,
+    AGENT_CARD_WELL_KNOWN_PATH,
+)
 from google.adk.agents import Agent
 from google.adk.tools import load_artifacts
 from google.genai import types
@@ -19,16 +22,14 @@ from .config import config
 
 # Configuration for A2A server locations
 A2A_HOST = os.getenv("A2A_HOST", "localhost")
-TRENDS_PORT = os.getenv("TRENDS_INSIGHTS_PORT", "9001")
-RESEARCH_PORT = os.getenv("RESEARCH_ORCHESTRATOR_PORT", "9000")
-AD_GEN_PORT = os.getenv("AD_GENERATOR_PORT", "9002")
+A2A_PORT = os.getenv("A2A_PORT", "9000")
 
 # Create RemoteA2aAgent instances for each server
 trends_insights_agent = RemoteA2aAgent(
     name="trends_insights_agent",
     description="Agent that handles trend selection, PDF campaign guide extraction, and initial insights generation.",
     agent_card=(
-        f"http://{A2A_HOST}:{TRENDS_PORT}/a2a/trends_insights{AGENT_CARD_WELL_KNOWN_PATH}"
+        f"http://{A2A_HOST}:{A2A_PORT}/a2a/trends_insights{AGENT_CARD_WELL_KNOWN_PATH}"
     ),
 )
 
@@ -36,7 +37,7 @@ research_orchestrator_agent = RemoteA2aAgent(
     name="research_orchestrator_agent",
     description="Agent that orchestrates comprehensive research across multiple sources and generates unified insights.",
     agent_card=(
-        f"http://{A2A_HOST}:{RESEARCH_PORT}/research_orchestrator{AGENT_CARD_WELL_KNOWN_PATH}"
+        f"http://{A2A_HOST}:{A2A_PORT}/a2a/research_orchestrator{AGENT_CARD_WELL_KNOWN_PATH}"
     ),
 )
 
@@ -44,7 +45,7 @@ ad_generator_agent = RemoteA2aAgent(
     name="ad_generator_agent",
     description="Agent that generates comprehensive ad campaigns with copy, visuals, and media assets.",
     agent_card=(
-        f"http://{A2A_HOST}:{AD_GEN_PORT}/ad_generator{AGENT_CARD_WELL_KNOWN_PATH}"
+        f"http://{A2A_HOST}:{A2A_PORT}/a2a/ad_generator{AGENT_CARD_WELL_KNOWN_PATH}"
     ),
 )
 

@@ -43,14 +43,14 @@ cd ..
 make a2a-dev
 ```
 This starts:
-- A2A server agents (ports 9000-9002)
+- A2A server agent (port 9000)
 - Backend API server (port 8000)
 - Artifact server (port 8001)
 - Frontend dev server (port 5173)
 
 To run the ADK web interface with a2a consumer agents:
 ```bash
-# First start all serving agents (using make a2a-dev or individual commands)
+# First start the a2a server (using make a2a-dev or individual commands)
 # Then run:
 poetry run adk web a2a_agents
 ```
@@ -89,16 +89,10 @@ cd frontend && npm run dev
 poetry run adk run trends_and_insights_agent
 ```
 
-#### Option E: Run individual a2a servers
+#### Option E: Run the a2a server
 ```bash
-# Research orchestrator
-poetry run adk api_server a2a_agents.remote_a2a.research_orchestrator --a2a --port 9000
-
-# Trends insights
-poetry run adk api_server a2a_agents.remote_a2a.trends_insights --a2a --port 9001
-
-# Ad generator
-poetry run adk api_server a2a_agents.remote_a2a.ad_generator --a2a --port 9002
+# A2A orchestrator server
+poetry run adk api_server a2a_agents.remote_a2a.orchestrator --a2a --port 9000
 ```
 
 ### Common User Flows (via Frontend UI)
@@ -123,12 +117,12 @@ poetry install               # Install from lock file
 The system now supports the a2a (agent-to-agent) protocol, enabling modular, distributed agent deployment:
 
 ```
-root_agent (orchestrator) 
-├── trends_insights (a2a server on port 9001)
+a2a_orchestrator (a2a server on port 9000)
+├── trends_insights 
 │   ├── Trend selection interface
 │   ├── PDF campaign guide extraction  
 │   └── YouTube video summarization
-├── research_orchestrator (a2a server on port 9000)
+├── research_orchestrator
 │   ├── Parallel research coordination
 │   │   ├── YouTube trend analysis
 │   │   ├── Google Search trend analysis
@@ -136,7 +130,7 @@ root_agent (orchestrator)
 │   ├── Research quality evaluation
 │   ├── Follow-up search refinement
 │   └── Report synthesis with citations
-└── ad_generator (a2a server on port 9002)
+└── ad_generator
     ├── Ad copy generation pipeline
     │   ├── Draft → Critique → Finalize
     ├── Visual concept development

@@ -20,6 +20,7 @@
 - Conduct web research to better understand the campaign, Search trend, and trending YouTube video
 - Draft ad creatives (e.g., image and video) based on trends, campaign themes, or specific prompts
 - **NEW**: Supports the [a2a protocol](https://a2a-protocol.org/) for modular, distributed agent deployment
+- **NEW**: Single a2a orchestrator server that manages all agent interactions
 
 <p align="center">
   <img src='media/t2a_overview_0725_v2.png' width="800"/>
@@ -110,10 +111,7 @@ make a2a-dev
 ```
 
 This will:
-- Start a2a server agents on ports 9000-9002:
-  - Research Orchestrator: [http://localhost:9000](http://localhost:9000)
-  - Trends & Insights: [http://localhost:9001](http://localhost:9001)
-  - Ad Generator: [http://localhost:9002](http://localhost:9002)
+- Start the a2a orchestrator server on [http://localhost:9000](http://localhost:9000)
 - Start the backend agent server on [http://localhost:8000](http://localhost:8000)
 - Start the artifact server on [http://localhost:8001](http://localhost:8001)
 - Start the frontend React app on [http://localhost:5173](http://localhost:5173)
@@ -159,21 +157,23 @@ poetry run adk web
 
 Open your browser and navigate to [http://localhost:8000](http://localhost:8000) and select an agent from the drop-down (top left)
 
-### Option E: Run A2A servers individually
+### Option E: Run the A2A server individually
 
 ```bash
-# Research Orchestrator
-poetry run adk api_server a2a_agents.remote_a2a.research_orchestrator --a2a --port 9000
+# A2A Orchestrator
+poetry run adk api_server a2a_agents.remote_a2a.orchestrator --a2a --port 9000
+```
 
-# Trends & Insights
-poetry run adk api_server a2a_agents.remote_a2a.trends_insights --a2a --port 9001
+### Option F: Run ADK web interface with A2A consumer agents
 
-# Ad Generator
-poetry run adk api_server a2a_agents.remote_a2a.ad_generator --a2a --port 9002
+First start the a2a orchestrator server (using Option A or E above), then:
+
+```bash
+poetry run adk web a2a_agents
 ```
 
 <details>
-  <summary>If port :8000, :8001, or :5173 is in use</summary>
+  <summary>If port :8000, :8001, :5173, or :9000 is in use</summary>
 
 *find any processes listening to these ports, kill them, then restart:*
 
@@ -188,6 +188,10 @@ kill -9 $PID
 
 # For frontend port
 lsof -i :5173
+kill -9 $PID
+
+# For a2a server port
+lsof -i :9000
 kill -9 $PID
 ```
 
@@ -205,24 +209,14 @@ The application now supports the **a2a (agent-to-agent) protocol**, enabling mod
 - **Distributed Deployment**: Run agents on different machines or cloud services
 - **Language Agnostic**: Agents can be implemented in any language that supports HTTP
 
-### A2A Agent Services
+### A2A Orchestrator Service
 
-The system includes three core a2a server agents:
+The system includes a single a2a orchestrator server (port 9000) that manages all agent interactions:
 
-1. **Research Orchestrator** (port 9000)
-   - Coordinates parallel research across multiple sources
-   - Evaluates research quality and executes follow-up searches
-   - Synthesizes findings into comprehensive reports with citations
-
-2. **Trends & Insights** (port 9001)
-   - Handles trend selection and display
-   - Extracts data from campaign guide PDFs
-   - Generates YouTube video summaries
-
-3. **Ad Generator** (port 9002)
-   - Creates ad copy through iterative refinement
-   - Develops visual concepts
-   - Generates images with Imagen 4.0 and videos with Veo 2.0
+**Orchestrator Components:**
+- **Trends & Insights**: Handles trend selection, PDF extraction, and YouTube summaries
+- **Research Orchestrator**: Coordinates parallel research and synthesizes reports
+- **Ad Generator**: Creates ad copy, visual concepts, and generates media with Imagen/Veo
 
 ### Integration Patterns
 
@@ -439,6 +433,36 @@ SESSION_STATE_JSON_PATH=example_state_prs.json
 
 
 ## Sub-agents & Tools
+
+### A2A Architecture (Distributed)
+
+When running with a2a server, all agents are managed by a single orchestrator:
+
+```
+a2a_orchestrator (server on port 9000)
+├── trends_insights
+│   ├── Trend selection interface
+│   ├── PDF campaign guide extraction
+│   └── YouTube video summarization
+├── research_orchestrator
+│   ├── Parallel research coordination
+│   │   ├── YouTube trend analysis
+│   │   ├── Google Search trend analysis
+│   │   └── Campaign research
+│   ├── Research quality evaluation
+│   ├── Follow-up search refinement
+│   └── Report synthesis with citations
+└── ad_generator
+    ├── Ad copy generation pipeline
+    │   ├── Draft → Critique → Finalize
+    ├── Visual concept development
+    │   ├── Draft → Critique → Finalize
+    └── Media generation (Imagen/Veo)
+```
+
+### Classic Architecture (Monolithic)
+
+When running without a2a servers, all agents run in-process:
 
 ```
 root_agent (orchestrator)
