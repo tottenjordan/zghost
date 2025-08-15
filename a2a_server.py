@@ -19,12 +19,12 @@ from google.adk.a2a import A2AServer, AgentCard
 from google.adk.agents import Agent
 
 # Import our a2a agents
-from a2a_agents.research_orchestrator import research_orchestrator_agent
-from a2a_agents.research_orchestrator.agent import AGENT_CARD as RESEARCH_CARD
-from a2a_agents.trends_insights import trends_insights_agent
-from a2a_agents.trends_insights.agent import AGENT_CARD as TRENDS_CARD
-from a2a_agents.ad_generator import ad_generator_agent
-from a2a_agents.ad_generator.agent import AGENT_CARD as AD_CARD
+from a2a_agents.remote_a2a.research_orchestrator import research_orchestrator_agent
+from a2a_agents.remote_a2a.research_orchestrator.agent import AGENT_CARD as RESEARCH_CARD
+from a2a_agents.remote_a2a.trends_insights import trends_insights_agent
+from a2a_agents.remote_a2a.trends_insights.agent import AGENT_CARD as TRENDS_CARD
+from a2a_agents.remote_a2a.ad_generator import ad_generator_agent
+from a2a_agents.remote_a2a.ad_generator.agent import AGENT_CARD as AD_CARD
 
 logging.basicConfig(
     level=logging.INFO,

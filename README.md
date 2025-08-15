@@ -163,13 +163,13 @@ Open your browser and navigate to [http://localhost:8000](http://localhost:8000)
 
 ```bash
 # Research Orchestrator
-poetry run adk api_server a2a_agents.research_orchestrator --a2a --port 9000
+poetry run adk api_server a2a_agents.remote_a2a.research_orchestrator --a2a --port 9000
 
 # Trends & Insights
-poetry run adk api_server a2a_agents.trends_insights --a2a --port 9001
+poetry run adk api_server a2a_agents.remote_a2a.trends_insights --a2a --port 9001
 
 # Ad Generator
-poetry run adk api_server a2a_agents.ad_generator --a2a --port 9002
+poetry run adk api_server a2a_agents.remote_a2a.ad_generator --a2a --port 9002
 ```
 
 <details>

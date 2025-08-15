@@ -1,4 +1,4 @@
-.PHONY: help install dev frontend backend artifact-server a2a-servers a2a-dev clean
+.PHONY: help install dev frontend backend artifact-server a2a-servers a2a-dev orchestrator-consumer clean
 
 help:
 	@echo "Available commands:"
@@ -9,6 +9,7 @@ help:
 	@echo "  make backend       - Run only the backend agent server"
 	@echo "  make artifact-server - Run the artifact HTTP server"
 	@echo "  make a2a-servers   - Run the a2a server agents"
+	@echo "  make orchestrator-consumer - Run the orchestrator consumer with ADK web"
 	@echo "  make clean         - Clean up temporary files and caches"
 
 install:
@@ -64,6 +65,10 @@ a2a-dev:
 	sleep 2 && \
 	cd frontend && npm run dev & \
 	wait
+
+orchestrator-consumer:
+	@echo "Starting orchestrator consumer with ADK web UI..."
+	@./run_orchestrator_consumer.sh
 
 clean:
 	@echo "Cleaning up..."

@@ -19,21 +19,21 @@ done
 # Start research_orchestrator a2a server
 echo ""
 echo "Starting research_orchestrator on port $BASE_PORT..."
-poetry run adk api_server a2a_agents/research_orchestrator --a2a --port $BASE_PORT &
+poetry run adk api_server a2a_agents/remote_a2a/research_orchestrator --a2a --port $BASE_PORT &
 PID1=$!
 echo "  PID: $PID1"
 
 # Start trends_insights a2a server  
 echo ""
 echo "Starting trends_insights on port $((BASE_PORT + 1))..."
-poetry run adk api_server a2a_agents/trends_insights --a2a --port $((BASE_PORT + 1)) &
+poetry run adk api_server a2a_agents/remote_a2a/trends_insights --a2a --port $((BASE_PORT + 1)) &
 PID2=$!
 echo "  PID: $PID2"
 
 # Start ad_generator a2a server
 echo ""
 echo "Starting ad_generator on port $((BASE_PORT + 2))..."
-poetry run adk api_server a2a_agents/ad_generator --a2a --port $((BASE_PORT + 2)) &
+poetry run adk api_server a2a_agents/remote_a2a/ad_generator --a2a --port $((BASE_PORT + 2)) &
 PID3=$!
 echo "  PID: $PID3"
 

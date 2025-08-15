@@ -48,6 +48,13 @@ This starts:
 - Artifact server (port 8001)
 - Frontend dev server (port 5173)
 
+To run the ADK web interface with a2a consumer agents:
+```bash
+# First start all serving agents (using make a2a-dev or individual commands)
+# Then run:
+poetry run adk web a2a_agents
+```
+
 #### Option B: Run without A2A servers (simpler setup)
 ```bash
 make dev
@@ -85,13 +92,13 @@ poetry run adk run trends_and_insights_agent
 #### Option E: Run individual a2a servers
 ```bash
 # Research orchestrator
-poetry run adk api_server a2a_agents.research_orchestrator --a2a --port 9000
+poetry run adk api_server a2a_agents.remote_a2a.research_orchestrator --a2a --port 9000
 
 # Trends insights
-poetry run adk api_server a2a_agents.trends_insights --a2a --port 9001
+poetry run adk api_server a2a_agents.remote_a2a.trends_insights --a2a --port 9001
 
 # Ad generator
-poetry run adk api_server a2a_agents.ad_generator --a2a --port 9002
+poetry run adk api_server a2a_agents.remote_a2a.ad_generator --a2a --port 9002
 ```
 
 ### Common User Flows (via Frontend UI)
