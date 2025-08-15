@@ -26,7 +26,7 @@ echo "  PID: $PID1"
 # Start trends_insights a2a server  
 echo ""
 echo "Starting trends_insights on port $((BASE_PORT + 1))..."
-poetry run adk api_server a2a_agents/remote_a2a/trends_insights --a2a --port $((BASE_PORT + 1)) &
+poetry run adk api_server a2a_agents/trends_insights/remote_a2a --a2a --port $((BASE_PORT + 1)) &
 PID2=$!
 echo "  PID: $PID2"
 
