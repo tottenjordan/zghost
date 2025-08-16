@@ -21,9 +21,7 @@ check_port() {
 
 # Check each A2A server
 all_running=true
-check_port 9000 "Research Orchestrator" || all_running=false
-check_port 9001 "Trends Insights" || all_running=false
-check_port 9002 "Ad Generator" || all_running=false
+check_port 9000 "A2A Port" || all_running=false
 
 if [ "$all_running" = false ]; then
     echo ""
@@ -39,9 +37,7 @@ fi
 
 # Set environment variables if needed
 export A2A_HOST=${A2A_HOST:-localhost}
-export TRENDS_INSIGHTS_PORT=${TRENDS_INSIGHTS_PORT:-9001}
-export RESEARCH_ORCHESTRATOR_PORT=${RESEARCH_ORCHESTRATOR_PORT:-9000}
-export AD_GENERATOR_PORT=${AD_GENERATOR_PORT:-9002}
+export A2A_PORT=${A2A_PORT:-9000}
 
 # Run the orchestrator consumer with ADK web UI
 echo ""
@@ -49,4 +45,4 @@ echo "Starting orchestrator consumer on http://localhost:8000"
 echo "ADK Web UI will be available at http://localhost:8000"
 echo ""
 
-poetry run adk api_server a2a_agents/orchestrator_consumer --port 8000
+poetry run adk web a2a_agents --port 8000

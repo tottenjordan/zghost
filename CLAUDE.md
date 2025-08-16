@@ -36,23 +36,45 @@ cd frontend && npm install
 cd ..
 ```
 
+### Available Make Commands
+```bash
+make help           # Show all available commands
+make install        # Install all dependencies (backend and frontend)
+make dev            # Run classic mode (no a2a)
+make a2a-dev        # Run with a2a architecture (recommended)
+make frontend       # Run only frontend
+make backend        # Run only backend
+make artifact-server # Run only artifact server
+make a2a-servers    # Run only a2a server
+make orchestrator-consumer # Run ADK web with a2a
+make clean          # Clean up temporary files
+```
+
 ### Running the Application
 
-#### Option A: Run with A2A architecture (recommended for production)
+#### Quick Start - Frontend with A2A (Recommended)
+```bash
+make install      # First time setup
+make a2a-dev      # Start everything
+# Open http://localhost:5173 in your browser
+```
+
+#### Option A: Run with A2A architecture + Frontend
 ```bash
 make a2a-dev
 ```
-This starts:
+This single command starts:
 - A2A server agent (port 9000)
 - Backend API server (port 8000)
 - Artifact server (port 8001)
 - Frontend dev server (port 5173)
 
-To run the ADK web interface with a2a consumer agents:
+The frontend will automatically connect to the backend and display the chat interface.
+
+#### Alternative: ADK Web Interface with A2A
 ```bash
-# First start the a2a server (using make a2a-dev or individual commands)
-# Then run:
-poetry run adk web a2a_agents
+make orchestrator-consumer
+# Opens ADK web UI at http://localhost:8000
 ```
 
 #### Option B: Run without A2A servers (simpler setup)
@@ -62,26 +84,32 @@ make dev
 This starts backend (8000), artifact server (8001), and frontend (5173)
 
 #### Option C: Run components separately
+
+**With A2A Architecture:**
 ```bash
-# Terminal 1 - A2A server agents (optional)
+# Terminal 1 - A2A server
 make a2a-servers
-# OR
-./run_a2a_servers.sh
 
 # Terminal 2 - Backend API server
 make backend
-# OR
-poetry run adk api_server .
 
 # Terminal 3 - Artifact server
 make artifact-server
-# OR
-poetry run python artifact_server.py
 
 # Terminal 4 - Frontend dev server  
 make frontend
-# OR
-cd frontend && npm run dev
+```
+
+**Without A2A (Classic Mode):**
+```bash
+# Terminal 1 - Backend API server
+make backend
+
+# Terminal 2 - Artifact server
+make artifact-server
+
+# Terminal 3 - Frontend dev server  
+make frontend
 ```
 
 #### Option D: Classic ADK CLI interface

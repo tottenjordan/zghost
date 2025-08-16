@@ -98,9 +98,20 @@ gcloud storage buckets create $BUCKET --location=$GOOGLE_CLOUD_LOCATION
 
 7. **Launch the application**
 
-The application now includes a modern React frontend and supports the **a2a (agent-to-agent) protocol** for modular, distributed agent deployment. You have several options to run it:
+The application now includes a modern React frontend and supports the **a2a (agent-to-agent) protocol** for modular, distributed agent deployment.
 
-### Option A: Run with A2A Architecture (recommended for production)
+### Quick Start
+
+For the full experience with frontend and a2a architecture:
+```bash
+make install  # First time only
+make a2a-dev  # Starts everything
+```
+Then open [http://localhost:5173](http://localhost:5173) in your browser.
+
+### Detailed Options
+
+### Option A: Run with A2A Architecture + Frontend (recommended)
 
 ```bash
 # Install all dependencies first
@@ -110,11 +121,13 @@ make install
 make a2a-dev
 ```
 
-This will:
-- Start the a2a orchestrator server on [http://localhost:9000](http://localhost:9000)
-- Start the backend agent server on [http://localhost:8000](http://localhost:8000)
-- Start the artifact server on [http://localhost:8001](http://localhost:8001)
-- Start the frontend React app on [http://localhost:5173](http://localhost:5173)
+This single command starts everything you need:
+- A2A orchestrator server on [http://localhost:9000](http://localhost:9000)
+- Backend API server on [http://localhost:8000](http://localhost:8000)
+- Artifact server on [http://localhost:8001](http://localhost:8001)
+- Frontend React app on [http://localhost:5173](http://localhost:5173)
+
+Then open your browser to [http://localhost:5173](http://localhost:5173) to use the frontend interface.
 
 ### Option B: Run without A2A servers (simpler setup)
 
@@ -128,26 +141,27 @@ This uses the classic monolithic architecture with all agents in-process
 
 ### Option C: Run services separately
 
-In terminal 1 - Backend:
+**Terminal 1** - A2A Server (if using a2a architecture):
+```bash
+make a2a-servers
+```
+
+**Terminal 2** - Backend:
 ```bash
 make backend
-# OR
-poetry run adk api_server .
 ```
 
-In terminal 2 - Artifact Server:
+**Terminal 3** - Artifact Server:
 ```bash
 make artifact-server
-# OR
-poetry run python artifact_server.py
 ```
 
-In terminal 3 - Frontend:
+**Terminal 4** - Frontend:
 ```bash
 make frontend
-# OR
-cd frontend && npm run dev
 ```
+
+Then open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ### Option D: Use the classic ADK web interface
 
@@ -166,11 +180,12 @@ poetry run adk api_server a2a_agents.remote_a2a.orchestrator --a2a --port 9000
 
 ### Option F: Run ADK web interface with A2A consumer agents
 
-First start the a2a orchestrator server (using Option A or E above), then:
-
 ```bash
-poetry run adk web a2a_agents
+# Start a2a server and ADK web UI together
+make orchestrator-consumer
 ```
+
+This will check if the a2a server is running and start the ADK web interface.
 
 <details>
   <summary>If port :8000, :8001, :5173, or :9000 is in use</summary>
