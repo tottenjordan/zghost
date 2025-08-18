@@ -1,0 +1,155 @@
+{
+  "protocolVersion": "0.3.0",
+  "name": "Trends and Insights Agent",
+  "description": "Agent that handles trend selection, campaign guide data extraction, and initial insights generation for marketing campaigns.",
+  "url": "http://localhost:8100/a2a/trends_and_insights_agent",
+  "preferredTransport": "JSONRPC",
+  "version": "1.0.0",
+  "documentationUrl": "https://github.com/zghost/trends-insights-agent/docs",
+  "capabilities": {},
+  "defaultInputModes": [
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "skills": [
+    {
+      "id": "trend_selection",
+      "name": "Interactive Trend Selection",
+      "description": "Provides interactive selection of Google Search and YouTube trends with visual card interface",
+      "tags": [
+        "trends",
+        "interactive",
+        "ui"
+      ],
+      "supportedInputModes": [
+        "application/json"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user_message": {
+            "type": "string",
+            "description": "User's message or request"
+          }
+        },
+        "required": [
+          "user_message"
+        ]
+      }
+    },
+    {
+      "id": "pdf_extraction",
+      "name": "PDF Campaign Guide Extraction",
+      "description": "Extracts campaign data from uploaded PDF files including brand guidelines, objectives, and target demographics",
+      "tags": [
+        "pdf",
+        "extraction",
+        "campaign-guide"
+      ],
+      "supportedInputModes": [
+        "application/json",
+        "multipart/form-data"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "uploaded_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of uploaded file paths (PDFs)"
+          }
+        },
+        "required": [
+          "uploaded_files"
+        ]
+      }
+    },
+    {
+      "id": "youtube_analysis",
+      "name": "YouTube Video Analysis",
+      "description": "Analyzes and summarizes YouTube videos related to selected trends",
+      "tags": [
+        "youtube",
+        "video-analysis",
+        "summarization"
+      ],
+      "supportedInputModes": [
+        "application/json"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "selected_trend": {
+            "type": "string",
+            "description": "Selected YouTube trend to analyze"
+          }
+        },
+        "required": [
+          "selected_trend"
+        ]
+      }
+    },
+    {
+      "id": "generate_insights",
+      "name": "Generate Marketing Insights",
+      "description": "Combines trend selections and campaign data to generate initial marketing insights",
+      "tags": [
+        "insights",
+        "marketing",
+        "synthesis"
+      ],
+      "supportedInputModes": [
+        "application/json"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user_message": {
+            "type": "string"
+          },
+          "uploaded_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "selected_trends": {
+            "type": "object",
+            "properties": {
+              "google_search": {
+                "type": "string"
+              },
+              "youtube": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "user_message"
+        ]
+      }
+    }
+  ],
+  "provider": {
+    "name": "ZGhost Team",
+    "organization": "ZGhost",
+    "url": "https://github.com/zghost"
+  }
+}

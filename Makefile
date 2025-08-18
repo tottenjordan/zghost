@@ -45,9 +45,7 @@ artifact-server:
 
 a2a-servers:
 	@echo "Starting a2a server agents..."
-	@echo "Research orchestrator on http://localhost:9000"
-	@echo "Trends insights on http://localhost:9001"
-	@echo "Ad generator on http://localhost:9002"
+	@echo "Running on http://localhost:8100"
 	@./run_a2a_servers.sh
 
 a2a-dev:

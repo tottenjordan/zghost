@@ -113,10 +113,11 @@ make orchestrator-consumer
 ```
 Then open [http://localhost:8000](http://localhost:8000) in your browser to use the ADK web interface.
 
-### Alternative: React Frontend with A2A
+### Alternative: ADK Web Frontend with A2A
 
 ```bash
-make a2a-dev  # Starts all services
+make a2a-servers  # Starts all services
+make orchestrator-consumer # Runs and adk web session that uses A2A with the servers
 ```
 Then open [http://localhost:5173](http://localhost:5173) for the React interface.
 
