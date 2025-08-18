@@ -1,0 +1,433 @@
+{
+  "protocolVersion": "0.3.0",
+  "name": "Marketing Intelligence Orchestrator",
+  "description": "A marketing intelligence orchestrator that coordinates trend analysis, research, and ad generation through specialized A2A agents to provide comprehensive marketing insights and creative content.",
+  "url": "http://localhost:8000/a2a/orchestrator_consumer",
+  "preferredTransport": "JSONRPC",
+  "version": "1.0.0",
+  "documentationUrl": "https://github.com/zghost/orchestrator-consumer/docs",
+  "capabilities": {
+    "sessionManagement": true,
+    "multiAgentCoordination": true,
+    "artifactGeneration": true
+  },
+  "defaultInputModes": [
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "skills": [
+    {
+      "id": "greeting_and_overview",
+      "name": "Greeting and Overview",
+      "description": "Greets users and provides a high-level overview of the marketing intelligence orchestrator's capabilities",
+      "tags": [
+        "greeting",
+        "onboarding",
+        "overview"
+      ],
+      "supportedInputModes": [
+        "application/json"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user_message": {
+            "type": "string",
+            "description": "Initial user message or greeting"
+          }
+        }
+      }
+    },
+    {
+      "id": "coordinate_trend_selection",
+      "name": "Coordinate Trend Selection",
+      "description": "Delegates to trends_and_insights_agent for capturing campaign metadata and helping users find interesting trends",
+      "tags": [
+        "trends",
+        "delegation",
+        "campaign-metadata"
+      ],
+      "supportedInputModes": [
+        "application/json",
+        "multipart/form-data"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user_message": {
+            "type": "string",
+            "description": "User's request or uploaded files"
+          },
+          "uploaded_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional uploaded PDF campaign guides"
+          }
+        }
+      }
+    },
+    {
+      "id": "google_trend_selection",
+      "name": "Google Search Trend Selection",
+      "description": "Facilitates interactive selection of Google Search trends with visual card interface",
+      "tags": [
+        "google-trends",
+        "search-trends",
+        "interactive-ui"
+      ],
+      "supportedInputModes": [
+        "application/json"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "available_trends": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "trend_name": {
+                  "type": "string"
+                },
+                "search_volume": {
+                  "type": "number"
+                },
+                "trend_category": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "List of available Google Search trends"
+          },
+          "selected_trend": {
+            "type": "string",
+            "description": "User's selected Google Search trend"
+          }
+        }
+      }
+    },
+    {
+      "id": "youtube_trend_selection",
+      "name": "YouTube Trend Selection",
+      "description": "Facilitates interactive selection of trending YouTube videos with visual card interface",
+      "tags": [
+        "youtube-trends",
+        "video-trends",
+        "interactive-ui"
+      ],
+      "supportedInputModes": [
+        "application/json"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "available_videos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "video_id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "channel": {
+                  "type": "string"
+                },
+                "view_count": {
+                  "type": "number"
+                },
+                "thumbnail_url": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "List of trending YouTube videos"
+          },
+          "selected_video": {
+            "type": "object",
+            "description": "User's selected YouTube video details"
+          }
+        }
+      }
+    },
+    {
+      "id": "coordinate_research",
+      "name": "Coordinate Research Tasks",
+      "description": "Delegates to research_orchestrator for coordinating multiple rounds of research following all steps sequentially",
+      "tags": [
+        "research",
+        "delegation",
+        "sequential-workflow"
+      ],
+      "supportedInputModes": [
+        "application/json"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "selected_trends": {
+            "type": "object",
+            "description": "Selected trends from the previous step"
+          },
+          "campaign_metadata": {
+            "type": "object",
+            "description": "Extracted campaign metadata"
+          }
+        },
+        "required": [
+          "selected_trends"
+        ]
+      }
+    },
+    {
+      "id": "validate_research_output",
+      "name": "Validate Research Output",
+      "description": "Shows the research report URL to the user and confirms if the PDF output looks good before proceeding",
+      "tags": [
+        "validation",
+        "user-confirmation",
+        "research-review"
+      ],
+      "supportedInputModes": [
+        "application/json"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "report_url": {
+            "type": "string",
+            "description": "URL of the generated research report"
+          },
+          "user_confirmation": {
+            "type": "boolean",
+            "description": "User's confirmation of report quality"
+          }
+        },
+        "required": [
+          "report_url"
+        ]
+      }
+    },
+    {
+      "id": "coordinate_ad_generation",
+      "name": "Coordinate Ad Creative Generation",
+      "description": "Delegates to ad_content_generator_agent for generating ad creatives based on campaign metadata, trend analysis, and web research",
+      "tags": [
+        "ad-generation",
+        "delegation",
+        "creative-content"
+      ],
+      "supportedInputModes": [
+        "application/json"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "campaign_metadata": {
+            "type": "object",
+            "description": "Campaign metadata and guidelines"
+          },
+          "trend_analysis": {
+            "type": "object",
+            "description": "Analyzed trend data"
+          },
+          "research_results": {
+            "type": "object",
+            "description": "Web research findings"
+          }
+        },
+        "required": [
+          "campaign_metadata",
+          "trend_analysis"
+        ]
+      }
+    },
+    {
+      "id": "ad_media_generation",
+      "name": "Ad Media Generation",
+      "description": "Generates visual and video media assets using Imagen 4.0 and Veo 2.0 based on creative concepts",
+      "tags": [
+        "media-generation",
+        "imagen",
+        "veo",
+        "visual-assets"
+      ],
+      "supportedInputModes": [
+        "application/json"
+      ],
+      "supportedOutputModes": [
+        "application/json",
+        "image/png",
+        "video/mp4"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "media_type": {
+            "type": "string",
+            "enum": ["image", "video"],
+            "description": "Type of media to generate"
+          },
+          "creative_concept": {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "string",
+                "description": "Detailed prompt for media generation"
+              },
+              "style": {
+                "type": "string",
+                "description": "Visual style or aesthetic"
+              },
+              "aspect_ratio": {
+                "type": "string",
+                "description": "Aspect ratio for the media"
+              }
+            }
+          },
+          "brand_guidelines": {
+            "type": "object",
+            "description": "Brand colors, fonts, and style requirements"
+          },
+          "iterations": {
+            "type": "number",
+            "description": "Number of variations to generate",
+            "default": 3
+          }
+        },
+        "required": [
+          "media_type",
+          "creative_concept"
+        ]
+      }
+    },
+    {
+      "id": "generate_final_report",
+      "name": "Generate Final Report",
+      "description": "Uses save_creatives_and_research_report tool to build the final report detailing web research and ad creatives",
+      "tags": [
+        "report-generation",
+        "artifact-creation",
+        "final-output"
+      ],
+      "supportedInputModes": [
+        "application/json"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "research_data": {
+            "type": "object",
+            "description": "Complete research findings"
+          },
+          "creatives_data": {
+            "type": "object",
+            "description": "Generated ad creatives and concepts"
+          },
+          "session_metadata": {
+            "type": "object",
+            "description": "Session information and metadata"
+          }
+        },
+        "required": [
+          "research_data",
+          "creatives_data"
+        ]
+      }
+    },
+    {
+      "id": "session_management",
+      "name": "Session State Management",
+      "description": "Manages session state across the multi-agent workflow, ensuring continuity and data persistence",
+      "tags": [
+        "session",
+        "state-management",
+        "persistence"
+      ],
+      "supportedInputModes": [
+        "application/json"
+      ],
+      "supportedOutputModes": [
+        "application/json"
+      ],
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": ["save", "load", "update"],
+            "description": "Session management action"
+          },
+          "session_data": {
+            "type": "object",
+            "description": "Session state data"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
+    }
+  ],
+  "provider": {
+    "name": "ZGhost Team",
+    "organization": "ZGhost",
+    "url": "https://github.com/zghost"
+  },
+  "additionalInterfaces": [
+    {
+      "transport": "HTTP+JSON",
+      "url": "http://localhost:8000/api"
+    }
+  ],
+  "subAgents": [
+    {
+      "name": "trends_and_insights_agent",
+      "description": "Handles trend selection, PDF campaign guide extraction, and initial insights generation"
+    },
+    {
+      "name": "research_orchestrator",
+      "description": "Coordinates and executes multiple rounds of research tasks"
+    },
+    {
+      "name": "ad_content_generator_agent",
+      "description": "Creates visual concepts and generates ad creatives"
+    }
+  ],
+  "tools": [
+    {
+      "name": "save_creatives_and_research_report",
+      "description": "Builds final report detailing research and creatives generated during session"
+    }
+  ]
+}
