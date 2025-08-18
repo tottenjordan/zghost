@@ -1,4 +1,4 @@
-"""Configuration for ad generator agent."""
+"""Configuration for trends insights agent."""
 
 from dataclasses import dataclass
 

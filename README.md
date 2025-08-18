@@ -20,7 +20,7 @@
 - Conduct web research to better understand the campaign, Search trend, and trending YouTube video
 - Draft ad creatives (e.g., image and video) based on trends, campaign themes, or specific prompts
 - **NEW**: Supports the [a2a protocol](https://a2a-protocol.org/) for modular, distributed agent deployment
-- **NEW**: Single a2a orchestrator server that manages all agent interactions
+- **NEW**: Unified a2a server architecture that enables scalable agent interactions
 
 <p align="center">
   <img src='media/t2a_overview_0725_v2.png' width="800"/>
@@ -100,36 +100,56 @@ gcloud storage buckets create $BUCKET --location=$GOOGLE_CLOUD_LOCATION
 
 The application now includes a modern React frontend and supports the **a2a (agent-to-agent) protocol** for modular, distributed agent deployment.
 
-### Quick Start
+### Quick Start - ADK Web UI with A2A (Recommended)
 
-For the full experience with frontend and a2a architecture:
 ```bash
 make install  # First time only
-make a2a-dev  # Starts everything
+
+# Terminal 1: Start A2A server
+make a2a-servers
+
+# Terminal 2: Start ADK web UI
+make orchestrator-consumer
 ```
-Then open [http://localhost:5173](http://localhost:5173) in your browser.
+Then open [http://localhost:8000](http://localhost:8000) in your browser to use the ADK web interface.
+
+### Alternative: React Frontend with A2A
+
+```bash
+make a2a-dev  # Starts all services
+```
+Then open [http://localhost:5173](http://localhost:5173) for the React interface.
 
 ### Detailed Options
 
-### Option A: Run with A2A Architecture + Frontend (recommended)
+### Option 1: ADK Web Interface with A2A Architecture (recommended)
 
 ```bash
-# Install all dependencies first
-make install
+# Terminal 1 - Start A2A server
+make a2a-servers
 
+# Terminal 2 - Start orchestrator consumer with ADK web UI
+make orchestrator-consumer
+```
+
+This starts:
+- A2A server on [http://localhost:8100](http://localhost:8100)
+- ADK Web UI on [http://localhost:8000](http://localhost:8000)
+
+### Option 2: React Frontend with A2A Architecture
+
+```bash
 # Run all services with a2a architecture
 make a2a-dev
 ```
 
-This single command starts everything you need:
-- A2A orchestrator server on [http://localhost:9000](http://localhost:9000)
+This single command starts everything:
+- A2A server on [http://localhost:8100](http://localhost:8100)
 - Backend API server on [http://localhost:8000](http://localhost:8000)
 - Artifact server on [http://localhost:8001](http://localhost:8001)
 - Frontend React app on [http://localhost:5173](http://localhost:5173)
 
-Then open your browser to [http://localhost:5173](http://localhost:5173) to use the frontend interface.
-
-### Option B: Run without A2A servers (simpler setup)
+### Option 3: Classic architecture (without A2A)
 
 ```bash
 # Install dependencies and run traditional architecture
@@ -137,58 +157,39 @@ make install
 make dev
 ```
 
-This uses the classic monolithic architecture with all agents in-process
+This uses the monolithic architecture with all agents in-process.
 
-### Option C: Run services separately
+### Option 4: Run services separately
 
-**Terminal 1** - A2A Server (if using a2a architecture):
+**For A2A Architecture:**
 ```bash
+# Terminal 1 - A2A Server
 make a2a-servers
-```
 
-**Terminal 2** - Backend:
-```bash
-make backend
-```
-
-**Terminal 3** - Artifact Server:
-```bash
-make artifact-server
-```
-
-**Terminal 4** - Frontend:
-```bash
-make frontend
-```
-
-Then open [http://localhost:5173](http://localhost:5173) in your browser.
-
-### Option D: Use the classic ADK web interface
-
-```bash
-poetry run adk web
-```
-
-Open your browser and navigate to [http://localhost:8000](http://localhost:8000) and select an agent from the drop-down (top left)
-
-### Option E: Run the A2A server individually
-
-```bash
-# A2A Orchestrator
-poetry run adk api_server a2a_agents.remote_a2a.orchestrator --a2a --port 9000
-```
-
-### Option F: Run ADK web interface with A2A consumer agents
-
-```bash
-# Start a2a server and ADK web UI together
+# Terminal 2 - Orchestrator Consumer (ADK Web)
 make orchestrator-consumer
 ```
 
-This will check if the a2a server is running and start the ADK web interface.
+**For Classic Architecture:**
+```bash
+# Terminal 1 - Backend
+make backend
+
+# Terminal 2 - Artifact Server
+make artifact-server
+
+# Terminal 3 - Frontend (optional)
+make frontend
+```
+
+### Option 5: Classic ADK CLI interface
+
+```bash
+poetry run adk run trends_and_insights_agent
+```
 
 <details>
-  <summary>If port :8000, :8001, :5173, or :9000 is in use</summary>
+  <summary>If port :8000, :8001, :5173, or :8100 is in use</summary>
 
 *find any processes listening to these ports, kill them, then restart:*
 

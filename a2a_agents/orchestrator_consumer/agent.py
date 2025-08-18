@@ -22,7 +22,7 @@ from .config import config
 
 # Configuration for A2A server locations
 A2A_HOST = os.getenv("A2A_HOST", "localhost")
-A2A_PORT = os.getenv("A2A_PORT", "9000")
+A2A_PORT = os.getenv("A2A_PORT", "8100")
 
 # Create RemoteA2aAgent instances for each server
 trends_insights_agent = RemoteA2aAgent(
@@ -116,4 +116,7 @@ root_agent = Agent(
         temperature=0.01,
         response_modalities=["TEXT"],
     ),
+    # before_agent_callback=[
+    #     callbacks._load_session_state,
+    # ],
 )

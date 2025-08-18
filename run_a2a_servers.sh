@@ -1,37 +1,33 @@
 #!/bin/bash
-# Script to run a2a server agents
+# Script to run a2a server for remote agents
 
 set -e
 
-echo "Starting A2A Server Agents..."
+echo "Starting A2A Server..."
 echo "=================================="
 
-# Base port for a2a servers
-BASE_PORT=${A2A_BASE_PORT:-9000}
+# Base port for a2a server
+BASE_PORT=${A2A_BASE_PORT:-8100}
 
-# Kill any existing processes on the ports
-for i in 0; do
-    PORT=$((BASE_PORT + i))
-    echo "Checking port $PORT..."
-    lsof -ti:$PORT | xargs -r kill -9 2>/dev/null || true
-done
+# Kill any existing processes on the port
+echo "Checking port $BASE_PORT..."
+lsof -ti:$BASE_PORT | xargs -r kill -9 2>/dev/null || true
 
 # Start the a2a server
 echo ""
-echo "Starting research_orchestrator on port $BASE_PORT..."
+echo "Starting a2a server on port $BASE_PORT..."
 poetry run adk api_server a2a_agents/remote_a2a --a2a --port $BASE_PORT &
-PID1=$!
-echo "  PID: $PID1"
-
+PID=$!
+echo "  PID: $PID"
 
 echo ""
 echo "=================================="
-echo "A2A Servers Running:"
-echo "  a2a_server: http://localhost:$BASE_PORT"
+echo "A2A Server Running:"
+echo "  http://localhost:$BASE_PORT"
 echo ""
-echo "Press Ctrl+C to stop all servers"
+echo "Press Ctrl+C to stop the server"
 echo "=================================="
 
 # Wait for interrupt
-trap "echo 'Stopping servers...'; kill $PID1 $PID2 $PID3 2>/dev/null; exit" INT TERM
+trap "echo 'Stopping server...'; kill $PID 2>/dev/null; exit" INT TERM
 wait

@@ -1,205 +1,318 @@
-"""Ad Content Generator A2A Server Agent.
-
-This agent generates comprehensive ad campaigns including copy, visual concepts,
-and actual image/video generation using Imagen and Veo models.
-"""
-
-import logging
-from typing import List, Dict
 from google.genai import types
-from google.adk.agents import Agent
-from google.adk.tools import google_search, load_artifacts, ToolContext
+from google.adk.planners import BuiltInPlanner
+from google.adk.tools.agent_tool import AgentTool
+from google.adk.agents import Agent, SequentialAgent
+from google.adk.tools import google_search, load_artifacts
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from .shared_libraries.config import config
+from .shared_libraries import callbacks
+from .tools import (
+    generate_image,
+    generate_video,
+    save_img_artifact_key,
+    save_vid_artifact_key,
+    save_select_ad_copy,
+    save_select_visual_concept,
+)
+from .prompts import (
+    AD_CREATIVE_SUBAGENT_INSTR,
+    VEO3_INSTR,
+)
 
-# Import config
-from .config import config
 
+# --- AD CREATIVE SUBAGENTS ---
+ad_copy_drafter = Agent(
+    model=config.worker_model,
+    name="ad_copy_drafter",
+    description="Generate 10-12 initial ad copy ideas based on campaign guidelines and trends",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(include_thoughts=False)
+    ),
+    instruction="""You are a creative copywriter generating initial ad copy ideas.
 
-def generate_image(
-    prompt: str,
-    tool_context: ToolContext,
-    number_of_images: int = 1,
-    aspect_ratio: str = "1:1",
-) -> dict:
-    """
-    Mock image generation for a2a demo.
+    Your goal is to review the research and trends provided in the **Input Data** to generate 10-12 culturally relevant ad copy ideas.
+ 
+    ---
+    ### Input Data
+
+    <target_yt_trends>
+    {target_yt_trends}
+    </target_yt_trends>
+
+    <target_search_trends>
+    {target_search_trends}
+    </target_search_trends>
     
-    Args:
-        prompt: The image generation prompt.
-        tool_context: The ADK tool context.
-        number_of_images: Number of images to generate.
-        aspect_ratio: Aspect ratio for the images.
+    <combined_final_cited_report>
+    {combined_final_cited_report}
+    </combined_final_cited_report>
+
+    ---
+    ### Instructions
+
+    1. Review the campaign and trend research in the 'combined_final_cited_report' state key.
+    2. Using insights related to the campaign metadata, trending YouTube video(s), and trending Search term(s), generate 10-12 diverse ad copy ideas that:
+        - Incorporate key selling points for the {target_product}
+        - Vary in tone, style, and approach
+        - Are suitable for Instagram/TikTok platforms
+        - Reference at least one of the topics from the 'target_search_trends' or 'target_yt_trends' state keys.
+    3. **Out of all the copy ideas you generate**, be sure to include:
+        - A few that reference the Search trend from the 'target_search_trends' state key, 
+        - A few that reference the YouTube trend from the 'target_yt_trends' state key, 
+        - And if possible, a few that combine ideas from both trends in the 'target_search_trends' and 'target_yt_trends' state keys.
+    4. **Each ad copy should include:**
+        - Headline (attention-grabbing)
+        - Body text (concise and compelling)
+        - Call-to-action
+        - Which trend(s) it references (e.g., which trend from the 'target_search_trends' and 'target_yt_trends' state keys)
+        - Brief rationale for target audience appeal
+        - A candidate social media caption
+
+    Use the `google_search` tool to support your decisions.
+
+    """,
+    generate_content_config=types.GenerateContentConfig(
+        temperature=1.5,
+    ),
+    tools=[google_search],
+    output_key="ad_copy_draft",
+)
+
+
+ad_copy_critic = Agent(
+    model=config.critic_model,
+    name="ad_copy_critic",
+    description="Critique and narrow down ad copies based on product, audience, and trends",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(include_thoughts=False)
+    ),
+    instruction="""You are a strategic marketing critic evaluating ad copy ideas.
+
+    Your goal is to review the proposed candidates in the 'ad_copy_draft' state key and select the 6-8 BEST ad copies based on:
+    1. Alignment with target audience.
+    2. Effective use of trending topics that feel authentic.
+    3. Clear communication of key selling points.
+    4. Platform-appropriate tone and length.
+
+    Use the `google_search` tool to support your decisions
     
-    Returns:
-        Status and mock image URLs.
-    """
-    # Mock image generation
-    images = []
-    for i in range(number_of_images):
-        image_url = f"https://example.com/generated_image_{i+1}.jpg"
-        images.append(image_url)
+    Provide detailed rationale for your selections, explaining why these specific copies will perform best.
     
-    # Save to session state
-    img_keys = tool_context.state.get("img_artifact_keys", {"img_artifact_keys": []})
-    img_keys["img_artifact_keys"].extend(images)
-    tool_context.state["img_artifact_keys"] = img_keys
+    Each ad copy should include:
+    - Headline (attention-grabbing)
+    - Call-to-action
+    - A candidate social media caption
+    - Body text (concise and compelling)
+    - Which trend(s) it references (e.g., which trend from the 'target_search_trends' and 'target_yt_trends' state keys)
+    - Brief rationale for target audience appeal
+    - Detailed rationale explaining why this ad copy will perform well
+
+    """,
+    tools=[google_search],
+    generate_content_config=types.GenerateContentConfig(temperature=0.7),
+    output_key="ad_copy_critique",
+)
+
+
+# Sequential agent for ad creative generation
+ad_creative_pipeline = SequentialAgent(
+    name="ad_creative_pipeline",
+    description="Generates ad copy drafts with an actor-critic workflow.",
+    sub_agents=[
+        ad_copy_drafter,
+        ad_copy_critic,
+        # ad_copy_finalizer,
+    ],
+)
+
+
+# --- PROMPT GENERATION SUBAGENTS ---
+visual_concept_drafter = Agent(
+    model=config.worker_model,
+    name="visual_concept_drafter",
+    description="Generate initial visual concepts for selected ad copies",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(include_thoughts=False)
+    ),
+    instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
     
-    return {
-        "status": "Images generated successfully",
-        "images": images,
-        "prompt_used": prompt,
-    }
+    Based on the user-selected ad copies in the 'final_select_ad_copies' state key, generate visual concepts that:
+    - Incorporate trending visual styles and themes.
+    - Consider platform-specific best practices.
+    - Find a clever way to market the 'target_product'
+
+    Try generating at least one visual concept for each ad copy.
+
+    In aggregate, the total set of visual concepts should:
+    -   Balance the use of image and video creatives.
+    -   Balance reference to the Search trend(s) and the trending Youtube video(s).
+    -   Include a few concepts that attempt to combine both Search and YouTube trends
+
+    For each visual concept, provide:
+    -   Name (intuitive name of the concept)
+    -   Type (image or video)
+    -   Which trend(s) it relates to (e.g., which trend from the 'target_search_trends' and 'target_yt_trends' state keys)
+    -   Which ad copy it connects to
+    -   Creative concept explanation
+    -   A draft {config.image_gen_model} or {config.video_gen_model} prompt.
+    -   If this is a video concept:
+        -   Consider generated videos are 8 seconds in length.
+        -   Consider the prompting best practices in the <PROMPTING_BEST_PRACTICES/> block.
+
+    Use the `google_search` tool to support your decisions.
+
+    <PROMPTING_BEST_PRACTICES>
+    {VEO3_INSTR}
+    </PROMPTING_BEST_PRACTICES>
+    """,
+    tools=[google_search],
+    generate_content_config=types.GenerateContentConfig(temperature=1.5),
+    output_key="visual_draft",
+)
 
 
-def generate_video(
-    prompt: str,
-    tool_context: ToolContext,
-    duration: int = 8,
-    aspect_ratio: str = "16:9",
-) -> dict:
-    """
-    Mock video generation for a2a demo.
+visual_concept_critic = Agent(
+    model=config.critic_model,
+    name="visual_concept_critic",
+    description="Critique and narrow down visual concepts",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(include_thoughts=False)
+    ),
+    instruction=f"""You are a creative director evaluating visual concepts and high quality prompts that result in high impact.
     
-    Args:
-        prompt: The video generation prompt.
-        tool_context: The ADK tool context.
-        duration: Video duration in seconds.
-        aspect_ratio: Aspect ratio for the video.
+    Review the concepts in the 'visual_draft' state key and critique the draft prompts on:
+    1. Visual appeal and stopping power for social media
+    2. Alignment with ad copy messaging
+    3. Alignment with trend
+    4. Platform optimization (aspect ratios, duration)
+    5. Diversity of visual approaches
+    6. Utilize techniques to maintain continuity in the prompts
+    7. Prompts are maximizing descriptive possibilities to match the intended tone
+    8. Descriptions of scenes, characters, tone, emotion are all extremely verbose (100+ words) and leverage ideas from the prompting best practices
+    9. These verbose descriptions are maintained scene to scene to avoid saying things like "the same person", instead use the same provided description
+
+    **Critical Guidelines**
+    * Ensure a good mix of images and videos in your selections.
+    * Explain which trend(s) each concept relates to.
+    * Provide detailed rationale for your selections.
+    * Consider the prompting best practices in the <PROMPTING_BEST_PRACTICES/> block.
+    * Use the `google_search` tool to support your decisions.
+
+    **Final Output:**
+    Format the final output to include the following information for each visual concept:
+    -   Name (intuitive name of the concept)
+    -   Type (image or video)
+    -   Which trend(s) it relates to (e.g., which trend from the 'target_search_trends' and 'target_yt_trends' state keys)
+    -   Creative concept explanation
+    -   Detailed rationale explaining why this concept will perform well 
+    -   A draft Imagen or Veo prompt
+
+    <PROMPTING_BEST_PRACTICES>
+    {VEO3_INSTR}
+    </PROMPTING_BEST_PRACTICES>
+    """,
+    tools=[google_search],
+    generate_content_config=types.GenerateContentConfig(temperature=0.7),
+    output_key="visual_concept_critique",
+)
+
+
+visual_concept_finalizer = Agent(
+    model=config.worker_model,
+    name="visual_concept_finalizer",
+    description="Finalize visual concepts to proceed with.",
+    # planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    instruction="""You are a senior creative director finalizing visual concepts for ad creatives.
+
+    1. Review the 'visual_concept_critique' state key to understand the refined visual concepts.
+    2. For each concept, provide the following:
+        -   Name (intuitive name of the concept)
+        -   Type (image or video)
+        -   Which trend(s) it relates to (e.g., from the 'target_search_trends' and 'target_yt_trends' state keys)
+        -   Headline (attention-grabbing)
+        -   Call-to-action
+        -   A candidate social media caption
+        -   Creative concept explanation
+        -   Brief rationale for target audience appeal
+        -   Brief explanation of how this markets the target product
+        -   A draft Imagen or Veo prompt.
     
-    Returns:
-        Status and mock video URL.
-    """
-    # Mock video generation
-    video_url = f"https://example.com/generated_video.mp4"
+    """,
+    generate_content_config=types.GenerateContentConfig(temperature=0.8),
+    output_key="final_visual_concepts",
+)
+
+
+# Sequential agent for visual generation
+visual_generation_pipeline = SequentialAgent(
+    name="visual_generation_pipeline",
+    description="Generates visual concepts with an actor-critic workflow.",
+    sub_agents=[
+        visual_concept_drafter,
+        visual_concept_critic,
+        visual_concept_finalizer,
+    ],
+)
+
+
+visual_generator = Agent(
+    model=config.critic_model,
+    name="visual_generator",
+    description="Generate final visuals using image and video generation tools",
+    instruction=f"""You are a visual content producer creating final assets.
     
-    # Save to session state
-    vid_keys = tool_context.state.get("vid_artifact_keys", {"vid_artifact_keys": []})
-    vid_keys["vid_artifact_keys"].append(video_url)
-    tool_context.state["vid_artifact_keys"] = vid_keys
-    
-    return {
-        "status": "Video generated successfully",
-        "video": video_url,
-        "prompt_used": prompt,
-        "duration": duration,
-    }
+    **Objective:** Generate visual content options (images and videos) based on the user-selected visual concepts.
 
+    **Available Tools:**
+    - `generate_image`: Generate images using Google's Imagen model.
+    - `generate_video`: Generate videos using Google's Veo model.
 
-def save_select_ad_copy(
-    selected_ad_copies: List[Dict], tool_context: ToolContext
-) -> dict:
-    """
-    Save selected ad copies to session state.
-    
-    Args:
-        selected_ad_copies: List of selected ad copy dictionaries.
-        tool_context: The ADK tool context.
-    
-    Returns:
-        Status message.
-    """
-    tool_context.state["final_select_ad_copies"] = {"final_select_ad_copies": selected_ad_copies}
-    return {"status": f"Saved {len(selected_ad_copies)} ad copies"}
+    **Instructions:**
+    1. For each user-selected visual concept in the 'final_select_vis_concepts' state key, generate the creative visual using the appropriate tool (`generate_image` or `generate_video`).
+        - For images, follow the instructions in the <IMAGE_GENERATION/> block, 
+        - For videos, follow the instructions in the <VIDEO_GENERATION/> block and consider prompting best practices in the <PROMPTING_BEST_PRACTICES/> block,
 
+    <IMAGE_GENERATION>
+    - Create descriptive image prompts that visualize the ad copy concepts
+    - Include subject, context/background, and style elements
+    - Ensure prompts capture the essence of the trends and campaign highlights
+    - Generate diverse visual approaches (different styles, compositions, contexts)
+    </IMAGE_GENERATION>
 
-def save_select_visual_concept(
-    selected_concepts: List[Dict], tool_context: ToolContext
-) -> dict:
-    """
-    Save selected visual concepts to session state.
-    
-    Args:
-        selected_concepts: List of selected visual concept dictionaries.
-        tool_context: The ADK tool context.
-    
-    Returns:
-        Status message.
-    """
-    tool_context.state["final_select_vis_concepts"] = {"final_select_vis_concepts": selected_concepts}
-    return {"status": f"Saved {len(selected_concepts)} visual concepts"}
+    <VIDEO_GENERATION>
+    - Create dynamic video prompts that bring the ad copy to life
+    - Include subject, context, action, style, and optional camera/composition elements
+    - Consider continuity with the image concepts when appropriate
+    - Vary the approaches (different actions, camera angles, moods)
+    </VIDEO_GENERATION>
 
+    <PROMPTING_BEST_PRACTICES>
+     {VEO3_INSTR}
+    </PROMPTING_BEST_PRACTICES>
+    """,
+    tools=[
+        generate_image,
+        generate_video,
+    ],
+    generate_content_config=types.GenerateContentConfig(temperature=1.2),
+    before_model_callback=callbacks.rate_limit_callback,
+)
 
-def save_img_artifact_key(key: str, tool_context: ToolContext) -> dict:
-    """Save image artifact key to session state."""
-    img_keys = tool_context.state.get("img_artifact_keys", {"img_artifact_keys": []})
-    img_keys["img_artifact_keys"].append(key)
-    tool_context.state["img_artifact_keys"] = img_keys
-    return {"status": "Image key saved"}
-
-
-def save_vid_artifact_key(key: str, tool_context: ToolContext) -> dict:
-    """Save video artifact key to session state."""
-    vid_keys = tool_context.state.get("vid_artifact_keys", {"vid_artifact_keys": []})
-    vid_keys["vid_artifact_keys"].append(key)
-    tool_context.state["vid_artifact_keys"] = vid_keys
-    return {"status": "Video key saved"}
-
-
-# Ad generator instruction
-AD_GENERATOR_INSTR = """You are an ad content generator that creates comprehensive ad campaigns.
-
-Your main responsibilities:
-1. Generate creative ad copy based on research insights
-2. Develop visual concepts for the ad campaigns
-3. Create images and videos using generation tools
-4. Compile a complete creative package
-
-Workflow:
-1. Review the session state for:
-   - draft_report: Research findings from the research orchestrator
-   - target_product: The product being marketed
-   - target_audience: The target audience
-   - target_search_trends: Selected Google Search trends
-   - target_yt_trends: Selected YouTube trends
-   - campaign_guide_data: Campaign guidelines
-
-2. Generate Ad Copy:
-   - Create 6-8 ad copy variations
-   - Each should include: headline, body text, call-to-action
-   - Reference the trends authentically
-   - Vary tone and approach
-   - Use `save_select_ad_copy` to save the best options
-
-3. Develop Visual Concepts:
-   - Create visual concepts for each ad copy
-   - Mix of image and video concepts
-   - Describe each concept clearly
-   - Consider platform requirements
-   - Use `save_select_visual_concept` to save the concepts
-
-4. Generate Visual Assets:
-   - Use `generate_image` for image concepts
-   - Use `generate_video` for video concepts
-   - Create compelling prompts based on the concepts
-   - Save artifact keys using the save functions
-
-5. Use `google_search` to research:
-   - Visual trends in advertising
-   - Competitor campaigns
-   - Best practices for the target audience
-
-Be creative, culturally relevant, and ensure all content aligns with the campaign strategy."""
-
-
-# Create root_agent for a2a protocol
+# Main orchestrator agent
 root_agent = Agent(
     model=config.lite_planner_model,
     name="ad_content_generator_agent",
-    description="Help users with ad generation; brainstorm and refine ad copy and visual concept ideas; generate final ad creatives.",
-    instruction=AD_GENERATOR_INSTR,
+    description="Help users with ad generation; brainstorm and refine ad copy and visual concept ideas with actor-critic workflows; iterate with the user to generate final ad creatives.",
+    instruction=AD_CREATIVE_SUBAGENT_INSTR,
     tools=[
-        google_search,
-        generate_image,
-        generate_video,
+        AgentTool(agent=ad_creative_pipeline),
+        AgentTool(agent=visual_generation_pipeline),
+        AgentTool(agent=visual_generator),
         save_img_artifact_key,
         save_vid_artifact_key,
         save_select_ad_copy,
         save_select_visual_concept,
         load_artifacts,
     ],
-    generate_content_config=types.GenerateContentConfig(
-        temperature=1.0,
-    ),
+    generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )

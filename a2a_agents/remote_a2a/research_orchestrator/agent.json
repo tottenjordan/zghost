@@ -1,169 +1,71 @@
 {
+  "protocolVersion": "0.3.0",
   "name": "research_orchestrator",
-  "description": "Orchestrates comprehensive research across multiple sources and generates unified insights.",
+  "description": "Orchestrates comprehensive research for marketing campaigns by analyzing trends, conducting web research, and generating cited reports.",
+  "url": "http://localhost:8200/a2a/research_orchestrator",
+  "preferredTransport": "JSONRPC",
   "version": "1.0.0",
-  "author": "ZGhost Team",
-  "license": "Apache-2.0",
-  "tags": ["research", "analysis", "synthesis", "web-search", "trends"],
-  "url": "http://localhost:9000/a2a/research_orchestrator",
-  "capabilities": {},
+  "capabilities": {
+    "parallelProcessing": true,
+    "iterativeRefinement": true,
+    "citationManagement": true
+  },
   "defaultInputModes": ["application/json"],
-  "defaultOutputModes": ["application/json"],
+  "defaultOutputModes": ["application/json", "application/pdf"],
   "skills": [
     {
       "id": "parallel_research",
       "name": "Parallel Research Coordination",
-      "description": "Coordinates multiple research streams simultaneously for YouTube, Google Search, and campaign materials",
-      "tags": ["research", "coordination", "parallel-processing"]
+      "description": "Executes simultaneous research on YouTube trends, Google Search trends, and campaign objectives",
+      "tags": ["research", "parallel-processing", "coordination"]
     },
     {
-      "id": "trend_analysis",
-      "name": "Trend Analysis",
-      "description": "Analyzes YouTube and Google Search trends to extract actionable insights",
-      "tags": ["trends", "analysis", "insights"]
+      "id": "research_synthesis",
+      "name": "Research Synthesis and Integration",
+      "description": "Merges findings from multiple research streams into coherent insights",
+      "tags": ["synthesis", "integration", "analysis"]
     },
     {
-      "id": "report_synthesis",
-      "name": "Report Synthesis",
-      "description": "Synthesizes research findings into comprehensive reports with proper citations",
-      "tags": ["synthesis", "reporting", "citations"]
+      "id": "quality_evaluation",
+      "name": "Research Quality Evaluation",
+      "description": "Critically evaluates research completeness and identifies knowledge gaps",
+      "tags": ["quality-assurance", "evaluation", "gap-analysis"]
+    },
+    {
+      "id": "iterative_refinement",
+      "name": "Iterative Research Refinement",
+      "description": "Conducts follow-up searches based on identified gaps to enhance research depth",
+      "tags": ["refinement", "follow-up", "enhancement"]
+    },
+    {
+      "id": "cited_report_generation",
+      "name": "Cited Report Generation",
+      "description": "Produces professionally formatted research reports with inline citations",
+      "tags": ["report-generation", "citations", "documentation"]
+    },
+    {
+      "id": "pdf_artifact_creation",
+      "name": "PDF Artifact Creation",
+      "description": "Saves research findings as PDF artifacts for easy sharing and review",
+      "tags": ["pdf", "artifact", "export"]
     }
   ],
-  "required_environment": {
-    "python": ">=3.11",
-    "dependencies": [
-      "google-genai",
-      "google-adk>=1.7.0",
-      "pydantic"
-    ]
-  },
-  "input_schema": {
-    "type": "object",
-    "properties": {
-      "target_search_trends": {
-        "type": "object",
-        "description": "Google Search trends to research",
-        "properties": {
-          "trend_name": {
-            "type": "string",
-            "description": "Name of the search trend"
-          },
-          "trend_details": {
-            "type": "string",
-            "description": "Additional details about the trend"
-          }
-        }
-      },
-      "target_yt_trends": {
-        "type": "object",
-        "description": "YouTube trends to research",
-        "properties": {
-          "trend_name": {
-            "type": "string",
-            "description": "Name of the YouTube trend"
-          },
-          "trend_details": {
-            "type": "string",
-            "description": "Additional details about the trend"
-          }
-        }
-      },
-      "target_product": {
-        "type": "string",
-        "description": "Product being marketed"
-      },
-      "target_audience": {
-        "type": "string",
-        "description": "Target audience for the campaign"
-      },
-      "campaign_guide_data": {
-        "type": "object",
-        "description": "Campaign guide information",
-        "properties": {
-          "brand_guidelines": {
-            "type": "string",
-            "description": "Brand guidelines and requirements"
-          },
-          "campaign_objectives": {
-            "type": "string",
-            "description": "Campaign objectives and goals"
-          }
-        }
-      }
-    },
-    "required": ["target_search_trends", "target_yt_trends", "target_product", "target_audience"]
-  },
-  "output_schema": {
-    "type": "object",
-    "properties": {
-      "combined_web_search_insights": {
-        "type": "string",
-        "description": "Consolidated research findings from all sources"
-      },
-      "draft_report": {
-        "type": "string",
-        "description": "Final research report with citations and analysis"
-      },
-      "sources": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "url": {
-              "type": "string",
-              "description": "Source URL"
-            },
-            "title": {
-              "type": "string",
-              "description": "Source title"
-            },
-            "relevance": {
-              "type": "string",
-              "description": "How this source is relevant"
-            }
-          }
-        },
-        "description": "List of cited sources with metadata"
-      }
-    },
-    "required": ["combined_web_search_insights", "draft_report", "sources"]
-  },
-  "examples": [
+  "additionalInterfaces": [
     {
-      "input": {
-        "target_search_trends": {
-          "trend_name": "sustainable fashion",
-          "trend_details": "Growing interest in eco-friendly clothing"
-        },
-        "target_yt_trends": {
-          "trend_name": "thrift flip",
-          "trend_details": "DIY fashion transformation videos"
-        },
-        "target_product": "EcoWear Recycled Clothing Line",
-        "target_audience": "Environmentally conscious millennials and Gen Z",
-        "campaign_guide_data": {
-          "brand_guidelines": "Focus on sustainability, authenticity, and affordability",
-          "campaign_objectives": "Increase brand awareness and drive online sales"
-        }
-      },
-      "output": {
-        "combined_web_search_insights": "Research reveals strong market demand for sustainable fashion...",
-        "draft_report": "Comprehensive market analysis shows opportunity for EcoWear...",
-        "sources": [
-          {
-            "url": "https://example.com/sustainable-fashion-report",
-            "title": "2024 Sustainable Fashion Market Report",
-            "relevance": "Provides market size and growth projections"
-          }
-        ]
-      }
+      "transport": "HTTP+JSON",
+      "url": "http://localhost:8200/api/v1/research"
     }
   ],
-  "error_handling": {
-    "timeout": 300,
-    "retry_policy": {
-      "max_retries": 3,
-      "backoff_multiplier": 2
+  "securitySchemes": {
+    "apiKey": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "X-API-Key"
     }
-  }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ]
 }

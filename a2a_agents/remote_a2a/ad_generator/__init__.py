@@ -1,3 +1,3 @@
-"""Ad Content Generator A2A Server Agent."""
+from .agent import ad_content_generator_agent
 
-from . import agent
+__all__ = ["ad_content_generator_agent"]

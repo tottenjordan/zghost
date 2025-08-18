@@ -1,10 +1,11 @@
 #!/bin/bash
-# Script to run the A2A orchestrator consumer agent with ADK web UI
+# Script to run the A2A orchestrator consumer with ADK web UI
 
-echo "Starting A2A Orchestrator Consumer Agent..."
+echo "Starting A2A Orchestrator Consumer..."
+echo "=================================="
 
-# Check if A2A server agents are running
-echo "Checking A2A server agents..."
+# Check if A2A server is running
+echo "Checking A2A server..."
 
 # Function to check if a port is open
 check_port() {
@@ -19,14 +20,11 @@ check_port() {
     fi
 }
 
-# Check each A2A server
-all_running=true
-check_port 9000 "A2A Port" || all_running=false
-
-if [ "$all_running" = false ]; then
+# Check A2A server
+if ! check_port 8100 "A2A Server"; then
     echo ""
-    echo "WARNING: Not all A2A servers are running!"
-    echo "To start them, run: make a2a-servers"
+    echo "WARNING: A2A server is not running!"
+    echo "To start it, run: make a2a-servers"
     echo ""
     read -p "Continue anyway? (y/n) " -n 1 -r
     echo
@@ -35,14 +33,14 @@ if [ "$all_running" = false ]; then
     fi
 fi
 
-# Set environment variables if needed
+# Set environment variables
 export A2A_HOST=${A2A_HOST:-localhost}
-export A2A_PORT=${A2A_PORT:-9000}
+export A2A_PORT=${A2A_PORT:-8100}
 
 # Run the orchestrator consumer with ADK web UI
 echo ""
-echo "Starting orchestrator consumer on http://localhost:8000"
-echo "ADK Web UI will be available at http://localhost:8000"
+echo "Starting ADK Web UI on http://localhost:8000"
+echo "=================================="
 echo ""
 
 poetry run adk web a2a_agents --port 8000

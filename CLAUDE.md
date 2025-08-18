@@ -40,87 +40,66 @@ cd ..
 ```bash
 make help           # Show all available commands
 make install        # Install all dependencies (backend and frontend)
+make a2a-servers    # Run A2A servers (required for a2a architecture)
+make orchestrator-consumer # Run ADK web UI with a2a (recommended)
+make a2a-dev        # Run all services with React frontend
 make dev            # Run classic mode (no a2a)
-make a2a-dev        # Run with a2a architecture (recommended)
-make frontend       # Run only frontend
-make backend        # Run only backend
+make frontend       # Run only frontend dev server
+make backend        # Run only backend API server
 make artifact-server # Run only artifact server
-make a2a-servers    # Run only a2a server
-make orchestrator-consumer # Run ADK web with a2a
 make clean          # Clean up temporary files
 ```
 
 ### Running the Application
 
-#### Quick Start - Frontend with A2A (Recommended)
+#### Option 1: ADK Web Interface with A2A (Recommended)
 ```bash
-make install      # First time setup
-make a2a-dev      # Start everything
-# Open http://localhost:5173 in your browser
-```
+# Terminal 1 - Start A2A servers
+make a2a-servers
 
-#### Option A: Run with A2A architecture + Frontend
-```bash
-make a2a-dev
-```
-This single command starts:
-- A2A server agent (port 9000)
-- Backend API server (port 8000)
-- Artifact server (port 8001)
-- Frontend dev server (port 5173)
-
-The frontend will automatically connect to the backend and display the chat interface.
-
-#### Alternative: ADK Web Interface with A2A
-```bash
+# Terminal 2 - Start orchestrator consumer with ADK web UI
 make orchestrator-consumer
 # Opens ADK web UI at http://localhost:8000
 ```
 
-#### Option B: Run without A2A servers (simpler setup)
+#### Option 2: React Frontend with A2A
 ```bash
-make dev
+make a2a-dev
 ```
-This starts backend (8000), artifact server (8001), and frontend (5173)
+This single command starts:
+- A2A server (port 8100)
+- Backend API server (port 8000)
+- Artifact server (port 8001)
+- Frontend dev server (port 5173)
 
-#### Option C: Run components separately
+Open http://localhost:5173 in your browser.
+
+#### Option 3: Run components separately
 
 **With A2A Architecture:**
 ```bash
-# Terminal 1 - A2A server
+# Terminal 1 - A2A servers
 make a2a-servers
 
-# Terminal 2 - Backend API server
-make backend
-
-# Terminal 3 - Artifact server
-make artifact-server
-
-# Terminal 4 - Frontend dev server  
-make frontend
+# Terminal 2 - Orchestrator consumer
+make orchestrator-consumer
 ```
 
-**Without A2A (Classic Mode):**
+**Classic Mode (without A2A):**
 ```bash
 # Terminal 1 - Backend API server
 make backend
 
-# Terminal 2 - Artifact server
+# Terminal 2 - Artifact server  
 make artifact-server
 
-# Terminal 3 - Frontend dev server  
+# Terminal 3 - Frontend dev server
 make frontend
 ```
 
-#### Option D: Classic ADK CLI interface
+#### Option 4: Classic ADK CLI interface
 ```bash
 poetry run adk run trends_and_insights_agent
-```
-
-#### Option E: Run the a2a server
-```bash
-# A2A orchestrator server
-poetry run adk api_server a2a_agents.remote_a2a.orchestrator --a2a --port 9000
 ```
 
 ### Common User Flows (via Frontend UI)
@@ -141,80 +120,47 @@ poetry install               # Install from lock file
 
 ## Architecture
 
-### A2A Protocol Architecture (New)
-The system now supports the a2a (agent-to-agent) protocol, enabling modular, distributed agent deployment:
+### A2A Protocol Architecture 
+The system uses the a2a (agent-to-agent) protocol, enabling modular, distributed agent deployment:
 
 ```
-a2a_orchestrator (a2a server on port 9000)
-├── trends_insights 
-│   ├── Trend selection interface
-│   ├── PDF campaign guide extraction  
-│   └── YouTube video summarization
-├── research_orchestrator
-│   ├── Parallel research coordination
-│   │   ├── YouTube trend analysis
-│   │   ├── Google Search trend analysis
-│   │   └── Campaign research
-│   ├── Research quality evaluation
-│   ├── Follow-up search refinement
-│   └── Report synthesis with citations
-└── ad_generator
-    ├── Ad copy generation pipeline
-    │   ├── Draft → Critique → Finalize
-    ├── Visual concept development
-    │   ├── Draft → Critique → Finalize
-    └── Media generation (Imagen/Veo)
+a2a_server (port 8100)
+└── orchestrator_consumer
+    ├── trends_insights 
+    │   ├── Trend selection interface
+    │   ├── PDF campaign guide extraction  
+    │   └── YouTube video summarization
+    ├── research_orchestrator
+    │   ├── Parallel research coordination
+    │   │   ├── YouTube trend analysis
+    │   │   ├── Google Search trend analysis
+    │   │   └── Campaign research
+    │   ├── Research quality evaluation
+    │   ├── Follow-up search refinement
+    │   └── Report synthesis with citations
+    └── ad_generator
+        ├── Ad copy generation pipeline
+        │   ├── Draft → Critique → Finalize
+        ├── Visual concept development
+        │   ├── Draft → Critique → Finalize
+        └── Media generation (Imagen/Veo)
 ```
 
 ### Agent Integration Options
-The refactored architecture supports three integration patterns:
+The architecture supports two main integration patterns:
 
-1. **Direct Sub-Agent Integration** (`agent_with_subagents.py`)
-   - Agents run in-process as sub-agents
-   - Uses `transfer_to_agent` tool for coordination
-   - Best for single-machine deployments
-
-2. **A2A Server Architecture** (`agent_a2a_client.py` + a2a servers)
-   - Agents run as separate HTTP services
-   - Communicates via a2a protocol over HTTP
+1. **A2A Server Architecture** (Recommended)
+   - Agents run as separate HTTP services via a2a protocol
+   - Orchestrator consumer connects to remote agents
    - Enables distributed deployment and scaling
-   - Run with: `make a2a-dev`
+   - Run with: `make a2a-servers` + `make orchestrator-consumer`
 
-3. **Classic Monolithic** (`agent.py`)
+2. **Classic Monolithic** 
    - Original single-process architecture
    - All agents embedded in root orchestrator
-   - Simplest deployment model
+   - Simpler but less scalable
+   - Run with: `make dev`
 
-### Legacy Agent Hierarchy
-```
-root_agent (orchestrator)
-├── campaign_guide_data_generation_agent  # Extract campaign data from PDFs
-│   └── campaign_guide_data_extract_agent # LLM agent for detail extraction
-├── trends_and_insights_agent            # Display/capture trend selections
-├── combined_research_merger             # Coordinates research pipeline
-│   ├── combined_research_pipeline       # Sequential research flow
-│   │   ├── merge_parallel_insights      # Parallel research coordination
-│   │   │   ├── parallel_planner_agent   # Runs 3 research types simultaneously
-│   │   │   │   ├── yt_sequential_planner # YouTube trend analysis
-│   │   │   │   ├── gs_sequential_planner # Google Search trend analysis
-│   │   │   │   └── ca_sequential_planner # Campaign research
-│   │   │   └── merge_planners           # Combines research plans
-│   │   ├── combined_web_evaluator       # Quality check
-│   │   ├── enhanced_combined_searcher   # Refine search
-│   │   └── combined_report_composer     # Generate unified report
-│   └── combined_report_agent            # Final report synthesis
-├── ad_content_generator_agent           # Create comprehensive ad campaigns
-│   ├── ad_creative_pipeline             # Ad copy generation flow
-│   │   ├── ad_copy_drafter
-│   │   ├── ad_copy_critic
-│   │   └── ad_copy_finalizer
-│   ├── visual_generation_pipeline       # Visual concept development
-│   │   ├── visual_concept_drafter
-│   │   ├── visual_concept_critic
-│   │   └── visual_concept_finalizer
-│   └── visual_generator                 # Image/video generation
-└── report_generator_agent               # Compile PDF reports
-```
 
 ### Key Directories
 - `trends_and_insights_agent/` - Main agent module
@@ -227,9 +173,11 @@ root_agent (orchestrator)
   - `tools.py` - Tool implementations
   - `prompts.py` - Agent instructions
 - `a2a_agents/` - A2A server agents
-  - `research_orchestrator/` - Research coordination a2a server
-  - `trends_insights/` - Trends analysis a2a server
-  - `ad_generator/` - Ad generation a2a server
+  - `orchestrator_consumer/` - Main orchestrator consumer agent
+  - `remote_a2a/` - Remote A2A agent implementations
+    - `research_orchestrator/` - Research coordination agent
+    - `trends_insights/` - Trends analysis agent
+    - `ad_generator/` - Ad generation agent
 - `frontend/` - React frontend application
   - `src/` - Source code
     - `components/` - React components
@@ -318,7 +266,7 @@ The custom artifact server (`artifact_server.py`) provides HTTP access to genera
 - Agent Engine requires Secret Manager setup
 - Always export requirements.txt before deployment
 - Frontend build: `cd frontend && npm run build`
-- Check ports 8000 (backend), 8001 (artifact server), and 5173 (frontend) availability
+- Check ports 8000 (backend/ADK web), 8001 (artifact server), 8100 (a2a server), and 5173 (frontend) availability
 - For production: Deploy artifact server behind a CDN for better performance
 
 ## Credits
