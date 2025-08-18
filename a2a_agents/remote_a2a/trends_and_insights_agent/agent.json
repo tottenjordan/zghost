@@ -17,30 +17,12 @@
     {
       "id": "trend_selection",
       "name": "Interactive Trend Selection",
-      "description": "Provides interactive selection of Google Search and YouTube trends with visual card interface",
+      "description": "Provides interactive selection of Google Search and YouTube trends",
       "tags": [
         "trends",
         "interactive",
         "ui"
-      ],
-      "supportedInputModes": [
-        "application/json"
-      ],
-      "supportedOutputModes": [
-        "application/json"
-      ],
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "user_message": {
-            "type": "string",
-            "description": "User's message or request"
-          }
-        },
-        "required": [
-          "user_message"
-        ]
-      }
+      ]
     },
     {
       "id": "pdf_extraction",
@@ -57,22 +39,7 @@
       ],
       "supportedOutputModes": [
         "application/json"
-      ],
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "uploaded_files": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "List of uploaded file paths (PDFs)"
-          }
-        },
-        "required": [
-          "uploaded_files"
-        ]
-      }
+      ]
     },
     {
       "id": "youtube_analysis",
@@ -88,19 +55,7 @@
       ],
       "supportedOutputModes": [
         "application/json"
-      ],
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "selected_trend": {
-            "type": "string",
-            "description": "Selected YouTube trend to analyze"
-          }
-        },
-        "required": [
-          "selected_trend"
-        ]
-      }
+      ]
     },
     {
       "id": "generate_insights",
@@ -116,35 +71,7 @@
       ],
       "supportedOutputModes": [
         "application/json"
-      ],
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "user_message": {
-            "type": "string"
-          },
-          "uploaded_files": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "selected_trends": {
-            "type": "object",
-            "properties": {
-              "google_search": {
-                "type": "string"
-              },
-              "youtube": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "required": [
-          "user_message"
-        ]
-      }
+      ]
     }
   ],
   "provider": {

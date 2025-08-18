@@ -16,7 +16,7 @@ from .prompts import (
 
 root_agent = Agent(
     model=config.worker_model,
-    name="trends_and_insights_agent",
+    name="root_agent",
     description="A trend and insight assistant using the services of multiple sub-agents.",
     instruction=ROOT_AGENT_INSTR,
     global_instruction=GLOBAL_INSTR,
