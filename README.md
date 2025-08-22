@@ -217,7 +217,9 @@ SESSION_STATE_JSON_PATH=example_state_prs.json
 
 ## Video walkthrough
 
-> Updated version coming soon!
+> This demo gives a quick overview of the end-to-end workflow
+
+[![demo](https://img.youtube.com/vi/S8Bh4eBQSs0/hqdefault.jpg)](https://www.youtube.com/watch?v=S8Bh4eBQSs0)
 
 
 ## Sub-agents & Tools
