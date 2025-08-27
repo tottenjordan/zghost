@@ -35,10 +35,7 @@ git clone https://github.com/tottenjordan/zghost.git
 2. **Create a virtual environment and install dependencies**
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-
-pip install pipx
-pip install -U poetry packaging ipykernel
+poetry config virtualenvs.in-project true
 
 poetry install
 ```
