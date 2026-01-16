@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a multi-agent marketing intelligence system built with Google's Agent Development Kit (ADK). It analyzes trends, conducts research, generates creative content, and produces comprehensive marketing reports.
 
 ## Tech Stack
+
 - **Language**: Python 3.11+
 - **Framework**: Google ADK v1.4.2
 - **AI Models**: Gemini 2.0 Flash, Imagen 4.0, Veo 2.0
@@ -16,19 +17,22 @@ This is a multi-agent marketing intelligence system built with Google's Agent De
 ## Development Commands
 
 ### Initial Setup
+
 ```bash
 pip install -U poetry
 poetry install
 ```
 
 ### Common Development Tasks
+
 ```bash
 # Run the agent for tests
 poetry run adk run trends_and_insights_agent
 ```
 
 ### Common flows for when the agent is running.
-*** IMPORTANT: Run these commands in the cli after running the adk run command above ***
+
+**_ IMPORTANT: Run these commands in the cli after running the adk run command above _**
 
 ```
 hello
@@ -38,6 +42,7 @@ select a yt trend
 ```
 
 ### Dependency Management
+
 ```bash
 poetry add <package>          # Add dependency
 poetry add --dev <package>    # Add dev dependency
@@ -48,6 +53,7 @@ poetry install               # Install from lock file
 ## Architecture
 
 ### Agent Hierarchy
+
 ```
 root_agent (orchestrator)
 ├── campaign_guide_data_generation_agent  # Extract campaign data from PDFs
@@ -79,6 +85,7 @@ root_agent (orchestrator)
 ```
 
 ### Key Directories
+
 - `trends_and_insights_agent/` - Main agent module
   - `agent.py` - Root orchestrator
   - `common_agents/` - Sub-agent definitions
@@ -89,13 +96,16 @@ root_agent (orchestrator)
 - `notebooks/` - Deployment guides and utilities
 
 ### Data Flow
+
 1. **Session State**: Agents communicate via persistent session state
 2. **Schema-Driven**: All data follows Pydantic models in `schema_types.py`
 3. **Citation Tracking**: Research agents maintain source citations
 4. **Async Operations**: Web scraping uses concurrent requests
 
 ### Research Pipeline Architecture
+
 The combined_research_merger coordinates parallel research:
+
 1. **Parallel Research Phase**: All three research types run simultaneously
    - YouTube: `yt_analysis_generator` → `yt_web_planner` → `yt_web_searcher`
    - Google Search: `gs_web_planner` → `gs_web_searcher`
@@ -106,7 +116,9 @@ The combined_research_merger coordinates parallel research:
 5. **Composition**: `combined_report_composer` generates unified report
 
 ## Environment Variables
+
 Required in `.env`:
+
 - `GOOGLE_GENAI_USE_VERTEXAI=1`
 - `GOOGLE_CLOUD_PROJECT` - GCP project ID
 - `GOOGLE_CLOUD_PROJECT_NUMBER` - GCP project number
@@ -115,6 +127,7 @@ Required in `.env`:
 - `YT_SECRET_MNGR_NAME` - YouTube API key secret name
 
 ## Important Patterns
+
 1. **Tool Usage**: Tools in `tools.py` are shared across agents
 2. **Callbacks**: State management via `CallbackReusableStreamSession`
 3. **Model Config**: Centralized in `utils.py`
@@ -125,6 +138,7 @@ Required in `.env`:
 8. **Critique Pattern**: Ad generation uses draft→critique→finalize workflow
 
 ## Deployment Notes
+
 - Cloud Run deployment includes UI (`--with_ui`)
 - Agent Engine requires Secret Manager setup
 - Always export requirements.txt before deployment

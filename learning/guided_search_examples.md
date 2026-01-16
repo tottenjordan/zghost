@@ -1,6 +1,6 @@
 # Guided Search with Google and YouTube
 
-This document shows different ways to use the underlying Google Search libraries and YouTube APIs. To simplifiy initial onboarding, we've made some of these parameters configurable only to the user :angel:  / developer :neckbeard: , as opposed to giving the LLM-based agents... *total control* :smiling_imp:
+This document shows different ways to use the underlying Google Search libraries and YouTube APIs. To simplifiy initial onboarding, we've made some of these parameters configurable only to the user :angel: / developer :neckbeard: , as opposed to giving the LLM-based agents... _total control_ :smiling_imp:
 
 For example, consider the below function we could use as a tool for getting trending videos from YouTube:
 
@@ -30,18 +30,17 @@ def get_youtube_trends(region_code: str, max_results: int = 5,) -> dict:
 ```
 
 **We're giving the LLM-based agent the ability to change the `region_code` and `max_results`. Why?**
-* This allows the agent to easily make seperate API calls, each for a different region. 
-* It could also change the number of results based off some user interaction e.g., :information_desk_person: "actually can I see the top 50 trending videos?"
-   
-   > Having a clear and informative doc strings goes a long way here! 
+
+- This allows the agent to easily make seperate API calls, each for a different region.
+- It could also change the number of results based off some user interaction e.g., :information_desk_person: "actually can I see the top 50 trending videos?"
+  > Having a clear and informative doc strings goes a long way here!
 
 **We've hard-coded the `chart` and `part` parameters. Why?**
-* We don't need the agent to do all the things the API can do. It just needs to focus on the *trending videos* --> `"mostPopular"`
-* We want it to always return the `"snippet,contentDetails,statistics"`
 
-  > We're mitigating some risk of it deviating too far from our expectations... mainly because we're more interested in how it deviates from other expectations :wink: 
+- We don't need the agent to do all the things the API can do. It just needs to focus on the _trending videos_ --> `"mostPopular"`
+- We want it to always return the `"snippet,contentDetails,statistics"`
 
-
+  > We're mitigating some risk of it deviating too far from our expectations... mainly because we're more interested in how it deviates from other expectations :wink:
 
 ## Google Search
 
@@ -49,13 +48,13 @@ def get_youtube_trends(region_code: str, max_results: int = 5,) -> dict:
 
 **References**
 
-* [pypi project](https://pypi.org/project/googlesearch-python/)
-* see [GitHub repo](https://github.com/Nv7-GitHub/googlesearch) for more examples
-* see [supported country codes](https://developers.google.com/custom-search/docs/json_api_reference#countryCodes) for input arg: `region`
+- [pypi project](https://pypi.org/project/googlesearch-python/)
+- see [GitHub repo](https://github.com/Nv7-GitHub/googlesearch) for more examples
+- see [supported country codes](https://developers.google.com/custom-search/docs/json_api_reference#countryCodes) for input arg: `region`
 
 **Example usage**
 
-1. **Simple Search:** search Google for URLs *related to given `query` string*
+1. **Simple Search:** search Google for URLs _related to given `query` string_
 
 ```python
 from googlesearch import search
@@ -78,7 +77,7 @@ search_results_urls = list(results_generator)
 search_results_urls
 ```
 
-*returns list of related URLs:*
+_returns list of related URLs:_
 
 ```python
 ['https://widespreadpanic.com/',
@@ -86,10 +85,9 @@ search_results_urls
  'http://www.widespreadpanic.com/',
  'https://www.youtube.com/channel/UCKmXntvZFs9VBYknXMMzIbw',
  'https://open.spotify.com/artist/54SHZF2YS3W87xuJKSvOVf',]
- ```
+```
 
-
-2. **Search Operators:** Combine `query` string with [search operators](https://developers.google.com/search/docs/monitor-debug/search-operators/all-search-site) (e.g., `site:`) to *request results from a particular domain, URL, or URL prefix:*
+2. **Search Operators:** Combine `query` string with [search operators](https://developers.google.com/search/docs/monitor-debug/search-operators/all-search-site) (e.g., `site:`) to _request results from a particular domain, URL, or URL prefix:_
 
 ```python
 from googlesearch import search
@@ -111,7 +109,7 @@ search_results_urls = list(results_generator)
 search_results_urls
 ```
 
-*returns list of related URLs from `reddit.com` only:*
+_returns list of related URLs from `reddit.com` only:_
 
 ```python
 ['https://www.reddit.com/r/WidespreadPanic/',
@@ -121,8 +119,7 @@ search_results_urls
  'https://www.reddit.com/r/gratefuldead/comments/1htfa31/widespread_panic/',]
 ```
 
-
-3. **Advanced Search:** set `advanced=True` to *return list of `SearchResult` objects (title, url, description):*
+3. **Advanced Search:** set `advanced=True` to _return list of `SearchResult` objects (title, url, description):_
 
 ```python
 results_generator = search(
@@ -137,32 +134,33 @@ results_generator = search(
 search_results = list(results_generator)
 search_results[0]
 ```
-*returns `SearchResult` object:*
+
+_returns `SearchResult` object:_
 
 ```python
 SearchResult(
-  url="https://www.reddit.com/r/jambands/comments/1e6hjl9/widespread_panic_appreciation_thread/", 
+  url="https://www.reddit.com/r/jambands/comments/1e6hjl9/widespread_panic_appreciation_thread/",
   title="Widespread Panic Appreciation Thread : r/jambands - Reddit",
   description="Jul 18,2024·In a jam band world of the goofy, wookie, entitled and sometimes creepy-ass fans, panic's fans remain undefeated..."
 )
 ```
-
 
 ## Google News
 
 `GoogleNews` is a Python library for searching [Google News](https://news.google.com/)
 
 **References**
-* [pypi project](https://pypi.org/project/GoogleNews/)
+
+- [pypi project](https://pypi.org/project/GoogleNews/)
 
 **Example usage**
 
-1. *Can only search `query` terms; **cannot combine** with search operators (e.g., `site: `)*
+1. _Can only search `query` terms; **cannot combine** with search operators (e.g., `site: `)_
 
 ```python
 from GoogleNews import GoogleNews
 
-# initialize 
+# initialize
 googlenews = GoogleNews(
     lang='en',
     region='US',
@@ -230,7 +228,7 @@ news_wsp_titles = [
 googlenews.clear()
 ```
 
-2. *Get news by topics:*
+2. _Get news by topics:_
 
 ```python
 SPORTS_TOPIC_ID = "CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtVnVHZ0pWVXlnQVAB"
@@ -241,17 +239,16 @@ googlenews.results()
 
 **topic IDs**
 
-* **HEALTH** = "CAAqIQgKIhtDQkFTRGdvSUwyMHZNR3QwTlRFU0FtVnVLQUFQAQ"
-* **SPORTS** = "CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtVnVHZ0pWVXlnQVAB"
-* **SCIENCE** = "CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp0Y1RjU0FtVnVHZ0pWVXlnQVAB"
-* **US NEWS** = "CAAqIggKIhxDQkFTRHdvSkwyMHZNRGxqTjNjd0VnSmxiaWdBUAE"
-* **BUSINESS** = "CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtVnVHZ0pWVXlnQVAB"
-* **WORLD NEWS** = "CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB"
-* **TECHNOLOGY** = "CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRqTVhZU0FtVnVHZ0pWVXlnQVAB"
-* **ENTERTAINMENT** = "CAAqJggKIiBDQkFTRWdvSUwyMHZNREpxYW5RU0FtVnVHZ0pWVXlnQVAB"
+- **HEALTH** = "CAAqIQgKIhtDQkFTRGdvSUwyMHZNR3QwTlRFU0FtVnVLQUFQAQ"
+- **SPORTS** = "CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtVnVHZ0pWVXlnQVAB"
+- **SCIENCE** = "CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp0Y1RjU0FtVnVHZ0pWVXlnQVAB"
+- **US NEWS** = "CAAqIggKIhxDQkFTRHdvSkwyMHZNRGxqTjNjd0VnSmxiaWdBUAE"
+- **BUSINESS** = "CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtVnVHZ0pWVXlnQVAB"
+- **WORLD NEWS** = "CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB"
+- **TECHNOLOGY** = "CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRqTVhZU0FtVnVHZ0pWVXlnQVAB"
+- **ENTERTAINMENT** = "CAAqJggKIiBDQkFTRWdvSUwyMHZNREpxYW5RU0FtVnVHZ0pWVXlnQVAB"
 
 > topic URLs: `https://news.google.com/topics/{TOPIC_ID}?hl=en-US&gl=US&ceid=US%3Aen`
-
 
 ## YouTube Data API v3
 
@@ -268,18 +265,18 @@ googlenews.results()
 
 **Example usage**
 
-1. *REST API:* 
-   * `GET https://www.googleapis.com/youtube/v3/videos?part=id&chart=mostPopular&regionCode=FR&key={YOUTUBE_DATA_API_KEY}`
+1. _REST API:_
+   - `GET https://www.googleapis.com/youtube/v3/videos?part=id&chart=mostPopular&regionCode=FR&key={YOUTUBE_DATA_API_KEY}`
 
-2. *Python client:*
+2. _Python client:_
 
 ```python
 import googleapiclient.discovery
 
 # config discovery client
 youtube_client = googleapiclient.discovery.build(
-    serviceName="youtube", 
-    version="v3", 
+    serviceName="youtube",
+    version="v3",
     developerKey=YOUTUBE_DATA_API_KEY
 )
 ```

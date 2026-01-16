@@ -61,9 +61,21 @@ def _load_session_state(callback_context: CallbackContext):
     """
     data = {}
     if FULL_JSON_PATH:
-        resp = requests.get(FULL_JSON_PATH)
-        data = json.loads(resp.text)
-        logging.info(f"\n\nLoading Initial State: {data}\n\n")
+        if FULL_JSON_PATH.startswith("http"):
+            resp = requests.get(FULL_JSON_PATH)
+            data = json.loads(resp.text)
+            logging.info(f"\n\nLoading Initial State from URL: {data}\n\n")
+        else:
+            try:
+                with open(FULL_JSON_PATH, "r") as f:
+                    data = json.load(f)
+                logging.info(f"\n\nLoading Initial State from File: {data}\n\n")
+            except FileNotFoundError:
+                logging.warning(f"File not found at {FULL_JSON_PATH}, using empty state.")
+                data = setup_config.empty_session_state
+            except Exception as e:
+                logging.error(f"Error loading state from {FULL_JSON_PATH}: {e}")
+                data = setup_config.empty_session_state
     else:
         data = setup_config.empty_session_state
         logging.info(f"\n\nLoading Initial State (empty): {data}\n\n")

@@ -16,6 +16,7 @@ from .tools import save_draft_report_artifact
 from .sub_agents.campaign_web_researcher.agent import ca_sequential_planner
 from .sub_agents.search_web_researcher.agent import gs_sequential_planner
 from .sub_agents.youtube_web_researcher.agent import yt_sequential_planner
+from google.adk.planners import BuiltInPlanner
 
 
 # --- PARALLEL RESEARCH SUBAGENTS --- #
@@ -200,5 +201,11 @@ research_orchestrator = Agent(
         save_draft_report_artifact,
         AgentTool(agent=combined_research_pipeline),
     ],
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            # thinking_budget=1024,
+        )
+    ),
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )

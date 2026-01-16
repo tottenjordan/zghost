@@ -13,7 +13,7 @@
 
 ## About
 
-*trends-2-creatives* is a marketing tool for developing data-driven and culturally relevant marketing content. Built with Google’s [Agent Development Kit (ADK)](https://google.github.io/adk-docs/), this multi-agent system helps users generate ad creatives from trending themes in Google Search and YouTube.
+_trends-2-creatives_ is a marketing tool for developing data-driven and culturally relevant marketing content. Built with Google’s [Agent Development Kit (ADK)](https://google.github.io/adk-docs/), this multi-agent system helps users generate ad creatives from trending themes in Google Search and YouTube.
 
 - Build LLM-based agents with [models supported in Vertex AI's Model Garden](https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/available-models)
 - Explore [trending Search terms](https://cloud.google.com/blog/products/data-analytics/top-25-google-search-terms-now-in-bigquery?e=48754805) and [trending YouTube videos](https://developers.google.com/youtube/v3/docs/videos/list)
@@ -59,10 +59,9 @@ gcloud services enable artifactregistry.googleapis.com \
 
 4. **Create and store YouTube API key**
 
-  - See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
-  - Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (see `YT_SECRET_MNGR_NAME` in `.env` file)
-     - For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
-
+- See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
+- Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (see `YT_SECRET_MNGR_NAME` in `.env` file)
+  - For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
 
 5. **Create and populate `.env` file(s)**
 
@@ -76,7 +75,7 @@ YT_SECRET_MNGR_NAME=<YOUR_SECRET_NAME> # e.g., yt-data-api
 # SESSION_STATE_JSON_PATH=example_state_pixel.json # uncomment to use default config values
 ```
 
-*copy `.env` file to `root_agent` dir:*
+_copy `.env` file to `root_agent` dir:_
 
 ```bash
 cp .env trends_and_insights_agent/.env
@@ -85,7 +84,7 @@ cat trends_and_insights_agent/.env
 source .env
 ```
 
- 6. **Create Cloud Storage bucket**
+6.  **Create Cloud Storage bucket**
 
 ```bash
 gcloud storage buckets create $BUCKET --location=$GOOGLE_CLOUD_LOCATION
@@ -116,7 +115,7 @@ INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 <details>
   <summary>If port :8000 in use</summary>
 
-*find any processes listening to port `:8000`, kill them, then return to step (7):*
+_find any processes listening to port `:8000`, kill them, then return to step (7):_
 
 ```bash
 lsof -i :8000
@@ -147,13 +146,13 @@ Agent will ask user for **campaign metadata** in the UI
 <details>
   <summary> [Optional] preload campaign metadata </summary>
 
-preload these values using one of the example json configs e.g., [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json) or upload your own. The json config you wish to reference should be set in your `.env` file like below. *Note: remove or comment out this variable to use default option (1)*
+preload these values using one of the example json configs e.g., [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json) or upload your own. The json config you wish to reference should be set in your `.env` file like below. _Note: remove or comment out this variable to use default option (1)_
 
 ```
 SESSION_STATE_JSON_PATH=example_state_prs.json
 ```
-</details>
 
+</details>
 
 #### [2] Autonomous research workflow
 
@@ -161,9 +160,9 @@ SESSION_STATE_JSON_PATH=example_state_prs.json
 
 > Note: this section is configured for **human-in-the-loop** i.e., agent will iterate with user when generating image and video creatives
 
-  - Choose a subset of ad copies to proceed with
-  - Choose a subset of visual concepts to proceed with
-  - Generate image and video creatives with visual concepts
+- Choose a subset of ad copies to proceed with
+- Choose a subset of visual concepts to proceed with
+- Generate image and video creatives with visual concepts
 
 #### [4] Compile final research and creative report
 
@@ -180,7 +179,6 @@ SESSION_STATE_JSON_PATH=example_state_prs.json
 
 </details>
 
-
 <details>
   <summary>Titanic & PRS Guitars</summary>
 
@@ -189,7 +187,6 @@ SESSION_STATE_JSON_PATH=example_state_prs.json
 </p>
 
 </details>
-
 
 <details>
   <summary>Adam Sandler (Waterboy) & PRS Guitars</summary>
@@ -200,7 +197,6 @@ SESSION_STATE_JSON_PATH=example_state_prs.json
 
 </details>
 
-
 <details>
   <summary>Mad Again & Pixel 9' Call Assist</summary>
 
@@ -210,14 +206,11 @@ SESSION_STATE_JSON_PATH=example_state_prs.json
 
 </details>
 
-
-
 ## Video walkthrough
 
 > This demo gives a quick overview of the end-to-end workflow
 
 [![demo](https://img.youtube.com/vi/S8Bh4eBQSs0/hqdefault.jpg)](https://www.youtube.com/watch?v=S8Bh4eBQSs0)
-
 
 ## Sub-agents & Tools
 
@@ -253,7 +246,7 @@ Expand sections below to visualize complex agent workflows
 <details>
   <summary>Trend and Insight Agent</summary>
 
-> This agent is responsible for gathering input from the user. 
+> This agent is responsible for gathering input from the user.
 
 <p align="center">
   <img src='media/t2a_trend_ast_overview_0725.png' width="800"/>
@@ -261,15 +254,15 @@ Expand sections below to visualize complex agent workflows
 
 </details>
 
-
 <details>
   <summary>Research Orchestrator Pipeline</summary>
 
 **The research workflow has two phases:**
+
 1. Parallel web research for individual topics: search trend, YouTube video, and campaign metadata e.g., target audience, product, brand, etc.
 2. Combined web research for the intersection of individual topics
 
-> This structure helps us achieve a deeper understanding of each subject first. And this helps us ask better questions for a second round of research where we are solely focused on finding any culturally relevant overlaps to exploit for ad creatives. 
+> This structure helps us achieve a deeper understanding of each subject first. And this helps us ask better questions for a second round of research where we are solely focused on finding any culturally relevant overlaps to exploit for ad creatives.
 
 <p align="center">
   <img src='media/t2a_research_overview_0725.png' width="800"/>
@@ -277,18 +270,16 @@ Expand sections below to visualize complex agent workflows
 
 </details>
 
-
 <details>
   <summary>Ad Content Generator Pipeline</summary>
 
-> This agent uses the research report to generate relevant ad copy, visual concepts, and creatives (image and video). 
+> This agent uses the research report to generate relevant ad copy, visual concepts, and creatives (image and video).
 
 <p align="center">
   <img src='media/t2a_ad_overview_0725.png' width="800"/>
 </p>
 
 </details>
-
 
 # CI And Testing
 
@@ -309,12 +300,12 @@ pytest tests/*.py
 The agent can be deployed in a couple of different ways
 
 1. Agent Engine
-   * Here's an end-to-end guide on deploying
-   * Be sure to first run the `setup_ae_sm_access.sh` script to give Agent Engine access to Secret Manager
-   * Run the [deployment guide](.notebooks/deployment_guide.ipynb) to deploy the agent
+   - Here's an end-to-end guide on deploying
+   - Be sure to first run the `setup_ae_sm_access.sh` script to give Agent Engine access to Secret Manager
+   - Run the [deployment guide](.notebooks/deployment_guide.ipynb) to deploy the agent
 2. Cloud Run
-   * Run `deploy_to_cloud_run.sh`
-   * Note this runs unit tests prior to deploying
+   - Run `deploy_to_cloud_run.sh`
+   - Note this runs unit tests prior to deploying
 
 Script for Cloud Run:
 
@@ -338,7 +329,6 @@ adk deploy cloud_run \
 ```
 
 ## Deployment to Agentspace
-
 
 Create an Agent Engine in the `notebooks/deployment_guide.ipynb` notebook
 
@@ -374,33 +364,41 @@ Options:
 ```
 
 ### Example with config file:
+
 ```bash
 ./publish_to_agentspace_v2.sh --action create --config agent_config.json
 ./publish_to_agentspace_v2.sh --action update --config agent_config.json
 ./publish_to_agentspace_v2.sh --action list --config agent_config.json
 ./publish_to_agentspace_v2.sh --action delete --config agent_config.json
 ```
+
 ### Example with command line args:
 
 Create agent:
+
 ```bash
 ./publish_to_agentspace_v2.sh --action create --project-id my-project --project-number 12345 \
 --app-id my-app --reasoning-engine 67890 --display-name 'My Agent' \
 --description 'Agent description' --instructions 'Agent instructions here'
 ```
-  Update agent:
+
+Update agent:
+
 ```bash
 ./publish_to_agentspace_v2.sh --action update --project-id my-project --project-number 12345 \
 --app-id my-app --reasoning-engine 67890 --display-name 'My Agent' \
 --agent-id 123456789 --description 'Updated description'
 ```
-  List agents:
+
+List agents:
+
 ```bash
 ./publish_to_agentspace_v2.sh --action list --project-id my-project --project-number 12345 \
 --app-id my-app
 ```
 
-  Delete agent:
+Delete agent:
+
 ```bash
 ./publish_to_agentspace_v2.sh --action delete --project-id my-project --project-number 12345 \
 --app-id my-app --agent-id 123456789
