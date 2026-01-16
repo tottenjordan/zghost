@@ -66,6 +66,7 @@ remote_agent = client.agent_engines.create(
         "google-cloud-bigquery",
         "db-dtypes",
         "markdown_pdf",
+        "tabulate",
     ],
     staging_bucket=BUCKET,
     extra_packages=[
@@ -79,3 +80,6 @@ remote_agent = client.agent_engines.create(
     #     ]
     # },
 ))
+
+print(f"Deployed Agent Resource Name: {remote_agent.name}")
+print(f"Deployed Agent Resource Name (ID): {remote_agent.name.split('/')[-1]}")

@@ -9,7 +9,7 @@ def query_agent():
     
     vertexai.init(project=project_id, location=location, staging_bucket=staging_bucket)
     
-    resource_id = "6534772537337839616"
+    resource_id = "3902418555139784704"
     
     print(f"Connecting to Reasoning Engine {resource_id}...")
     try:

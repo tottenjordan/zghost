@@ -18,11 +18,11 @@ class ResearchConfiguration:
 
     """
 
-    critic_model: str = "gemini-2.5-flash-preview-09-2025"
-    worker_model: str = "gemini-2.5-flash-preview-09-2025"
-    video_analysis_model: str = "gemini-2.5-flash-preview-09-2025"
+    critic_model: str = "gemini-2.5-flash"
+    worker_model: str = "gemini-2.5-flash"
+    video_analysis_model: str = "gemini-2.5-flash"
     lite_planner_model: str = (
-        "gemini-2.5-flash-preview-09-2025"
+        "gemini-2.5-flash"
     )
     image_gen_model: str = "imagen-4.0-ultra-generate-preview-06-06" # "imagen-4.0-fast-generate-preview-06-06"
     video_gen_model: str = (

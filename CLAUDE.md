@@ -10,7 +10,7 @@ This is a multi-agent marketing intelligence system built with Google's Agent De
 
 - **Language**: Python 3.11+
 - **Framework**: Google ADK v1.4.2
-- **AI Models**: Gemini 2.0 Flash, Imagen 4.0, Veo 2.0
+- **AI Models**: Gemini 2.5 Flash, Imagen 4.0, Veo 3.1
 - **Package Manager**: Poetry
 - **Cloud**: Google Cloud Platform (Vertex AI, GCS, Secret Manager)
 

@@ -40,6 +40,7 @@ root_agent = Agent(
     ),
     before_agent_callback=[
         callbacks._load_session_state,
+        callbacks.campaign_callback_function,
     ],
     before_model_callback=callbacks.rate_limit_callback,
 )
