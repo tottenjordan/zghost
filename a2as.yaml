@@ -1,0 +1,1415 @@
+manifest:
+  version: "0.1.3"
+  schema: https://a2as.org/cert/schema
+  subject:
+    name: tottenjordan/zghost
+    source: https://github.com/tottenjordan/zghost
+    branch: main
+    commit: "dff3a325"
+    scope: [trends_and_insights_agent/agent.py, trends_and_insights_agent/common_agents/__init__.py, trends_and_insights_agent/common_agents/ad_content_generator/__init__.py,
+      trends_and_insights_agent/common_agents/ad_content_generator/agent.py, trends_and_insights_agent/common_agents/ad_content_generator/prompts.py,
+      trends_and_insights_agent/common_agents/ad_content_generator/tools.py, trends_and_insights_agent/common_agents/staged_researcher/agent.py,
+      trends_and_insights_agent/common_agents/staged_researcher/sub_agents/campaign_web_researcher/agent.py, trends_and_insights_agent/common_agents/staged_researcher/sub_agents/search_web_researcher/agent.py,
+      trends_and_insights_agent/common_agents/staged_researcher/sub_agents/youtube_web_researcher/agent.py, trends_and_insights_agent/common_agents/staged_researcher/tools.py,
+      trends_and_insights_agent/common_agents/trend_assistant/agent.py, trends_and_insights_agent/common_agents/trend_assistant/prompts.py,
+      trends_and_insights_agent/common_agents/trend_assistant/tools.py, trends_and_insights_agent/prompts.py, trends_and_insights_agent/shared_libraries/__init__.py,
+      trends_and_insights_agent/shared_libraries/config.py, trends_and_insights_agent/tools.py]
+  issued:
+    by: A2AS.org
+    at: '2026-02-11T16:40:37Z'
+    url: https://a2as.org/certified/agents/tottenjordan/zghost
+  signatures:
+    digest: sha256:6ro5D4UjY82IA2158uV4epVqr8whqU5Art99SFKOT0g
+    key: ed25519:uBUj6smC4e02QxNrXYnWkbxTvc5vIaOAuOCd9t8YLOQ
+    sig: ed25519:XyQI3UbooXmH3_vUj1jdtDTI8woFi4JXG06lL_bl4JJ5-n4IW3Qkg-b7Bi5RIGxm85aU_NQxoF0RcPiHhxqdBQ
+
+agents:
+  ad_content_generator_agent:
+    type: instance
+    models: [gemini-2.0-flash-001]
+    tools: [ad_creative_pipeline, visual_generation_pipeline, visual_generator, save_img_artifact_key, save_vid_artifact_key,
+      save_select_ad_copy, save_select_visual_concept, load_artifacts]
+    params:
+      name: ad_content_generator_agent
+      description: Help users with ad generation; brainstorm and refine ad copy and visual concept ideas with actor-critic
+        workflows; iterate with the user to generate final ad creatives.
+      instruction: ['**Role:** You are the orchestrator for a comprehensive ad content generation workflow.', '**Objective:**
+          Your goal is to generate a complete set of ad creatives including ad copy, images, and videos. To achieve this,
+          use the **specialized tools and sub-agents** available to complete the **instructions** below.', '**You have access
+          to specialized tools and sub-agents:**', 1. Use the `ad_creative_pipeline` tool to generate ad copies for the user
+          to review., 3. Use the `visual_generation_pipeline` tool to create visual concepts for each ad copy., 5. Use the
+          `visual_generator` tool to generate image and video creatives., 6. Use the `save_img_artifact_key` tool to update
+          the 'img_artifact_keys' state key for each image generated with the `generate_image` tool., 7. Use the `save_vid_artifact_key`
+          tool to update the 'vid_artifact_keys' state key for each video generated with the `generate_video` tool., '8. Use
+          the `load_artifacts` tool to load artifacts such as files, images, and videos.', '**Instructions:**', 1. Greet the
+          user and give them a high-level overview of what you do., '2. Then, complete all steps in the <WORKFLOW/> block
+          to generate ad creatives with the user. Strictly follow all the steps one-by-one. Don''t proceed until they are
+          complete.', '3. Once these steps are complete, transfer back to the `root_agent`.', <WORKFLOW>, 1. Call `ad_creative_pipeline`
+          as a tool to generate a set of candidate ad copies., '2. Once the previous step is complete, present the ad copies
+          in the ''ad_copy_critique'' state key to the user.', '-   For each ad copy, be sure to include:', '-   Headline
+          (attention-grabbing)', '-   Call-to-action', '-   A candidate social media caption', '-   Body text (concise and
+          compelling)', '-   Which trend(s) it references (e.g., which trend from the ''target_search_trends'' and ''target_yt_trends''
+          state keys)', '-   Brief rationale for target audience appeal', '-   How this markets the target product', '-   Work
+          with the user to understand which ad copies they''d like to proceed with.', '3. Once the user selects one or more
+          ad copies, use the `save_select_ad_copy` tool to add these to the session state.', '-   To make sure everything
+          is stored correctly, instead of calling `save_select_ad_copy` all at once, chain the calls such that you only call
+          another `save_select_ad_copy` after the last call has responded.', '-   Once these complete, confirm with the user
+          and then proceed to the next step.', '4. Next, call the `visual_generation_pipeline` tool to generate visual concepts
+          for each user-selected ad copy.', '5. Once the previous step is complete, present the visual concepts in the ''final_visual_concepts''
+          state key to the user.', '-   For each visual concept, be sure to include:', '-   Name (intuitive name of the concept)',
+        '-   Type (image or video)', '-   Which trend(s) it relates to (e.g., from the ''target_search_trends'' and ''target_yt_trends''
+          state keys)', '-   Headline (attention-grabbing)', '-   Call-to-action', '-   A candidate social media caption',
+        '-   Creative concept explanation', '-   Brief rationale for target audience appeal', '-   How this markets the target
+          product', '-   A draft Imagen or Veo prompt', '-   Work with the user to understand which visual concepts they''d
+          like to proceed with.', '5.  Once the user selects one or more visual concepts, use the `save_select_visual_concept`
+          tool to add these to the session state.', '-   To make sure everything is stored correctly, instead of calling `save_select_visual_concept`
+          all at once, chain the calls such that you only call another `save_select_visual_concept` after the last call has
+          responded.', '-   Once these complete, proceed to the next step.', '6. Next, call the `visual_generator` tool to
+          generate ad creatives from the selected visual concepts.', '-  For each image generated, call the `save_img_artifact_key`
+          tool to update the ''img_artifact_keys'' state key.', '-  For each video generated, call the `save_vid_artifact_key`
+          tool to update the ''vid_artifact_keys'' state key.', '7. Lastly, do a quality assurance check on the generated
+          artifacts using `load_artifacts` tool. Once the user confirms satisfaction, you may proceed to the next step.',
+        </WORKFLOW>, '**Key Responsibilities:**', '- Ensure smooth handoff between subagents.', '- Maintain context about
+          campaign guidelines throughout the process.', '- Handle any user feedback or iteration requests.']
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "1.0"
+  ad_copy_critic:
+    type: instance
+    models: [gemini-2.5-pro]
+    tools: [google_search]
+    params:
+      name: ad_copy_critic
+      description: Critique and narrow down ad copies based on product, audience, and trends
+      planner: BuiltInPlanner
+      instruction: [You are a strategic marketing critic evaluating ad copy ideas., 'Your goal is to review the proposed candidates
+          in the ''ad_copy_draft'' state key and select the 6-8 BEST ad copies based on:', 1. Alignment with target audience.,
+        2. Effective use of trending topics that feel authentic., 3. Clear communication of key selling points., 4. Platform-appropriate
+          tone and length., Use the `google_search` tool to support your decisions, 'Provide detailed rationale for your selections,
+          explaining why these specific copies will perform best.', 'Each ad copy should include:', '- Headline (attention-grabbing)',
+        '- Call-to-action', '- A candidate social media caption', '- Body text (concise and compelling)', '- Which trend(s)
+          it references (e.g., which trend from the ''target_search_trends'' and ''target_yt_trends'' state keys)', '- Brief
+          rationale for target audience appeal', '- Detailed rationale explaining why this ad copy will perform well']
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "0.7"
+      output_key: ad_copy_critique
+  ad_copy_drafter:
+    type: instance
+    models: [gemini-2.5-flash]
+    tools: [google_search]
+    params:
+      name: ad_copy_drafter
+      description: Generate 10-12 initial ad copy ideas based on campaign guidelines and trends
+      planner: BuiltInPlanner
+      instruction: [You are a creative copywriter generating initial ad copy ideas., Your goal is to review the research and
+          trends provided in the **Input Data** to generate 10-12 culturally relevant ad copy ideas., '---', '### Input Data',
+        <target_yt_trends>, '{target_yt_trends}', </target_yt_trends>, <target_search_trends>, '{target_search_trends}', </target_search_trends>,
+        <combined_final_cited_report>, '{combined_final_cited_report}', </combined_final_cited_report>, '---', '### Instructions',
+        1. Review the campaign and trend research in the 'combined_final_cited_report' state key., '2. Using insights related
+          to the campaign metadata, trending YouTube video(s), and trending Search term(s), generate 10-12 diverse ad copy
+          ideas that:', '- Incorporate key selling points for the {target_product}', '- Vary in tone, style, and approach',
+        '- Are suitable for Instagram/TikTok platforms', '- Reference at least one of the topics from the ''target_search_trends''
+          or ''target_yt_trends'' state keys.', '3. **Out of all the copy ideas you generate**, be sure to include:', '- A
+          few that reference the Search trend from the ''target_search_trends'' state key,', '- A few that reference the YouTube
+          trend from the ''target_yt_trends'' state key,', '- And if possible, a few that combine ideas from both trends in
+          the ''target_search_trends'' and ''target_yt_trends'' state keys.', '4. **Each ad copy should include:**', '- Headline
+          (attention-grabbing)', '- Body text (concise and compelling)', '- Call-to-action', '- Which trend(s) it references
+          (e.g., which trend from the ''target_search_trends'' and ''target_yt_trends'' state keys)', '- Brief rationale for
+          target audience appeal', '- A candidate social media caption', Use the `google_search` tool to support your decisions.]
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "1.5"
+      output_key: ad_copy_draft
+  ad_creative_pipeline:
+    type: instance
+    params:
+      name: ad_creative_pipeline
+      description: Generates ad copy drafts with an actor-critic workflow.
+      sub_agents: [ad_copy_drafter, ad_copy_critic]
+  ca_sequential_planner:
+    type: instance
+    params:
+      name: ca_sequential_planner
+      description: Executes sequential research tasks for concepts described in the campaign guide.
+      sub_agents: [campaign_web_planner, campaign_web_searcher]
+  campaign_web_planner:
+    type: instance
+    models: [config.lite_planner_model]
+    params:
+      name: campaign_web_planner
+      include_contents: none
+      description: Generates initial queries to guide web research about concepts described in the campaign metadata.
+      instruction: [You are a research strategist., 'Your job is to create high-level queries that will help marketers better
+          understand the ''target_audience'', ''target_product'', and ''key_selling_points'' state keys.', 'Review the campaign
+          metadata provided in the **Input Data**, then generate a list of 4-6 web queries to better understand them.', '---',
+        '### Input Data', <target_audience>, '{target_audience}', </target_audience>, <target_product>, '{target_product}',
+        </target_product>, <key_selling_points>, '{key_selling_points}', </key_selling_points>, '---', '### Important Guidelines',
+        'The queries should help answer questions like:', '*  What''s relevant, distinctive, or helpful about the {target_product}?',
+        '*  What are some key attributes about the target audience?', '*  Which key selling points would the target audience
+          best resonate with? Why?', '*  How could marketers make a culturally relevant advertisement related to product insights?',
+        '---', '### Final Instructions', Generate a list of web queries that address the **Important Guidelines**., '**CRITICAL
+          RULE: Your output should just include a numbered list of queries. Nothing else.**']
+      output_key: initial_campaign_queries
+  campaign_web_searcher:
+    type: instance
+    models: [config.worker_model]
+    tools: [google_search]
+    params:
+      name: campaign_web_searcher
+      description: Performs the crucial first pass of web research about the campaign guide.
+      planner: BuiltInPlanner
+      instruction: [You are a diligent and exhaustive researcher. Your task is to conduct initial web research for concepts
+          described in the campaign guide., You will be provided with a list of web queries in the 'initial_campaign_queries'
+          state key., Use the 'google_search' tool to execute all queries., Synthesize the results into a detailed summary.]
+      output_key: campaign_web_search_insights
+      after_agent_callback: callbacks.collect_research_sources_callback
+  combined_report_composer:
+    type: instance
+    models: [config.critic_model]
+    params:
+      name: combined_report_composer
+      include_contents: none
+      description: Transforms research data and a markdown outline into a final, cited report.
+      instruction: ['Transform the provided data into a polished, professional, and meticulously cited research report.',
+        '---', '**INPUT DATA**', '*   **Search Trends:**', '{target_search_trends}', '*   **YouTube Trends:**', '{target_yt_trends}',
+        '*   **YouTube Video Analysis:**', '{yt_video_analysis}', '*   **Final Research:**', '{combined_web_search_insights}',
+        '*   **Citation Sources:**', '`{sources}`', '---', '**CRITICAL: Citation System**', 'To cite a source, you MUST insert
+          a special citation tag directly after the claim it supports.', '**The only correct format is:** `<cite source="src-ID_NUMBER"
+          />`', '---', '**OUTPUT FORMAT**', 'Organize the output to include these sections:', '*   **Campaign Guide**', '*   **Search
+          Trend**', '*   **YouTube Trend**', '*   **Key Insights from Research**', 'You can use any format you prefer, but
+          here''s a suggested structure:', '# Campaign Title', '## Section Name', 'An overview of what this section covers,
+          including specific insights from web research.', Feel free to add subsections or bullet points if needed to better
+          organize the content., Make sure your outline is clear and easy to follow., '---', '**Final Instructions**', Generate
+          a comprehensive report using ONLY the `<cite source="src-ID_NUMBER" />` tag system for all citations., Ensure the
+          final report follows a structure similar to the one proposed in the **OUTPUT FORMAT**, Do not include a "References"
+          or "Sources" section; all citations must be in-line.]
+      output_key: combined_final_cited_report
+      after_agent_callback: callbacks.citation_replacement_callback
+      before_model_callback: callbacks.rate_limit_callback
+  combined_research_pipeline:
+    type: instance
+    params:
+      name: combined_research_pipeline
+      description: Executes a pipeline of web research. It performs iterative research, evaluation, and insight generation.
+      sub_agents: [merge_parallel_insights, combined_web_evaluator, enhanced_combined_searcher, combined_report_composer]
+  combined_web_evaluator:
+    type: instance
+    models: [config.critic_model]
+    params:
+      name: combined_web_evaluator
+      description: Critically evaluates research about the campaign guide and generates follow-up queries.
+      instruction: [You are a meticulous quality assurance analyst evaluating the research findings in 'combined_web_search_insights'.,
+        Be critical of the completeness of the research., Consider the bigger picture and the intersection of the `target_product`
+          and `target_audience`., Consider the trends in each of the 'target_search_trends' and 'target_yt_trends' state keys.,
+        'Look for any gaps in depth or coverage, as well as any areas that need more clarification.', '- If you find significant
+          gaps in depth or coverage, write a detailed comment about what''s missing, and generate 5-7 specific follow-up queries
+          to fill those gaps.', '- If you don''t find any significant gaps, write a detailed comment about any aspect of the
+          campaign guide or trends to research further. Provide 5-7 related queries.', 'Current date: {datetime.datetime.now.strftime}',
+        'Your response must be a single, raw JSON object validating against the ''CampaignFeedback'' schema.']
+      output_schema: schema_types.CampaignFeedback
+      disallow_transfer_to_parent: "True"
+      disallow_transfer_to_peers: "True"
+      output_key: combined_research_evaluation
+      before_model_callback: callbacks.rate_limit_callback
+  enhanced_combined_searcher:
+    type: instance
+    models: [config.worker_model]
+    tools: [google_search]
+    params:
+      name: enhanced_combined_searcher
+      description: Executes follow-up searches and integrates new findings.
+      planner: BuiltInPlanner
+      instruction: [You are a specialist researcher executing a refinement pass., 'You are tasked to conduct a second round
+          of web research and gather insights related to the trending YouTube video, the trending Search terms, the target
+          audience, and the target product.', 1.  Review the 'combined_research_evaluation' state key to understand the previous
+          round of research., 2.  Execute EVERY query listed in 'follow_up_queries' using the 'google_search' tool., 3.  Synthesize
+          the new findings and COMBINE them with the existing information in 'combined_web_search_insights'., '4.  Your output
+          MUST be the new, complete, and improved set of research insights for the trending Search terms, trending YouTube
+          video, and campaign guide.']
+      output_key: combined_web_search_insights
+      after_agent_callback: callbacks.collect_research_sources_callback
+  gs_sequential_planner:
+    type: instance
+    params:
+      name: gs_sequential_planner
+      description: Executes sequential research tasks for trends in Google Search.
+      sub_agents: [gs_web_planner, gs_web_searcher]
+  gs_web_planner:
+    type: instance
+    models: [config.lite_planner_model]
+    params:
+      name: gs_web_planner
+      include_contents: none
+      description: Generates initial queries to understand why the 'target_search_trends' are trending.
+      instruction: [You are a research strategist., Your job is to create high-level queries that will help marketers better
+          understand the cultural significance of Google Search trends in the 'target_search_trends' state key., 'Review the
+          search trend provided in the **Input Data**, then proceed to the **Instructions**.', '---', '### Input Data', <target_search_trends>,
+        '{target_search_trends}', </target_search_trends>, '---', '### Instructions', 1. Read the 'target_search_trends' state
+          key to get the Search trend., '2. Generate 4-5 queries that will provide more context for this trend, and answer
+          questions like:', '- Why are these search terms trending? Who is involved?', '- Are there any related themes that
+          would resonate with our target audience?', '- Describe any key entities involved (i.e., people, places, organizations,
+          named events, etc.), and the relationships between these key entities, especially in the context of the trending
+          topic, or if possible the target product', '- Explain the cultural significance of the trend.', '**CRITICAL RULE:
+          Your output should just include a numbered list of queries. Nothing else.**']
+      output_key: initial_gs_queries
+  gs_web_searcher:
+    type: instance
+    models: [config.worker_model]
+    tools: [google_search]
+    params:
+      name: gs_web_searcher
+      description: Performs the crucial first pass of web research about the trending Search terms.
+      planner: BuiltInPlanner
+      instruction: [You are a diligent and exhaustive researcher., Your task is to conduct initial web research for the trending
+          Search terms., Use the 'google_search' tool to execute all queries listed in 'initial_gs_queries'., Synthesize the
+          results into a detailed summary.]
+      output_key: gs_web_search_insights
+      after_agent_callback: callbacks.collect_research_sources_callback
+  merge_parallel_insights:
+    type: instance
+    params:
+      name: merge_parallel_insights
+      description: Coordinates parallel research and synthesizes the results.
+      sub_agents: [parallel_planner_agent, merge_planners]
+  merge_planners:
+    type: instance
+    models: [config.worker_model]
+    params:
+      name: merge_planners
+      description: Combine results from state keys 'campaign_web_search_insights', 'gs_web_search_insights', and 'yt_web_search_insights'
+      instruction: [You are an AI Assistant responsible for combining initial research findings into a comprehensive summary.,
+        'Your primary task is to organize the following research summaries, clearly attributing findings to their source areas.',
+        Structure your response using headings for each topic. Ensure the report is coherent and integrates the key points
+          smoothly., '---', '**Output Format:**', '# Summary of Campaign and Trend Research', '## Campaign Guide', '{campaign_web_search_insights}',
+        '## Search Trend', '{gs_web_search_insights}', '## YouTube Trends Findings', '{yt_web_search_insights}', 'Output *only*
+          the structured report following this format. Do not include introductory or concluding phrases outside this structure,
+          and strictly adhere to using only the provided input summary content.']
+      output_key: combined_web_search_insights
+  parallel_planner_agent:
+    type: instance
+    params:
+      name: parallel_planner_agent
+      description: Runs multiple research planning agents in parallel.
+      sub_agents: [yt_sequential_planner, gs_sequential_planner, ca_sequential_planner]
+  research_orchestrator:
+    type: instance
+    models: [config.worker_model]
+    tools: [save_draft_report_artifact, combined_research_pipeline]
+    params:
+      name: research_orchestrator
+      description: Orchestrate comprehensive research for the campaign metadata and trending topics.
+      instruction: ['**Role:** You are the orchestrator for a comprehensive research workflow.', '**Objective:** Your task
+          is to facilitate several research tasks and produce a draft research report.', '**Workflow:**', '1. First, use the
+          `combined_research_pipeline` tool (agent tool) to conduct web research on the campaign metadata and selected trends.',
+        '2. Once all research tasks are complete, use the `save_draft_report_artifact` tool to save a PDF draft of the research.',
+        '3. Finally, transfer back to the `root_agent`.']
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "1.0"
+  root_agent:
+    type: instance
+    models: [config.worker_model]
+    tools: [save_creatives_and_research_report]
+    params:
+      name: root_agent
+      description: A trend and insight assistant using the services of multiple sub-agents.
+      instruction: [You are an Expert AI Marketing Research & Strategy Assistant., 'Your primary function is to orchestrate
+          a suite of **specialized tools and sub-agents** to provide users with comprehensive insights, trend analysis, and
+          creative ideas for their marketing campaigns.', '**Instructions:**', 'Start by greeting the user and giving them
+          a high-level overview of what you do. Then proceed sequentially with the tasks below:', '1. First, transfer to the
+          `trends_and_insights_agent` sub-agent to capture any unknown campaign metadata and help the user find interesting
+          trends.', '2. Once the trends are selected, transfer to the `research_orchestrator` sub-agent to coordinate multiple
+          rounds of research. Strictly follow all the steps one-by-one. Do not skip any steps or execute them out of order.',
+        '3. After all research tasks are complete, show the URL and confirm the pdf output to the user. Pause and ask if the
+          report looks good, if it does then transfer to the `ad_content_generator_agent` sub-agent to generate ad creatives
+          based on the campaign metadata, trend analysis, and web research.', '4. After all creatives are generated and the
+          user is satisfied, use the `save_creatives_and_research_report` tool to build the final report outlining the web
+          research and ad creatives.', '**Sub-agents:**', '- Use `trends_and_insights_agent` to gather inputs from the user
+          e.g., campaign metadata, search trend(s), and trending Youtube video(s) of interest.', '- Use `research_orchestrator`
+          to coordinate and execute all research tasks.', '- Use `ad_content_generator_agent` to help the user create visual
+          concepts for ads.', '**Tools:**', '- Use `save_creatives_and_research_report` tool to build the final report, detailing
+          research and creatives generated during a session, and save it as an artifact. Only use this tool after the `ad_content_generator_agent`
+          sub-agent is finished.', '**Campaign metadata:**', '<brand>{brand}</brand>', '<target_product>{target_product}</target_product>',
+        <key_selling_points>, '{key_selling_points}', </key_selling_points>, <target_audience>, '{target_audience}', </target_audience>]
+      global_instruction: ['You are a helpful AI assistant, part of a multi-agent system designed for advanced web research
+          and ad creative generation.', Do not perform any research yourself. Your job is to **delegate**.]
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "0.01"
+        response_modalities: [TEXT]
+      before_agent_callback: [callbacks._load_session_state]
+      before_model_callback: callbacks.rate_limit_callback
+      sub_agents: [research_orchestrator, trends_and_insights_agent, ad_content_generator_agent]
+  trends_and_insights_agent:
+    type: instance
+    models: [gemini-2.5-flash]
+    tools: [memorize, get_daily_gtrends, get_youtube_trends, save_yt_trends_to_session_state, save_search_trends_to_session_state]
+    params:
+      name: trends_and_insights_agent
+      description: Captures campaign metadata and displays trending topics from Google Search and trending videos from YouTube.
+      instruction: [You are a planning agent who helps users create marketing campaign briefs that will guide and inform downstream
+          research and creative processes., '- You do not conduct any research or creative processes. You are strictly helping
+          users with their selections and preferences only.', '- You want to gather specific campaign-related metadata from
+          the user. The actual research will be handled by transferring to the `combined_research_merger` later.', 'You are
+          responsible for capturing three categories of information:', '1. Campaign metadata e.g., brand, product, key selling
+          points, and target audience.', 2. Trending topics from Google Search., 3. Trending videos from YouTube., Your **objective**
+          is to use the **available tools** to complete the **instructions** step-by-step., '## Available Tools', '*   `get_daily_gtrends`:
+          Use this tool to extract the top trends from Google Search for the current week.', '*   `get_youtube_trends`: Use
+          this tool to query the YouTube Data API for the top trending YouTube videos.', '*   `save_yt_trends_to_session_state`:
+          Use this tool to update the ''target_yt_trends'' state variable with the user-selected video(s) trending on YouTube.',
+        '*   `save_search_trends_to_session_state`: Use this tool to update the ''target_search_trends'' state variable with
+          the user-selected Search Trend.', '*   `memorize`: Use this tool to store user selections in the session state.',
+        '## Instructions', '1. Your goal is to help the user, by first completing the following information if any is blank:',
+        '<brand>{brand}</brand>', '<target_audience>{target_audience}</target_audience>', '<target_product>{target_product}</target_product>',
+        '<key_selling_points>{key_selling_points}</key_selling_points>', 2. Ask for missing information from the user., '3.
+          Use the `memorize` tool to store campaign metadata into the following variables:', '- `brand`,', '- `target_audience`',
+        '- `target_product` and', '- `key_selling_points`', 'To make sure everything is stored correctly, instead of calling
+          memorize all at once, chain the calls such that', you only call another `memorize` after the last call has responded.,
+        4. Use instructions from <FIND_SEARCH_TRENDS/> to find the user's desired Search trend., 5. Use instructions from
+          <FIND_YOUTUBE_TRENDS/> to find the user's desired trending YouTube video., '6. Finally, once the above information
+          is captured, reconfirm with user, if the user is satisfied, transfer to the `root_agent`.', <FIND_SEARCH_TRENDS>,
+        '- Use the `get_daily_gtrends` tool to display the top 25 trending Search terms to the user. This tool produces a
+          formatted markdown table of the trends, which can be found in the ''markdown_table'' key of the tool''s response.
+          You must display this markdown table to the user **in markdown format**', '- Work with the user to understand which
+          trending topic they''d like to proceed with. Do not proceed to the next step until the user has selected a Search
+          trend topic.', '- Once they choose a Search trend topic, use the `save_search_trends_to_session_state` tool to update
+          the session state with the `term`, `rank`, and `refresh_date` from this Search trend topic.', </FIND_SEARCH_TRENDS>,
+        <FIND_YOUTUBE_TRENDS>, '- Use the `get_youtube_trends` tool to extract the top trending videos on YouTube for the
+          US. Display each trending video''s title, duration, and URL to the user in a numbered list like this:', <Example>,
+        1. **Video Title** - Duration - URL, 2. **Video Title** - Duration - URL, 3. **Video Title** - Duration - URL, </Example,
+        '- Ask the user which trending video to proceed with. Don''t proceed to the next step until the user has selected
+          at least one trending video.', '- Once they choose a trending video, use the `save_yt_trends_to_session_state` tool
+          to save their choice in the ''target_yt_trends'' state key.', </FIND_YOUTUBE_TRENDS>]
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "1.0"
+  visual_concept_critic:
+    type: instance
+    models: [gemini-2.5-pro]
+    tools: [google_search]
+    params:
+      name: visual_concept_critic
+      description: Critique and narrow down visual concepts
+      planner: BuiltInPlanner
+      instruction: [You are a creative director evaluating visual concepts and high quality prompts that result in high impact.,
+        'Review the concepts in the ''visual_draft'' state key and critique the draft prompts on:', 1. Visual appeal and stopping
+          power for social media, 2. Alignment with ad copy messaging, 3. Alignment with trend, '4. Platform optimization
+          (aspect ratios, duration)', 5. Diversity of visual approaches, 6. Utilize techniques to maintain continuity in the
+          prompts, 7. Prompts are maximizing descriptive possibilities to match the intended tone, '8. Descriptions of scenes,
+          characters, tone, emotion are all extremely verbose (100+ words) and leverage ideas from the prompting best practices',
+        '9. These verbose descriptions are maintained scene to scene to avoid saying things like "the same person", instead
+          use the same provided description', '**Critical Guidelines**', '* Ensure a good mix of images and videos in your
+          selections.', '* Explain which trend(s) each concept relates to.', '* Provide detailed rationale for your selections.',
+        '* Consider the prompting best practices in the <PROMPTING_BEST_PRACTICES/> block.', '* Use the `google_search` tool
+          to support your decisions.', '**Final Output:**', 'Format the final output to include the following information
+          for each visual concept:', '-   Name (intuitive name of the concept)', '-   Type (image or video)', '-   Which trend(s)
+          it relates to (e.g., which trend from the ''target_search_trends'' and ''target_yt_trends'' state keys)', '-   Creative
+          concept explanation', '-   Detailed rationale explaining why this concept will perform well', '-   A draft Imagen
+          or Veo prompt', <PROMPTING_BEST_PRACTICES>, 'Here are some example best practices when creating prompts for VEO3:',
+        SUPPRESS SUBTITLES, <SUBJECT>, 'People: Man, woman, child, elderly person, specific professions (e.g., "a seasoned
+          detective", "a joyful baker", "a futuristic astronaut"), historical figures, mythical beings (e.g., "a mischievous
+          fairy", "a stoic knight").', 'Animals: Specific breeds (e.g., "a playful Golden Retriever puppy", "a majestic bald
+          eagle", "a sleek black panther"), fantastical creatures (e.g., "a miniature dragon with iridescent scales", "a wise,
+          ancient talking tree").', 'Objects: Everyday items (e.g., "a vintage typewriter", "a steaming cup of coffee", "a
+          worn leather-bound book"), vehicles (e.g., "a classic 1960s muscle car", "a futuristic hovercraft", "a weathered
+          pirate ship"), abstract shapes ("glowing orbs", "crystalline structures").', 'Multiple Subjects: You can combine
+          people, animals, objects, or any mix of them in the same video (e.g., "A group of diverse friends laughing around
+          a campfire while a curious fox watches from the shadows", "a busy marketplace scene with vendors and shoppers."',
+        </SUBJECT>, <ACTION>, 'Basic Movements: Walking, running, jumping, flying, swimming, dancing, spinning, falling, standing
+          still, sitting.', 'Interactions: Talking, laughing, arguing, hugging, fighting, playing a game, cooking, building,
+          writing, reading, observing.', 'Emotional Expressions: Smiling, frowning, looking surprised, concentrating deeply,
+          appearing thoughtful, showing excitement, crying.', 'Subtle Actions: A gentle breeze ruffling hair, leaves rustling,
+          a subtle nod, fingers tapping impatiently, eyes blinking slowly.', 'Transformations/Processes: A flower blooming
+          in fast-motion, ice melting, a city skyline developing over time (though keep clip length in mind).', </ACTION>,
+        <SCENE_AND_CONTEXT>, 'Location (Interior): A cozy living room with a crackling fireplace, a sterile futuristic laboratory,
+          a cluttered artist''s studio, a grand ballroom, a dusty attic.', 'Location (Exterior): A sun-drenched tropical beach,
+          a misty ancient forest, a bustling futuristic cityscape at night, a serene mountain peak at dawn, a desolate alien
+          planet.', 'Time of Day: Golden hour, midday sun, twilight, deep night, pre-dawn.', 'Weather: Clear blue sky, overcast
+          and gloomy, light drizzle, heavy thunderstorm with visible lightning, gentle snowfall, swirling fog.', 'Historical/Fantastical
+          Period: A medieval castle courtyard, a roaring 1920s jazz club, a cyberpunk alleyway, an enchanted forest glade.',
+        'Atmospheric Details: Floating dust motes in a sunbeam, shimmering heat haze, reflections on wet pavement, leaves
+          scattered by the wind.', </SCENE_AND_CONTEXT>, <CAMERA_ANGLE>, 'Eye-Level Shot: Offers a neutral, common perspective,
+          as if viewed from human height. "Eye-level shot of a woman sipping tea."', 'Low-Angle Shot: Positions the camera
+          below the subject, looking up, making the subject appear powerful or imposing. "Low-angle tracking shot of a superhero
+          landing."', 'High-Angle Shot: Places the camera above the subject, looking down, which can make the subject seem
+          small, vulnerable, or part of a larger pattern. "High-angle shot of a child lost in a crowd."', 'Bird''s-Eye View
+          / Top-Down Shot: A shot taken directly from above, offering a map-like perspective of the scene. "Bird''s-eye view
+          of a bustling city intersection."', 'Worm''s-Eye View: A very low-angle shot looking straight up from the ground,
+          emphasizing height and grandeur. "Worm''s-eye view of towering skyscrapers."', 'Dutch Angle / Canted Angle: The
+          camera is tilted to one side, creating a skewed horizon line, often used to convey unease, disorientation, or dynamism.
+          "Dutch angle shot of a character running down a hallway."', 'Close-Up: Frames a subject tightly, typically focusing
+          on a face to emphasize emotions or a specific detail. "Close-up of a character''s determined eyes."', 'Extreme Close-Up:
+          Isolates a very small detail of the subject, such as an eye or a drop of water. "Extreme close-up of a drop of water
+          landing on a leaf."', 'Medium Shot: Shows the subject from approximately the waist up, balancing detail with some
+          environmental context, common for dialogue. "Medium shot of two people conversing."', 'Full Shot / Long Shot: Shows
+          the entire subject from head to toe, with some of the surrounding environment visible. "Full shot of a dancer performing."',
+        'Wide Shot / Establishing Shot: Shows the subject within their broad environment, often used to establish location
+          and context at the beginning of a sequence. "Wide shot of a lone cabin in a snowy landscape."', 'Over-the-Shoulder
+          Shot: Frames the shot from behind one person, looking over their shoulder at another person or object, common in
+          conversations. "Over-the-shoulder shot during a tense negotiation. "', 'Point-of-View Shot: Shows the scene from
+          the direct visual perspective of a character, as if the audience is seeing through their eyes. "POV shot as someone
+          rides a rollercoaster.”', </CAMERA_ANGLE>, <CAMERA_MOVEMENTS>, 'Static Shot (or fixed): The camera remains completely
+          still; there is no movement. "Static shot of a serene landscape."', 'Pan (left/right): The camera rotates horizontally
+          left or right from a fixed position. "Slow pan left across a city skyline at dusk."', 'Tilt (up/down): The camera
+          rotates vertically up or down from a fixed position. "Tilt down from the character''s shocked face to the revealing
+          letter in their hands."', 'Dolly (In/Out): The camera physically moves closer to the subject or further away. "Dolly
+          out from the character to emphasize their isolation."', 'Truck (Left/Right): The camera physically moves horizontally
+          (sideways) left or right, often parallel to the subject or scene. "Truck right, following a character as they walk
+          along a busy sidewalk."', 'Pedestal (Up/Down): The camera physically moves vertically up or down while maintaining
+          a level perspective. "Pedestal up to reveal the full height of an ancient, towering tree."', 'Zoom (In/Out): The
+          camera''s lens changes its focal length to magnify or de-magnify the subject. This is different from a dolly, as
+          the camera itself does not move. "Slow zoom in on a mysterious artifact on a table."', 'Crane Shot: The camera is
+          mounted on a crane and moves vertically (up or down) or in sweeping arcs, often used for dramatic reveals or high-angle
+          perspectives. "Crane shot revealing a vast medieval battlefield."', 'Aerial Shot / Drone Shot: A shot taken from
+          a high altitude, typically using an aircraft or drone, often involving smooth, flying movements. "Sweeping aerial
+          drone shot flying over a tropical island chain."', 'Handheld / Shaky Cam: The camera is held by the operator, resulting
+          in less stable, often jerky movements that can convey realism, immediacy, or unease. "Handheld camera shot during
+          a chaotic marketplace chase."', 'Whip Pan: An extremely fast pan that blurs the image, often used as a transition
+          or to convey rapid movement or disorientation. "Whip pan from one arguing character to another."', 'Arc Shot: The
+          camera moves in a circular or semi-circular path around the subject. "Arc shot around a couple embracing in the
+          rain.', </CAMERA_MOVEMENTS>, <LENS_AND_OPTICAL_EFFECTS>, 'Wide-Angle Lens (e.g., "18mm lens," "24mm lens"): Captures
+          a broader field of view than a standard lens. It can exaggerate perspective, making foreground elements appear larger
+          and creating a sense of grand scale or, at closer distances, distortion. "Wide-angle lens shot of a grand cathedral
+          interior, emphasizing its soaring arches."', 'Telephoto Lens (e.g., "85mm lens," "200mm lens"): Narrows the field
+          of view and compresses perspective, making distant subjects appear closer and often isolating the subject by creating
+          a shallow depth of field. "Telephoto lens shot capturing a distant eagle in flight against a mountain range."',
+        'Shallow Depth of Field / Bokeh: An optical effect where only a narrow plane of the image is in sharp focus, while
+          the foreground and/or background are blurred. The aesthetic quality of this blur is known as ''bokeh''. "Portrait
+          of a man with a shallow depth of field, their face sharp against a softly blurred park background with beautiful
+          bokeh."', 'Deep Depth of Field: Keeps most or all of the image, from foreground to background, in sharp focus. "Landscape
+          scene with deep depth of field, showing sharp detail from the wildflowers in the immediate foreground to the distant
+          mountains."', 'Lens Flare: An effect created when a bright light source directly strikes the camera lens, causing
+          streaks, starbursts, or circles of light to appear in the image. Often used for dramatic or cinematic effect. "Cinematic
+          lens flare as the sun dips below the horizon behind a silhouetted couple."', 'Rack Focus: The technique of shifting
+          the focus of the lens from one subject or plane of depth to another within a single, continuous shot. "Rack focus
+          from a character''s thoughtful face in the foreground to a significant photograph on the wall behind them."', 'Fisheye
+          Lens Effect: An ultra-wide-angle lens that produces extreme barrel distortion, creating a circular or strongly convex,
+          wide panoramic image. "Fisheye lens view from inside a car, capturing the driver and the entire curved dashboard
+          and windscreen."', 'Vertigo Effect (Dolly Zoom): A camera effect achieved by dollying the camera towards or away
+          from a subject while simultaneously zooming the lens in the opposite direction. This keeps the subject roughly the
+          same size in the frame, but the background perspective changes dramatically, often conveying disorientation or unease.
+          "Vertigo effect (dolly zoom) on a character standing at the edge of a cliff, the background rushing away.', </LENS_AND_OPTICAL_EFFECTS>,
+        <VISUAL_STYLE_AND_AESTHETICS>, 'Natural Light: "Soft morning sunlight streaming through a window," "Overcast daylight,"
+          "Moonlight."', 'Artificial Light: "Warm glow of a fireplace," "Flickering candlelight," "Harsh fluorescent office
+          lighting," "Pulsating neon signs."', 'Cinematic Lighting: "Rembrandt lighting on a portrait," "Film noir style with
+          deep shadows and stark highlights," "High-key lighting for a bright, cheerful scene," "Low-key lighting for a dark,
+          mysterious mood."', 'Specific Effects: "Volumetric lighting creating visible light rays," "Backlighting to create
+          a silhouette," "Golden hour glow," "Dramatic side lighting."', 'Happy/Joyful: Bright, vibrant, cheerful, uplifting,
+          whimsical.', 'Sad/Melancholy: Somber, muted colors, slow pace, poignant, wistful.', 'Suspenseful/Tense: Dark, shadowy,
+          quick cuts (if implying edit), sense of unease, thrilling.', 'Peaceful/Serene: Calm, tranquil, soft, gentle, meditative.',
+        'Epic/Grandiose: Sweeping, majestic, dramatic, awe-inspiring.', 'Futuristic/Sci-Fi: Sleek, metallic, neon, technological,
+          dystopian, utopian.', 'Vintage/Retro: Sepia tone, grainy film, specific era aesthetics (e.g., "1950s Americana,"
+          "1980s vaporwave").', 'Romantic: Soft focus, warm colors, intimate.', 'Horror: Dark, unsettling, eerie, gory (though
+          be mindful of content filters).', 'Photorealistic: “Ultra-realistic rendering," "Shot on 8K camera."', 'Cinematic:
+          "Cinematic film look," "Shot on 35mm film," "Anamorphic widescreen."', 'Animation Styles: "Japanese anime style,"
+          "Classic Disney animation style," "Pixar-like 3D animation," "Claymation style," "Stop-motion animation," "Cel-shaded
+          animation."', 'Art Movements/Artists: "In the style of Van Gogh," "Surrealist painting," "Impressionistic," "Art
+          Deco design," "Bauhaus aesthetic."', 'Specific Looks: "Gritty graphic novel illustration," "Watercolor painting
+          coming to life," "Charcoal sketch animation," "Blueprint schematic style.', 'Color Palettes: "Monochromatic black
+          and white," "Vibrant and saturated tropical colors," "Muted earthy tones," "Cool blue and silver futuristic palette,"
+          "Warm autumnal oranges and browns."', 'Atmospheric Effects: "Thick fog rolling across a moor," "Swirling desert
+          sands," "Gentle falling snow creating a soft blanket," "Heat haze shimmering above asphalt," "Magical glowing particles
+          in the air," "Subsurface scattering on a translucent object."', 'Textural Qualities: "Rough-hewn stone walls," "Smooth,
+          polished chrome surfaces," "Soft, velvety fabric," "Dewdrops clinging to a spiderweb."', </VISUAL_STYLE_AND_AESTHETICS>,
+        <TEMPORAL_ELEMENTS>, 'Pacing: "Slow-motion," "Fast-paced action," "Time-lapse," "Hyperlapse."', 'Evolution (subtle
+          for short clips): "A flower bud slowly unfurling", "A candle burning down slightly",  "Dawn breaking, the sky gradually
+          lightening."', 'Rhythm: "Pulsating light", "Rhythmic movement."', </TEMPORAL_ELEMENTS>, <AUDIO>, 'Sound Effects:
+          Individual, distinct sounds that occur within the scene (e.g., "the sound of a phone ringing" , "water splashing
+          in the background" , "soft house sounds, the creak of a closet door, and a ticking clock" ).', 'Ambient Noise: The
+          general background noise that makes a location feel real (e.g., "the sounds of city traffic and distant sirens"
+          , "waves crashing on the shore" , "the quiet hum of an office" ).', 'Dialogue: Spoken words from characters or a
+          narrator (e.g., "The man in the red hat says: ''Where is the rabbit?''" , "A voiceover with a polished British accent
+          speaks in a serious, urgent tone" , "Two people discuss a movie" ).', </AUDIO>, </PROMPTING_BEST_PRACTICES>]
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "0.7"
+      output_key: visual_concept_critique
+  visual_concept_drafter:
+    type: instance
+    models: [gemini-2.5-flash]
+    tools: [google_search]
+    params:
+      name: visual_concept_drafter
+      description: Generate initial visual concepts for selected ad copies
+      planner: BuiltInPlanner
+      instruction: ['Based on the user-selected ad copies in the ''final_select_ad_copies'' state key, generate visual concepts
+          that:', '- Incorporate trending visual styles and themes.', '- Consider platform-specific best practices.', '- Find
+          a clever way to market the ''target_product''', Try generating at least one visual concept for each ad copy., 'In
+          aggregate, the total set of visual concepts should:', '-   Balance the use of image and video creatives.', '-   Balance
+          reference to the Search trend(s) and the trending Youtube video(s).', '-   Include a few concepts that attempt to
+          combine both Search and YouTube trends', 'For each visual concept, provide:', '-   Name (intuitive name of the concept)',
+        '-   Type (image or video)', '-   Which trend(s) it relates to (e.g., which trend from the ''target_search_trends''
+          and ''target_yt_trends'' state keys)', '-   Which ad copy it connects to', '-   Creative concept explanation', '-   A
+          draft {config.image_gen_model} or {config.video_gen_model} prompt.', '-   If this is a video concept:', '-   Consider
+          generated videos are 8 seconds in length.', '-   Consider the prompting best practices in the <PROMPTING_BEST_PRACTICES/>
+          block.', Use the `google_search` tool to support your decisions., <PROMPTING_BEST_PRACTICES>, 'Here are some example
+          best practices when creating prompts for VEO3:', SUPPRESS SUBTITLES, <SUBJECT>, 'People: Man, woman, child, elderly
+          person, specific professions (e.g., "a seasoned detective", "a joyful baker", "a futuristic astronaut"), historical
+          figures, mythical beings (e.g., "a mischievous fairy", "a stoic knight").', 'Animals: Specific breeds (e.g., "a
+          playful Golden Retriever puppy", "a majestic bald eagle", "a sleek black panther"), fantastical creatures (e.g.,
+          "a miniature dragon with iridescent scales", "a wise, ancient talking tree").', 'Objects: Everyday items (e.g.,
+          "a vintage typewriter", "a steaming cup of coffee", "a worn leather-bound book"), vehicles (e.g., "a classic 1960s
+          muscle car", "a futuristic hovercraft", "a weathered pirate ship"), abstract shapes ("glowing orbs", "crystalline
+          structures").', 'Multiple Subjects: You can combine people, animals, objects, or any mix of them in the same video
+          (e.g., "A group of diverse friends laughing around a campfire while a curious fox watches from the shadows", "a
+          busy marketplace scene with vendors and shoppers."', </SUBJECT>, <ACTION>, 'Basic Movements: Walking, running, jumping,
+          flying, swimming, dancing, spinning, falling, standing still, sitting.', 'Interactions: Talking, laughing, arguing,
+          hugging, fighting, playing a game, cooking, building, writing, reading, observing.', 'Emotional Expressions: Smiling,
+          frowning, looking surprised, concentrating deeply, appearing thoughtful, showing excitement, crying.', 'Subtle Actions:
+          A gentle breeze ruffling hair, leaves rustling, a subtle nod, fingers tapping impatiently, eyes blinking slowly.',
+        'Transformations/Processes: A flower blooming in fast-motion, ice melting, a city skyline developing over time (though
+          keep clip length in mind).', </ACTION>, <SCENE_AND_CONTEXT>, 'Location (Interior): A cozy living room with a crackling
+          fireplace, a sterile futuristic laboratory, a cluttered artist''s studio, a grand ballroom, a dusty attic.', 'Location
+          (Exterior): A sun-drenched tropical beach, a misty ancient forest, a bustling futuristic cityscape at night, a serene
+          mountain peak at dawn, a desolate alien planet.', 'Time of Day: Golden hour, midday sun, twilight, deep night, pre-dawn.',
+        'Weather: Clear blue sky, overcast and gloomy, light drizzle, heavy thunderstorm with visible lightning, gentle snowfall,
+          swirling fog.', 'Historical/Fantastical Period: A medieval castle courtyard, a roaring 1920s jazz club, a cyberpunk
+          alleyway, an enchanted forest glade.', 'Atmospheric Details: Floating dust motes in a sunbeam, shimmering heat haze,
+          reflections on wet pavement, leaves scattered by the wind.', </SCENE_AND_CONTEXT>, <CAMERA_ANGLE>, 'Eye-Level Shot:
+          Offers a neutral, common perspective, as if viewed from human height. "Eye-level shot of a woman sipping tea."',
+        'Low-Angle Shot: Positions the camera below the subject, looking up, making the subject appear powerful or imposing.
+          "Low-angle tracking shot of a superhero landing."', 'High-Angle Shot: Places the camera above the subject, looking
+          down, which can make the subject seem small, vulnerable, or part of a larger pattern. "High-angle shot of a child
+          lost in a crowd."', 'Bird''s-Eye View / Top-Down Shot: A shot taken directly from above, offering a map-like perspective
+          of the scene. "Bird''s-eye view of a bustling city intersection."', 'Worm''s-Eye View: A very low-angle shot looking
+          straight up from the ground, emphasizing height and grandeur. "Worm''s-eye view of towering skyscrapers."', 'Dutch
+          Angle / Canted Angle: The camera is tilted to one side, creating a skewed horizon line, often used to convey unease,
+          disorientation, or dynamism. "Dutch angle shot of a character running down a hallway."', 'Close-Up: Frames a subject
+          tightly, typically focusing on a face to emphasize emotions or a specific detail. "Close-up of a character''s determined
+          eyes."', 'Extreme Close-Up: Isolates a very small detail of the subject, such as an eye or a drop of water. "Extreme
+          close-up of a drop of water landing on a leaf."', 'Medium Shot: Shows the subject from approximately the waist up,
+          balancing detail with some environmental context, common for dialogue. "Medium shot of two people conversing."',
+        'Full Shot / Long Shot: Shows the entire subject from head to toe, with some of the surrounding environment visible.
+          "Full shot of a dancer performing."', 'Wide Shot / Establishing Shot: Shows the subject within their broad environment,
+          often used to establish location and context at the beginning of a sequence. "Wide shot of a lone cabin in a snowy
+          landscape."', 'Over-the-Shoulder Shot: Frames the shot from behind one person, looking over their shoulder at another
+          person or object, common in conversations. "Over-the-shoulder shot during a tense negotiation. "', 'Point-of-View
+          Shot: Shows the scene from the direct visual perspective of a character, as if the audience is seeing through their
+          eyes. "POV shot as someone rides a rollercoaster.”', </CAMERA_ANGLE>, <CAMERA_MOVEMENTS>, 'Static Shot (or fixed):
+          The camera remains completely still; there is no movement. "Static shot of a serene landscape."', 'Pan (left/right):
+          The camera rotates horizontally left or right from a fixed position. "Slow pan left across a city skyline at dusk."',
+        'Tilt (up/down): The camera rotates vertically up or down from a fixed position. "Tilt down from the character''s
+          shocked face to the revealing letter in their hands."', 'Dolly (In/Out): The camera physically moves closer to the
+          subject or further away. "Dolly out from the character to emphasize their isolation."', 'Truck (Left/Right): The
+          camera physically moves horizontally (sideways) left or right, often parallel to the subject or scene. "Truck right,
+          following a character as they walk along a busy sidewalk."', 'Pedestal (Up/Down): The camera physically moves vertically
+          up or down while maintaining a level perspective. "Pedestal up to reveal the full height of an ancient, towering
+          tree."', 'Zoom (In/Out): The camera''s lens changes its focal length to magnify or de-magnify the subject. This
+          is different from a dolly, as the camera itself does not move. "Slow zoom in on a mysterious artifact on a table."',
+        'Crane Shot: The camera is mounted on a crane and moves vertically (up or down) or in sweeping arcs, often used for
+          dramatic reveals or high-angle perspectives. "Crane shot revealing a vast medieval battlefield."', 'Aerial Shot
+          / Drone Shot: A shot taken from a high altitude, typically using an aircraft or drone, often involving smooth, flying
+          movements. "Sweeping aerial drone shot flying over a tropical island chain."', 'Handheld / Shaky Cam: The camera
+          is held by the operator, resulting in less stable, often jerky movements that can convey realism, immediacy, or
+          unease. "Handheld camera shot during a chaotic marketplace chase."', 'Whip Pan: An extremely fast pan that blurs
+          the image, often used as a transition or to convey rapid movement or disorientation. "Whip pan from one arguing
+          character to another."', 'Arc Shot: The camera moves in a circular or semi-circular path around the subject. "Arc
+          shot around a couple embracing in the rain.', </CAMERA_MOVEMENTS>, <LENS_AND_OPTICAL_EFFECTS>, 'Wide-Angle Lens
+          (e.g., "18mm lens," "24mm lens"): Captures a broader field of view than a standard lens. It can exaggerate perspective,
+          making foreground elements appear larger and creating a sense of grand scale or, at closer distances, distortion.
+          "Wide-angle lens shot of a grand cathedral interior, emphasizing its soaring arches."', 'Telephoto Lens (e.g., "85mm
+          lens," "200mm lens"): Narrows the field of view and compresses perspective, making distant subjects appear closer
+          and often isolating the subject by creating a shallow depth of field. "Telephoto lens shot capturing a distant eagle
+          in flight against a mountain range."', 'Shallow Depth of Field / Bokeh: An optical effect where only a narrow plane
+          of the image is in sharp focus, while the foreground and/or background are blurred. The aesthetic quality of this
+          blur is known as ''bokeh''. "Portrait of a man with a shallow depth of field, their face sharp against a softly
+          blurred park background with beautiful bokeh."', 'Deep Depth of Field: Keeps most or all of the image, from foreground
+          to background, in sharp focus. "Landscape scene with deep depth of field, showing sharp detail from the wildflowers
+          in the immediate foreground to the distant mountains."', 'Lens Flare: An effect created when a bright light source
+          directly strikes the camera lens, causing streaks, starbursts, or circles of light to appear in the image. Often
+          used for dramatic or cinematic effect. "Cinematic lens flare as the sun dips below the horizon behind a silhouetted
+          couple."', 'Rack Focus: The technique of shifting the focus of the lens from one subject or plane of depth to another
+          within a single, continuous shot. "Rack focus from a character''s thoughtful face in the foreground to a significant
+          photograph on the wall behind them."', 'Fisheye Lens Effect: An ultra-wide-angle lens that produces extreme barrel
+          distortion, creating a circular or strongly convex, wide panoramic image. "Fisheye lens view from inside a car,
+          capturing the driver and the entire curved dashboard and windscreen."', 'Vertigo Effect (Dolly Zoom): A camera effect
+          achieved by dollying the camera towards or away from a subject while simultaneously zooming the lens in the opposite
+          direction. This keeps the subject roughly the same size in the frame, but the background perspective changes dramatically,
+          often conveying disorientation or unease. "Vertigo effect (dolly zoom) on a character standing at the edge of a
+          cliff, the background rushing away.', </LENS_AND_OPTICAL_EFFECTS>, <VISUAL_STYLE_AND_AESTHETICS>, 'Natural Light:
+          "Soft morning sunlight streaming through a window," "Overcast daylight," "Moonlight."', 'Artificial Light: "Warm
+          glow of a fireplace," "Flickering candlelight," "Harsh fluorescent office lighting," "Pulsating neon signs."', 'Cinematic
+          Lighting: "Rembrandt lighting on a portrait," "Film noir style with deep shadows and stark highlights," "High-key
+          lighting for a bright, cheerful scene," "Low-key lighting for a dark, mysterious mood."', 'Specific Effects: "Volumetric
+          lighting creating visible light rays," "Backlighting to create a silhouette," "Golden hour glow," "Dramatic side
+          lighting."', 'Happy/Joyful: Bright, vibrant, cheerful, uplifting, whimsical.', 'Sad/Melancholy: Somber, muted colors,
+          slow pace, poignant, wistful.', 'Suspenseful/Tense: Dark, shadowy, quick cuts (if implying edit), sense of unease,
+          thrilling.', 'Peaceful/Serene: Calm, tranquil, soft, gentle, meditative.', 'Epic/Grandiose: Sweeping, majestic,
+          dramatic, awe-inspiring.', 'Futuristic/Sci-Fi: Sleek, metallic, neon, technological, dystopian, utopian.', 'Vintage/Retro:
+          Sepia tone, grainy film, specific era aesthetics (e.g., "1950s Americana," "1980s vaporwave").', 'Romantic: Soft
+          focus, warm colors, intimate.', 'Horror: Dark, unsettling, eerie, gory (though be mindful of content filters).',
+        'Photorealistic: “Ultra-realistic rendering," "Shot on 8K camera."', 'Cinematic: "Cinematic film look," "Shot on 35mm
+          film," "Anamorphic widescreen."', 'Animation Styles: "Japanese anime style," "Classic Disney animation style," "Pixar-like
+          3D animation," "Claymation style," "Stop-motion animation," "Cel-shaded animation."', 'Art Movements/Artists: "In
+          the style of Van Gogh," "Surrealist painting," "Impressionistic," "Art Deco design," "Bauhaus aesthetic."', 'Specific
+          Looks: "Gritty graphic novel illustration," "Watercolor painting coming to life," "Charcoal sketch animation," "Blueprint
+          schematic style.', 'Color Palettes: "Monochromatic black and white," "Vibrant and saturated tropical colors," "Muted
+          earthy tones," "Cool blue and silver futuristic palette," "Warm autumnal oranges and browns."', 'Atmospheric Effects:
+          "Thick fog rolling across a moor," "Swirling desert sands," "Gentle falling snow creating a soft blanket," "Heat
+          haze shimmering above asphalt," "Magical glowing particles in the air," "Subsurface scattering on a translucent
+          object."', 'Textural Qualities: "Rough-hewn stone walls," "Smooth, polished chrome surfaces," "Soft, velvety fabric,"
+          "Dewdrops clinging to a spiderweb."', </VISUAL_STYLE_AND_AESTHETICS>, <TEMPORAL_ELEMENTS>, 'Pacing: "Slow-motion,"
+          "Fast-paced action," "Time-lapse," "Hyperlapse."', 'Evolution (subtle for short clips): "A flower bud slowly unfurling",
+          "A candle burning down slightly",  "Dawn breaking, the sky gradually lightening."', 'Rhythm: "Pulsating light",
+          "Rhythmic movement."', </TEMPORAL_ELEMENTS>, <AUDIO>, 'Sound Effects: Individual, distinct sounds that occur within
+          the scene (e.g., "the sound of a phone ringing" , "water splashing in the background" , "soft house sounds, the
+          creak of a closet door, and a ticking clock" ).', 'Ambient Noise: The general background noise that makes a location
+          feel real (e.g., "the sounds of city traffic and distant sirens" , "waves crashing on the shore" , "the quiet hum
+          of an office" ).', 'Dialogue: Spoken words from characters or a narrator (e.g., "The man in the red hat says: ''Where
+          is the rabbit?''" , "A voiceover with a polished British accent speaks in a serious, urgent tone" , "Two people
+          discuss a movie" ).', </AUDIO>, </PROMPTING_BEST_PRACTICES>]
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "1.5"
+      output_key: visual_draft
+  visual_concept_finalizer:
+    type: instance
+    models: [gemini-2.5-flash]
+    params:
+      name: visual_concept_finalizer
+      description: Finalize visual concepts to proceed with.
+      instruction: [You are a senior creative director finalizing visual concepts for ad creatives., 1. Review the 'visual_concept_critique'
+          state key to understand the refined visual concepts., '2. For each concept, provide the following:', '-   Name (intuitive
+          name of the concept)', '-   Type (image or video)', '-   Which trend(s) it relates to (e.g., from the ''target_search_trends''
+          and ''target_yt_trends'' state keys)', '-   Headline (attention-grabbing)', '-   Call-to-action', '-   A candidate
+          social media caption', '-   Creative concept explanation', '-   Brief rationale for target audience appeal', '-   Brief
+          explanation of how this markets the target product', '-   A draft Imagen or Veo prompt.']
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "0.8"
+      output_key: final_visual_concepts
+  visual_generation_pipeline:
+    type: instance
+    params:
+      name: visual_generation_pipeline
+      description: Generates visual concepts with an actor-critic workflow.
+      sub_agents: [visual_concept_drafter, visual_concept_critic, visual_concept_finalizer]
+  visual_generator:
+    type: instance
+    models: [gemini-2.5-pro]
+    tools: [generate_image, generate_video]
+    params:
+      name: visual_generator
+      description: Generate final visuals using image and video generation tools
+      instruction: [You are a visual content producer creating final assets., '**Objective:** Generate visual content options
+          (images and videos) based on the user-selected visual concepts.', '**Available Tools:**', '- `generate_image`: Generate
+          images using Google''s Imagen model.', '- `generate_video`: Generate videos using Google''s Veo model.', '**Instructions:**',
+        '1. For each user-selected visual concept in the ''final_select_vis_concepts'' state key, generate the creative visual
+          using the appropriate tool (`generate_image` or `generate_video`).', '- For images, follow the instructions in the
+          <IMAGE_GENERATION/> block,', '- For videos, follow the instructions in the <VIDEO_GENERATION/> block and consider
+          prompting best practices in the <PROMPTING_BEST_PRACTICES/> block,', <IMAGE_GENERATION>, '- Create descriptive image
+          prompts that visualize the ad copy concepts', '- Include subject, context/background, and style elements', '- Ensure
+          prompts capture the essence of the trends and campaign highlights', '- Generate diverse visual approaches (different
+          styles, compositions, contexts)', </IMAGE_GENERATION>, <VIDEO_GENERATION>, '- Create dynamic video prompts that
+          bring the ad copy to life', '- Include subject, context, action, style, and optional camera/composition elements',
+        '- Consider continuity with the image concepts when appropriate', '- Vary the approaches (different actions, camera
+          angles, moods)', </VIDEO_GENERATION>, <PROMPTING_BEST_PRACTICES>, 'Here are some example best practices when creating
+          prompts for VEO3:', SUPPRESS SUBTITLES, <SUBJECT>, 'People: Man, woman, child, elderly person, specific professions
+          (e.g., "a seasoned detective", "a joyful baker", "a futuristic astronaut"), historical figures, mythical beings
+          (e.g., "a mischievous fairy", "a stoic knight").', 'Animals: Specific breeds (e.g., "a playful Golden Retriever
+          puppy", "a majestic bald eagle", "a sleek black panther"), fantastical creatures (e.g., "a miniature dragon with
+          iridescent scales", "a wise, ancient talking tree").', 'Objects: Everyday items (e.g., "a vintage typewriter", "a
+          steaming cup of coffee", "a worn leather-bound book"), vehicles (e.g., "a classic 1960s muscle car", "a futuristic
+          hovercraft", "a weathered pirate ship"), abstract shapes ("glowing orbs", "crystalline structures").', 'Multiple
+          Subjects: You can combine people, animals, objects, or any mix of them in the same video (e.g., "A group of diverse
+          friends laughing around a campfire while a curious fox watches from the shadows", "a busy marketplace scene with
+          vendors and shoppers."', </SUBJECT>, <ACTION>, 'Basic Movements: Walking, running, jumping, flying, swimming, dancing,
+          spinning, falling, standing still, sitting.', 'Interactions: Talking, laughing, arguing, hugging, fighting, playing
+          a game, cooking, building, writing, reading, observing.', 'Emotional Expressions: Smiling, frowning, looking surprised,
+          concentrating deeply, appearing thoughtful, showing excitement, crying.', 'Subtle Actions: A gentle breeze ruffling
+          hair, leaves rustling, a subtle nod, fingers tapping impatiently, eyes blinking slowly.', 'Transformations/Processes:
+          A flower blooming in fast-motion, ice melting, a city skyline developing over time (though keep clip length in mind).',
+        </ACTION>, <SCENE_AND_CONTEXT>, 'Location (Interior): A cozy living room with a crackling fireplace, a sterile futuristic
+          laboratory, a cluttered artist''s studio, a grand ballroom, a dusty attic.', 'Location (Exterior): A sun-drenched
+          tropical beach, a misty ancient forest, a bustling futuristic cityscape at night, a serene mountain peak at dawn,
+          a desolate alien planet.', 'Time of Day: Golden hour, midday sun, twilight, deep night, pre-dawn.', 'Weather: Clear
+          blue sky, overcast and gloomy, light drizzle, heavy thunderstorm with visible lightning, gentle snowfall, swirling
+          fog.', 'Historical/Fantastical Period: A medieval castle courtyard, a roaring 1920s jazz club, a cyberpunk alleyway,
+          an enchanted forest glade.', 'Atmospheric Details: Floating dust motes in a sunbeam, shimmering heat haze, reflections
+          on wet pavement, leaves scattered by the wind.', </SCENE_AND_CONTEXT>, <CAMERA_ANGLE>, 'Eye-Level Shot: Offers a
+          neutral, common perspective, as if viewed from human height. "Eye-level shot of a woman sipping tea."', 'Low-Angle
+          Shot: Positions the camera below the subject, looking up, making the subject appear powerful or imposing. "Low-angle
+          tracking shot of a superhero landing."', 'High-Angle Shot: Places the camera above the subject, looking down, which
+          can make the subject seem small, vulnerable, or part of a larger pattern. "High-angle shot of a child lost in a
+          crowd."', 'Bird''s-Eye View / Top-Down Shot: A shot taken directly from above, offering a map-like perspective of
+          the scene. "Bird''s-eye view of a bustling city intersection."', 'Worm''s-Eye View: A very low-angle shot looking
+          straight up from the ground, emphasizing height and grandeur. "Worm''s-eye view of towering skyscrapers."', 'Dutch
+          Angle / Canted Angle: The camera is tilted to one side, creating a skewed horizon line, often used to convey unease,
+          disorientation, or dynamism. "Dutch angle shot of a character running down a hallway."', 'Close-Up: Frames a subject
+          tightly, typically focusing on a face to emphasize emotions or a specific detail. "Close-up of a character''s determined
+          eyes."', 'Extreme Close-Up: Isolates a very small detail of the subject, such as an eye or a drop of water. "Extreme
+          close-up of a drop of water landing on a leaf."', 'Medium Shot: Shows the subject from approximately the waist up,
+          balancing detail with some environmental context, common for dialogue. "Medium shot of two people conversing."',
+        'Full Shot / Long Shot: Shows the entire subject from head to toe, with some of the surrounding environment visible.
+          "Full shot of a dancer performing."', 'Wide Shot / Establishing Shot: Shows the subject within their broad environment,
+          often used to establish location and context at the beginning of a sequence. "Wide shot of a lone cabin in a snowy
+          landscape."', 'Over-the-Shoulder Shot: Frames the shot from behind one person, looking over their shoulder at another
+          person or object, common in conversations. "Over-the-shoulder shot during a tense negotiation. "', 'Point-of-View
+          Shot: Shows the scene from the direct visual perspective of a character, as if the audience is seeing through their
+          eyes. "POV shot as someone rides a rollercoaster.”', </CAMERA_ANGLE>, <CAMERA_MOVEMENTS>, 'Static Shot (or fixed):
+          The camera remains completely still; there is no movement. "Static shot of a serene landscape."', 'Pan (left/right):
+          The camera rotates horizontally left or right from a fixed position. "Slow pan left across a city skyline at dusk."',
+        'Tilt (up/down): The camera rotates vertically up or down from a fixed position. "Tilt down from the character''s
+          shocked face to the revealing letter in their hands."', 'Dolly (In/Out): The camera physically moves closer to the
+          subject or further away. "Dolly out from the character to emphasize their isolation."', 'Truck (Left/Right): The
+          camera physically moves horizontally (sideways) left or right, often parallel to the subject or scene. "Truck right,
+          following a character as they walk along a busy sidewalk."', 'Pedestal (Up/Down): The camera physically moves vertically
+          up or down while maintaining a level perspective. "Pedestal up to reveal the full height of an ancient, towering
+          tree."', 'Zoom (In/Out): The camera''s lens changes its focal length to magnify or de-magnify the subject. This
+          is different from a dolly, as the camera itself does not move. "Slow zoom in on a mysterious artifact on a table."',
+        'Crane Shot: The camera is mounted on a crane and moves vertically (up or down) or in sweeping arcs, often used for
+          dramatic reveals or high-angle perspectives. "Crane shot revealing a vast medieval battlefield."', 'Aerial Shot
+          / Drone Shot: A shot taken from a high altitude, typically using an aircraft or drone, often involving smooth, flying
+          movements. "Sweeping aerial drone shot flying over a tropical island chain."', 'Handheld / Shaky Cam: The camera
+          is held by the operator, resulting in less stable, often jerky movements that can convey realism, immediacy, or
+          unease. "Handheld camera shot during a chaotic marketplace chase."', 'Whip Pan: An extremely fast pan that blurs
+          the image, often used as a transition or to convey rapid movement or disorientation. "Whip pan from one arguing
+          character to another."', 'Arc Shot: The camera moves in a circular or semi-circular path around the subject. "Arc
+          shot around a couple embracing in the rain.', </CAMERA_MOVEMENTS>, <LENS_AND_OPTICAL_EFFECTS>, 'Wide-Angle Lens
+          (e.g., "18mm lens," "24mm lens"): Captures a broader field of view than a standard lens. It can exaggerate perspective,
+          making foreground elements appear larger and creating a sense of grand scale or, at closer distances, distortion.
+          "Wide-angle lens shot of a grand cathedral interior, emphasizing its soaring arches."', 'Telephoto Lens (e.g., "85mm
+          lens," "200mm lens"): Narrows the field of view and compresses perspective, making distant subjects appear closer
+          and often isolating the subject by creating a shallow depth of field. "Telephoto lens shot capturing a distant eagle
+          in flight against a mountain range."', 'Shallow Depth of Field / Bokeh: An optical effect where only a narrow plane
+          of the image is in sharp focus, while the foreground and/or background are blurred. The aesthetic quality of this
+          blur is known as ''bokeh''. "Portrait of a man with a shallow depth of field, their face sharp against a softly
+          blurred park background with beautiful bokeh."', 'Deep Depth of Field: Keeps most or all of the image, from foreground
+          to background, in sharp focus. "Landscape scene with deep depth of field, showing sharp detail from the wildflowers
+          in the immediate foreground to the distant mountains."', 'Lens Flare: An effect created when a bright light source
+          directly strikes the camera lens, causing streaks, starbursts, or circles of light to appear in the image. Often
+          used for dramatic or cinematic effect. "Cinematic lens flare as the sun dips below the horizon behind a silhouetted
+          couple."', 'Rack Focus: The technique of shifting the focus of the lens from one subject or plane of depth to another
+          within a single, continuous shot. "Rack focus from a character''s thoughtful face in the foreground to a significant
+          photograph on the wall behind them."', 'Fisheye Lens Effect: An ultra-wide-angle lens that produces extreme barrel
+          distortion, creating a circular or strongly convex, wide panoramic image. "Fisheye lens view from inside a car,
+          capturing the driver and the entire curved dashboard and windscreen."', 'Vertigo Effect (Dolly Zoom): A camera effect
+          achieved by dollying the camera towards or away from a subject while simultaneously zooming the lens in the opposite
+          direction. This keeps the subject roughly the same size in the frame, but the background perspective changes dramatically,
+          often conveying disorientation or unease. "Vertigo effect (dolly zoom) on a character standing at the edge of a
+          cliff, the background rushing away.', </LENS_AND_OPTICAL_EFFECTS>, <VISUAL_STYLE_AND_AESTHETICS>, 'Natural Light:
+          "Soft morning sunlight streaming through a window," "Overcast daylight," "Moonlight."', 'Artificial Light: "Warm
+          glow of a fireplace," "Flickering candlelight," "Harsh fluorescent office lighting," "Pulsating neon signs."', 'Cinematic
+          Lighting: "Rembrandt lighting on a portrait," "Film noir style with deep shadows and stark highlights," "High-key
+          lighting for a bright, cheerful scene," "Low-key lighting for a dark, mysterious mood."', 'Specific Effects: "Volumetric
+          lighting creating visible light rays," "Backlighting to create a silhouette," "Golden hour glow," "Dramatic side
+          lighting."', 'Happy/Joyful: Bright, vibrant, cheerful, uplifting, whimsical.', 'Sad/Melancholy: Somber, muted colors,
+          slow pace, poignant, wistful.', 'Suspenseful/Tense: Dark, shadowy, quick cuts (if implying edit), sense of unease,
+          thrilling.', 'Peaceful/Serene: Calm, tranquil, soft, gentle, meditative.', 'Epic/Grandiose: Sweeping, majestic,
+          dramatic, awe-inspiring.', 'Futuristic/Sci-Fi: Sleek, metallic, neon, technological, dystopian, utopian.', 'Vintage/Retro:
+          Sepia tone, grainy film, specific era aesthetics (e.g., "1950s Americana," "1980s vaporwave").', 'Romantic: Soft
+          focus, warm colors, intimate.', 'Horror: Dark, unsettling, eerie, gory (though be mindful of content filters).',
+        'Photorealistic: “Ultra-realistic rendering," "Shot on 8K camera."', 'Cinematic: "Cinematic film look," "Shot on 35mm
+          film," "Anamorphic widescreen."', 'Animation Styles: "Japanese anime style," "Classic Disney animation style," "Pixar-like
+          3D animation," "Claymation style," "Stop-motion animation," "Cel-shaded animation."', 'Art Movements/Artists: "In
+          the style of Van Gogh," "Surrealist painting," "Impressionistic," "Art Deco design," "Bauhaus aesthetic."', 'Specific
+          Looks: "Gritty graphic novel illustration," "Watercolor painting coming to life," "Charcoal sketch animation," "Blueprint
+          schematic style.', 'Color Palettes: "Monochromatic black and white," "Vibrant and saturated tropical colors," "Muted
+          earthy tones," "Cool blue and silver futuristic palette," "Warm autumnal oranges and browns."', 'Atmospheric Effects:
+          "Thick fog rolling across a moor," "Swirling desert sands," "Gentle falling snow creating a soft blanket," "Heat
+          haze shimmering above asphalt," "Magical glowing particles in the air," "Subsurface scattering on a translucent
+          object."', 'Textural Qualities: "Rough-hewn stone walls," "Smooth, polished chrome surfaces," "Soft, velvety fabric,"
+          "Dewdrops clinging to a spiderweb."', </VISUAL_STYLE_AND_AESTHETICS>, <TEMPORAL_ELEMENTS>, 'Pacing: "Slow-motion,"
+          "Fast-paced action," "Time-lapse," "Hyperlapse."', 'Evolution (subtle for short clips): "A flower bud slowly unfurling",
+          "A candle burning down slightly",  "Dawn breaking, the sky gradually lightening."', 'Rhythm: "Pulsating light",
+          "Rhythmic movement."', </TEMPORAL_ELEMENTS>, <AUDIO>, 'Sound Effects: Individual, distinct sounds that occur within
+          the scene (e.g., "the sound of a phone ringing" , "water splashing in the background" , "soft house sounds, the
+          creak of a closet door, and a ticking clock" ).', 'Ambient Noise: The general background noise that makes a location
+          feel real (e.g., "the sounds of city traffic and distant sirens" , "waves crashing on the shore" , "the quiet hum
+          of an office" ).', 'Dialogue: Spoken words from characters or a narrator (e.g., "The man in the red hat says: ''Where
+          is the rabbit?''" , "A voiceover with a polished British accent speaks in a serious, urgent tone" , "Two people
+          discuss a movie" ).', </AUDIO>, </PROMPTING_BEST_PRACTICES>]
+      generate_content_config:
+        class: GenerateContentConfig
+        temperature: "1.2"
+      before_model_callback: callbacks.rate_limit_callback
+  yt_analysis_generator_agent:
+    type: instance
+    models: [config.worker_model]
+    tools: [analyze_youtube_videos]
+    params:
+      name: yt_analysis_generator_agent
+      description: Process YouTube videos, extract key details, and provide an overall summary.
+      instruction: ['Your goal is to **understand the content** of the trending YouTube video in the ''target_yt_trends''
+          state key:', <target_yt_trends>, '{target_yt_trends}', </target_yt_trends>, 1. Use the `analyze_youtube_videos`
+          tool to analyze the `video_url` in the 'target_yt_trends' state variable., '2. Provide a concise summary covering:',
+        '- **Main Thesis/Claim:** What is the video about? What is being discussed?', '- **Key Entities:** Describe any key
+          entities (e.g., people, places, things) involved and how they are related.', '- **Trend Context:** Why might this
+          video be trending?', '- **Summary:** Provide a concise summary of the video content.']
+      output_key: yt_video_analysis
+  yt_sequential_planner:
+    type: instance
+    params:
+      name: yt_sequential_planner
+      description: Executes sequential research tasks for trending YouTube videos.
+      sub_agents: [yt_analysis_generator_agent, yt_web_planner, yt_web_searcher]
+  yt_web_planner:
+    type: instance
+    models: [config.lite_planner_model]
+    params:
+      name: yt_web_planner
+      include_contents: none
+      description: Generates initial queries to understand why the 'target_yt_trends' are trending.
+      instruction: [You are a research strategist., Your job is to create high-level queries that will help marketers better
+          understand the cultural significance of the selected trending YouTube video(s) in the 'target_yt_trends' state key.,
+        'Review the trending YouTube video and analysis provided in the **Input Data**, then proceed to the **Instructions**.',
+        '---', '### Input Data', <target_yt_trends>, '{target_yt_trends}', </target_yt_trends>, <yt_video_analysis>, '{yt_video_analysis}',
+        </yt_video_analysis>, '---', '### Instructions', 1. Read the 'target_yt_trends' and 'yt_video_analysis' state keys
+          to understand the trending YouTube video., 2. Generate 2-3 web queries to better understanding the context of the
+          video., Your output should just include a numbered list of queries. Nothing else.]
+      output_key: initial_yt_queries
+  yt_web_searcher:
+    type: instance
+    models: [config.worker_model]
+    tools: [google_search]
+    params:
+      name: yt_web_searcher
+      description: Performs web research to better understand the context of the trending YouTube video.
+      planner: BuiltInPlanner
+      instruction: [You are a diligent and exhaustive researcher., Your task is to conduct initial web research for concepts
+          described in the 'yt_video_analysis' state key., You will be provided with a list of web queries in the 'initial_yt_queries'
+          state key., Execute all of these queries using the 'google_search' tool and synthesize the results into a detailed
+          summary]
+      output_key: yt_web_search_insights
+      after_agent_callback: callbacks.collect_research_sources_callback
+
+models:
+  config.critic_model:
+    type: literal
+    agents: [combined_web_evaluator, combined_report_composer]
+  config.lite_planner_model:
+    type: literal
+    agents: [campaign_web_planner, yt_web_planner, gs_web_planner]
+  config.worker_model:
+    type: literal
+    agents: [campaign_web_searcher, yt_analysis_generator_agent, yt_web_searcher, gs_web_searcher, root_agent, merge_planners,
+      enhanced_combined_searcher, research_orchestrator]
+  gemini-2.0-flash-001:
+    type: literal
+    agents: [ad_content_generator_agent]
+  gemini-2.5-flash:
+    type: literal
+    agents: [trends_and_insights_agent, ad_copy_drafter, visual_concept_drafter, visual_concept_finalizer]
+  gemini-2.5-pro:
+    type: literal
+    agents: [ad_copy_critic, visual_concept_critic, visual_generator]
+
+tools:
+  ad_creative_pipeline:
+    type: agent
+    agents: [ad_content_generator_agent]
+    params:
+      wrapper: AgentTool
+      agent: ad_creative_pipeline
+  analyze_youtube_videos:
+    type: function
+    agents: [yt_analysis_generator_agent]
+    params:
+      description: |-
+        Analyzes youtube videos given a prompt and the video's URL
+
+        Args:
+            prompt (str): The prompt to use for the analysis.
+            youtube_url (str): The url of a YouTube video to analyze.
+                The URL should be formatted similarly to: `https://www.youtube.com/watch?v=dmF8oJ5JAVE`, where 'dmF8oJ5JAVE' is the video's ID.
+        Returns:
+            Results from the youtube video analysis prompt.
+  combined_research_pipeline:
+    type: agent
+    agents: [research_orchestrator]
+    params:
+      wrapper: AgentTool
+      agent: combined_research_pipeline
+  generate_image:
+    type: function
+    agents: [visual_generator]
+  generate_video:
+    type: function
+    agents: [visual_generator]
+  get_daily_gtrends:
+    type: function
+    agents: [trends_and_insights_agent]
+    params:
+      description: |-
+        Retrieves the top 25 Google Search Trends (term, rank, refresh_date).
+
+        Args:
+            today_date: Today's date in the format 'MM/DD/YYYY'. Use the default value provided.
+
+        Returns:
+            dict: key is the latest date for the trends, the value is a markdown table containing the Google Search Trends.
+                 The table includes columns for 'term', 'rank', and 'refresh_date'.
+                 Returns 25 terms ordered by their rank (ascending order) for the current week.
+  get_youtube_trends:
+    type: function
+    agents: [trends_and_insights_agent]
+    params:
+      description: |-
+        Makes request to YouTube Data API for most popular videos in a given region.
+        Returns a dictionary of videos that match the API request parameters e.g., trending videos
+
+        Args:
+            region_code (str): selects a video chart available in the specified region. Values are ISO 3166-1 alpha-2 country codes.
+                For example, the region_code for the United Kingdom would be 'GB', whereas 'US' would represent The United States.
+            max_results (int): The number of video results to return.
+
+        Returns:
+            dict: The response from the YouTube Data API.
+  google_search:
+    type: module
+    agents: [campaign_web_searcher, yt_web_searcher, gs_web_searcher, enhanced_combined_searcher, ad_copy_drafter, ad_copy_critic,
+      visual_concept_drafter, visual_concept_critic]
+  load_artifacts:
+    type: module
+    agents: [ad_content_generator_agent]
+  memorize:
+    type: function
+    agents: [trends_and_insights_agent]
+    params:
+      description: |-
+        Memorize pieces of information, one key-value pair at a time.
+
+        Args:
+            key: the label indexing the memory to store the value.
+            value: the information to be stored.
+            tool_context: The ADK tool context.
+
+        Returns:
+            A status message.
+  save_creatives_and_research_report:
+    type: function
+    agents: [root_agent]
+    params:
+      description: |-
+        Saves generated PDF report bytes as an artifact.
+
+        Args:
+            tool_context (ToolContext): The tool context.
+
+        Returns:
+            dict: Status and the location of the PDF artifact file.
+  save_draft_report_artifact:
+    type: function
+    agents: [research_orchestrator]
+    params:
+      description: |-
+        Saves generated PDF report bytes as an artifact.
+
+        Args:
+            tool_context (ToolContext): The tool context.
+
+        Returns:
+            dict: Status and the location of the generated PDF artifact.
+  save_img_artifact_key:
+    type: function
+    agents: [ad_content_generator_agent]
+    params:
+      description: |-
+        Tool to save image artifact details to the session state.
+        Use this tool after generating an image with the `generate_image` tool.
+
+        Args:
+            artifact_key_dict (dict): A dict representing a generated image artifact. Use the `tool_context` to extract the following schema:
+                artifact_key (str): The filename used to identify the image artifact; the value returned in `generate_image` tool response.
+                img_prompt (str): The prompt used to generate the image artifact.
+                concept (str): A brief explanation of the creative concept used to generate this artifact.
+                headline (str): The attention-grabbing headline proposed for the artifact's ad-copy.
+                caption (str): The candidate social media caption proposed for the artifact's ad-copy.
+                trend (str): The trend(s) referenced by this creative.
+                rationale_perf (str): A brief rationale explaining why this ad copy will perform well.
+                audience_appeal (str): A brief explanation for the target audience appeal.
+                markets_product (str): A brief explanation of how this markets the target product.
+            tool_context (ToolContext) The tool context.
+
+        Returns:
+            dict: the status of this functions overall outcome.
+  save_search_trends_to_session_state:
+    type: function
+    agents: [trends_and_insights_agent]
+    params:
+      description: |-
+        Tool to save `new_trends` to the 'target_search_trends' state key.
+        Use this tool after the user has selected a Trending Search topic to target for the campaign.
+
+        Args:
+            new_trends: The selected trends from the markdown table. Use the `tool_context` to extract the following schema:
+                trend_title: str -> The trend's `term` from the markdown table. Should be the exact same words as seen in the markdown table.
+                trend_rank: int -> The trend's `rank` in the markdown table. Should be the exact same number as seen in the markdown table.
+                trend_refresh_date: str -> The trend's `refresh_date` from the markdown table. Should be the same date string as seen in the markdown table, and formatted as 'MM/DD/YYYY'
+            tool_context: The tool context.
+
+        Returns:
+            A status message.
+  save_select_ad_copy:
+    type: function
+    agents: [ad_content_generator_agent]
+    params:
+      description: |-
+        Tool to save `select_ad_copy_dict` to the 'final_select_ad_copies' state key.
+        Use this tool after the user has selected one or more ad copies to proceed with in ad generation.
+
+        Args:
+            select_ad_copy_dict (dict): A dict representing an ad copy specifically selected by the user for ad generation. Use the `tool_context` to extract the following schema:
+                name (str): An intuitive name of the ad copy concept.
+                headline (str): A concise, attention-grabbing phrase.
+                call_to_action (str): A catchy, action-oriented phrase intended for the target audience.
+                caption (str): The candidate social media caption proposed for the ad copy.
+                body_text (str): The main body of the ad copy. Should be compelling.
+                trend_ref (str): The trend(s) referenced in this ad copy (e.g., from the 'target_search_trends' and 'target_yt_trends' state keys).
+                rationale (str): A brief rationale explaining why this ad copy will perform well.
+            tool_context: The tool context.
+
+        Returns:
+            A status message.
+  save_select_visual_concept:
+    type: function
+    agents: [ad_content_generator_agent]
+    params:
+      description: |-
+        Tool to save `select_vis_concept_dict` to the 'final_select_vis_concepts' state key.
+        Use this tool after the user has selected one or more visual concepts to proceed with in ad generation.
+
+        Args:
+            select_vis_concept_dict (dict): A dict representing a visual concept specifically selected by the user for ad generation. Use the `tool_context` to extract the following schema:
+                name (str): An intuitive name of the visual concept.
+                type (str): the intended type of creative e.g., "image" or "video".
+                trend_ref (str): The trend(s) referenced in this visual concept (e.g., from the 'target_search_trends' and 'target_yt_trends' state keys).
+                headline (str): A concise, attention-grabbing phrase.
+                call_to_action (str): A catchy, action-oriented phrase intended for the target audience.
+                caption (str): The candidate social media caption proposed for the visual concept.
+                creative_explain (str): A brief explanation connecting the visual concept to the proposed creative direction.
+                rationale (str): A brief rationale explaining why this visual concept will perform well.
+                prompt (str): The suggested prompt to generate this creative.
+            tool_context: The tool context.
+
+        Returns:
+            A status message.
+  save_vid_artifact_key:
+    type: function
+    agents: [ad_content_generator_agent]
+    params:
+      description: |-
+        Tool to save video artifact details to the session state.
+        Use this tool after generating an video with the `generate_video` tool.
+
+        Args:
+            artifact_key_dict (dict): A dict representing a generated video artifact. Use the `tool_context` to extract the following schema:
+                artifact_key (str): The filename used to identify the video artifact; the value returned in `generate_video` tool response.
+                vid_prompt (str): The prompt used to generate the video artifact.
+                concept (str): A brief explanation of the creative concept used to generate this artifact.
+                headline (str): The attention-grabbing headline proposed for the artifact's ad-copy.
+                caption (str): The candidate social media caption proposed for the artifact's ad-copy.
+                trend (str): The trend(s) referenced by this creative.
+                rationale_perf (str): A brief rationale explaining why this ad copy will perform well.
+                audience_appeal (str): A brief explanation for the target audience appeal.
+                markets_product (str): A brief explanation of how this markets the target product.
+            tool_context (ToolContext) The tool context.
+
+        Returns:
+            dict: the status of this functions overall outcome.
+  save_yt_trends_to_session_state:
+    type: function
+    agents: [trends_and_insights_agent]
+    params:
+      description: |-
+        Tool to save `selected_trends` to the 'target_yt_trends' state key.
+        Use this tool after the user has selected trending YouTube content to target for the campaign.
+
+        Args:
+            selected_trends: dict -> The selected trends from the markdown table.
+                video_title: str -> The title of the user-selected video from YouTube Trends (`videoTitle`).
+                video_duration: str -> The user-selected video's duration (`duration`).
+                video_url: str -> The user-selected video's URL (`videoURL`).
+            tool_context: The tool context.
+
+        Returns:
+            A status message.
+  visual_generation_pipeline:
+    type: agent
+    agents: [ad_content_generator_agent]
+    params:
+      wrapper: AgentTool
+      agent: visual_generation_pipeline
+  visual_generator:
+    type: agent
+    agents: [ad_content_generator_agent]
+    params:
+      wrapper: AgentTool
+      agent: visual_generator
+
+teams:
+  ad_creative_pipeline:
+    type: sequential
+    agents: [ad_creative_pipeline, ad_copy_drafter, ad_copy_critic]
+  ca_sequential_planner:
+    type: sequential
+    agents: [ca_sequential_planner, campaign_web_planner, campaign_web_searcher]
+  combined_research_pipeline:
+    type: sequential
+    agents: [combined_research_pipeline, merge_parallel_insights, combined_web_evaluator, enhanced_combined_searcher, combined_report_composer]
+  gs_sequential_planner:
+    type: sequential
+    agents: [gs_sequential_planner, gs_web_planner, gs_web_searcher]
+  merge_parallel_insights:
+    type: sequential
+    agents: [merge_parallel_insights, parallel_planner_agent, merge_planners]
+  parallel_planner_agent:
+    type: parallel
+    agents: [parallel_planner_agent, yt_sequential_planner, gs_sequential_planner, ca_sequential_planner]
+  root_agent:
+    type: hierarchy
+    agents: [root_agent, research_orchestrator, trends_and_insights_agent, ad_content_generator_agent]
+  visual_generation_pipeline:
+    type: sequential
+    agents: [visual_generation_pipeline, visual_concept_drafter, visual_concept_critic, visual_concept_finalizer]
+  yt_sequential_planner:
+    type: sequential
+    agents: [yt_sequential_planner, yt_analysis_generator_agent, yt_web_planner, yt_web_searcher]
+
+imports:
+  access_secret_version: shared_libraries.secrets.access_secret_version
+  ad_content_generator_agent: agent.ad_content_generator_agent
+  AD_CREATIVE_SUBAGENT_INSTR: prompts.AD_CREATIVE_SUBAGENT_INSTR
+  Agent: google.adk.agents.Agent
+  agent: agent
+  AgentTool: google.adk.tools.agent_tool.AgentTool
+  analyze_youtube_videos: trends_and_insights_agent.tools.analyze_youtube_videos
+  AUTO_TREND_AGENT_INSTR: prompts.AUTO_TREND_AGENT_INSTR
+  bigquery: google.cloud.bigquery
+  BuiltInPlanner: google.adk.planners.BuiltInPlanner
+  BytesIO: io.BytesIO
+  ca_sequential_planner: sub_agents.campaign_web_researcher.agent.ca_sequential_planner
+  callbacks: trends_and_insights_agent.shared_libraries.callbacks
+  Client: google.genai.Client
+  combined_research_pipeline: staged_researcher.agent.combined_research_pipeline
+  config: trends_and_insights_agent.shared_libraries.config.config
+  cv2: cv2
+  dataclass: dataclasses.dataclass
+  datetime: datetime
+  discovery: googleapiclient.discovery
+  download_blob: shared_libraries.utils.download_blob
+  download_image_from_gcs: shared_libraries.utils.download_image_from_gcs
+  genai: google.genai
+  generate_image: tools.generate_image
+  generate_video: tools.generate_video
+  GenerateVideosConfig: google.genai.types.GenerateVideosConfig
+  get_daily_gtrends: tools.get_daily_gtrends
+  get_youtube_trends: tools.get_youtube_trends
+  GLOBAL_INSTR: prompts.GLOBAL_INSTR
+  google_crc32c: google_crc32c
+  google_search: google.adk.tools.google_search
+  gs_sequential_planner: sub_agents.search_web_researcher.agent.gs_sequential_planner
+  Image: PIL.Image
+  load_artifacts: google.adk.tools.load_artifacts
+  logging: logging
+  MarkdownPdf: markdown_pdf.MarkdownPdf
+  memorize: tools.memorize
+  Optional: typing.Optional
+  os: os
+  ParallelAgent: google.adk.agents.ParallelAgent
+  pd: pandas
+  research_orchestrator: common_agents.staged_researcher.agent.research_orchestrator
+  ROOT_AGENT_INSTR: prompts.ROOT_AGENT_INSTR
+  save_creatives_and_research_report: common_agents.ad_content_generator.tools.save_creatives_and_research_report
+  save_draft_report_artifact: tools.save_draft_report_artifact
+  save_img_artifact_key: tools.save_img_artifact_key
+  save_search_trends_to_session_state: tools.save_search_trends_to_session_state
+  save_select_ad_copy: tools.save_select_ad_copy
+  save_select_visual_concept: tools.save_select_visual_concept
+  save_vid_artifact_key: tools.save_vid_artifact_key
+  save_yt_trends_to_session_state: tools.save_yt_trends_to_session_state
+  schema_types: schema_types
+  secrets: secrets
+  Section: markdown_pdf.Section
+  SequentialAgent: google.adk.agents.SequentialAgent
+  shutil: shutil
+  sm: google.cloud.secretmanager
+  storage: google.cloud.storage
+  time: time
+  ToolContext: google.adk.tools.ToolContext
+  trends_and_insights_agent: trend_assistant.agent.trends_and_insights_agent
+  types: google.genai.types
+  upload_blob_to_gcs: shared_libraries.utils.upload_blob_to_gcs
+  utils: utils
+  uuid: uuid
+  VEO3_INSTR: prompts.VEO3_INSTR
+  yt_sequential_planner: sub_agents.youtube_web_researcher.agent.yt_sequential_planner
+
+functions:
+  access_secret_version:
+    type: sync
+    module: trends_and_insights_agent.shared_libraries.secrets
+    args: [secret_id, version_id]
+    params:
+      returns: Optional
+  analyze_youtube_videos:
+    type: sync
+    module: trends_and_insights_agent.tools
+    args: [prompt, youtube_url]
+    params:
+      returns: Optional[str]
+  download_blob:
+    type: sync
+    module: trends_and_insights_agent.shared_libraries.utils
+    args: [bucket_name, source_blob_name]
+  download_image_from_gcs:
+    type: sync
+    module: trends_and_insights_agent.shared_libraries.utils
+    args: [source_blob_name, destination_file_name, gcs_bucket]
+  extract_single_frame:
+    type: sync
+    module: trends_and_insights_agent.common_agents.ad_content_generator.tools
+    args: [video_path, frame_number, output_image_path]
+    params:
+      returns: str
+  generate_image:
+    type: async
+    module: trends_and_insights_agent.common_agents.ad_content_generator.tools
+    args: [prompt, tool_context, concept_name, number_of_images]
+    params:
+      returns: dict
+  generate_video:
+    type: async
+    module: trends_and_insights_agent.common_agents.ad_content_generator.tools
+    args: [prompt, concept_name, tool_context, number_of_videos, negative_prompt, existing_image_filename]
+  get_daily_gtrends:
+    type: sync
+    module: trends_and_insights_agent.common_agents.trend_assistant.tools
+    args: [today_date]
+    params:
+      returns: dict
+  get_gtrends_max_date:
+    type: sync
+    module: trends_and_insights_agent.common_agents.trend_assistant.tools
+    params:
+      returns: str
+  get_youtube_trends:
+    type: sync
+    module: trends_and_insights_agent.common_agents.trend_assistant.tools
+    args: [region_code, max_results]
+    params:
+      returns: dict
+  memorize:
+    type: sync
+    module: trends_and_insights_agent.common_agents.trend_assistant.tools
+    args: [key, value, tool_context]
+  query_youtube_api:
+    type: sync
+    module: trends_and_insights_agent.tools
+    args: [query, video_duration, video_order, num_video_results, max_num_days_ago, video_caption, channel_type, channel_id,
+      event_type]
+    params:
+      returns: dict
+  save_creatives_and_research_report:
+    type: async
+    module: trends_and_insights_agent.common_agents.ad_content_generator.tools
+    args: [tool_context]
+    params:
+      returns: dict
+  save_draft_report_artifact:
+    type: async
+    module: trends_and_insights_agent.common_agents.staged_researcher.tools
+    args: [tool_context]
+    params:
+      returns: dict
+  save_img_artifact_key:
+    type: async
+    module: trends_and_insights_agent.common_agents.ad_content_generator.tools
+    args: [artifact_key_dict, tool_context]
+    params:
+      returns: dict
+  save_search_trends_to_session_state:
+    type: async
+    module: trends_and_insights_agent.common_agents.trend_assistant.tools
+    args: [new_trends, tool_context]
+    params:
+      returns: dict
+  save_select_ad_copy:
+    type: sync
+    module: trends_and_insights_agent.common_agents.ad_content_generator.tools
+    args: [select_ad_copy_dict, tool_context]
+    params:
+      returns: dict
+  save_select_visual_concept:
+    type: sync
+    module: trends_and_insights_agent.common_agents.ad_content_generator.tools
+    args: [select_vis_concept_dict, tool_context]
+    params:
+      returns: dict
+  save_vid_artifact_key:
+    type: async
+    module: trends_and_insights_agent.common_agents.ad_content_generator.tools
+    args: [artifact_key_dict, tool_context]
+    params:
+      returns: dict
+  save_yt_trends_to_session_state:
+    type: async
+    module: trends_and_insights_agent.common_agents.trend_assistant.tools
+    args: [selected_trends, tool_context]
+    params:
+      returns: dict
+  upload_blob_to_gcs:
+    type: sync
+    module: trends_and_insights_agent.shared_libraries.utils
+    args: [source_file_name, destination_blob_name, gcs_bucket]
+    params:
+      returns: str
+  upload_file_to_gcs:
+    type: sync
+    module: trends_and_insights_agent.shared_libraries.utils
+    args: [file_path, file_data, content_type, gcs_bucket]
+
+variables:
+  BUCKET:
+    type: env
+    params:
+      caller: [os.getenv, os.environ.get]
+      path: [trends_and_insights_agent.common_agents.ad_content_generator.tools, trends_and_insights_agent.shared_libraries.utils]
+  GOOGLE_CLOUD_PROJECT:
+    type: env
+    params:
+      caller: [os.environ.get]
+      path: [trends_and_insights_agent.shared_libraries.utils]
+
+files:
+  file_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [os.path.basename]
+  files/research:
+    type: variable
+    actions: [read]
+    params:
+      caller: [os.path.exists, os.makedirs]
+  files/research/draft_research_report_with_citations.pdf:
+    type: variable
+    actions: [read]
+    params:
+      caller: [pdf.save, open]
+  report_creatives/final_trends_and_creatives_report.pdf:
+    type: variable
+    actions: [read]
+    params:
+      caller: [pdf.save, open]
+  report_creatives/imgs:
+    type: variable
+    actions: [read]
+    params:
+      caller: [os.path.exists, os.makedirs]
+  report_creatives/vids:
+    type: variable
+    actions: [read]
+    params:
+      caller: [os.path.exists, os.makedirs]
+  session_media/imgs:
+    type: variable
+    actions: [read]
+    params:
+      caller: [os.path.exists, os.makedirs]
+  session_media/imgs/user_uploaded_file:
+    type: variable
+    actions: [read]
+    params:
+      caller: [image.save]
