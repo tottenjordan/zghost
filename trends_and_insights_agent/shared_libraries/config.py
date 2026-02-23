@@ -28,6 +28,7 @@ class ResearchConfiguration:
     video_gen_model: str = (
         "veo-3.1-fast-generate-preview"  # "veo-2.0-generate-001" | veo-3.0-generate-preview
     )
+    subject_image_gen_model: str = "gemini-3-pro-image-preview"
 
     max_results_yt_trends: int = 45
 
@@ -71,6 +72,7 @@ class SetupConfiguration:
             "combined_final_cited_report": "",
             "sources": {},
             "final_report_with_citations": "",
+            "commercial_artifact": "",
         }
     }
 

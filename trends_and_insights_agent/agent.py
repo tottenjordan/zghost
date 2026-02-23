@@ -7,6 +7,7 @@ from .common_agents.trend_assistant.agent import trends_and_insights_agent
 from .common_agents.staged_researcher.agent import research_orchestrator
 from .common_agents.ad_content_generator.agent import ad_content_generator_agent
 from .common_agents.ad_content_generator.tools import save_creatives_and_research_report
+from .common_agents.av_editing_studio.agent import av_editing_studio_agent
 
 from .shared_libraries import callbacks
 from .shared_libraries.config import config
@@ -32,6 +33,7 @@ root_agent = Agent(
         research_orchestrator,
         trends_and_insights_agent,
         ad_content_generator_agent,
+        av_editing_studio_agent,
     ],
     tools=[save_creatives_and_research_report, preload_memory],
     generate_content_config=types.GenerateContentConfig(
