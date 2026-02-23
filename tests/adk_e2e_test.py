@@ -277,12 +277,12 @@ def main():
     )
 
     # ===================================================================
-    # Step 4: Select first Google trend
+    # Step 4: Select a brand-safe Google trend
     # ===================================================================
-    print("\n\n--- STEP 4: Select Google Trend ---")
+    print("\n\n--- STEP 4: Select Google Trend (brand-safe) ---")
     response, tools = send_message(
         session_id,
-        "I'll go with the first trend in the list, please select it for me",
+        "Please select a brand-safe, family-friendly trend from the list that would work well for a laundry detergent campaign. Avoid anything controversial, political, or related to violence/crime.",
         timeout=SHORT_TIMEOUT,
     )
     check_state_key(session_id, "target_search_trends")
@@ -298,12 +298,12 @@ def main():
     )
 
     # ===================================================================
-    # Step 6: Select first YT trend
+    # Step 6: Select a brand-safe YT trend
     # ===================================================================
-    print("\n\n--- STEP 6: Select YouTube Trend ---")
+    print("\n\n--- STEP 6: Select YouTube Trend (brand-safe) ---")
     response, tools = send_message(
         session_id,
-        "I'll go with the first trending video in the list, please select it for me",
+        "Please select a brand-safe, family-friendly trending video from the list that would work well for a laundry detergent campaign. Avoid anything controversial, political, or related to violence/crime.",
         timeout=SHORT_TIMEOUT,
     )
     check_state_key(session_id, "target_yt_trends")

@@ -204,7 +204,7 @@ research_orchestrator = Agent(
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             include_thoughts=True,
-            # thinking_budget=1024,
+            thinking_budget=2048,
         )
     ),
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
