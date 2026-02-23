@@ -49,6 +49,12 @@ def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
 
         target.update(source)
 
+    # Always ensure required template variables have defaults to prevent
+    # KeyError in ADK's inject_session_state when processing {var} patterns
+    for key, default_value in setup_config.empty_session_state["state"].items():
+        if target.get(key) is None:
+            target[key] = default_value
+
 
 def _load_session_state(callback_context: CallbackContext):
     """
@@ -62,9 +68,13 @@ def _load_session_state(callback_context: CallbackContext):
     data = {}
     if FULL_JSON_PATH:
         if FULL_JSON_PATH.startswith("http"):
-            resp = requests.get(FULL_JSON_PATH)
-            data = json.loads(resp.text)
-            logging.info(f"\n\nLoading Initial State from URL: {data}\n\n")
+            try:
+                resp = requests.get(FULL_JSON_PATH)
+                data = json.loads(resp.text)
+                logging.info(f"\n\nLoading Initial State from URL: {data}\n\n")
+            except Exception as e:
+                logging.error(f"Error loading state from URL {FULL_JSON_PATH}: {e}")
+                data = setup_config.empty_session_state
         else:
             try:
                 with open(FULL_JSON_PATH, "r") as f:

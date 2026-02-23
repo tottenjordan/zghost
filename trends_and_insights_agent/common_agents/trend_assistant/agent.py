@@ -14,6 +14,7 @@ from .tools import (
 )
 from .prompts import AUTO_TREND_AGENT_INSTR
 from ...shared_libraries.config import config
+from ...shared_libraries import callbacks
 from google.adk.planners import BuiltInPlanner
 
 
@@ -29,6 +30,7 @@ trends_and_insights_agent = Agent(
         save_yt_trends_to_session_state,
         save_search_trends_to_session_state,
     ],
+    before_agent_callback=callbacks._load_session_state,
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             include_thoughts=True,

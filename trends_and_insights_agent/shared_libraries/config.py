@@ -62,6 +62,15 @@ class SetupConfiguration:
             "key_selling_points": "",
             "target_search_trends": {"target_search_trends": []},
             "target_yt_trends": {"target_yt_trends": []},
+            # Template variables used in downstream agent instructions
+            "yt_video_analysis": "",
+            "combined_web_search_insights": "",
+            "campaign_web_search_insights": "",
+            "gs_web_search_insights": "",
+            "yt_web_search_insights": "",
+            "combined_final_cited_report": "",
+            "sources": {},
+            "final_report_with_citations": "",
         }
     }
 
