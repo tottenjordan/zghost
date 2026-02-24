@@ -150,4 +150,25 @@ After saving, present to the user:
 - `concatenate_clips`: Join multiple clips into a single continuous video using ffmpeg.
 - `trim_video`: Trim a video to a specific duration using ffmpeg.
 - `save_commercial_artifact`: Save the final commercial as an ADK artifact and update session state.
+
+---
+
+## Revision Mode
+
+If `focus_group_evaluation` exists in session state with recommendation "NO-GO", you are in revision mode. The root agent will provide specific feedback from the focus group about what needs to improve.
+
+Follow this revision workflow:
+
+1. **Review Feedback**: Read the `areas_for_improvement` from the `focus_group_evaluation` in session state. These are the specific weaknesses identified by the focus group panel.
+2. **Identify Weak Scenes**: Based on the feedback, determine which of the 4 scenes (clips) are weakest and need regeneration. Map each area of improvement to the scene(s) it affects.
+3. **Regenerate Weak Scenes**: Regenerate ONLY the clips that correspond to weak scenes. For each regenerated clip:
+   - Use the same subject reference images for character consistency.
+   - Revise the clip prompt to directly address the focus group's criticism.
+   - Maintain frame matching with adjacent clips (extract last frame from the previous clip for continuity).
+   - Keep strong clips unchanged.
+4. **Re-Assemble**: Call `concatenate_clips` with all 4 clip GCS URIs (mix of kept and regenerated clips) in scene order. Then call `trim_video` to 30 seconds.
+5. **Save Revised Commercial**: Call `save_commercial_artifact` with the trimmed video's GCS URI and updated metadata. Include a `revision_notes` field in the metadata describing what was changed and why.
+6. **Update Iteration Counter**: Increment the `focus_group_iteration` counter in session state after saving.
+
+**Important**: When revising, preserve what works. If the focus group praised certain aspects (e.g., "strong emotional hook in Scene 1"), keep those scenes intact. Only regenerate scenes that were specifically criticized.
 """

@@ -8,6 +8,7 @@ from .skills.market_research.agents import research_orchestrator
 from .skills.ad_creative.agents import ad_content_generator_agent
 from .skills.ad_creative.tools import save_creatives_and_research_report
 from .skills.av_studio.agents import av_editing_studio_agent
+from .skills.focus_group.agents import focus_group_evaluator_agent
 
 from .shared_libraries import callbacks
 from .shared_libraries.config import config
@@ -34,6 +35,7 @@ root_agent = Agent(
         trends_and_insights_agent,
         ad_content_generator_agent,
         av_editing_studio_agent,
+        focus_group_evaluator_agent,
     ],
     tools=[save_creatives_and_research_report, preload_memory],
     generate_content_config=types.GenerateContentConfig(

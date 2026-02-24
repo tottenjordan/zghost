@@ -54,7 +54,7 @@ poetry install               # Install from lock file
 
 ### Skills-Based Agent Hierarchy
 
-The system is organized into 4 skills, each owned by a different team:
+The system is organized into 5 skills, each owned by a different team:
 
 ```
 root_agent (orchestrator)
@@ -82,9 +82,14 @@ root_agent (orchestrator)
 │       │   ├── visual_concept_critic
 │       │   └── visual_concept_finalizer
 │       └── visual_generator             # Imagen/Veo generation
-└── [av-studio skill]
-    └── av_editing_studio_agent          # 30s commercial production
+├── [av-studio skill]
+│   └── av_editing_studio_agent          # 30s commercial production
+└── [focus-group skill]
+    └── focus_group_evaluator_agent      # Commercial quality evaluation + GO/NO-GO
 ```
+
+**Iteration Loop**: After AV studio produces a commercial, the focus group evaluates it.
+If NO-GO and iteration < 3, the AV studio revises based on feedback. Max 3 iterations.
 
 ### Key Directories
 
@@ -108,7 +113,11 @@ trends_and_insights_agent/
 │   │   ├── SKILL.md
 │   │   ├── agents.py, tools.py, prompts.py
 │   │   └── references/
-│   └── av_studio/              # Skill 4: AV Production team
+│   ├── av_studio/              # Skill 4: AV Production team
+│   │   ├── SKILL.md
+│   │   ├── agents.py, tools.py, prompts.py
+│   │   └── references/
+│   └── focus_group/            # Skill 5: QA/Analytics team
 │       ├── SKILL.md
 │       ├── agents.py, tools.py, prompts.py
 │       └── references/

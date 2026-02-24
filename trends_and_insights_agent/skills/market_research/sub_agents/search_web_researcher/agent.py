@@ -7,8 +7,8 @@ from google.adk.tools import google_search
 from google.adk.planners import BuiltInPlanner
 from google.adk.agents import Agent, SequentialAgent
 
-from ....shared_libraries import callbacks
-from ....shared_libraries.config import config
+from .....shared_libraries import callbacks
+from .....shared_libraries.config import config
 
 
 gs_web_planner = Agent(

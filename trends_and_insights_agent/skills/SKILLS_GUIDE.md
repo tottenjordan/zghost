@@ -48,14 +48,22 @@ skills/
 │   ├── prompts.py
 │   └── references/
 │       └── veo3_prompting_guide.md
-└── av_studio/                         # Skill 4: AV Production team
+├── av_studio/                         # Skill 4: AV Production team
+│   ├── __init__.py
+│   ├── SKILL.md
+│   ├── agents.py
+│   ├── tools.py
+│   ├── prompts.py
+│   └── references/
+│       └── storyboard_template.md
+└── focus_group/                       # Skill 5: QA/Analytics team
     ├── __init__.py
     ├── SKILL.md
     ├── agents.py
     ├── tools.py
     ├── prompts.py
     └── references/
-        └── storyboard_template.md
+        └── scoring_rubric.md
 ```
 
 ## Ownership Model
@@ -68,6 +76,7 @@ Each skill has an owning team, defined in the `SKILL.md` frontmatter:
 | `market-research` | Research/Content Team | Web research pipeline, citation system, report generation |
 | `ad-creative` | Creative Team | Ad copy generation, visual concepts, Imagen/Veo integration |
 | `av-studio` | AV Production Team | Video clip chaining, ffmpeg assembly, commercial production |
+| `focus-group` | QA/Analytics Team | Commercial evaluation, focus group simulation, GO/NO-GO decisions |
 
 ## Development Workflow
 
@@ -111,7 +120,8 @@ tests/
 ├── test_trend_discovery.py
 ├── test_market_research.py
 ├── test_ad_creative.py
-└── test_av_studio.py
+├── test_av_studio.py
+└── test_focus_group_evaluator.py
 ```
 
 ## Adding a New Skill
@@ -160,7 +170,9 @@ keys it reads and writes in its `SKILL.md`.
 | `visual_draft`, `visual_concept_critique`, `final_visual_concepts` | ad-creative | ad-creative (internal) |
 | `final_select_vis_concepts` | ad-creative | av-studio |
 | `img_artifact_keys`, `vid_artifact_keys` | ad-creative | ad-creative |
-| `commercial_artifact` | av-studio | root |
+| `commercial_artifact` | av-studio | root, focus-group |
+| `focus_group_evaluation` | focus-group | root, av-studio |
+| `focus_group_iteration` | root | focus-group, av-studio |
 | `gcs_folder` | shared (callbacks) | all skills |
 
 ### Rules
