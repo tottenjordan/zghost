@@ -219,27 +219,34 @@ SESSION_STATE_JSON_PATH=example_state_prs.json
 root_agent (orchestrator)
 ├── trends_and_insights_agent              # Display/capture trend selections
 ├── research_orchestrator                  # Coordinate research pipeline
-│   ├── combined_research_pipeline         # Sub-agent for SequentialAgent workflow
-│   │   ├── merge_parallel_insights        # Parallel research coordination
-│   │   │   ├── parallel_planner_agent     # Runs 3 research types simultaneously
-│   │   │   │   ├── yt_sequential_planner  # YouTube trend analysis
-│   │   │   │   ├── gs_sequential_planner  # Google Search trend analysis
-│   │   │   │   └── ca_sequential_planner  # Campaign research
-│   │   │   └── merge_planners             # Combines research plans
-│   │   ├── combined_web_evaluator         # Quality check
-│   │   ├── enhanced_combined_searcher     # Expand web search
-│   │   └── combined_report_composer       # Generate unified research report
+│   └── combined_research_pipeline         # Sequential research flow (AgentTool)
+│       ├── merge_parallel_insights        # Parallel research coordination
+│       │   ├── parallel_planner_agent     # Runs 3 research types simultaneously
+│       │   │   ├── yt_sequential_planner  # YouTube trend analysis
+│       │   │   │   ├── yt_analysis_generator_agent
+│       │   │   │   ├── yt_web_planner
+│       │   │   │   └── yt_web_searcher
+│       │   │   ├── gs_sequential_planner  # Google Search trend analysis
+│       │   │   │   ├── gs_web_planner
+│       │   │   │   └── gs_web_searcher
+│       │   │   └── ca_sequential_planner  # Campaign research
+│       │   │       ├── campaign_web_planner
+│       │   │       └── campaign_web_searcher
+│       │   └── merge_planners             # Combines research plans
+│       ├── combined_web_evaluator         # Quality check
+│       ├── enhanced_combined_searcher     # Expand web search
+│       └── combined_report_composer       # Generate unified research report
 ├── ad_content_generator_agent             # Create comprehensive ad campaigns
-│   ├── ad_creative_pipeline               # Ad copy actor-critic framework
+│   ├── ad_creative_pipeline               # Ad copy actor-critic framework (AgentTool)
 │   │   ├── ad_copy_drafter
-│   │   ├── ad_copy_critic
-│   ├── visual_generation_pipeline         # Visual concept actor-critic framework
+│   │   └── ad_copy_critic
+│   ├── visual_generation_pipeline         # Visual concept actor-critic framework (AgentTool)
 │   │   ├── visual_concept_drafter
 │   │   ├── visual_concept_critic
 │   │   └── visual_concept_finalizer
-│   └── visual_generator                   # Image/video generation
-└── save_creatives_and_research_report     # Compile PDF reports
-
+│   └── visual_generator                   # Image/video generation (AgentTool)
+├── av_editing_studio_agent                # 30s commercial generation (clip chaining, ffmpeg)
+└── focus_group_evaluator_agent            # Simulated focus group review of commercials
 ```
 
 Expand sections below to visualize complex agent workflows
@@ -301,9 +308,8 @@ pytest tests/*.py
 The agent can be deployed in a couple of different ways
 
 1. Agent Engine
-   - Here's an end-to-end guide on deploying
    - Be sure to first run the `setup_ae_sm_access.sh` script to give Agent Engine access to Secret Manager
-   - Run the [deployment guide](.notebooks/deployment_guide.ipynb) to deploy the agent
+   - Run `python deploy_to_ae.py` to deploy the agent
 2. Cloud Run
    - Run `deploy_to_cloud_run.sh`
    - Note this runs unit tests prior to deploying
@@ -331,9 +337,7 @@ adk deploy cloud_run \
 
 ## Deployment to Agentspace
 
-Create an Agent Engine in the `notebooks/deployment_guide.ipynb` notebook
-
-Then note the Agent Engine ID (last numeric portion of the Resource Name). e.g.:
+First deploy to Agent Engine using `python deploy_to_ae.py`, then note the Agent Engine ID (last numeric portion of the Resource Name). e.g.:
 
 ```bash
 agent_engine = vertexai.agent_engines.get('projects/679926387543/locations/us-central1/reasoningEngines/1093257605637210112')

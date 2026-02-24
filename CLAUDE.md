@@ -9,8 +9,8 @@ This is a multi-agent marketing intelligence system built with Google's Agent De
 ## Tech Stack
 
 - **Language**: Python 3.11+
-- **Framework**: Google ADK v1.22+
-- **AI Models**: Gemini 3 Flash Preview, Imagen 4.0 Ultra, Veo 3.1
+- **Framework**: Google ADK ^1.22.1
+- **AI Models**: Gemini 3 Flash Preview, Gemini 3 Pro Image Preview, Imagen 4.0 Ultra, Veo 3.1 Fast
 - **Package Manager**: Poetry
 - **Cloud**: Google Cloud Platform (Vertex AI, GCS, Secret Manager, BigQuery)
 
@@ -59,31 +59,38 @@ The system is organized into 4 skills, each owned by a different team:
 ```
 root_agent (orchestrator)
 ├── [trend-discovery skill]
-│   └── trends_and_insights_agent        # Campaign metadata + trend selection
+│   └── trends_and_insights_agent          # Campaign metadata + trend selection
 ├── [market-research skill]
-│   └── research_orchestrator            # Coordinates research pipeline
-│       └── combined_research_pipeline   # Sequential research flow
-│           ├── merge_parallel_insights  # Parallel research coordination
-│           │   ├── parallel_planner_agent
+│   └── research_orchestrator              # Coordinates research pipeline
+│       └── combined_research_pipeline     # Sequential research flow (AgentTool)
+│           ├── merge_parallel_insights    # Parallel research coordination
+│           │   ├── parallel_planner_agent # Runs 3 research types simultaneously
 │           │   │   ├── yt_sequential_planner   # YouTube trend analysis
+│           │   │   │   ├── yt_analysis_generator_agent
+│           │   │   │   ├── yt_web_planner
+│           │   │   │   └── yt_web_searcher
 │           │   │   ├── gs_sequential_planner   # Google Search trend analysis
+│           │   │   │   ├── gs_web_planner
+│           │   │   │   └── gs_web_searcher
 │           │   │   └── ca_sequential_planner   # Campaign research
+│           │   │       ├── campaign_web_planner
+│           │   │       └── campaign_web_searcher
 │           │   └── merge_planners
 │           ├── combined_web_evaluator
 │           ├── enhanced_combined_searcher
 │           └── combined_report_composer
 ├── [ad-creative skill]
-│   └── ad_content_generator_agent       # Ad campaign orchestrator
-│       ├── ad_creative_pipeline         # Ad copy: draft → critique
+│   └── ad_content_generator_agent         # Ad campaign orchestrator
+│       ├── ad_creative_pipeline           # Ad copy: draft → critique (AgentTool)
 │       │   ├── ad_copy_drafter
 │       │   └── ad_copy_critic
-│       ├── visual_generation_pipeline   # Visual concepts: draft → critique → finalize
+│       ├── visual_generation_pipeline     # Visual concepts: draft → critique → finalize (AgentTool)
 │       │   ├── visual_concept_drafter
 │       │   ├── visual_concept_critic
 │       │   └── visual_concept_finalizer
-│       └── visual_generator             # Imagen/Veo generation
+│       └── visual_generator               # Imagen/Veo generation (AgentTool)
 └── [av-studio skill]
-    └── av_editing_studio_agent          # 30s commercial production
+    └── av_editing_studio_agent            # 30s commercial production
 ```
 
 ### Key Directories
@@ -117,9 +124,12 @@ trends_and_insights_agent/
 │   ├── callbacks.py            # Session state, rate limiting, citations
 │   ├── schema_types.py         # Pydantic models
 │   ├── utils.py                # GCS upload/download utilities
-│   └── secrets.py              # Secret Manager access
-├── tests/                      # Test suite
-└── notebooks/                  # Deployment guides
+│   ├── secrets.py              # Secret Manager access
+│   └── profiles/               # Example session state JSON configs
+tests/                          # Test suite (unit, E2E, eval datasets)
+hello_gemini_agent/             # Discovery Engine API client and test script
+installation_scripts/           # ffmpeg and opencv install scripts
+.github/workflows/              # CI/CD pipeline
 ```
 
 ### Data Flow
@@ -132,12 +142,12 @@ trends_and_insights_agent/
 
 ### Research Pipeline Architecture
 
-The research_orchestrator coordinates parallel research:
+The `research_orchestrator` uses `combined_research_pipeline` (via AgentTool) to coordinate parallel research:
 
 1. **Parallel Research Phase**: All three research types run simultaneously
-   - YouTube: `yt_analysis_generator` -> `yt_web_planner` -> `yt_web_searcher`
-   - Google Search: `gs_web_planner` -> `gs_web_searcher`
-   - Campaign: `campaign_web_planner` -> `campaign_web_searcher`
+   - YouTube: `yt_analysis_generator_agent` → `yt_web_planner` → `yt_web_searcher`
+   - Google Search: `gs_web_planner` → `gs_web_searcher`
+   - Campaign: `campaign_web_planner` → `campaign_web_searcher`
 2. **Merge Phase**: `merge_planners` combines all research plans
 3. **Evaluation**: `combined_web_evaluator` checks quality
 4. **Enhancement**: `enhanced_combined_searcher` refines results
@@ -154,22 +164,28 @@ Required in `.env`:
 - `BUCKET` - GCS bucket name
 - `YT_SECRET_MNGR_NAME` - YouTube API key secret name
 
+Optional:
+
+- `SESSION_STATE_JSON_PATH` - Path to a profile JSON for preloading campaign metadata (e.g., `example_state_pixel.json`)
+- `MEMORY_BANK_AGENT_ENGINE_ID` - Agent Engine ID for memory bank integration (used by deploy_to_ae.py)
+
 ## Important Patterns
 
-1. **Skills Architecture**: Each domain is a self-contained skill in `skills/`
-2. **Skill Ownership**: Each skill has an owning team defined in SKILL.md
-3. **Session State Contract**: Skills document which state keys they read/write
-4. **Callbacks**: State management via callbacks (rate_limit, campaign, citation)
-5. **Model Config**: Centralized in `shared_libraries/config.py`
-6. **Error Handling**: Use structured logging throughout
-7. **Citations**: Research agents must track sources via grounding callbacks
-8. **Parallel Processing**: Research runs concurrently for better performance
-9. **Pipeline Pattern**: Complex tasks use Sequential/Parallel agent compositions
-10. **Critique Pattern**: Ad generation uses draft -> critique -> finalize workflow
+1. **Skills Architecture**: Each domain is a self-contained skill in `skills/` with its own SKILL.md
+2. **Session State Contract**: Skills document which state keys they read/write
+3. **Callbacks**: State management via callbacks in `shared_libraries/callbacks.py`
+4. **Model Config**: Centralized in `shared_libraries/config.py` (`ResearchConfiguration` dataclass)
+5. **Error Handling**: Use structured logging throughout
+6. **Citations**: Research agents track sources via `collect_research_sources_callback`
+7. **Parallel Processing**: Research runs concurrently via `ParallelAgent` compositions
+8. **Pipeline Pattern**: Complex tasks use Sequential/Parallel agent compositions with `AgentTool`
+9. **Critique Pattern**: Ad copy uses draft→critique; visual concepts use draft→critique→finalize
+10. **Rate Limiting**: `rate_limit_callback` throttles LLM API calls based on configurable RPM quota
 
 ## Deployment Notes
 
-- Cloud Run deployment includes UI (`--with_ui`)
-- Agent Engine requires Secret Manager setup
+- Cloud Run deployment via `deploy_to_cloud_run.sh` (includes UI with `--with_ui`)
+- Agent Engine deployment via `deploy_to_ae.py`; requires Secret Manager setup (`setup_ae_sm_access.sh`)
+- Agentspace publishing via `publish_to_agentspace_v2.sh`
 - Always export requirements.txt before deployment
 - Check port 8000 availability for local development
