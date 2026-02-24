@@ -156,12 +156,12 @@ async def generate_image(
                 )
 
     try:
-        shutil.rmtree(DIR)
-        logging.info(f"Directory '{DIR}' and its contents removed successfully")
+        shutil.rmtree(SUBDIR)
+        logging.info(f"Directory '{SUBDIR}' and its contents removed successfully")
     except FileNotFoundError:
-        logging.exception(f"Directory '{DIR}' not found")
+        logging.exception(f"Directory '{SUBDIR}' not found")
     except OSError as e:
-        logging.exception(f"Error removing directory '{DIR}': {e}")
+        logging.exception(f"Error removing directory '{SUBDIR}': {e}")
 
     return {"status": "ok", "artifact_key": f"{artifact_key}"}
 

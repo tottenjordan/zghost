@@ -115,6 +115,7 @@ def generate_clip_with_frames(
     first_frame_gcs_uri: str,
     tool_context: ToolContext,
     last_frame_gcs_uri: str = "",
+    reference_image_gcs_uris: list[str] | None = None,
 ) -> dict:
     """Generates an 8-second video clip using Veo with first-frame (and optional last-frame) conditioning.
 
@@ -131,6 +132,9 @@ def generate_clip_with_frames(
         tool_context (ToolContext): The tool context.
         last_frame_gcs_uri (str, optional): GCS URI of the image to use as the last frame.
             If provided, the video will transition toward this image. Defaults to "".
+        reference_image_gcs_uris (list[str], optional): List of GCS URIs for character/object
+            reference images to maintain visual consistency across clips. These images guide
+            Veo to preserve character appearance throughout the commercial. Defaults to [].
 
     Returns:
         dict: Status and paths. Keys: "status", "gcs_uri", "local_path", "clip_name".
@@ -149,6 +153,21 @@ def generate_clip_with_frames(
             gen_config.last_frame = types.Image(
                 gcs_uri=last_frame_gcs_uri, mime_type="image/png"
             )
+
+        # Build reference images for character consistency
+        if reference_image_gcs_uris is None:
+            reference_image_gcs_uris = []
+        if reference_image_gcs_uris:
+            reference_images = []
+            for ref_uri in reference_image_gcs_uris:
+                ref_image = types.Image(gcs_uri=ref_uri, mime_type="image/png")
+                reference_images.append(
+                    types.VideoGenerationReferenceImage(
+                        image=ref_image,
+                        reference_type="asset",
+                    )
+                )
+            gen_config.reference_images = reference_images
 
         first_frame_image = types.Image(
             gcs_uri=first_frame_gcs_uri, mime_type="image/png"
@@ -559,4 +578,129 @@ async def save_commercial_artifact(
 
     except Exception as e:
         logging.error(f"Error saving commercial artifact: {e}")
+        return {"status": "failed", "error": str(e)}
+
+
+def validate_character_consistency(
+    reference_image_gcs_uri: str,
+    clip_gcs_uri: str,
+    frame_position: str,
+    tool_context: ToolContext,
+) -> dict:
+    """Validates character consistency between a reference image and a video clip frame.
+
+    Extracts a frame from the clip and uses Gemini vision to compare the character
+    appearance against the reference image, scoring consistency on a 1-10 scale.
+
+    Args:
+        reference_image_gcs_uri (str): GCS URI of the character reference image.
+        clip_gcs_uri (str): GCS URI of the video clip to validate.
+        frame_position (str): Which frame to extract for comparison. Must be "first" or "last".
+        tool_context (ToolContext): The tool context.
+
+    Returns:
+        dict: Validation result with keys: "status", "score" (1-10), "matches", "mismatches", "suggestion".
+    """
+    try:
+        bucket_name = GCS_BUCKET.replace("gs://", "")
+
+        # Download reference image
+        ref_blob = reference_image_gcs_uri.replace(f"gs://{bucket_name}/", "")
+        ref_bytes = download_blob(bucket_name=bucket_name, source_blob_name=ref_blob)
+
+        # Download clip and extract frame
+        clip_blob = clip_gcs_uri.replace(f"gs://{bucket_name}/", "")
+        local_dir = "session_media/av_studio/validation"
+        os.makedirs(local_dir, exist_ok=True)
+        local_video_path = os.path.join(local_dir, "validation_clip.mp4")
+
+        download_image_from_gcs(
+            source_blob_name=clip_blob,
+            destination_file_name=local_video_path,
+            gcs_bucket=bucket_name,
+        )
+
+        cap = cv2.VideoCapture(local_video_path)
+        if not cap.isOpened():
+            return {"status": "failed", "error": "Could not open video file"}
+
+        if frame_position == "last":
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            frame_number = max(0, total_frames - 1)
+        else:
+            frame_number = 0
+
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+        ret, frame = cap.read()
+        cap.release()
+
+        if not ret:
+            return {"status": "failed", "error": f"Could not read {frame_position} frame"}
+
+        local_frame_path = os.path.join(local_dir, "validation_frame.png")
+        cv2.imwrite(local_frame_path, frame)
+
+        # Read frame bytes
+        with open(local_frame_path, "rb") as f:
+            frame_bytes = f.read()
+
+        # Use Gemini to compare
+        comparison_prompt = """Compare the character in these two images for visual consistency.
+
+Image 1 is the REFERENCE (ground truth). Image 2 is from a generated video clip.
+
+Score the character consistency from 1-10 based on:
+- Face similarity (shape, features, expression style)
+- Hair (color, style, length)
+- Clothing (type, color, fit)
+- Build and posture
+- Accessories (glasses, jewelry, etc.)
+
+Respond with ONLY a JSON object (no markdown):
+{"score": <1-10>, "matches": ["list of consistent elements"], "mismatches": ["list of inconsistent elements"], "suggestion": "one sentence on how to improve consistency if score < 7"}"""
+
+        ref_part = types.Part.from_bytes(data=ref_bytes, mime_type="image/png")
+        frame_part = types.Part.from_bytes(data=frame_bytes, mime_type="image/png")
+
+        response = client.models.generate_content(
+            model=config.video_analysis_model,
+            contents=types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_text(text=comparison_prompt),
+                    ref_part,
+                    frame_part,
+                ],
+            ),
+            config=types.GenerateContentConfig(temperature=0.1),
+        )
+
+        # Clean up temp files
+        for path in [local_video_path, local_frame_path]:
+            if os.path.exists(path):
+                os.remove(path)
+
+        if response and response.text:
+            import json
+            try:
+                # Try to parse as JSON
+                text = response.text.strip()
+                if text.startswith("```"):
+                    text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+                result = json.loads(text)
+                result["status"] = "ok"
+                return result
+            except json.JSONDecodeError:
+                return {
+                    "status": "ok",
+                    "score": 5,
+                    "matches": [],
+                    "mismatches": [],
+                    "suggestion": response.text,
+                }
+        else:
+            return {"status": "failed", "error": "Empty response from Gemini"}
+
+    except Exception as e:
+        logging.error(f"Error validating character consistency: {e}")
         return {"status": "failed", "error": str(e)}
