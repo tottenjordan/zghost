@@ -3,11 +3,11 @@ from google.genai import types
 from google.adk.agents import Agent
 from google.adk.tools import preload_memory
 
-from .common_agents.trend_assistant.agent import trends_and_insights_agent
-from .common_agents.staged_researcher.agent import research_orchestrator
-from .common_agents.ad_content_generator.agent import ad_content_generator_agent
-from .common_agents.ad_content_generator.tools import save_creatives_and_research_report
-from .common_agents.av_editing_studio.agent import av_editing_studio_agent
+from .skills.trend_discovery.agents import trends_and_insights_agent
+from .skills.market_research.agents import research_orchestrator
+from .skills.ad_creative.agents import ad_content_generator_agent
+from .skills.ad_creative.tools import save_creatives_and_research_report
+from .skills.av_studio.agents import av_editing_studio_agent
 
 from .shared_libraries import callbacks
 from .shared_libraries.config import config
