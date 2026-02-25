@@ -16,12 +16,18 @@ from .music_tools import (
     generate_sound_effects,
     combine_audio_with_video,
 )
+from .voice_tools import (
+    generate_voice_over,
+    generate_dialogue,
+    generate_branded_tagline,
+    mix_voice_with_audio,
+)
 from .prompts import AV_STUDIO_INSTR
 
 av_editing_studio_agent = Agent(
     model=config.worker_model,
     name="av_editing_studio_agent",
-    description="Produces a 30-second commercial with professional soundtrack: generates SILENT Veo video clips, creates music with Lyria, and combines them for the final commercial.",
+    description="Produces a 30-second commercial with professional audio: SILENT Veo video, Lyria music, and Chirp voice-over combined for broadcast-quality output.",
     instruction=AV_STUDIO_INSTR,
     tools=[
         # Video generation (silent)
@@ -34,6 +40,11 @@ av_editing_studio_agent = Agent(
         generate_commercial_soundtrack,
         generate_sound_effects,
         combine_audio_with_video,
+        # Voice generation (Chirp)
+        generate_voice_over,
+        generate_dialogue,
+        generate_branded_tagline,
+        mix_voice_with_audio,
         # Final output
         save_commercial_artifact,
     ],

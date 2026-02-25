@@ -122,7 +122,36 @@ Generate all 4 clips sequentially, using frame matching for continuity:
 - **Trend authenticity**: Each prompt should include visual cues that connect back to the trending topic (e.g., trending colors, settings, gestures, or cultural markers identified in the research).
 - **Visual-only descriptions**: Focus on what can be SEEN, not heard. Describe visual energy, movement, and pacing instead of audio elements.
 
-### Step 4: Music Generation
+### Step 4: Voice-Over and Dialogue Generation
+
+Generate professional narration and dialogue using Chirp 3 HD based on the commercial's messaging needs:
+
+1. **Decide on voice strategy**:
+   - Voice-over only: Single narrator guides the story
+   - Dialogue: Characters interact naturally
+   - Hybrid: Narrator + character moments
+   - No voice: Let visuals and music tell the story
+
+2. **If using voice-over**, call `generate_voice_over` with:
+   - Script that reinforces key selling points and CTA
+   - Voice style matching `{target_audience}` demographics
+   - Speaking rate (0.9-1.1) based on energy level
+   - Timing marks for synchronization with visual moments
+   - SSML markup for emphasis on product name and benefits
+
+3. **If using dialogue**, call `generate_dialogue` with:
+   - Natural conversation that feels authentic to the trend
+   - Different Chirp voices for each character
+   - Appropriate emotions (curious, excited, confident)
+   - Lines that organically mention product benefits
+
+4. **Generate brand tagline**, call `generate_branded_tagline` with:
+   - The final brand message or slogan
+   - Voice that embodies the brand personality
+   - Emphasis on key words for memorability
+   - Placement at 28-30 second mark for impact
+
+### Step 5: Music Generation
 
 Generate a professional soundtrack using Lyria that matches the commercial's mood and pacing:
 
@@ -144,11 +173,13 @@ Generate a professional soundtrack using Lyria that matches the commercial's moo
    - Success/satisfaction chime at CTA
    - Any UI/interaction sounds if the product is digital
 
-### Step 5: Assembly & Final Production
+### Step 6: Assembly & Final Production
 
 1. Call `concatenate_clips` with all 4 clip GCS URIs in order. This produces a ~32-second raw SILENT video.
 2. Call `trim_video` on the concatenated video with `target_duration_seconds=30` to produce the 30-second silent commercial.
-3. Call `combine_audio_with_video` to merge the silent video with the Lyria-generated soundtrack (and any SFX).
+3. **Professional audio mixing**:
+   - If using voice-over/dialogue: Call `mix_voice_with_audio` to combine video, music, and all voice elements with automatic ducking
+   - If music only: Call `combine_audio_with_video` for simpler music + SFX mixing
 4. **Before saving**, perform a mental quality review:
    - **Consistency**: Did every clip use the exact same character description? Were there any visual breaks?
    - **Logic**: Does the 4-scene narrative flow logically? Would a viewer understand the story without any text?
@@ -156,6 +187,8 @@ Generate a professional soundtrack using Lyria that matches the commercial's moo
    - **Product integration**: Does `{target_product}` appear naturally and memorably?
    - **Compelling**: Does the commercial end on a strong CTA that drives action?
    - **Audio-visual sync**: Does the music enhance key visual moments?
+   - **Voice clarity**: Is the narration/dialogue clear and well-balanced with music?
+   - **Message delivery**: Does the voice-over effectively communicate the key selling points?
 5. Call `save_commercial_artifact` with the final video's GCS URI and metadata including:
    - title: A descriptive title for the commercial that references both the trend and the product
    - scene_descriptions: Brief description of each of the 4 scenes, including which trend each connects to
@@ -182,11 +215,19 @@ After saving, present to the user:
 - `concatenate_clips`: Join multiple clips into a single continuous SILENT video using ffmpeg.
 - `trim_video`: Trim a video to a specific duration using ffmpeg.
 
+**Voice Generation (Chirp 3 HD):**
+- `generate_voice_over`: Create professional narration with Chirp 3 HD, supporting SSML markup for emphasis and pacing.
+- `generate_dialogue`: Generate natural character dialogue with different Chirp voices and emotions.
+- `generate_branded_tagline`: Create impactful brand tagline delivery with perfect emphasis.
+
 **Music & Audio (Lyria):**
 - `generate_commercial_soundtrack`: Generate professional background music using Lyria that matches the brand and campaign tone.
 - `generate_sound_effects`: Create specific sound effects (swooshes, chimes, etc.) for key moments.
-- `combine_audio_with_video`: Merge silent video with Lyria-generated music and SFX.
+
+**Audio Mixing:**
+- `combine_audio_with_video`: Simple merge of silent video with music and SFX (no voice).
+- `mix_voice_with_audio`: Professional mixing with automatic ducking, voice EQ, and broadcast-quality output.
 
 **Final Output:**
-- `save_commercial_artifact`: Save the final commercial (with audio) as an ADK artifact and update session state.
+- `save_commercial_artifact`: Save the final commercial (with full audio) as an ADK artifact and update session state.
 """
