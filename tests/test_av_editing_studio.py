@@ -110,16 +110,16 @@ def tmp_videos_4(tmp_path):
 class TestGenerateSubjectImage:
 
     def _import_tool(self):
-        from trends_and_insights_agent.common_agents.av_editing_studio.tools import (
+        from trends_and_insights_agent.skills.av_studio.tools import (
             generate_subject_image,
         )
         return generate_subject_image
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.upload_blob_to_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.upload_blob_to_gcs"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.client"
+        "trends_and_insights_agent.skills.av_studio.tools.client"
     )
     def test_success(self, mock_client, mock_upload, tool_context):
         generate_subject_image = self._import_tool()
@@ -156,7 +156,7 @@ class TestGenerateSubjectImage:
         assert call_kwargs is not None
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.client"
+        "trends_and_insights_agent.skills.av_studio.tools.client"
     )
     def test_failure_no_candidates(self, mock_client, tool_context):
         generate_subject_image = self._import_tool()
@@ -171,10 +171,10 @@ class TestGenerateSubjectImage:
         assert result["status"] == "failed"
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.upload_blob_to_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.upload_blob_to_gcs"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.client"
+        "trends_and_insights_agent.skills.av_studio.tools.client"
     )
     def test_filename_sanitization(self, mock_client, mock_upload, tool_context):
         generate_subject_image = self._import_tool()
@@ -207,19 +207,19 @@ class TestGenerateSubjectImage:
 class TestGenerateClipWithFrames:
 
     def _import_tool(self):
-        from trends_and_insights_agent.common_agents.av_editing_studio.tools import (
+        from trends_and_insights_agent.skills.av_studio.tools import (
             generate_clip_with_frames,
         )
         return generate_clip_with_frames
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.storage_client"
+        "trends_and_insights_agent.skills.av_studio.tools.storage_client"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.download_blob"
+        "trends_and_insights_agent.skills.av_studio.tools.download_blob"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.client"
+        "trends_and_insights_agent.skills.av_studio.tools.client"
     )
     def test_first_frame_only(self, mock_client, mock_download, mock_storage, tool_context):
         generate_clip_with_frames = self._import_tool()
@@ -267,13 +267,13 @@ class TestGenerateClipWithFrames:
         assert call_kwargs.kwargs.get("image") is not None or call_kwargs[1].get("image") is not None
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.storage_client"
+        "trends_and_insights_agent.skills.av_studio.tools.storage_client"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.download_blob"
+        "trends_and_insights_agent.skills.av_studio.tools.download_blob"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.client"
+        "trends_and_insights_agent.skills.av_studio.tools.client"
     )
     def test_with_last_frame(self, mock_client, mock_download, mock_storage, tool_context):
         generate_clip_with_frames = self._import_tool()
@@ -314,7 +314,7 @@ class TestGenerateClipWithFrames:
         assert gen_config.last_frame is not None
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.client"
+        "trends_and_insights_agent.skills.av_studio.tools.client"
     )
     def test_operation_error(self, mock_client, tool_context):
         generate_clip_with_frames = self._import_tool()
@@ -340,16 +340,16 @@ class TestGenerateClipWithFrames:
 class TestExtractFrameFromClip:
 
     def _import_tool(self):
-        from trends_and_insights_agent.common_agents.av_editing_studio.tools import (
+        from trends_and_insights_agent.skills.av_studio.tools import (
             extract_frame_from_clip,
         )
         return extract_frame_from_clip
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.upload_blob_to_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.upload_blob_to_gcs"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.download_image_from_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.download_image_from_gcs"
     )
     def test_extract_first_frame(self, mock_download, mock_upload, tool_context, tmp_video):
         extract_frame_from_clip = self._import_tool()
@@ -380,10 +380,10 @@ class TestExtractFrameFromClip:
         assert img.shape[0] > 0 and img.shape[1] > 0
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.upload_blob_to_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.upload_blob_to_gcs"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.download_image_from_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.download_image_from_gcs"
     )
     def test_extract_last_frame(self, mock_download, mock_upload, tool_context, tmp_video):
         extract_frame_from_clip = self._import_tool()
@@ -411,7 +411,7 @@ class TestExtractFrameFromClip:
         assert last_img is not None
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.download_image_from_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.download_image_from_gcs"
     )
     def test_invalid_video(self, mock_download, tool_context, tmp_path):
         extract_frame_from_clip = self._import_tool()
@@ -440,16 +440,16 @@ class TestExtractFrameFromClip:
 class TestConcatenateClips:
 
     def _import_tool(self):
-        from trends_and_insights_agent.common_agents.av_editing_studio.tools import (
+        from trends_and_insights_agent.skills.av_studio.tools import (
             concatenate_clips,
         )
         return concatenate_clips
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.upload_blob_to_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.upload_blob_to_gcs"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.download_image_from_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.download_image_from_gcs"
     )
     def test_concatenate_4_clips(self, mock_download, mock_upload, tool_context, tmp_videos_4):
         concatenate_clips = self._import_tool()
@@ -505,16 +505,16 @@ class TestConcatenateClips:
 class TestTrimVideo:
 
     def _import_tool(self):
-        from trends_and_insights_agent.common_agents.av_editing_studio.tools import (
+        from trends_and_insights_agent.skills.av_studio.tools import (
             trim_video,
         )
         return trim_video
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.upload_blob_to_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.upload_blob_to_gcs"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.download_image_from_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.download_image_from_gcs"
     )
     def test_trim_to_30s(self, mock_download, mock_upload, tool_context, tmp_path):
         trim_video = self._import_tool()
@@ -559,13 +559,13 @@ class TestTrimVideo:
 class TestSaveCommercialArtifact:
 
     def _import_tool(self):
-        from trends_and_insights_agent.common_agents.av_editing_studio.tools import (
+        from trends_and_insights_agent.skills.av_studio.tools import (
             save_commercial_artifact,
         )
         return save_commercial_artifact
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.download_blob"
+        "trends_and_insights_agent.skills.av_studio.tools.download_blob"
     )
     def test_save_artifact(self, mock_download, tool_context):
         save_commercial_artifact = self._import_tool()
@@ -613,7 +613,7 @@ class TestSaveCommercialArtifact:
         assert "commercial_30s.mp4" in tool_context._artifacts
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.download_blob"
+        "trends_and_insights_agent.skills.av_studio.tools.download_blob"
     )
     def test_metadata_without_optional_fields(self, mock_download, tool_context):
         """save_commercial_artifact works with minimal metadata (backward compat)."""
@@ -777,24 +777,24 @@ class TestFullPipeline:
     """Integration test: 4 clips → concat → trim → 30s commercial."""
 
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.upload_blob_to_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.upload_blob_to_gcs"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.download_blob"
+        "trends_and_insights_agent.skills.av_studio.tools.download_blob"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.download_image_from_gcs"
+        "trends_and_insights_agent.skills.av_studio.tools.download_image_from_gcs"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.storage_client"
+        "trends_and_insights_agent.skills.av_studio.tools.storage_client"
     )
     @mock.patch(
-        "trends_and_insights_agent.common_agents.av_editing_studio.tools.client"
+        "trends_and_insights_agent.skills.av_studio.tools.client"
     )
     def test_full_pipeline_produces_30s_commercial(
         self, mock_client, mock_storage, mock_dl_img, mock_dl_blob, mock_upload, tmp_path
     ):
-        from trends_and_insights_agent.common_agents.av_editing_studio.tools import (
+        from trends_and_insights_agent.skills.av_studio.tools import (
             generate_subject_image,
             generate_clip_with_frames,
             extract_frame_from_clip,
@@ -993,7 +993,7 @@ class TestAgentConfiguration:
         assert "commercial_artifact" in state
 
     def test_agent_has_all_tools(self):
-        from trends_and_insights_agent.common_agents.av_editing_studio.agent import (
+        from trends_and_insights_agent.skills.av_studio.agents import (
             av_editing_studio_agent,
         )
         tool_names = {t.__name__ if callable(t) else str(t) for t in av_editing_studio_agent.tools}
@@ -1025,7 +1025,7 @@ class TestTrendDrivenCompletion:
 
     def test_prompt_references_trends_and_research(self):
         """The AV studio prompt must reference trend and research session state keys."""
-        from trends_and_insights_agent.common_agents.av_editing_studio.prompts import (
+        from trends_and_insights_agent.skills.av_studio.prompts import (
             AV_STUDIO_INSTR,
         )
         assert "{target_search_trends}" in AV_STUDIO_INSTR
@@ -1036,7 +1036,7 @@ class TestTrendDrivenCompletion:
 
     def test_prompt_includes_brand_and_audience_context(self):
         """The prompt must interpolate brand, product, audience, and selling points."""
-        from trends_and_insights_agent.common_agents.av_editing_studio.prompts import (
+        from trends_and_insights_agent.skills.av_studio.prompts import (
             AV_STUDIO_INSTR,
         )
         assert "{brand}" in AV_STUDIO_INSTR
@@ -1046,7 +1046,7 @@ class TestTrendDrivenCompletion:
 
     def test_prompt_enforces_narrative_arc(self):
         """The prompt should define a 4-scene narrative arc structure."""
-        from trends_and_insights_agent.common_agents.av_editing_studio.prompts import (
+        from trends_and_insights_agent.skills.av_studio.prompts import (
             AV_STUDIO_INSTR,
         )
         # Check the narrative arc labels are present
@@ -1057,14 +1057,14 @@ class TestTrendDrivenCompletion:
 
     def test_prompt_requires_character_consistency(self):
         """The prompt must instruct the agent to maintain word-for-word descriptions."""
-        from trends_and_insights_agent.common_agents.av_editing_studio.prompts import (
+        from trends_and_insights_agent.skills.av_studio.prompts import (
             AV_STUDIO_INSTR,
         )
         assert "word-for-word" in AV_STUDIO_INSTR.lower() or "verbatim" in AV_STUDIO_INSTR.lower()
 
     def test_prompt_includes_quality_review(self):
         """The prompt should include a pre-save quality review step."""
-        from trends_and_insights_agent.common_agents.av_editing_studio.prompts import (
+        from trends_and_insights_agent.skills.av_studio.prompts import (
             AV_STUDIO_INSTR,
         )
         assert "quality review" in AV_STUDIO_INSTR.lower() or "Consistency" in AV_STUDIO_INSTR
@@ -1073,7 +1073,7 @@ class TestTrendDrivenCompletion:
 
     def test_prompt_requires_trend_connection_in_metadata(self):
         """The prompt should instruct including trend_connections in metadata."""
-        from trends_and_insights_agent.common_agents.av_editing_studio.prompts import (
+        from trends_and_insights_agent.skills.av_studio.prompts import (
             AV_STUDIO_INSTR,
         )
         assert "trend_connections" in AV_STUDIO_INSTR
@@ -1082,7 +1082,7 @@ class TestTrendDrivenCompletion:
 
     def test_prompt_consistency_checklist(self):
         """The prompt should include a consistency checklist before proceeding."""
-        from trends_and_insights_agent.common_agents.av_editing_studio.prompts import (
+        from trends_and_insights_agent.skills.av_studio.prompts import (
             AV_STUDIO_INSTR,
         )
         # The checklist should reference character consistency, product placement,
@@ -1093,7 +1093,7 @@ class TestTrendDrivenCompletion:
 
     def test_storyboard_requires_trend_connection_per_scene(self):
         """Each scene definition must include which trend it connects to."""
-        from trends_and_insights_agent.common_agents.av_editing_studio.prompts import (
+        from trends_and_insights_agent.skills.av_studio.prompts import (
             AV_STUDIO_INSTR,
         )
         assert "Trend connection" in AV_STUDIO_INSTR or "trend insight" in AV_STUDIO_INSTR.lower()
@@ -1101,7 +1101,7 @@ class TestTrendDrivenCompletion:
     def test_full_pipeline_with_rich_metadata(self, tmp_path):
         """Integration: verify that the full pipeline produces metadata
         with trend connections and narrative arc."""
-        from trends_and_insights_agent.common_agents.av_editing_studio.tools import (
+        from trends_and_insights_agent.skills.av_studio.tools import (
             save_commercial_artifact,
         )
 
@@ -1127,7 +1127,7 @@ class TestTrendDrivenCompletion:
         }
 
         with mock.patch(
-            "trends_and_insights_agent.common_agents.av_editing_studio.tools.download_blob"
+            "trends_and_insights_agent.skills.av_studio.tools.download_blob"
         ) as mock_dl:
             mock_dl.return_value = b"fake video bytes"
 

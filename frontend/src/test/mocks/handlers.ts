@@ -1,19 +1,17 @@
 import { http, HttpResponse } from 'msw';
 import { mockSession, mockOrchestrationStatus, mockSearchTrends, mockYTTrends } from './fixtures';
 
-const API_BASE = 'http://localhost:8000';
-
 export const handlers = [
   // Session Management
-  http.post(`${API_BASE}/apps/:appName/users/:userId/sessions`, () => {
+  http.post('*/apps/:appName/users/:userId/sessions', () => {
     return HttpResponse.json(mockSession);
   }),
 
-  http.get(`${API_BASE}/apps/:appName/users/:userId/sessions/:sessionId`, () => {
+  http.get('*/apps/:appName/users/:userId/sessions/:sessionId', () => {
     return HttpResponse.json(mockSession);
   }),
 
-  http.patch(`${API_BASE}/apps/:appName/users/:userId/sessions/:sessionId`, async ({ request }) => {
+  http.patch('*/apps/:appName/users/:userId/sessions/:sessionId', async ({ request }) => {
     const body = await request.json() as any;
     return HttpResponse.json({
       ...mockSession,
@@ -22,21 +20,21 @@ export const handlers = [
   }),
 
   // Agent Execution
-  http.post(`${API_BASE}/run`, async ({ request }) => {
+  http.post('*/run', async ({ request }) => {
     const body = await request.json() as any;
     return HttpResponse.json({ success: true, message: body.message });
   }),
 
   // Extended API endpoints
-  http.post(`${API_BASE}/api/v1/dispatch`, () => {
+  http.post('*/api/v1/dispatch', () => {
     return HttpResponse.json({ success: true });
   }),
 
-  http.get(`${API_BASE}/api/v1/orchestration/status`, () => {
+  http.get('*/api/v1/orchestration/status', () => {
     return HttpResponse.json(mockOrchestrationStatus);
   }),
 
-  http.post(`${API_BASE}/api/v1/trends/auto-select`, () => {
+  http.post('*/api/v1/trends/auto-select', () => {
     return HttpResponse.json({
       success: true,
       search_trends: mockSearchTrends.slice(0, 2),
@@ -46,11 +44,11 @@ export const handlers = [
   }),
 
   // Trend endpoints
-  http.get(`${API_BASE}/api/v1/trends/search`, () => {
+  http.get('*/api/v1/trends/search', () => {
     return HttpResponse.json(mockSearchTrends);
   }),
 
-  http.get(`${API_BASE}/api/v1/trends/youtube`, () => {
+  http.get('*/api/v1/trends/youtube', () => {
     return HttpResponse.json(mockYTTrends);
   }),
 ];

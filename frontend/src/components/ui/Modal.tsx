@@ -32,9 +32,10 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
       />
       <div
         className={cn(
-          'relative z-50 w-full max-w-lg rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-lg',
+          'relative z-10 w-full max-w-lg rounded-lg border border-zinc-800 bg-zinc-900 p-6 shadow-lg max-h-[80vh] overflow-y-auto',
           className
         )}
+        onClick={(e) => e.stopPropagation()}
       >
         {title && (
           <h2 className="mb-4 text-xl font-semibold text-zinc-50">{title}</h2>

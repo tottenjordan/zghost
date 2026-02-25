@@ -62,7 +62,7 @@ export function PipelineControls({
         {!isRunning ? (
           <button
             onClick={() => onStart(parallelCount)}
-            disabled={!sessionId}
+            disabled={isRunning}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
           >
             <Play className="w-4 h-4" />

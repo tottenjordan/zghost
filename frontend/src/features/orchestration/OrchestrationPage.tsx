@@ -8,12 +8,11 @@ import { useOrchestration } from './useOrchestration';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import type { AgentEventType } from '../../types/agents';
 
-// Mock session ID for development
-const MOCK_SESSION_ID = 'dev-session-123';
+// Session ID is null until the pipeline is started
 const MOCK_STREAM_URL = null; // Replace with actual stream URL when available
 
 export function OrchestrationPage() {
-  const [sessionId] = useState<string | null>(MOCK_SESSION_ID);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [streamUrl] = useState<string | null>(MOCK_STREAM_URL);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -33,12 +32,14 @@ export function OrchestrationPage() {
 
   const handleStart = useCallback((parallelCount: number) => {
     console.log('Starting pipeline with', parallelCount, 'parallel streams');
+    setSessionId('dev-session-' + Date.now());
     setIsRunning(true);
     // TODO: Call API to start pipeline
   }, []);
 
   const handleStop = useCallback(() => {
     console.log('Stopping pipeline');
+    setSessionId(null);
     setIsRunning(false);
     // TODO: Call API to stop pipeline
   }, []);
@@ -128,7 +129,7 @@ export function OrchestrationPage() {
       {/* Main content area - split layout */}
       <div className="flex-1 grid grid-cols-3 gap-4 min-h-0">
         {/* Left: Pipeline Graph (2 columns) */}
-        <div className="col-span-2 border border-zinc-800 rounded-lg overflow-hidden">
+        <div className="col-span-2 border border-zinc-800 rounded-lg overflow-hidden min-h-[500px]">
           <PipelineGraph
             status={status}
             events={events}

@@ -124,7 +124,7 @@ describe('Modal', () => {
     );
 
     // Find the modal content div (not the overlay)
-    const modalContent = container.querySelector('.relative.z-50') as HTMLElement;
+    const modalContent = container.querySelector('.relative.z-10') as HTMLElement;
     expect(modalContent).toHaveClass('custom-class');
   });
 
