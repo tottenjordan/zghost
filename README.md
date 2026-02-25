@@ -35,9 +35,7 @@ git clone https://github.com/tottenjordan/zghost.git
 2. **Create a virtual environment and install dependencies**
 
 ```bash
-poetry config virtualenvs.in-project true
-
-poetry install
+uv sync
 ```
 
 3. **Authenticate and Enable Google Cloud APIs**
@@ -94,7 +92,7 @@ gcloud storage buckets create $BUCKET --location=$GOOGLE_CLOUD_LOCATION
 7. **Launch the adk developer UI**
 
 ```bash
-poetry run adk web
+uv run adk web
 ```
 
 Open your browser and navigate to [http://localhost:8000](http://localhost:8000) and select an agent from the drop-down (top left)
@@ -300,7 +298,7 @@ More detail on agent evaluations [can be found here](https://google.github.io/ad
 From the project root, run:
 
 ```bash
-pytest tests/*.py
+uv run pytest tests/*.py
 ```
 
 ## Deployment
@@ -321,10 +319,10 @@ Script for Cloud Run:
 source trends_and_insights_agent/.env
 
 # run unit tests before deploying
-pytest tests/*.py
+uv run pytest tests/*.py
 
 # write requirements.txt to the agent folder
-poetry export --without-hashes --format=requirements.txt >   trends_and_insights_agent/requirements.txt
+uv export --format requirements-txt --no-hashes > trends_and_insights_agent/requirements.txt
 
 #deploy to cloud run
 adk deploy cloud_run \

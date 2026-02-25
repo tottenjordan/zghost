@@ -11,7 +11,7 @@ This is a multi-agent marketing intelligence system built with Google's Agent De
 - **Language**: Python 3.11+
 - **Framework**: Google ADK ^1.22.1
 - **AI Models**: Gemini 3 Flash Preview, Gemini 3 Pro Image Preview, Imagen 4.0 Ultra, Veo 3.1 Fast
-- **Package Manager**: Poetry
+- **Package Manager**: uv
 - **Cloud**: Google Cloud Platform (Vertex AI, GCS, Secret Manager, BigQuery)
 
 ## Development Commands
@@ -19,15 +19,15 @@ This is a multi-agent marketing intelligence system built with Google's Agent De
 ### Initial Setup
 
 ```bash
-pip install -U poetry
-poetry install
+pip install uv
+uv sync
 ```
 
 ### Common Development Tasks
 
 ```bash
 # Run the agent for tests
-poetry run adk run trends_and_insights_agent
+uv run adk run trends_and_insights_agent
 ```
 
 ### Common flows for when the agent is running.
@@ -44,10 +44,10 @@ select a yt trend
 ### Dependency Management
 
 ```bash
-poetry add <package>          # Add dependency
-poetry add --dev <package>    # Add dev dependency
-poetry update                 # Update all dependencies
-poetry install               # Install from lock file
+uv add <package>          # Add dependency
+uv add --dev <package>    # Add dev dependency
+uv lock --upgrade         # Update all dependencies
+uv sync                   # Install from lock file
 ```
 
 ## Architecture

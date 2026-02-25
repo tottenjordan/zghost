@@ -1,32 +1,30 @@
-[tool.poetry]
+[project]
 name = "trends_and_insights_agent"
 version = "0.1.0"
 description = ""
-authors = [
-    "Jeremy Wortz <jwortz@google.com>",
-    "Jordan Totten <jordantotten@google.com>",
-]
 readme = "README.md"
-package-mode = true
-
-[tool.poetry.dependencies]
-python = ">=3.11,<4.0"
-jupyter = "^1.1.1"
-google-genai = "^1.19.0"
-pillow = "^11.1.0"
-google-cloud-aiplatform = {extras = ["adk", "agent-engines"], version = "^1.133.0"}
-google-cloud-bigquery = "^3.34.0"
-pandas = "^2.2.3"
-aiohttp = "^3.11.16"
-markdown-pdf = "^1.7"
-pytest = "^8.3.5"
-ipython = "^9.2.0"
-db-dtypes = "^1.4.3"
-tabulate = "^0.9.0"
-opencv-python = "^4.12.0.88"
-google-adk = "^1.22.1"
-
+requires-python = ">=3.11,<4.0"
+authors = [
+    {name = "Jeremy Wortz", email = "jwortz@google.com"},
+    {name = "Jordan Totten", email = "jordantotten@google.com"},
+]
+dependencies = [
+    "jupyter>=1.1.1",
+    "google-genai>=1.19.0",
+    "pillow>=11.1.0",
+    "google-cloud-aiplatform[adk,agent-engines]>=1.133.0",
+    "google-cloud-bigquery>=3.34.0",
+    "pandas>=2.2.3",
+    "aiohttp>=3.11.16",
+    "markdown-pdf>=1.7",
+    "pytest>=8.3.5",
+    "ipython>=9.2.0",
+    "db-dtypes>=1.4.3",
+    "tabulate>=0.9.0",
+    "opencv-python>=4.12.0.88",
+    "google-adk>=1.22.1",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"

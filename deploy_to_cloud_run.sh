@@ -5,7 +5,7 @@ source trends_and_insights_agent/.env
 pytest tests/*.py
 
 # write requirements.txt to the agent folder
-poetry export --without-hashes --format=requirements.txt >   trends_and_insights_agent/requirements.txt
+uv export --format requirements-txt --no-hashes > trends_and_insights_agent/requirements.txt
 
 
 #deploy to cloud run
