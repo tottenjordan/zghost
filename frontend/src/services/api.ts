@@ -32,6 +32,7 @@ class ApiClient {
       user_id: adkResponse.userId,
       created_at: adkResponse.createdAt || new Date().toISOString(),
       state: adkResponse.state || {},
+      events: adkResponse.events || [],
     };
   }
 

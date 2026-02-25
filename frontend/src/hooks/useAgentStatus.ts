@@ -1,8 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { agentService } from '../services/agents';
+import { api } from '../services/api';
 import type { OrchestrationStatus } from '../types/agents';
 
-export function useAgentStatus(sessionId: string | null, pollingInterval = 2000) {
+const APP_NAME = import.meta.env.VITE_APP_NAME || 'trends_and_insights_agent';
+const USER_ID = 'frontend-user';
+
+export function useAgentStatus(sessionId: string | null, pollingInterval = 3000) {
   const [status, setStatus] = useState<OrchestrationStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -13,17 +16,48 @@ export function useAgentStatus(sessionId: string | null, pollingInterval = 2000)
 
     setLoading(true);
     try {
-      const newStatus = await agentService.getStatus(sessionId);
-      setStatus(newStatus);
+      // Poll the actual ADK session endpoint for state updates
+      const session = await api.getSession(APP_NAME, USER_ID, sessionId);
+
+      // Map session state to OrchestrationStatus format
+      const agentStates: Record<string, any> = {};
+      const state = session.state || {};
+
+      // Infer agent status from session state keys
+      const agentNames = [
+        'root_agent', 'trends_and_insights_agent', 'research_orchestrator',
+        'ad_content_generator_agent', 'av_editing_studio_agent',
+      ];
+      for (const name of agentNames) {
+        agentStates[name] = {
+          status: state._state_init ? 'running' : 'idle',
+          lastUpdate: session.created_at,
+        };
+      }
+
+      // Check for completion signals in state
+      if (state.combined_final_cited_report) {
+        agentStates['research_orchestrator'] = { status: 'completed' };
+      }
+      if (state.final_select_ad_copies?.final_select_ad_copies?.length > 0) {
+        agentStates['ad_content_generator_agent'] = { status: 'completed' };
+      }
+
+      setStatus({
+        sessionId,
+        pipelineStatus: 'running',
+        agents: agentStates,
+        startedAt: session.created_at,
+      });
       setError(null);
       hasLoggedError.current = false;
     } catch (err) {
-      // Only log the first error to avoid console spam when backend is down
+      // Suppress repeated errors to avoid console spam
       if (!hasLoggedError.current) {
-        console.warn('Agent status polling failed (suppressing further warnings):', (err as Error).message);
+        console.warn('Session polling failed (suppressing further warnings):', (err as Error).message);
         hasLoggedError.current = true;
       }
-      setError(err as Error);
+      // Don't set error for polling failures — the pipeline may still be running
     } finally {
       setLoading(false);
     }

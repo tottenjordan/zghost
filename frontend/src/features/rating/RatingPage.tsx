@@ -5,6 +5,7 @@ import { RubricLibrary } from './RubricLibrary';
 import { RubricEditor } from './RubricEditor';
 import { RatingSummary } from './RatingSummary';
 import { useRating } from './useRating';
+import { useCampaignStore } from '../../stores/campaignStore';
 import type { ExtendedRubric } from './rubric-templates';
 
 type EditorMode = 'library' | 'create' | 'edit';
@@ -19,6 +20,8 @@ export function RatingPage() {
     cloneRubric,
     submitRating,
   } = useRating();
+
+  const { activeRubric, setActiveRubric } = useCampaignStore();
 
   const [editorMode, setEditorMode] = useState<EditorMode>('library');
   const [editingRubric, setEditingRubric] = useState<ExtendedRubric | undefined>();
@@ -104,6 +107,8 @@ export function RatingPage() {
                 onDelete={deleteRubric}
                 onCreate={() => setEditorMode('create')}
                 onCreateFromTemplate={handleCreateFromTemplate}
+                activeRubricId={activeRubric?.id}
+                onSetActive={setActiveRubric}
               />
             ) : (
               <RubricEditor

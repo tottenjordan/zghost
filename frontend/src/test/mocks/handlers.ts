@@ -19,10 +19,11 @@ export const handlers = [
     });
   }),
 
-  // Agent Execution
+  // Agent Execution (ADK format: new_message.parts[0].text)
   http.post('*/run', async ({ request }) => {
     const body = await request.json() as any;
-    return HttpResponse.json({ success: true, message: body.message });
+    const text = body.newMessage?.parts?.[0]?.text ?? body.new_message?.parts?.[0]?.text ?? body.message;
+    return HttpResponse.json({ success: true, message: text });
   }),
 
   // Extended API endpoints

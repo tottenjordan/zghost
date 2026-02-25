@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { api } from '../../services/api';
-import type { SearchTrend, YTTrend, AutoSelectConfig } from '../../types/trends';
+import type { SearchTrend, YTTrend } from '../../types/trends';
 import type { Session } from '../../types/session';
 
 export interface TrendSelection {
@@ -45,27 +44,6 @@ export function useTrends(session: Session | null) {
     });
   }, []);
 
-  const autoSelectTrends = useCallback(
-    async (config: Omit<AutoSelectConfig, 'session_id'>) => {
-      if (!session?.session_id) {
-        throw new Error('No active session');
-      }
-
-      setAutoSelecting(true);
-      try {
-        await api.autoSelectTrends({
-          ...config,
-          session_id: session.session_id,
-        });
-        // Refresh session to get updated trends
-        // This would typically trigger a session reload
-      } finally {
-        setAutoSelecting(false);
-      }
-    },
-    [session]
-  );
-
   const clearSelections = useCallback(() => {
     setSelectedSearchTrends([]);
     setSelectedYtTrends([]);
@@ -74,9 +52,10 @@ export function useTrends(session: Session | null) {
   return {
     selectedSearchTrends,
     selectedYtTrends,
+    setSelectedSearchTrends,
+    setSelectedYtTrends,
     toggleSearchTrend,
     toggleYtTrend,
-    autoSelectTrends,
     autoSelecting,
     clearSelections,
   };

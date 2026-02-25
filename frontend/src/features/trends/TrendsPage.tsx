@@ -2,31 +2,38 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Mic, RefreshCw, Loader2 } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useTrends } from './useTrends';
+import { useCampaignStore } from '../../stores/campaignStore';
 import { CampaignConfig } from './CampaignConfig';
 import { TrendSelector } from './TrendSelector';
 import { AutoTrendSelector } from './AutoTrendSelector';
 import { TrendCompare } from './TrendCompare';
 import { VoiceBriefAssistant } from '../voice/VoiceBriefAssistant';
 import { Button } from '../../components/ui/Button';
-import { api } from '../../services/api';
-import { parseTrendsFromRunResponse } from '../../utils/parseTrends';
+import { fetchLiveTrends, getCachedTrends, autoSelectFromAvailable } from '../../services/trendsCache';
+import type { CampaignContext } from '../../services/trendsCache';
 import type { CampaignConfigData } from './CampaignConfig';
 import type { SearchTrend, YTTrend } from '../../types/trends';
 
-const APP_NAME = import.meta.env.VITE_APP_NAME || 'trends_and_insights_agent';
-const USER_ID = 'frontend-user';
-
 export function TrendsPage() {
   const { session, createSession, loadSession } = useSession();
+  const {
+    config: storeConfig,
+    selectedSearchTrends: storeSearchTrends,
+    selectedYtTrends: storeYtTrends,
+    setCampaignConfig: setStoreConfig,
+    setSelectedTrends
+  } = useCampaignStore();
+
   const [fetchingTrends, setFetchingTrends] = useState(false);
   const [trendError, setTrendError] = useState<string | null>(null);
   const initRef = useRef(false);
   const {
     selectedSearchTrends,
     selectedYtTrends,
+    setSelectedSearchTrends,
+    setSelectedYtTrends,
     toggleSearchTrend,
     toggleYtTrend,
-    autoSelectTrends,
     autoSelecting,
     clearSelections,
   } = useTrends(session);
@@ -40,88 +47,141 @@ export function TrendsPage() {
   const [availableSearchTrends, setAvailableSearchTrends] = useState<SearchTrend[]>([]);
   const [availableYtTrends, setAvailableYtTrends] = useState<YTTrend[]>([]);
 
-  const handleSaveConfig = useCallback((_config: CampaignConfigData) => {
+  // Auto-select results
+  const [autoSelectedSearchTrends, setAutoSelectedSearchTrends] = useState<SearchTrend[]>([]);
+  const [autoSelectedYtTrends, setAutoSelectedYtTrends] = useState<YTTrend[]>([]);
+  const [aiReasoning, setAiReasoning] = useState<string>('');
+  const [autoSelectLoading, setAutoSelectLoading] = useState(false);
+
+  // Campaign config for relevance scoring - initialize from store
+  const [campaignConfig, setCampaignConfig] = useState<CampaignContext>(storeConfig);
+
+  // Initialize local state from campaign store
+  useEffect(() => {
+    setCampaignConfig(storeConfig);
+  }, [storeConfig]);
+
+  // Initialize useTrends selections from campaign store on mount
+  useEffect(() => {
+    if (storeSearchTrends.length > 0 || storeYtTrends.length > 0) {
+      setSelectedSearchTrends(storeSearchTrends);
+      setSelectedYtTrends(storeYtTrends);
+    }
+  }, []); // Only run on mount
+
+  const handleSaveConfig = useCallback((config: CampaignConfigData) => {
+    setCampaignConfig(config);
+    setStoreConfig(config); // Persist to campaign store
     setConfigSaved(true);
     setTimeout(() => setConfigSaved(false), 3000);
-  }, []);
+  }, [setStoreConfig]);
 
-  // Fetch live trends from the ADK backend
-  const handleFetchTrends = useCallback(async () => {
+  // Core trend fetch logic (used by auto-fetch and manual refresh)
+  const doFetchTrends = useCallback(async (force = false) => {
     setFetchingTrends(true);
     setTrendError(null);
     try {
-      // Create a session if we don't have one
-      let currentSession = session;
-      if (!currentSession) {
-        currentSession = await createSession(USER_ID);
+      const result = await fetchLiveTrends(force);
+
+      if (result.searchTrends.length > 0) {
+        setAvailableSearchTrends(result.searchTrends);
       }
-
-      // Send "hello" to initialize the agent, then ask for trends
-      await api.sendMessage({
-        app_name: APP_NAME,
-        user_id: USER_ID,
-        session_id: currentSession.session_id,
-        message: 'hello',
-      });
-
-      // Ask for Google Search trends and parse response
-      const googleResponse = await api.sendMessage({
-        app_name: APP_NAME,
-        user_id: USER_ID,
-        session_id: currentSession.session_id,
-        message: 'select a google trend',
-      });
-
-      // Ask for YouTube trends and parse response
-      const ytResponse = await api.sendMessage({
-        app_name: APP_NAME,
-        user_id: USER_ID,
-        session_id: currentSession.session_id,
-        message: 'select a yt trend',
-      });
-
-      // Parse trends from both responses
-      const googleParsed = parseTrendsFromRunResponse(googleResponse);
-      const ytParsed = parseTrendsFromRunResponse(ytResponse);
-
-      // Update local state with parsed trends
-      if (googleParsed.searchTrends.length > 0) {
-        setAvailableSearchTrends(googleParsed.searchTrends);
+      if (result.ytTrends.length > 0) {
+        setAvailableYtTrends(result.ytTrends);
       }
-      if (ytParsed.ytTrends.length > 0) {
-        setAvailableYtTrends(ytParsed.ytTrends);
-      }
-
-      // Reload the session to get updated state
-      await loadSession(USER_ID, currentSession.session_id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch trends';
       setTrendError(msg);
     } finally {
       setFetchingTrends(false);
     }
-  }, [session, createSession, loadSession]);
+  }, []);
 
+  // Auto-fetch on page load (uses cache if available)
+  useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
+    // Check cache first — instant if valid
+    const cached = getCachedTrends();
+    if (cached) {
+      if (cached.searchTrends.length > 0) setAvailableSearchTrends(cached.searchTrends);
+      if (cached.ytTrends.length > 0) setAvailableYtTrends(cached.ytTrends);
+      return;
+    }
+
+    // Otherwise fetch from backend
+    doFetchTrends();
+  }, [doFetchTrends]);
+
+  // Manual refresh (force bypasses cache)
+  const handleFetchTrends = useCallback(() => {
+    doFetchTrends(true);
+  }, [doFetchTrends]);
+
+  // Auto-select — works locally against available trends (no backend call)
   const handleAutoSelect = async (config: {
     num_search_trends: number;
     num_yt_trends: number;
     strategy?: 'top' | 'diverse' | 'relevance';
   }) => {
+    if (availableSearchTrends.length === 0 && availableYtTrends.length === 0) {
+      setTrendError('No trends available yet. Wait for trends to load first.');
+      return;
+    }
+
+    setAutoSelectLoading(true);
     try {
-      await autoSelectTrends(config);
-      // Auto-select completed, results would be in session state
-    } catch (error) {
-      console.error('Auto-select failed:', error);
+      const available = {
+        searchTrends: availableSearchTrends,
+        ytTrends: availableYtTrends,
+        fetchedAt: Date.now(),
+        sessionId: '',
+      };
+
+      const result = autoSelectFromAvailable(available, {
+        num_search_trends: config.num_search_trends,
+        num_yt_trends: config.num_yt_trends,
+        strategy: config.strategy || 'relevance',
+        campaign: campaignConfig,
+      });
+
+      setAutoSelectedSearchTrends(result.searchTrends);
+      setAutoSelectedYtTrends(result.ytTrends);
+      setAiReasoning(result.reasoning);
+    } finally {
+      setAutoSelectLoading(false);
     }
   };
 
+  // Accept auto-selected trends — move them into the main selection
+  const handleAcceptAutoSelect = () => {
+    setSelectedSearchTrends(autoSelectedSearchTrends);
+    setSelectedYtTrends(autoSelectedYtTrends);
+    setSelectedTrends(autoSelectedSearchTrends, autoSelectedYtTrends); // Persist to store
+    // Clear auto-select results and close panel
+    setAutoSelectedSearchTrends([]);
+    setAutoSelectedYtTrends([]);
+    setAiReasoning('');
+    setShowAutoSelect(false);
+  };
+
+  // Reject auto-selection — clear results, keep panel open for retry
+  const handleRejectAutoSelect = () => {
+    setAutoSelectedSearchTrends([]);
+    setAutoSelectedYtTrends([]);
+    setAiReasoning('');
+  };
+
   const handleConfirmSelection = () => {
-    // TODO: Save selections to session state
+    setSelectedTrends(selectedSearchTrends, selectedYtTrends); // Persist to store
     console.log('Confirming selections:', {
       search: selectedSearchTrends,
       yt: selectedYtTrends,
     });
   };
+
+  const trendsLoaded = availableSearchTrends.length > 0 || availableYtTrends.length > 0;
 
   return (
     <div className="space-y-6">
@@ -131,6 +191,11 @@ export function TrendsPage() {
           <p className="text-zinc-400">
             Configure your campaign and select trending topics to target
           </p>
+          {trendsLoaded && (
+            <p className="mt-1 text-xs text-zinc-500">
+              {availableSearchTrends.length} Google + {availableYtTrends.length} YouTube trends loaded
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <Button
@@ -144,7 +209,7 @@ export function TrendsPage() {
             ) : (
               <RefreshCw className="h-4 w-4" />
             )}
-            {fetchingTrends ? 'Fetching...' : 'Fetch Live Trends'}
+            {fetchingTrends ? 'Fetching...' : 'Refresh Trends'}
           </Button>
           <Button
             onClick={() => setShowVoiceAssistant(true)}
@@ -160,6 +225,13 @@ export function TrendsPage() {
       {trendError && (
         <div className="rounded-lg border border-amber-800 bg-amber-950/50 px-4 py-2 text-sm text-amber-400">
           Could not fetch live trends: {trendError}. Showing demo data instead.
+        </div>
+      )}
+
+      {fetchingTrends && !trendsLoaded && (
+        <div className="flex items-center gap-3 rounded-lg border border-blue-800 bg-blue-950/30 px-4 py-3 text-sm text-blue-400">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Fetching live trends from backend agents... This may take a moment.
         </div>
       )}
 
@@ -194,16 +266,13 @@ export function TrendsPage() {
           {/* Auto-select panel */}
           {showAutoSelect && (
             <AutoTrendSelector
-              loading={autoSelecting}
+              loading={autoSelectLoading}
               onAutoSelect={handleAutoSelect}
-              onAccept={() => {
-                // TODO: Accept auto-selected trends
-                setShowAutoSelect(false);
-              }}
-              onReject={() => {
-                // TODO: Clear auto-selections
-                setShowAutoSelect(false);
-              }}
+              autoSelectedSearchTrends={autoSelectedSearchTrends}
+              autoSelectedYtTrends={autoSelectedYtTrends}
+              aiReasoning={aiReasoning}
+              onAccept={handleAcceptAutoSelect}
+              onReject={handleRejectAutoSelect}
             />
           )}
         </div>

@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { ConnectionState, TranscriptMessage, VoiceSessionConfig } from './types';
 
-const SAMPLE_RATE = 16000;
+const SAMPLE_RATE = 16000; // Input sample rate for microphone
+const GEMINI_SAMPLE_RATE = 24000; // Gemini Live API output sample rate
 
 export function useVoiceSession(config: VoiceSessionConfig) {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
@@ -118,8 +119,9 @@ export function useVoiceSession(config: VoiceSessionConfig) {
         float32Array[i] = int16Array[i] / 0x8000;
       }
 
-      // Create audio buffer
-      const audioBuffer = audioContext.createBuffer(1, float32Array.length, SAMPLE_RATE);
+      // Create audio buffer at Gemini's output sample rate (24kHz)
+      // This prevents pitch/speed distortion when playing 24kHz audio
+      const audioBuffer = audioContext.createBuffer(1, float32Array.length, GEMINI_SAMPLE_RATE);
       audioBuffer.getChannelData(0).set(float32Array);
 
       // Play audio

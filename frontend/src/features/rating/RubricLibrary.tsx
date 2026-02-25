@@ -11,6 +11,8 @@ interface RubricLibraryProps {
   onDelete: (id: string) => void;
   onCreate: () => void;
   onCreateFromTemplate: (template: ExtendedRubric) => void;
+  activeRubricId?: string;
+  onSetActive?: (rubric: ExtendedRubric) => void;
 }
 
 export function RubricLibrary({
@@ -20,6 +22,8 @@ export function RubricLibrary({
   onDelete,
   onCreate,
   onCreateFromTemplate,
+  activeRubricId,
+  onSetActive,
 }: RubricLibraryProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -57,44 +61,63 @@ export function RubricLibrary({
         </Card>
       ) : (
         <div className="space-y-2">
-          {rubrics.map((rubric) => (
-            <Card key={rubric.id}>
-              <CardContent className="flex items-center justify-between py-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-zinc-50">{rubric.name}</h3>
-                  <p className="text-sm text-zinc-400">
-                    {rubric.criteria.length} criteria · {formatDate()}
-                  </p>
-                  {rubric.description && (
-                    <p className="mt-1 text-sm text-zinc-500">{rubric.description}</p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onEdit(rubric)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onClone(rubric.id)}
-                  >
-                    Clone
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setDeleteConfirm(rubric.id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {rubrics.map((rubric) => {
+            const isActive = activeRubricId === rubric.id;
+            return (
+              <Card key={rubric.id}>
+                <CardContent className="flex items-center justify-between py-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-zinc-50">{rubric.name}</h3>
+                      {isActive && (
+                        <span className="rounded-full bg-green-900/50 px-2 py-0.5 text-xs font-medium text-green-400 border border-green-700">
+                          Active for Pipeline
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-zinc-400">
+                      {rubric.criteria.length} criteria · {formatDate()}
+                    </p>
+                    {rubric.description && (
+                      <p className="mt-1 text-sm text-zinc-500">{rubric.description}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {onSetActive && !isActive && (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => onSetActive(rubric)}
+                      >
+                        Use for Pipeline
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onEdit(rubric)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onClone(rubric.id)}
+                    >
+                      Clone
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setDeleteConfirm(rubric.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

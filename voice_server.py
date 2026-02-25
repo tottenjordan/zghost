@@ -38,7 +38,7 @@ def _create_runner():
     # Marketing brief refinement assistant with the system prompt from VoiceBriefAssistant.tsx
     agent = LlmAgent(
         name="voice_marketing_assistant",
-        model="gemini-2.0-flash-live-001",
+        model="gemini-2.0-flash-live-preview-04-09",
         instruction="""You are a helpful marketing brief refinement assistant. Your role is to help users refine their marketing campaign briefs before creative ideation begins.
 
 Ask clarifying questions about:
