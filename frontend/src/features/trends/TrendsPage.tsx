@@ -10,7 +10,6 @@ import { TrendCompare } from './TrendCompare';
 import { VoiceBriefAssistant } from '../voice/VoiceBriefAssistant';
 import { Button } from '../../components/ui/Button';
 import { fetchLiveTrends, getCachedTrends, autoSelectFromAvailable } from '../../services/trendsCache';
-import type { CampaignContext } from '../../services/trendsCache';
 import type { CampaignConfigData } from './CampaignConfig';
 import type { SearchTrend, YTTrend } from '../../types/trends';
 
@@ -18,8 +17,8 @@ export function TrendsPage() {
   const { session, createSession, loadSession } = useSession();
   const {
     config: storeConfig,
-    selectedSearchTrends: storeSearchTrends,
-    selectedYtTrends: storeYtTrends,
+    selectedSearchTrends,
+    selectedYtTrends,
     setCampaignConfig: setStoreConfig,
     setSelectedTrends
   } = useCampaignStore();
@@ -28,15 +27,14 @@ export function TrendsPage() {
   const [trendError, setTrendError] = useState<string | null>(null);
   const initRef = useRef(false);
   const {
-    selectedSearchTrends,
-    selectedYtTrends,
-    setSelectedSearchTrends,
-    setSelectedYtTrends,
     toggleSearchTrend,
     toggleYtTrend,
-    autoSelecting,
     clearSelections,
-  } = useTrends(session);
+  } = useTrends({
+    selectedSearchTrends,
+    selectedYtTrends,
+    setSelectedTrends,
+  });
 
   const [showAutoSelect, setShowAutoSelect] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
@@ -47,31 +45,14 @@ export function TrendsPage() {
   const [availableSearchTrends, setAvailableSearchTrends] = useState<SearchTrend[]>([]);
   const [availableYtTrends, setAvailableYtTrends] = useState<YTTrend[]>([]);
 
-  // Auto-select results
+  // Auto-select results (staging area before user accepts)
   const [autoSelectedSearchTrends, setAutoSelectedSearchTrends] = useState<SearchTrend[]>([]);
   const [autoSelectedYtTrends, setAutoSelectedYtTrends] = useState<YTTrend[]>([]);
   const [aiReasoning, setAiReasoning] = useState<string>('');
   const [autoSelectLoading, setAutoSelectLoading] = useState(false);
 
-  // Campaign config for relevance scoring - initialize from store
-  const [campaignConfig, setCampaignConfig] = useState<CampaignContext>(storeConfig);
-
-  // Initialize local state from campaign store
-  useEffect(() => {
-    setCampaignConfig(storeConfig);
-  }, [storeConfig]);
-
-  // Initialize useTrends selections from campaign store on mount
-  useEffect(() => {
-    if (storeSearchTrends.length > 0 || storeYtTrends.length > 0) {
-      setSelectedSearchTrends(storeSearchTrends);
-      setSelectedYtTrends(storeYtTrends);
-    }
-  }, []); // Only run on mount
-
   const handleSaveConfig = useCallback((config: CampaignConfigData) => {
-    setCampaignConfig(config);
-    setStoreConfig(config); // Persist to campaign store
+    setStoreConfig(config);
     setConfigSaved(true);
     setTimeout(() => setConfigSaved(false), 3000);
   }, [setStoreConfig]);
@@ -143,7 +124,7 @@ export function TrendsPage() {
         num_search_trends: config.num_search_trends,
         num_yt_trends: config.num_yt_trends,
         strategy: config.strategy || 'relevance',
-        campaign: campaignConfig,
+        campaign: storeConfig,
       });
 
       setAutoSelectedSearchTrends(result.searchTrends);
@@ -156,8 +137,6 @@ export function TrendsPage() {
 
   // Accept auto-selected trends — move them into the main selection
   const handleAcceptAutoSelect = () => {
-    setSelectedSearchTrends(autoSelectedSearchTrends);
-    setSelectedYtTrends(autoSelectedYtTrends);
     setSelectedTrends(autoSelectedSearchTrends, autoSelectedYtTrends); // Persist to store
     // Clear auto-select results and close panel
     setAutoSelectedSearchTrends([]);
@@ -171,14 +150,6 @@ export function TrendsPage() {
     setAutoSelectedSearchTrends([]);
     setAutoSelectedYtTrends([]);
     setAiReasoning('');
-  };
-
-  const handleConfirmSelection = () => {
-    setSelectedTrends(selectedSearchTrends, selectedYtTrends); // Persist to store
-    console.log('Confirming selections:', {
-      search: selectedSearchTrends,
-      yt: selectedYtTrends,
-    });
   };
 
   const trendsLoaded = availableSearchTrends.length > 0 || availableYtTrends.length > 0;
@@ -280,14 +251,12 @@ export function TrendsPage() {
         {/* Right column: Trend selection */}
         <div className="space-y-6">
           <TrendSelector
-            session={session}
             availableSearchTrends={availableSearchTrends}
             availableYtTrends={availableYtTrends}
             selectedSearchTrends={selectedSearchTrends}
             selectedYtTrends={selectedYtTrends}
             onToggleSearchTrend={toggleSearchTrend}
             onToggleYtTrend={toggleYtTrend}
-            onConfirm={handleConfirmSelection}
           />
 
           {/* Comparison panel */}

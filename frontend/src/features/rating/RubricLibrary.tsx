@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
@@ -12,7 +12,7 @@ interface RubricLibraryProps {
   onCreate: () => void;
   onCreateFromTemplate: (template: ExtendedRubric) => void;
   activeRubricId?: string;
-  onSetActive?: (rubric: ExtendedRubric) => void;
+  onSetActive?: (rubric: ExtendedRubric | null) => void;
 }
 
 export function RubricLibrary({
@@ -27,6 +27,13 @@ export function RubricLibrary({
 }: RubricLibraryProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
+
+  // Auto-activate when there's only one rubric
+  useEffect(() => {
+    if (rubrics.length === 1 && !activeRubricId && onSetActive) {
+      onSetActive(rubrics[0]);
+    }
+  }, [rubrics, activeRubricId, onSetActive]);
 
   const formatDate = () => {
     // Since we don't have lastModified in the type, show creation indicator
@@ -88,8 +95,18 @@ export function RubricLibrary({
                         size="sm"
                         variant="primary"
                         onClick={() => onSetActive(rubric)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                       >
-                        Use for Pipeline
+                        Activate for Pipeline
+                      </Button>
+                    )}
+                    {isActive && onSetActive && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => onSetActive(null)}
+                      >
+                        Deactivate
                       </Button>
                     )}
                     <Button

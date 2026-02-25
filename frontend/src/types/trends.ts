@@ -37,10 +37,3 @@ export interface TrendSelection {
   target_search_trends: SearchTrend[];
   target_yt_trends: YTTrend[];
 }
-
-export interface AutoSelectConfig {
-  session_id: string;
-  num_search_trends: number;
-  num_yt_trends: number;
-  strategy?: 'top' | 'diverse' | 'relevance';
-}

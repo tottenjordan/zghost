@@ -124,25 +124,23 @@ export const mockAgentState: AgentState = {
 
 // Mock Orchestration Status
 export const mockOrchestrationStatus: OrchestrationStatus = {
-  overall_status: 'running',
+  sessionId: 'test-session-123',
+  pipelineStatus: 'running',
   agents: {
     trends_and_insights_agent: {
-      name: 'trends_and_insights_agent',
       status: 'completed',
       startTime: Date.now() - 20000,
       endTime: Date.now() - 10000,
     },
     research_orchestrator: {
-      name: 'research_orchestrator',
       status: 'running',
       startTime: Date.now() - 8000,
     },
     ad_content_generator: {
-      name: 'ad_content_generator',
       status: 'idle',
     },
   },
-  started_at: new Date(Date.now() - 20000).toISOString(),
+  startedAt: new Date(Date.now() - 20000).toISOString(),
 };
 
 // Mock Rubric

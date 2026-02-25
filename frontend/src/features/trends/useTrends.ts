@@ -1,62 +1,49 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import type { SearchTrend, YTTrend } from '../../types/trends';
-import type { Session } from '../../types/session';
 
 export interface TrendSelection {
   searchTrends: SearchTrend[];
   ytTrends: YTTrend[];
 }
 
-export function useTrends(session: Session | null) {
-  const [selectedSearchTrends, setSelectedSearchTrends] = useState<SearchTrend[]>([]);
-  const [selectedYtTrends, setSelectedYtTrends] = useState<YTTrend[]>([]);
-  const [autoSelecting, setAutoSelecting] = useState(false);
+interface UseTrendsParams {
+  selectedSearchTrends: SearchTrend[];
+  selectedYtTrends: YTTrend[];
+  setSelectedTrends: (search: SearchTrend[], yt: YTTrend[]) => void;
+}
 
-  // Load trends from session state on mount
-  useEffect(() => {
-    if (session?.state) {
-      if (session.state.target_search_trends?.target_search_trends) {
-        setSelectedSearchTrends(session.state.target_search_trends.target_search_trends);
-      }
-      if (session.state.target_yt_trends?.target_yt_trends) {
-        setSelectedYtTrends(session.state.target_yt_trends.target_yt_trends);
-      }
-    }
-  }, [session]);
-
+export function useTrends({
+  selectedSearchTrends,
+  selectedYtTrends,
+  setSelectedTrends,
+}: UseTrendsParams) {
   const toggleSearchTrend = useCallback((trend: SearchTrend) => {
-    setSelectedSearchTrends((prev) => {
-      const isSelected = prev.some((t) => t.rank === trend.rank);
-      if (isSelected) {
-        return prev.filter((t) => t.rank !== trend.rank);
-      }
-      return [...prev, trend];
-    });
-  }, []);
+    const isSelected = selectedSearchTrends.some((t) => t.rank === trend.rank);
+    const newSearchTrends = isSelected
+      ? selectedSearchTrends.filter((t) => t.rank !== trend.rank)
+      : [...selectedSearchTrends, trend];
+
+    // Immediately update the campaign store
+    setSelectedTrends(newSearchTrends, selectedYtTrends);
+  }, [selectedSearchTrends, selectedYtTrends, setSelectedTrends]);
 
   const toggleYtTrend = useCallback((trend: YTTrend) => {
-    setSelectedYtTrends((prev) => {
-      const isSelected = prev.some((t) => t.rank === trend.rank);
-      if (isSelected) {
-        return prev.filter((t) => t.rank !== trend.rank);
-      }
-      return [...prev, trend];
-    });
-  }, []);
+    const isSelected = selectedYtTrends.some((t) => t.rank === trend.rank);
+    const newYtTrends = isSelected
+      ? selectedYtTrends.filter((t) => t.rank !== trend.rank)
+      : [...selectedYtTrends, trend];
+
+    // Immediately update the campaign store
+    setSelectedTrends(selectedSearchTrends, newYtTrends);
+  }, [selectedSearchTrends, selectedYtTrends, setSelectedTrends]);
 
   const clearSelections = useCallback(() => {
-    setSelectedSearchTrends([]);
-    setSelectedYtTrends([]);
-  }, []);
+    setSelectedTrends([], []);
+  }, [setSelectedTrends]);
 
   return {
-    selectedSearchTrends,
-    selectedYtTrends,
-    setSelectedSearchTrends,
-    setSelectedYtTrends,
     toggleSearchTrend,
     toggleYtTrend,
-    autoSelecting,
     clearSelections,
   };
 }

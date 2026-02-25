@@ -2,32 +2,26 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { SearchTrendCard, YTTrendCard } from './TrendCard';
 import type { SearchTrend, YTTrend } from '../../types/trends';
-import type { Session } from '../../types/session';
 
 interface TrendSelectorProps {
-  session: Session | null;
   availableSearchTrends?: SearchTrend[];
   availableYtTrends?: YTTrend[];
   selectedSearchTrends: SearchTrend[];
   selectedYtTrends: YTTrend[];
   onToggleSearchTrend: (trend: SearchTrend) => void;
   onToggleYtTrend: (trend: YTTrend) => void;
-  onConfirm: () => void;
 }
 
 export function TrendSelector({
-  session,
   availableSearchTrends: propAvailableSearchTrends,
   availableYtTrends: propAvailableYtTrends,
   selectedSearchTrends,
   selectedYtTrends,
   onToggleSearchTrend,
   onToggleYtTrend,
-  onConfirm,
 }: TrendSelectorProps) {
   const [searchFilter, setSearchFilter] = useState('');
   const [ytFilter, setYtFilter] = useState('');
@@ -258,12 +252,6 @@ export function TrendSelector({
             </div>
           </TabsContent>
         </Tabs>
-
-        {totalSelected > 0 && (
-          <div className="mt-6 flex justify-end">
-            <Button onClick={onConfirm}>Confirm Selection</Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

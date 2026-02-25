@@ -11,6 +11,8 @@ import {
   Filter,
   Pause,
   Play,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -85,6 +87,7 @@ export function EventStream({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Auto-scroll to bottom when new events arrive (if not paused)
   useEffect(() => {
@@ -104,6 +107,18 @@ export function EventStream({
       <div className="flex items-center gap-2 p-3 border-b border-zinc-800">
         <h3 className="font-semibold text-sm flex-1">Event Stream</h3>
         <div className="flex items-center gap-2">
+          {/* Collapse/Expand */}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-2 rounded hover:bg-zinc-800 transition-colors"
+            title={isCollapsed ? 'Expand event stream' : 'Collapse event stream'}
+          >
+            {isCollapsed ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </button>
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -148,17 +163,18 @@ export function EventStream({
       </div>
 
       {/* Filters (collapsible) */}
-      {showFilters && (
+      {!isCollapsed && showFilters && (
         <div className="p-3 border-b border-zinc-800 bg-zinc-950/50 space-y-2">
           <div className="text-xs text-zinc-400">Click on event badges to filter</div>
         </div>
       )}
 
       {/* Event list */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto p-3 space-y-2 font-mono text-xs"
-      >
+      {!isCollapsed && (
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto p-3 space-y-2 font-mono text-xs"
+        >
         {events.length === 0 ? (
           <div className="text-center text-zinc-500 py-8">
             No events yet. Start the pipeline to see activity.
@@ -205,7 +221,8 @@ export function EventStream({
             );
           })
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

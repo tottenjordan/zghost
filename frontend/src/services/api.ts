@@ -1,6 +1,4 @@
 import type { RunPayload, Session } from '../types/session';
-import type { DispatchConfig, OrchestrationStatus } from '../types/agents';
-import type { AutoSelectConfig } from '../types/trends';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -36,16 +34,19 @@ class ApiClient {
     };
   }
 
-  // Session Management
-  // ADK api_server creates sessions implicitly on first /run call.
-  // We generate a session ID client-side and create the session via POST with initial state.
   async createSession(appName: string, userId: string): Promise<Session> {
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
     await this.request(
       `/apps/${appName}/users/${userId}/sessions/${sessionId}`,
       { method: 'POST', body: JSON.stringify({}) }
     );
-    return { session_id: sessionId, app_name: appName, user_id: userId, created_at: new Date().toISOString(), state: {} as Session['state'] };
+    return {
+      session_id: sessionId,
+      app_name: appName,
+      user_id: userId,
+      created_at: new Date().toISOString(),
+      state: {} as Session['state'],
+    };
   }
 
   async getSession(
@@ -59,23 +60,6 @@ class ApiClient {
     return this.mapSession(adkResponse);
   }
 
-  async updateSessionState(
-    appName: string,
-    userId: string,
-    sessionId: string,
-    stateUpdate: Partial<Session['state']>
-  ): Promise<Session> {
-    const adkResponse = await this.request<any>(
-      `/apps/${appName}/users/${userId}/sessions/${sessionId}`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({ state: stateUpdate }),
-      }
-    );
-    return this.mapSession(adkResponse);
-  }
-
-  // Agent Execution — ADK api_server /run format (camelCase)
   async sendMessage(payload: RunPayload): Promise<any> {
     const adkPayload = {
       appName: payload.app_name,
@@ -93,7 +77,6 @@ class ApiClient {
     });
   }
 
-  // Streaming execution via SSE
   async sendMessageSSE(payload: RunPayload): Promise<Response> {
     const adkPayload = {
       appName: payload.app_name,
@@ -110,27 +93,6 @@ class ApiClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(adkPayload),
-    });
-  }
-
-  // Extended API endpoints
-  async dispatchParallel(config: DispatchConfig): Promise<void> {
-    return this.request('/api/v1/dispatch', {
-      method: 'POST',
-      body: JSON.stringify(config),
-    });
-  }
-
-  async getOrchestrationStatus(
-    sessionId: string
-  ): Promise<OrchestrationStatus> {
-    return this.request(`/api/v1/orchestration/status?session_id=${sessionId}`);
-  }
-
-  async autoSelectTrends(config: AutoSelectConfig): Promise<void> {
-    return this.request('/api/v1/trends/auto-select', {
-      method: 'POST',
-      body: JSON.stringify(config),
     });
   }
 }
