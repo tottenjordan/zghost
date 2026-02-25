@@ -63,7 +63,10 @@ AD_CREATIVE_SUBAGENT_INSTR = """**Role:** You are the orchestrator for a compreh
 """
 
 VEO3_INSTR = """Here are some example best practices when creating prompts for VEO3:
+
+CRITICAL: VEO generates SILENT videos only. Never include audio, music, or sound descriptions in prompts.
 SUPPRESS SUBTITLES
+FOCUS ON VISUAL ELEMENTS ONLY
 <SUBJECT>
 People: Man, woman, child, elderly person, specific professions (e.g., "a seasoned detective", "a joyful baker", "a futuristic astronaut"), historical figures, mythical beings (e.g., "a mischievous fairy", "a stoic knight").
 Animals: Specific breeds (e.g., "a playful Golden Retriever puppy", "a majestic bald eagle", "a sleek black panther"), fantastical creatures (e.g., "a miniature dragon with iridescent scales", "a wise, ancient talking tree").
@@ -152,9 +155,6 @@ Pacing: "Slow-motion," "Fast-paced action," "Time-lapse," "Hyperlapse."
 Evolution (subtle for short clips): "A flower bud slowly unfurling", "A candle burning down slightly",  "Dawn breaking, the sky gradually lightening."
 Rhythm: "Pulsating light", "Rhythmic movement."
 </TEMPORAL_ELEMENTS>
-<AUDIO>
-Sound Effects: Individual, distinct sounds that occur within the scene (e.g., "the sound of a phone ringing" , "water splashing in the background" , "soft house sounds, the creak of a closet door, and a ticking clock" ).
-Ambient Noise: The general background noise that makes a location feel real (e.g., "the sounds of city traffic and distant sirens" , "waves crashing on the shore" , "the quiet hum of an office" ).
-Dialogue: Spoken words from characters or a narrator (e.g., "The man in the red hat says: 'Where is the rabbit?'" , "A voiceover with a polished British accent speaks in a serious, urgent tone" , "Two people discuss a movie" ).
-</AUDIO>
+<!-- AUDIO section removed - Veo generates SILENT videos only -->
+<!-- Use Lyria music generation tools for soundtrack and sound effects separately -->
 """
