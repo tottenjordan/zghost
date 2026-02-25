@@ -14,6 +14,12 @@ export function useVoiceSession(config: VoiceSessionConfig) {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const connectionStateRef = useRef<ConnectionState>('idle');
+
+  // Keep connectionStateRef in sync with connectionState
+  useEffect(() => {
+    connectionStateRef.current = connectionState;
+  }, [connectionState]);
 
   // Initialize audio context
   const initAudioContext = useCallback(async () => {
@@ -226,7 +232,7 @@ export function useVoiceSession(config: VoiceSessionConfig) {
       ws.onclose = () => {
         console.log('WebSocket closed');
         stopRecording();
-        if (connectionState !== 'error') {
+        if (connectionStateRef.current !== 'error') {
           setConnectionState('idle');
         }
       };
@@ -235,7 +241,7 @@ export function useVoiceSession(config: VoiceSessionConfig) {
       setError('Failed to connect to voice service');
       setConnectionState('error');
     }
-  }, [connectionState, playAudio, stopRecording]);
+  }, [playAudio, stopRecording]);
 
   // Disconnect WebSocket
   const disconnect = useCallback(() => {

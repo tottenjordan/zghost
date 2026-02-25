@@ -8,6 +8,8 @@ interface PipelineControlsProps {
   sessionId: string | null;
   readyToLaunch: boolean;
   missingItems: string[];
+  commercialDuration: 10 | 15 | 30;
+  onDurationChange: (duration: 10 | 15 | 30) => void;
   onStart: (parallelCount: number) => void;
   onStop: () => void;
   onRefresh: () => void;
@@ -18,6 +20,8 @@ export function PipelineControls({
   sessionId,
   readyToLaunch,
   missingItems,
+  commercialDuration,
+  onDurationChange,
   onStart,
   onStop,
   onRefresh,
@@ -40,6 +44,24 @@ export function PipelineControls({
               None
             </Badge>
           )}
+        </div>
+
+        {/* Duration selector */}
+        <div className="flex items-center gap-2">
+          <label htmlFor="duration" className="text-sm text-zinc-400">
+            Duration:
+          </label>
+          <select
+            id="duration"
+            value={commercialDuration}
+            onChange={(e) => onDurationChange(Number(e.target.value) as 10 | 15 | 30)}
+            disabled={isRunning}
+            className="px-3 py-1 text-sm bg-zinc-800 border border-zinc-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option value={10}>10s</option>
+            <option value={15}>15s</option>
+            <option value={30}>30s</option>
+          </select>
         </div>
 
         {/* Parallel stream count selector */}

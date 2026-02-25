@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { AudioVisualizer } from './AudioVisualizer';
 import { useVoiceSession } from './useVoiceSession';
+import { VoiceCommandRouter } from './VoiceCommandRouter';
 import type { ConnectionState } from './types';
 import { cn } from '../../lib/utils';
 
@@ -100,15 +101,19 @@ export function VoiceBriefAssistant({ onClose, isFloating = false }: VoiceBriefA
   }
 
   return (
-    <Card
-      className={cn(
-        'flex flex-col overflow-hidden',
-        isFloating
-          ? 'fixed bottom-4 right-4 z-50 w-[400px] h-[600px] shadow-2xl'
-          : 'h-full'
-      )}
-    >
-      <CardHeader className="border-b border-zinc-800 bg-zinc-900/50">
+    <>
+      {/* Voice Command Router - renders notification when commands are detected */}
+      <VoiceCommandRouter transcript={transcript} />
+
+      <Card
+        className={cn(
+          'flex flex-col overflow-hidden',
+          isFloating
+            ? 'fixed bottom-4 right-4 z-50 w-[400px] h-[600px] shadow-2xl'
+            : 'h-full'
+        )}
+      >
+        <CardHeader className="border-b border-zinc-800 bg-zinc-900/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <CardTitle className="text-lg">Voice Brief Assistant</CardTitle>
@@ -246,5 +251,6 @@ export function VoiceBriefAssistant({ onClose, isFloating = false }: VoiceBriefA
         )}
       </CardContent>
     </Card>
+    </>
   );
 }

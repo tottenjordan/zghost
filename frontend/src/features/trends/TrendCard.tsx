@@ -2,15 +2,18 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { cn } from '../../lib/utils';
+import { Shield, AlertTriangle, XCircle } from 'lucide-react';
 import type { SearchTrend, YTTrend } from '../../types/trends';
+import type { BrandSafetyScore } from '../../services/brandSafety';
 
 interface SearchTrendCardProps {
   trend: SearchTrend;
   selected: boolean;
   onToggle: () => void;
+  safetyScore?: BrandSafetyScore;
 }
 
-export function SearchTrendCard({ trend, selected, onToggle }: SearchTrendCardProps) {
+export function SearchTrendCard({ trend, selected, onToggle, safetyScore }: SearchTrendCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -37,7 +40,10 @@ export function SearchTrendCard({ trend, selected, onToggle }: SearchTrendCardPr
             />
             <CardTitle className="text-base leading-tight">{trend.title}</CardTitle>
           </div>
-          <Badge variant="info">{trend.formattedTraffic}</Badge>
+          <div className="flex items-center gap-2">
+            {safetyScore && <SafetyBadge score={safetyScore} />}
+            <Badge variant="info">{trend.formattedTraffic}</Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -91,9 +97,10 @@ interface YTTrendCardProps {
   trend: YTTrend;
   selected: boolean;
   onToggle: () => void;
+  safetyScore?: BrandSafetyScore;
 }
 
-export function YTTrendCard({ trend, selected, onToggle }: YTTrendCardProps) {
+export function YTTrendCard({ trend, selected, onToggle, safetyScore }: YTTrendCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -120,7 +127,10 @@ export function YTTrendCard({ trend, selected, onToggle }: YTTrendCardProps) {
             />
             <CardTitle className="text-base leading-tight">{trend.title}</CardTitle>
           </div>
-          <Badge variant="success">#{trend.rank}</Badge>
+          <div className="flex items-center gap-2">
+            {safetyScore && <SafetyBadge score={safetyScore} />}
+            <Badge variant="success">#{trend.rank}</Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -169,5 +179,44 @@ export function YTTrendCard({ trend, selected, onToggle }: YTTrendCardProps) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function SafetyBadge({ score }: { score: BrandSafetyScore }) {
+  if (score.level === 'safe') {
+    return (
+      <Badge
+        variant="success"
+        className="flex items-center gap-1 cursor-help"
+        title={score.reasoning}
+      >
+        <Shield className="h-3 w-3" />
+        Safe
+      </Badge>
+    );
+  }
+
+  if (score.level === 'caution') {
+    return (
+      <Badge
+        variant="warning"
+        className="flex items-center gap-1 cursor-help"
+        title={score.reasoning}
+      >
+        <AlertTriangle className="h-3 w-3" />
+        Caution
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge
+      variant="error"
+      className="flex items-center gap-1 cursor-help"
+      title={score.reasoning}
+    >
+      <XCircle className="h-3 w-3" />
+      Unsafe
+    </Badge>
   );
 }

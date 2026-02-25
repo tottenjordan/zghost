@@ -39,7 +39,7 @@ _skill_toolset = SkillToolset(skills=[_skill])
 av_editing_studio_agent = Agent(
     model=config.worker_model,
     name="av_editing_studio_agent",
-    description="Produces a 30-second commercial with professional audio: SILENT Veo video, Lyria music, and Chirp voice-over combined for broadcast-quality output.",
+    description="Produces a commercial (10s, 15s, or 30s) with professional audio: SILENT Veo video, Lyria music, and Chirp voice-over combined for broadcast-quality output.",
     instruction=AV_STUDIO_INSTR,
     tools=[
         # Audio recommendations

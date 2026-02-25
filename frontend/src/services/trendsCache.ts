@@ -1,6 +1,7 @@
 import type { SearchTrend, YTTrend } from '../types/trends';
 import { api } from './api';
 import { parseTrendsFromRunResponse } from '../utils/parseTrends';
+import { evaluateBrandSafety, type BrandSafetyResult } from './brandSafety';
 
 const APP_NAME = import.meta.env.VITE_APP_NAME || 'trends_and_insights_agent';
 const USER_ID = 'frontend-user';
@@ -106,6 +107,7 @@ export interface CampaignContext {
  * Auto-select trends from the available set using a local strategy.
  * When campaign context is provided with 'relevance' strategy, trends are
  * scored by keyword overlap with brand, product, audience, and selling points.
+ * Brand safety filtering is applied to remove unsafe trends (score < 5).
  */
 export function autoSelectFromAvailable(
   available: CachedTrends,
@@ -115,11 +117,12 @@ export function autoSelectFromAvailable(
     strategy: 'top' | 'diverse' | 'relevance';
     campaign?: CampaignContext;
   }
-): { searchTrends: SearchTrend[]; ytTrends: YTTrend[]; reasoning: string } {
+): { searchTrends: SearchTrend[]; ytTrends: YTTrend[]; reasoning: string; safetyResult?: BrandSafetyResult } {
   const { num_search_trends, num_yt_trends, strategy, campaign } = config;
   let selectedSearch: SearchTrend[];
   let selectedYt: YTTrend[];
   let reasoning: string;
+  const brand = campaign?.brand || campaign?.target_product || '';
 
   switch (strategy) {
     case 'top':
@@ -178,7 +181,40 @@ export function autoSelectFromAvailable(
     }
   }
 
-  return { searchTrends: selectedSearch, ytTrends: selectedYt, reasoning };
+  // Apply brand safety filtering
+  const safetyResult = evaluateBrandSafety(selectedSearch, selectedYt, brand);
+
+  // Filter out unsafe trends (score < 5)
+  const safeSearchTrends = selectedSearch.filter((trend) => {
+    const score = safetyResult.searchTrendScores.find(
+      (s) => s.trendTitle === trend.title
+    );
+    return !score || score.score >= 5;
+  });
+
+  const safeYtTrends = selectedYt.filter((trend) => {
+    const score = safetyResult.ytTrendScores.find(
+      (s) => s.trendTitle === trend.title
+    );
+    return !score || score.score >= 5;
+  });
+
+  // Count filtered trends
+  const filteredSearchCount = selectedSearch.length - safeSearchTrends.length;
+  const filteredYtCount = selectedYt.length - safeYtTrends.length;
+
+  // Update reasoning if trends were filtered
+  if (filteredSearchCount > 0 || filteredYtCount > 0) {
+    const filterNote = ` Brand safety filter removed ${filteredSearchCount} Google and ${filteredYtCount} YouTube trends due to unsafe content.`;
+    reasoning += filterNote;
+  }
+
+  return {
+    searchTrends: safeSearchTrends,
+    ytTrends: safeYtTrends,
+    reasoning,
+    safetyResult,
+  };
 }
 
 /** Extract scoring keywords from campaign context */

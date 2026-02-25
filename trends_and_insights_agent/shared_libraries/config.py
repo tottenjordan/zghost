@@ -64,6 +64,7 @@ class SetupConfiguration:
             "key_selling_points": "",
             "target_search_trends": {"target_search_trends": []},
             "target_yt_trends": {"target_yt_trends": []},
+            "commercial_duration": 30,  # Default: 30s commercial (options: 10, 15, 30)
             # Template variables used in downstream agent instructions
             "yt_video_analysis": "",
             "combined_web_search_insights": "",

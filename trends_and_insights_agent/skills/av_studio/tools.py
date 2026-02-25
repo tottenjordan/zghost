@@ -533,9 +533,9 @@ async def save_commercial_artifact(
     commercial_metadata: dict,
     tool_context: ToolContext,
 ) -> dict:
-    """Saves the final 30-second commercial as an ADK artifact and updates session state.
+    """Saves the final commercial as an ADK artifact and updates session state.
 
-    Use this tool as the final step after trimming the commercial to 30 seconds.
+    Use this tool as the final step after trimming the commercial to the target duration.
     It downloads the finished commercial from GCS, saves it as an ADK artifact,
     and records metadata in the session state.
 
@@ -546,7 +546,7 @@ async def save_commercial_artifact(
             title (str): A title for the commercial referencing both the trend and the product.
             scene_descriptions (list[str]): Brief descriptions of each scene, including which trend each connects to.
             total_clips (int): Number of clips used.
-            duration_seconds (int): Final duration in seconds.
+            duration_seconds (int): Final duration in seconds (10, 15, or 30).
             trend_connections (str, optional): Which trends from target_search_trends and target_yt_trends informed the creative.
             narrative_arc (str, optional): A one-sentence summary of the commercial's story.
             target_audience_appeal (str, optional): Why this commercial will resonate with the target audience.
@@ -563,7 +563,9 @@ async def save_commercial_artifact(
             bucket_name=bucket_name, source_blob_name=source_blob
         )
 
-        artifact_key = "commercial_30s.mp4"
+        # Make artifact key dynamic based on duration
+        duration = commercial_metadata.get("duration_seconds", 30)
+        artifact_key = f"commercial_{duration}s.mp4"
         await tool_context.save_artifact(
             filename=artifact_key,
             artifact=types.Part.from_bytes(

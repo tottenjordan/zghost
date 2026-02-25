@@ -15,6 +15,7 @@ import { fetchLiveTrends, getCachedTrends, autoSelectFromAvailable } from '../..
 import { DEFAULT_RUBRICS, type ExtendedRubric } from '../rating/rubric-templates';
 import type { CampaignConfigData } from './CampaignConfig';
 import type { SearchTrend, YTTrend } from '../../types/trends';
+import type { BrandSafetyResult } from '../../services/brandSafety';
 
 export function TrendsPage() {
   const { session, createSession, loadSession } = useSession();
@@ -66,6 +67,7 @@ export function TrendsPage() {
   const [autoSelectedSearchTrends, setAutoSelectedSearchTrends] = useState<SearchTrend[]>([]);
   const [autoSelectedYtTrends, setAutoSelectedYtTrends] = useState<YTTrend[]>([]);
   const [aiReasoning, setAiReasoning] = useState<string>('');
+  const [safetyResult, setSafetyResult] = useState<BrandSafetyResult | undefined>(undefined);
   const [autoSelectLoading, setAutoSelectLoading] = useState(false);
 
   const handleSaveConfig = useCallback((config: CampaignConfigData) => {
@@ -147,6 +149,7 @@ export function TrendsPage() {
       setAutoSelectedSearchTrends(result.searchTrends);
       setAutoSelectedYtTrends(result.ytTrends);
       setAiReasoning(result.reasoning);
+      setSafetyResult(result.safetyResult);
     } finally {
       setAutoSelectLoading(false);
     }
@@ -159,6 +162,7 @@ export function TrendsPage() {
     setAutoSelectedSearchTrends([]);
     setAutoSelectedYtTrends([]);
     setAiReasoning('');
+    setSafetyResult(undefined);
     setShowAutoSelect(false);
   };
 
@@ -167,6 +171,7 @@ export function TrendsPage() {
     setAutoSelectedSearchTrends([]);
     setAutoSelectedYtTrends([]);
     setAiReasoning('');
+    setSafetyResult(undefined);
   };
 
   const trendsLoaded = availableSearchTrends.length > 0 || availableYtTrends.length > 0;
@@ -276,6 +281,7 @@ export function TrendsPage() {
                 autoSelectedSearchTrends={autoSelectedSearchTrends}
                 autoSelectedYtTrends={autoSelectedYtTrends}
                 aiReasoning={aiReasoning}
+                safetyResult={safetyResult}
                 onAccept={handleAcceptAutoSelect}
                 onReject={handleRejectAutoSelect}
               />

@@ -7,15 +7,15 @@ import logging
 import os
 import sys
 from pathlib import Path
-from dotenv import load_dotenv
 
-# Load environment variables from the main project .env
-env_path = Path("/usr/local/google/home/jwortz/zghost/trends_and_insights_agent/.env")
-load_dotenv(env_path)
+# In development, load from .env if it exists
+if os.path.exists("trends_and_insights_agent/.env"):
+    from dotenv import load_dotenv
+    load_dotenv("trends_and_insights_agent/.env")
 
 # Set required environment variables for Vertex AI
 os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "1"
-# Override location to us-central1 for Live API support
+# Override location to us-central1 for Live API support (Gemini Live API only works in us-central1)
 os.environ["GOOGLE_CLOUD_LOCATION"] = "us-central1"
 
 logger = logging.getLogger(__name__)

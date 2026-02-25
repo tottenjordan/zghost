@@ -34,11 +34,13 @@ export function OrchestrationPage() {
     activeSessionIndex,
     sessionId,
     pipelineStatus,
+    commercialDuration,
     addSession,
     removeSession,
     setActiveSession,
     setSessionId,
     setPipelineStatus,
+    setCommercialDuration,
     isReadyToLaunch,
   } = useCampaignStore();
 
@@ -109,14 +111,20 @@ export function OrchestrationPage() {
       await api.sendMessage({
         app_name: APP_NAME, user_id: USER_ID,
         session_id: session.session_id,
-        message: `start the full pipeline with ${parallelCount} parallel stream(s)`,
+        message: `Set commercial duration to ${commercialDuration} seconds. commercial_duration=${commercialDuration}`,
+      });
+
+      await api.sendMessage({
+        app_name: APP_NAME, user_id: USER_ID,
+        session_id: session.session_id,
+        message: `start the full pipeline with ${parallelCount} parallel stream(s), producing a ${commercialDuration}-second commercial`,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to start pipeline';
       setStartError(msg);
       setPipelineStatus('error');
     }
-  }, [config, selectedSearchTrends, selectedYtTrends, activeRubric, sessions, addSession, setPipelineStatus]);
+  }, [config, selectedSearchTrends, selectedYtTrends, activeRubric, commercialDuration, sessions, addSession, setPipelineStatus]);
 
   const handleStop = useCallback(() => {
     setSessionId(null);
@@ -175,6 +183,9 @@ export function OrchestrationPage() {
           <span className={cn('px-2 py-0.5 rounded border', totalTrends > 0 ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-amber-700/50 bg-amber-950/30 text-amber-400')}>
             {totalTrends > 0 ? `${totalTrends} trends` : 'No trends'}
           </span>
+          <span className="px-2 py-0.5 rounded border border-blue-700/50 bg-blue-950/30 text-blue-400">
+            {commercialDuration}s commercial
+          </span>
           <span className={cn('px-2 py-0.5 rounded border', activeRubric ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-zinc-700/50 bg-zinc-800/50 text-zinc-500')}>
             {activeRubric?.name || 'Default rubric'}
           </span>
@@ -197,6 +208,8 @@ export function OrchestrationPage() {
         sessionId={sessionId}
         readyToLaunch={ready}
         missingItems={missing}
+        commercialDuration={commercialDuration}
+        onDurationChange={setCommercialDuration}
         onStart={handleStart}
         onStop={handleStop}
         onRefresh={handleRefresh}

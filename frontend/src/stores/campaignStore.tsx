@@ -27,6 +27,7 @@ export interface CampaignStoreState {
   activeRubric: ExtendedRubric | null;
   sessions: PipelineSession[];
   activeSessionIndex: number;
+  commercialDuration: 10 | 15 | 30;
   // Backward compatibility - derived from active session
   sessionId: string | null;
   pipelineStatus: 'idle' | 'running' | 'completed' | 'error';
@@ -42,6 +43,7 @@ interface CampaignStoreActions {
   removeSession: (sessionId: string) => void;
   setActiveSession: (index: number) => void;
   updateSessionStatus: (sessionId: string, status: PipelineSession['status']) => void;
+  setCommercialDuration: (duration: 10 | 15 | 30) => void;
   reset: () => void;
   isReadyToLaunch: () => { ready: boolean; missing: string[] };
 }
@@ -55,6 +57,7 @@ const DEFAULT_STATE: CampaignStoreState = {
   activeRubric: null,
   sessions: [],
   activeSessionIndex: -1,
+  commercialDuration: 30,
   sessionId: null,
   pipelineStatus: 'idle',
 };
@@ -226,6 +229,10 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setCommercialDuration = useCallback((duration: 10 | 15 | 30) => {
+    setState((prev) => ({ ...prev, commercialDuration: duration }));
+  }, []);
+
   const reset = useCallback(() => {
     setState(DEFAULT_STATE);
     localStorage.removeItem(STORAGE_KEY);
@@ -253,6 +260,7 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     removeSession,
     setActiveSession,
     updateSessionStatus,
+    setCommercialDuration,
     reset,
     isReadyToLaunch,
   };

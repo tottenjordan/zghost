@@ -3,8 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button';
 import { Slider } from '../../components/ui/Slider';
 import { Spinner } from '../../components/ui/Spinner';
+import { Badge } from '../../components/ui/Badge';
 import { SearchTrendCard, YTTrendCard } from './TrendCard';
+import { Shield, AlertTriangle, XCircle } from 'lucide-react';
 import type { SearchTrend, YTTrend } from '../../types/trends';
+import type { BrandSafetyResult } from '../../services/brandSafety';
 
 interface AutoTrendSelectorProps {
   loading: boolean;
@@ -16,6 +19,7 @@ interface AutoTrendSelectorProps {
   autoSelectedSearchTrends?: SearchTrend[];
   autoSelectedYtTrends?: YTTrend[];
   aiReasoning?: string;
+  safetyResult?: BrandSafetyResult;
   onAccept?: () => void;
   onReject?: () => void;
 }
@@ -26,6 +30,7 @@ export function AutoTrendSelector({
   autoSelectedSearchTrends = [],
   autoSelectedYtTrends = [],
   aiReasoning,
+  safetyResult,
   onAccept,
   onReject,
 }: AutoTrendSelectorProps) {
@@ -148,19 +153,29 @@ export function AutoTrendSelector({
               </div>
             )}
 
+            {safetyResult && (
+              <SafetySummary safetyResult={safetyResult} />
+            )}
+
             <div>
               <h4 className="mb-3 text-sm font-semibold text-zinc-300">
                 Selected Google Search Trends ({autoSelectedSearchTrends.length})
               </h4>
               <div className="grid gap-3 sm:grid-cols-2">
-                {autoSelectedSearchTrends.map((trend) => (
-                  <SearchTrendCard
-                    key={trend.rank}
-                    trend={trend}
-                    selected={true}
-                    onToggle={() => {}}
-                  />
-                ))}
+                {autoSelectedSearchTrends.map((trend) => {
+                  const safetyScore = safetyResult?.searchTrendScores.find(
+                    (s) => s.trendTitle === trend.title
+                  );
+                  return (
+                    <SearchTrendCard
+                      key={trend.rank}
+                      trend={trend}
+                      selected={true}
+                      onToggle={() => {}}
+                      safetyScore={safetyScore}
+                    />
+                  );
+                })}
               </div>
             </div>
 
@@ -170,14 +185,20 @@ export function AutoTrendSelector({
                   Selected YouTube Trends ({autoSelectedYtTrends.length})
                 </h4>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {autoSelectedYtTrends.map((trend) => (
-                    <YTTrendCard
-                      key={trend.rank}
-                      trend={trend}
-                      selected={true}
-                      onToggle={() => {}}
-                    />
-                  ))}
+                  {autoSelectedYtTrends.map((trend) => {
+                    const safetyScore = safetyResult?.ytTrendScores.find(
+                      (s) => s.trendTitle === trend.title
+                    );
+                    return (
+                      <YTTrendCard
+                        key={trend.rank}
+                        trend={trend}
+                        selected={true}
+                        onToggle={() => {}}
+                        safetyScore={safetyScore}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -194,5 +215,55 @@ export function AutoTrendSelector({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function SafetySummary({ safetyResult }: { safetyResult: BrandSafetyResult }) {
+  const allScores = [
+    ...safetyResult.searchTrendScores,
+    ...safetyResult.ytTrendScores,
+  ];
+
+  const safeCount = allScores.filter((s) => s.level === 'safe').length;
+  const cautionCount = allScores.filter((s) => s.level === 'caution').length;
+  const unsafeCount = allScores.filter((s) => s.level === 'unsafe').length;
+  const totalCount = allScores.length;
+
+  if (totalCount === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Shield className="h-4 w-4 text-blue-400" />
+        <h4 className="text-sm font-semibold text-zinc-300">
+          Brand Safety Summary
+        </h4>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {safeCount > 0 && (
+          <Badge variant="success" className="flex items-center gap-1">
+            <Shield className="h-3 w-3" />
+            {safeCount} Safe
+          </Badge>
+        )}
+        {cautionCount > 0 && (
+          <Badge variant="warning" className="flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            {cautionCount} Caution
+          </Badge>
+        )}
+        {unsafeCount > 0 && (
+          <Badge variant="error" className="flex items-center gap-1">
+            <XCircle className="h-3 w-3" />
+            {unsafeCount} Filtered (Unsafe)
+          </Badge>
+        )}
+      </div>
+      {unsafeCount > 0 && (
+        <p className="mt-2 text-xs text-amber-400">
+          Unsafe trends have been automatically filtered out from the selection.
+        </p>
+      )}
+    </div>
   );
 }
