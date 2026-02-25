@@ -55,8 +55,8 @@ Now plan a 4-scene storyboard (4 clips x ~8 seconds = ~32 seconds raw, trimmed t
 
 - **Scene description**: What happens visually (action, setting, mood).
 - **Trend connection**: Which specific trend insight or cultural reference this scene leverages and WHY it will resonate with `{target_audience}`.
-- **Characters/subjects**: Who or what appears. Use consistent, detailed descriptions (100+ words per character). The character must feel authentic to the target audience.
-- **Props/products**: Any objects featured. The `{target_product}` must appear naturally -- not forced -- in the narrative.
+- **Characters/subjects**: Who or what appears. Create a **CHARACTER SHEET** with an extremely detailed, fixed description (100+ words) that will be copy-pasted VERBATIM into every clip prompt. Include: ethnicity, exact age, build/height, hair color/style/length, skin tone, facial features (e.g., "warm brown eyes", "gentle smile lines"), exact clothing (color, type, fabric, fit), accessories (glasses type, watch, jewelry), and one distinguishing feature. This character sheet is your contract -- never deviate from it.
+- **Props/products**: Any objects featured. Create a **PRODUCT SHEET** with exact visual descriptions (no brand names -- describe the food/drink visually). Example: "a barbecue pork sandwich with pickles and onions on a sesame seed bun" or "a thick green milkshake in a clear cup with whipped cream and a red-and-yellow striped straw". The product must appear naturally in the narrative.
 - **Camera movement**: How the camera moves (e.g., slow pan, tracking shot, static).
 - **Transition rationale**: How this scene connects to the next (visual continuity at the cut point).
 
@@ -67,23 +67,29 @@ Now plan a 4-scene storyboard (4 clips x ~8 seconds = ~32 seconds raw, trimmed t
 - **Scene 4 (Resolution/CTA)**: Land the `{brand}` message with the approved call-to-action from the selected ad copies. End on an emotionally satisfying note that ties the trend, the product, and the audience together.
 
 **Consistency checklist before proceeding:**
+- [ ] A CHARACTER SHEET with a 100+ word fixed description has been created and will be used verbatim in all clips.
+- [ ] A PRODUCT SHEET with exact visual descriptions (no brand names) has been created.
 - [ ] Every scene references the same character using the EXACT same description (word-for-word).
+- [ ] NO scene includes any text, words, titles, or captions to be rendered in the video.
 - [ ] The product appears in at least 2 of the 4 scenes.
 - [ ] The tone matches the selected ad copy tone throughout (no tonal whiplash between scenes).
 - [ ] The trend connection is specific and authentic, not generic or forced.
 - [ ] The narrative makes logical sense when scenes play back-to-back.
 
-Present the storyboard to confirm the plan before proceeding.
+Present the storyboard including the CHARACTER SHEET and PRODUCT SHEET to confirm the plan before proceeding.
 
 ### Step 2: Subject Reference Image Generation
 
 For each unique character, key prop, or distinctive scene setting in the storyboard, generate a reference image using `generate_subject_image`. These reference images establish visual consistency across clips.
 
 Guidelines:
-- Use extremely detailed prompts (100+ words) describing appearance, clothing, pose, lighting, and style.
+- Use the CHARACTER SHEET from Step 1 as the base prompt for the character reference image. Add pose, lighting, and background details.
+- Use the PRODUCT SHEET from Step 1 as the base prompt for the product reference image. Do NOT use brand names -- describe the food/drink visually.
 - The character must visually match `{target_audience}` demographics and the trend's cultural context.
 - Generate at least one reference for the primary character/subject and one for the product.
-- Keep track of every generated subject image and its GCS URI for use in later steps.
+- **Multi-angle references**: Generate at least 2 reference images for the primary character: one front-facing portrait and one 3/4 angle or action pose. This gives Veo better reference material for character consistency across clips.
+- Keep track of ALL subject reference image GCS URIs -- you will pass them as `reference_image_gcs_uris` to every `generate_clip_with_frames` call.
+- IMPORTANT: Do NOT include any text, words, logos, or watermarks in reference image prompts.
 
 ### Step 3: Clip Chain Generation
 
@@ -91,29 +97,47 @@ Generate all 4 clips sequentially, using frame matching for continuity:
 
 **Clip 1 (Hook Scene):**
 1. Use the most relevant subject reference image as the first frame.
-2. Call `generate_clip_with_frames` with a detailed prompt for Scene 1, providing the subject image GCS URI as `first_frame_gcs_uri`.
+2. Call `generate_clip_with_frames` with a detailed prompt for Scene 1, providing the subject image GCS URI as `first_frame_gcs_uri` and ALL subject reference image GCS URIs as `reference_image_gcs_uris`.
 3. Record the returned `gcs_uri` for the generated clip.
 
 **Clip 2 (Connection Scene):**
 1. Call `extract_frame_from_clip` on Clip 1 with `frame_position="last"` to get its final frame.
-2. Call `generate_clip_with_frames` with the Scene 2 prompt, using Clip 1's last frame as `first_frame_gcs_uri`.
+2. Call `generate_clip_with_frames` with the Scene 2 prompt, using Clip 1's last frame as `first_frame_gcs_uri` and ALL subject reference image GCS URIs as `reference_image_gcs_uris`.
 3. Record the returned `gcs_uri`.
 
 **Clip 3 (Demonstration Scene):**
 1. Call `extract_frame_from_clip` on Clip 2 with `frame_position="last"`.
-2. Call `generate_clip_with_frames` with the Scene 3 prompt, using Clip 2's last frame as `first_frame_gcs_uri`.
+2. Call `generate_clip_with_frames` with the Scene 3 prompt, using Clip 2's last frame as `first_frame_gcs_uri` and ALL subject reference image GCS URIs as `reference_image_gcs_uris`.
 3. Record the returned `gcs_uri`.
 
 **Clip 4 (Resolution/CTA Scene):**
 1. Call `extract_frame_from_clip` on Clip 3 with `frame_position="last"`.
-2. Call `generate_clip_with_frames` with the Scene 4 prompt, using Clip 3's last frame as `first_frame_gcs_uri`.
+2. Call `generate_clip_with_frames` with the Scene 4 prompt, using Clip 3's last frame as `first_frame_gcs_uri` and ALL subject reference image GCS URIs as `reference_image_gcs_uris`.
 3. Record the returned `gcs_uri`.
 
 **Important prompting guidelines for clips:**
 - Each clip prompt should be 80-150 words describing action, mood, camera work, and visual details.
-- **Character consistency**: Copy-paste the EXACT same character description into every clip prompt. Do NOT paraphrase, shorten, or say "the same person" -- repeat the full description verbatim.
+- **NO TEXT IN VIDEO**: NEVER include any written text, words, titles, captions, logos, watermarks, subtitles, or on-screen text in clip prompts. Veo cannot render readable text. Text overlays should be added in post-production. If the ad copy has a headline or CTA, convey it through VISUAL STORYTELLING only (gestures, expressions, product placement), not written words.
+- **Character consistency**: Copy-paste the EXACT same character description into every clip prompt. Do NOT paraphrase, shorten, or say "the same person" -- repeat the full description verbatim. Include: ethnicity, age range, build, hair color/style, exact clothing (color, type, fit), accessories, and distinguishing features. Example: "A 70-year-old African American man with short gray hair, wearing a burgundy cardigan over a white collared shirt, khaki pants, and round gold-rimmed glasses."
+- **Product consistency**: Describe the product the EXACT same way in every clip where it appears. Include specific colors, packaging, and presentation details.
 - **Scene-to-scene logic**: The end-state of each clip should naturally lead into the start of the next. Describe where the character is positioned and what they are doing at the end of the clip.
 - **Trend authenticity**: Each prompt should include visual cues that connect back to the trending topic (e.g., trending colors, settings, gestures, or cultural markers identified in the research).
+- **Avoid RAI triggers**: Do not use words like "elderly", "old", "aged" in prompts. Use "senior", "mature", or describe specific features instead. Avoid brand names in Veo prompts -- describe the product visually instead of by name (e.g., "a barbecue pork sandwich with pickles and onions on a sesame bun" instead of "McRib").
+
+### Step 3.5: Character Consistency Validation (Optional)
+
+After generating all 4 clips, optionally validate character consistency:
+
+1. For each clip, call `validate_character_consistency` with:
+   - `reference_image_gcs_uri`: The primary character reference image from Step 2
+   - `clip_gcs_uri`: The generated clip's GCS URI
+   - `frame_position`: "first" (to check the opening frame against the reference)
+
+2. Review the scores:
+   - **Score >= 7**: Character consistency is acceptable, proceed.
+   - **Score < 7**: Consider regenerating the clip with a more detailed character description or adjusted prompt. You may retry up to 2 times per clip.
+
+3. If all clips score >= 7, proceed to Step 4.
 
 ### Step 4: Assembly & Completion Validation
 
@@ -150,4 +174,5 @@ After saving, present to the user:
 - `concatenate_clips`: Join multiple clips into a single continuous video using ffmpeg.
 - `trim_video`: Trim a video to a specific duration using ffmpeg.
 - `save_commercial_artifact`: Save the final commercial as an ADK artifact and update session state.
+- `validate_character_consistency`: Compare a video clip frame against a character reference image using Gemini vision, scoring consistency 1-10.
 """

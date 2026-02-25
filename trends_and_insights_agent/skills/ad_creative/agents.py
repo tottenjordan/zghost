@@ -1,11 +1,15 @@
+import pathlib
+
 from google.genai import types
 from google.adk.planners import BuiltInPlanner
 from google.adk.tools.agent_tool import AgentTool
+from google.adk.tools.skill_toolset import SkillToolset
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.tools import google_search, load_artifacts
 
 from ...shared_libraries.config import config
 from ...shared_libraries import callbacks
+from ...skills.skill_loader import load_skill_from_dir
 from .tools import (
     generate_image,
     generate_video,
@@ -19,6 +23,11 @@ from .prompts import (
     VEO3_INSTR,
 )
 
+# Load this skill's own SKILL.md for self-contained documentation
+_skill_dir = pathlib.Path(__file__).parent
+_skill = load_skill_from_dir(_skill_dir)
+_skill_toolset = SkillToolset(skills=[_skill])
+
 
 # --- AD CREATIVE SUBAGENTS ---
 ad_copy_drafter = Agent(
@@ -26,7 +35,10 @@ ad_copy_drafter = Agent(
     name="ad_copy_drafter",
     description="Generate 10-12 initial ad copy ideas based on campaign guidelines and trends",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            thinking_level="LOW",
+            include_thoughts=False,
+        )
     ),
     instruction="""You are a creative copywriter generating initial ad copy ideas.
 
@@ -84,7 +96,10 @@ ad_copy_critic = Agent(
     name="ad_copy_critic",
     description="Critique and narrow down ad copies based on product, audience, and trends",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            thinking_level="MEDIUM",
+            include_thoughts=False,
+        )
     ),
     instruction="""You are a strategic marketing critic evaluating ad copy ideas.
 
@@ -131,7 +146,10 @@ visual_concept_drafter = Agent(
     name="visual_concept_drafter",
     description="Generate initial visual concepts for selected ad copies",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            thinking_level="LOW",
+            include_thoughts=False,
+        )
     ),
     instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
 
@@ -175,7 +193,10 @@ visual_concept_critic = Agent(
     name="visual_concept_critic",
     description="Critique and narrow down visual concepts",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            thinking_level="MEDIUM",
+            include_thoughts=False,
+        )
     ),
     instruction=f"""You are a creative director evaluating visual concepts and high quality prompts that result in high impact.
 
@@ -238,6 +259,9 @@ visual_concept_finalizer = Agent(
     """,
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
     output_key="final_visual_concepts",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(thinking_level="LOW")
+    ),
 )
 
 
@@ -293,6 +317,9 @@ visual_generator = Agent(
         generate_video,
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(thinking_level="MEDIUM")
+    ),
     before_model_callback=callbacks.rate_limit_callback,
 )
 
@@ -311,6 +338,10 @@ ad_content_generator_agent = Agent(
         save_select_ad_copy,
         save_select_visual_concept,
         load_artifacts,
+        _skill_toolset,
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(thinking_level="LOW")
+    ),
 )

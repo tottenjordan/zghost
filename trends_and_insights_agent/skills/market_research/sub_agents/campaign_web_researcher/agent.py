@@ -7,8 +7,8 @@ from google.adk.tools import google_search
 from google.adk.planners import BuiltInPlanner
 from google.adk.agents import Agent, SequentialAgent
 
-from ....shared_libraries import callbacks
-from ....shared_libraries.config import config
+from .....shared_libraries import callbacks
+from .....shared_libraries.config import config
 
 
 campaign_web_planner = Agent(
@@ -50,6 +50,9 @@ campaign_web_planner = Agent(
     **CRITICAL RULE: Your output should just include a numbered list of queries. Nothing else.**
     """,
     output_key="initial_campaign_queries",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(thinking_level="MINIMAL")
+    ),
 )
 
 
@@ -58,7 +61,10 @@ campaign_web_searcher = Agent(
     name="campaign_web_searcher",
     description="Performs the crucial first pass of web research about the campaign guide.",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            thinking_level="LOW",
+            include_thoughts=False,
+        )
     ),
     instruction="""
     You are a diligent and exhaustive researcher. Your task is to conduct initial web research for concepts described in the campaign guide.

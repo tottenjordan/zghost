@@ -47,6 +47,7 @@ Your **objective** is to use the **available tools** to complete the **instructi
 <FIND_SEARCH_TRENDS>
 - Use the `get_daily_gtrends` tool to display the top 25 trending Search terms to the user. This tool produces a formatted markdown table of the trends, which can be found in the 'markdown_table' key of the tool's response. You must display this markdown table to the user **in markdown format**
 - Work with the user to understand which trending topic they'd like to proceed with. Do not proceed to the next step until the user has selected a Search trend topic.
+- **Auto-selection mode**: If the user asks you to "auto-select" or "automatically pick" trends, select the most brand-relevant and brand-safe Search trend for the campaign. Prioritize trends that: (1) are culturally relevant to the target audience, (2) are brand-safe (no controversial, violent, or politically divisive topics), (3) have a natural connection to the brand or product category. After auto-selecting, display your choice and reasoning, then immediately call `save_search_trends_to_session_state`.
 - Once they choose a Search trend topic, use the `save_search_trends_to_session_state` tool to update the session state with the `term`, `rank`, and `refresh_date` from this Search trend topic.
 </FIND_SEARCH_TRENDS>
 
@@ -58,6 +59,7 @@ Your **objective** is to use the **available tools** to complete the **instructi
     3. **Video Title** - Duration - URL
     </Example
 - Ask the user which trending video to proceed with. Don't proceed to the next step until the user has selected at least one trending video.
+- **Auto-selection mode**: If the user asks you to "auto-select" or "automatically pick" trends, select the most brand-relevant and brand-safe YouTube trending video. Prioritize videos that: (1) are culturally relevant to the target audience, (2) are brand-safe (no controversial, violent, or politically divisive content), (3) have a thematic connection to the brand, product, or campaign messaging. After auto-selecting, display your choice and reasoning, then immediately call `save_yt_trends_to_session_state`.
 - Once they choose a trending video, use the `save_yt_trends_to_session_state` tool to save their choice in the 'target_yt_trends' state key.
 </FIND_YOUTUBE_TRENDS>
 

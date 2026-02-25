@@ -98,8 +98,8 @@ from ...shared_libraries.config import config
 from ...shared_libraries import callbacks
 from ...shared_libraries.utils import upload_blob_to_gcs
 
-# From a sub_agent within a skill (3+ levels up)
-from ....shared_libraries.config import config
+# From a sub_agent within a skill (4 levels up to trends_and_insights_agent)
+from .....shared_libraries.config import config
 ```
 
 ### Testing

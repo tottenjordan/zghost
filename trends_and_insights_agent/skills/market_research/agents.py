@@ -1,5 +1,6 @@
 import datetime
 import logging
+import pathlib
 
 logging.basicConfig(level=logging.INFO)
 
@@ -7,15 +8,22 @@ from google.genai import types
 from google.adk.tools import google_search
 from google.adk.planners import BuiltInPlanner
 from google.adk.tools.agent_tool import AgentTool
+from google.adk.tools.skill_toolset import SkillToolset
 from google.adk.agents import Agent, SequentialAgent, ParallelAgent
 
 from ...shared_libraries.config import config
 from ...shared_libraries import callbacks, schema_types
+from ...skills.skill_loader import load_skill_from_dir
 
 from .tools import save_draft_report_artifact
 from .sub_agents.campaign_web_researcher.agent import ca_sequential_planner
 from .sub_agents.search_web_researcher.agent import gs_sequential_planner
 from .sub_agents.youtube_web_researcher.agent import yt_sequential_planner
+
+# Load this skill's own SKILL.md for self-contained documentation
+_skill_dir = pathlib.Path(__file__).parent
+_skill = load_skill_from_dir(_skill_dir)
+_skill_toolset = SkillToolset(skills=[_skill])
 
 
 # --- PARALLEL RESEARCH SUBAGENTS --- #
@@ -51,6 +59,9 @@ merge_planners = Agent(
     Output *only* the structured report following this format. Do not include introductory or concluding phrases outside this structure, and strictly adhere to using only the provided input summary content.
     """,
     output_key="combined_web_search_insights",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(thinking_level="LOW")
+    ),
 )
 
 merge_parallel_insights = SequentialAgent(
@@ -83,6 +94,9 @@ combined_web_evaluator = Agent(
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
     output_key="combined_research_evaluation",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(thinking_level="MEDIUM")
+    ),
     before_model_callback=callbacks.rate_limit_callback,
 )
 
@@ -92,7 +106,10 @@ enhanced_combined_searcher = Agent(
     name="enhanced_combined_searcher",
     description="Executes follow-up searches and integrates new findings.",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            thinking_level="LOW",
+            include_thoughts=False,
+        )
     ),
     instruction="""
     You are a specialist researcher executing a refinement pass.
@@ -163,6 +180,9 @@ combined_report_composer = Agent(
     Do not include a "References" or "Sources" section; all citations must be in-line.
     """,
     output_key="combined_final_cited_report",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(thinking_level="LOW")
+    ),
     after_agent_callback=callbacks.citation_replacement_callback,
     before_model_callback=callbacks.rate_limit_callback,
 )
@@ -199,11 +219,12 @@ research_orchestrator = Agent(
     tools=[
         save_draft_report_artifact,
         AgentTool(agent=combined_research_pipeline),
+        _skill_toolset,
     ],
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             include_thoughts=True,
-            thinking_budget=2048,
+            thinking_level="LOW",
         )
     ),
     generate_content_config=types.GenerateContentConfig(temperature=1.0),

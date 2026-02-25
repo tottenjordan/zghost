@@ -7,8 +7,8 @@ from google.adk.planners import BuiltInPlanner
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.tools import google_search
 
-from ....shared_libraries import callbacks
-from ....shared_libraries.config import config
+from .....shared_libraries import callbacks
+from .....shared_libraries.config import config
 from trends_and_insights_agent.tools import analyze_youtube_videos
 
 
@@ -32,6 +32,9 @@ yt_analysis_generator_agent = Agent(
     """,
     tools=[analyze_youtube_videos],
     output_key="yt_video_analysis",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(thinking_level="LOW")
+    ),
 )
 
 
@@ -64,6 +67,9 @@ yt_web_planner = Agent(
     Your output should just include a numbered list of queries. Nothing else.
     """,
     output_key="initial_yt_queries",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(thinking_level="MINIMAL")
+    ),
 )
 
 
@@ -72,7 +78,10 @@ yt_web_searcher = Agent(
     name="yt_web_searcher",
     description="Performs web research to better understand the context of the trending YouTube video.",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            thinking_level="LOW",
+            include_thoughts=False,
+        )
     ),
     instruction="""
     You are a diligent and exhaustive researcher.

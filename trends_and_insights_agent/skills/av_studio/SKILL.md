@@ -34,6 +34,7 @@ av_editing_studio_agent (LLM Agent)
 | `concatenate_clips` | Join multiple clips into one video with ffmpeg |
 | `trim_video` | Trim video to target duration with ffmpeg |
 | `save_commercial_artifact` | Save final commercial as ADK artifact |
+| `validate_character_consistency` | Compare clip frame against reference for character consistency scoring |
 
 ## Session State Keys
 
@@ -59,9 +60,10 @@ av_editing_studio_agent (LLM Agent)
 ## Workflow
 
 1. **Storyboard Planning** -- Analyze trends and research to plan 4 scenes.
-2. **Subject Reference** -- Generate reference images for visual consistency.
-3. **Clip Chain** -- Generate 4 clips sequentially with frame matching:
-   - Clip 1: First frame from subject reference image
-   - Clip 2-4: First frame from previous clip's last frame
-4. **Assembly** -- Concatenate clips and trim to 30 seconds.
-5. **Save** -- Save final commercial as artifact with metadata.
+2. **Subject Reference** -- Generate multiple reference images for visual consistency (at least 2 angles for the primary character).
+3. **Clip Chain** -- Generate 4 clips sequentially with frame matching, passing reference images to each clip:
+   - Clip 1: First frame from subject reference image + reference_image_gcs_uris
+   - Clip 2-4: First frame from previous clip's last frame + reference_image_gcs_uris
+4. **Validation (Optional)** -- Validate character consistency across clips using Gemini vision.
+5. **Assembly** -- Concatenate clips and trim to 30 seconds.
+6. **Save** -- Save final commercial as artifact with metadata.

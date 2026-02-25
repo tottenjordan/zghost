@@ -26,7 +26,7 @@ class ResearchConfiguration:
     )
     image_gen_model: str = "imagen-4.0-ultra-generate-preview-06-06" # "imagen-4.0-fast-generate-preview-06-06"
     video_gen_model: str = (
-        "veo-3.1-fast-generate-preview"  # "veo-2.0-generate-001" | veo-3.0-generate-preview
+        "veo-3.1-fast-generate-001"  # GA model | "veo-3.1-fast-generate-preview"
     )
     subject_image_gen_model: str = "gemini-3-pro-image-preview"
 
