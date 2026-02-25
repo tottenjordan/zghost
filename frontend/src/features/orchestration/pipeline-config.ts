@@ -5,11 +5,12 @@ export interface PipelineNodeData {
   agentName: string;
   type: 'orchestrator' | 'sequential' | 'parallel' | 'tool';
   description?: string;
+  skill?: 'root' | 'trends' | 'research' | 'creative' | 'av';
 }
 
 // Define the agent hierarchy as React Flow nodes
 export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
-  // Root agent
+  // Row 0: Root agent (centered)
   {
     id: 'root_agent',
     type: 'agentNode',
@@ -18,10 +19,12 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       agentName: 'root_agent',
       type: 'orchestrator',
       description: 'Main orchestrator',
+      skill: 'root',
     },
-    position: { x: 400, y: 0 },
+    position: { x: 600, y: 0 },
   },
 
+  // Row 1: 4 skill entry points spread wide
   // Skill 1: Trend Discovery
   {
     id: 'trends_and_insights_agent',
@@ -31,8 +34,9 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       agentName: 'trends_and_insights_agent',
       type: 'sequential',
       description: 'Campaign metadata + trend selection',
+      skill: 'trends',
     },
-    position: { x: 50, y: 120 },
+    position: { x: 0, y: 150 },
   },
 
   // Skill 2: Market Research
@@ -44,100 +48,9 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       agentName: 'research_orchestrator',
       type: 'orchestrator',
       description: 'Coordinates research pipeline',
+      skill: 'research',
     },
-    position: { x: 250, y: 120 },
-  },
-  {
-    id: 'combined_research_pipeline',
-    type: 'agentNode',
-    data: {
-      label: 'Combined Research Pipeline',
-      agentName: 'combined_research_pipeline',
-      type: 'sequential',
-      description: 'Sequential research flow',
-    },
-    position: { x: 250, y: 220 },
-  },
-
-  // Parallel research agents
-  {
-    id: 'yt_sequential_planner',
-    type: 'agentNode',
-    data: {
-      label: 'YouTube Planner',
-      agentName: 'yt_sequential_planner',
-      type: 'parallel',
-      description: 'YouTube trend analysis',
-    },
-    position: { x: 50, y: 340 },
-  },
-  {
-    id: 'gs_sequential_planner',
-    type: 'agentNode',
-    data: {
-      label: 'Google Search Planner',
-      agentName: 'gs_sequential_planner',
-      type: 'parallel',
-      description: 'Google Search trend analysis',
-    },
-    position: { x: 250, y: 340 },
-  },
-  {
-    id: 'ca_sequential_planner',
-    type: 'agentNode',
-    data: {
-      label: 'Campaign Planner',
-      agentName: 'ca_sequential_planner',
-      type: 'parallel',
-      description: 'Campaign research',
-    },
-    position: { x: 450, y: 340 },
-  },
-
-  // Merge and evaluation agents
-  {
-    id: 'merge_planners',
-    type: 'agentNode',
-    data: {
-      label: 'Merge Planners',
-      agentName: 'merge_planners',
-      type: 'tool',
-      description: 'Combines research plans',
-    },
-    position: { x: 250, y: 460 },
-  },
-  {
-    id: 'combined_web_evaluator',
-    type: 'agentNode',
-    data: {
-      label: 'Web Evaluator',
-      agentName: 'combined_web_evaluator',
-      type: 'sequential',
-      description: 'Quality checks',
-    },
-    position: { x: 250, y: 560 },
-  },
-  {
-    id: 'enhanced_combined_searcher',
-    type: 'agentNode',
-    data: {
-      label: 'Enhanced Searcher',
-      agentName: 'enhanced_combined_searcher',
-      type: 'sequential',
-      description: 'Refines results',
-    },
-    position: { x: 250, y: 660 },
-  },
-  {
-    id: 'combined_report_composer',
-    type: 'agentNode',
-    data: {
-      label: 'Report Composer',
-      agentName: 'combined_report_composer',
-      type: 'sequential',
-      description: 'Generates unified report',
-    },
-    position: { x: 250, y: 760 },
+    position: { x: 400, y: 150 },
   },
 
   // Skill 3: Ad Creative
@@ -149,41 +62,9 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       agentName: 'ad_content_generator_agent',
       type: 'orchestrator',
       description: 'Ad campaign orchestrator',
+      skill: 'creative',
     },
-    position: { x: 550, y: 120 },
-  },
-  {
-    id: 'ad_creative_pipeline',
-    type: 'agentNode',
-    data: {
-      label: 'Ad Creative Pipeline',
-      agentName: 'ad_creative_pipeline',
-      type: 'sequential',
-      description: 'Draft → critique ad copy',
-    },
-    position: { x: 500, y: 220 },
-  },
-  {
-    id: 'visual_generation_pipeline',
-    type: 'agentNode',
-    data: {
-      label: 'Visual Generation Pipeline',
-      agentName: 'visual_generation_pipeline',
-      type: 'sequential',
-      description: 'Draft → critique → finalize',
-    },
-    position: { x: 650, y: 220 },
-  },
-  {
-    id: 'visual_generator',
-    type: 'agentNode',
-    data: {
-      label: 'Visual Generator',
-      agentName: 'visual_generator',
-      type: 'tool',
-      description: 'Imagen/Veo generation',
-    },
-    position: { x: 800, y: 220 },
+    position: { x: 800, y: 150 },
   },
 
   // Skill 4: AV Studio
@@ -195,8 +76,149 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       agentName: 'av_editing_studio_agent',
       type: 'sequential',
       description: '30s commercial production',
+      skill: 'av',
     },
-    position: { x: 750, y: 120 },
+    position: { x: 1200, y: 150 },
+  },
+
+  // Row 2: Sub-agents under their parents
+  {
+    id: 'combined_research_pipeline',
+    type: 'agentNode',
+    data: {
+      label: 'Combined Research Pipeline',
+      agentName: 'combined_research_pipeline',
+      type: 'sequential',
+      description: 'Sequential research flow',
+      skill: 'research',
+    },
+    position: { x: 400, y: 300 },
+  },
+  {
+    id: 'ad_creative_pipeline',
+    type: 'agentNode',
+    data: {
+      label: 'Ad Creative Pipeline',
+      agentName: 'ad_creative_pipeline',
+      type: 'sequential',
+      description: 'Draft → critique ad copy',
+      skill: 'creative',
+    },
+    position: { x: 700, y: 300 },
+  },
+  {
+    id: 'visual_generation_pipeline',
+    type: 'agentNode',
+    data: {
+      label: 'Visual Generation Pipeline',
+      agentName: 'visual_generation_pipeline',
+      type: 'sequential',
+      description: 'Draft → critique → finalize',
+      skill: 'creative',
+    },
+    position: { x: 900, y: 300 },
+  },
+  {
+    id: 'visual_generator',
+    type: 'agentNode',
+    data: {
+      label: 'Visual Generator',
+      agentName: 'visual_generator',
+      type: 'tool',
+      description: 'Imagen/Veo generation',
+      skill: 'creative',
+    },
+    position: { x: 1100, y: 300 },
+  },
+
+  // Row 3: Parallel planners spread wide
+  {
+    id: 'yt_sequential_planner',
+    type: 'agentNode',
+    data: {
+      label: 'YouTube Planner',
+      agentName: 'yt_sequential_planner',
+      type: 'parallel',
+      description: 'YouTube trend analysis',
+      skill: 'research',
+    },
+    position: { x: 200, y: 450 },
+  },
+  {
+    id: 'gs_sequential_planner',
+    type: 'agentNode',
+    data: {
+      label: 'Google Search Planner',
+      agentName: 'gs_sequential_planner',
+      type: 'parallel',
+      description: 'Google Search trend analysis',
+      skill: 'research',
+    },
+    position: { x: 400, y: 450 },
+  },
+  {
+    id: 'ca_sequential_planner',
+    type: 'agentNode',
+    data: {
+      label: 'Campaign Planner',
+      agentName: 'ca_sequential_planner',
+      type: 'parallel',
+      description: 'Campaign research',
+      skill: 'research',
+    },
+    position: { x: 600, y: 450 },
+  },
+
+  // Row 4: Merge planners
+  {
+    id: 'merge_planners',
+    type: 'agentNode',
+    data: {
+      label: 'Merge Planners',
+      agentName: 'merge_planners',
+      type: 'tool',
+      description: 'Combines research plans',
+      skill: 'research',
+    },
+    position: { x: 400, y: 600 },
+  },
+
+  // Row 5-7: Sequential evaluation chain
+  {
+    id: 'combined_web_evaluator',
+    type: 'agentNode',
+    data: {
+      label: 'Web Evaluator',
+      agentName: 'combined_web_evaluator',
+      type: 'sequential',
+      description: 'Quality checks',
+      skill: 'research',
+    },
+    position: { x: 400, y: 750 },
+  },
+  {
+    id: 'enhanced_combined_searcher',
+    type: 'agentNode',
+    data: {
+      label: 'Enhanced Searcher',
+      agentName: 'enhanced_combined_searcher',
+      type: 'sequential',
+      description: 'Refines results',
+      skill: 'research',
+    },
+    position: { x: 400, y: 900 },
+  },
+  {
+    id: 'combined_report_composer',
+    type: 'agentNode',
+    data: {
+      label: 'Report Composer',
+      agentName: 'combined_report_composer',
+      type: 'sequential',
+      description: 'Generates unified report',
+      skill: 'research',
+    },
+    position: { x: 400, y: 1050 },
   },
 ];
 

@@ -108,8 +108,9 @@ export function PipelineGraph({
         nodeTypes={nodeTypes}
         connectionLineType={ConnectionLineType.SmoothStep}
         fitView
+        fitViewOptions={{ padding: 0.2 }}
         className="bg-zinc-950"
-        minZoom={0.1}
+        minZoom={0.3}
         maxZoom={1.5}
       >
         <Background color="#27272a" gap={16} />

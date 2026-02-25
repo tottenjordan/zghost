@@ -32,9 +32,24 @@ const typeIcons = {
 
 const statusColors = {
   idle: 'bg-zinc-700 border-zinc-600',
-  running: 'bg-blue-900/50 border-blue-500 shadow-blue-500/50 shadow-lg',
+  running: 'bg-blue-900/50 border-blue-500 ring-2 ring-blue-500/50',
   completed: 'bg-green-900/50 border-green-500',
   error: 'bg-red-900/50 border-red-500',
+};
+
+const skillColors = {
+  root: 'border-l-4 border-l-zinc-400',
+  trends: 'border-l-4 border-l-blue-500',
+  research: 'border-l-4 border-l-green-500',
+  creative: 'border-l-4 border-l-orange-500',
+  av: 'border-l-4 border-l-purple-500',
+};
+
+const nodeSizeClasses = {
+  orchestrator: 'min-w-[220px] border-[3px]',
+  parallel: 'min-w-[180px]',
+  sequential: 'min-w-[180px]',
+  tool: 'min-w-[150px]',
 };
 
 const statusBadgeVariants = {
@@ -48,6 +63,7 @@ function AgentNodeComponent({ data, selected }: AgentNodeProps) {
   const status = data.status || 'idle';
   const Icon = typeIcons[data.type];
   const isActive = status === 'running';
+  const skill = data.skill || 'root';
 
   const StatusIcon = {
     idle: Clock,
@@ -61,16 +77,24 @@ function AgentNodeComponent({ data, selected }: AgentNodeProps) {
       <Handle type="target" position={Position.Top} className="w-2 h-2" />
       <div
         className={cn(
-          'rounded-lg border-2 bg-zinc-900 p-3 min-w-[180px] transition-all',
+          'rounded-lg border-2 bg-zinc-900 p-3 transition-all',
+          nodeSizeClasses[data.type],
           statusColors[status],
+          skillColors[skill],
           selected && 'ring-2 ring-blue-400',
-          isActive && 'animate-pulse'
+          data.type === 'parallel' && 'bg-indigo-950/30'
         )}
       >
         <div className="flex items-start gap-2">
-          <Icon className="w-4 h-4 mt-0.5 text-zinc-400 flex-shrink-0" />
+          <Icon className={cn(
+            'mt-0.5 text-zinc-400 flex-shrink-0',
+            data.type === 'orchestrator' ? 'w-5 h-5' : 'w-4 h-4'
+          )} />
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-sm text-zinc-100 mb-1 truncate">
+            <div className={cn(
+              'font-semibold text-zinc-100 mb-1 truncate',
+              data.type === 'orchestrator' ? 'text-base' : 'text-sm'
+            )}>
               {data.label}
             </div>
             <div className="flex items-center gap-2 mb-1">

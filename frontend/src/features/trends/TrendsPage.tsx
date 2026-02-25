@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { Mic } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { Mic, RefreshCw, Loader2 } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useTrends } from './useTrends';
 import { CampaignConfig } from './CampaignConfig';
@@ -8,10 +8,19 @@ import { AutoTrendSelector } from './AutoTrendSelector';
 import { TrendCompare } from './TrendCompare';
 import { VoiceBriefAssistant } from '../voice/VoiceBriefAssistant';
 import { Button } from '../../components/ui/Button';
+import { api } from '../../services/api';
+import { parseTrendsFromRunResponse } from '../../utils/parseTrends';
 import type { CampaignConfigData } from './CampaignConfig';
+import type { SearchTrend, YTTrend } from '../../types/trends';
+
+const APP_NAME = import.meta.env.VITE_APP_NAME || 'trends_and_insights_agent';
+const USER_ID = 'frontend-user';
 
 export function TrendsPage() {
-  const { session } = useSession();
+  const { session, createSession, loadSession } = useSession();
+  const [fetchingTrends, setFetchingTrends] = useState(false);
+  const [trendError, setTrendError] = useState<string | null>(null);
+  const initRef = useRef(false);
   const {
     selectedSearchTrends,
     selectedYtTrends,
@@ -27,11 +36,71 @@ export function TrendsPage() {
   const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
 
+  // Store parsed trends in local state
+  const [availableSearchTrends, setAvailableSearchTrends] = useState<SearchTrend[]>([]);
+  const [availableYtTrends, setAvailableYtTrends] = useState<YTTrend[]>([]);
+
   const handleSaveConfig = useCallback((_config: CampaignConfigData) => {
     setConfigSaved(true);
-    // Clear success indicator after 3 seconds
     setTimeout(() => setConfigSaved(false), 3000);
   }, []);
+
+  // Fetch live trends from the ADK backend
+  const handleFetchTrends = useCallback(async () => {
+    setFetchingTrends(true);
+    setTrendError(null);
+    try {
+      // Create a session if we don't have one
+      let currentSession = session;
+      if (!currentSession) {
+        currentSession = await createSession(USER_ID);
+      }
+
+      // Send "hello" to initialize the agent, then ask for trends
+      await api.sendMessage({
+        app_name: APP_NAME,
+        user_id: USER_ID,
+        session_id: currentSession.session_id,
+        message: 'hello',
+      });
+
+      // Ask for Google Search trends and parse response
+      const googleResponse = await api.sendMessage({
+        app_name: APP_NAME,
+        user_id: USER_ID,
+        session_id: currentSession.session_id,
+        message: 'select a google trend',
+      });
+
+      // Ask for YouTube trends and parse response
+      const ytResponse = await api.sendMessage({
+        app_name: APP_NAME,
+        user_id: USER_ID,
+        session_id: currentSession.session_id,
+        message: 'select a yt trend',
+      });
+
+      // Parse trends from both responses
+      const googleParsed = parseTrendsFromRunResponse(googleResponse);
+      const ytParsed = parseTrendsFromRunResponse(ytResponse);
+
+      // Update local state with parsed trends
+      if (googleParsed.searchTrends.length > 0) {
+        setAvailableSearchTrends(googleParsed.searchTrends);
+      }
+      if (ytParsed.ytTrends.length > 0) {
+        setAvailableYtTrends(ytParsed.ytTrends);
+      }
+
+      // Reload the session to get updated state
+      await loadSession(USER_ID, currentSession.session_id);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to fetch trends';
+      setTrendError(msg);
+    } finally {
+      setFetchingTrends(false);
+    }
+  }, [session, createSession, loadSession]);
 
   const handleAutoSelect = async (config: {
     num_search_trends: number;
@@ -63,15 +132,36 @@ export function TrendsPage() {
             Configure your campaign and select trending topics to target
           </p>
         </div>
-        <Button
-          onClick={() => setShowVoiceAssistant(true)}
-          variant="secondary"
-          className="flex items-center gap-2"
-        >
-          <Mic className="h-4 w-4" />
-          Voice Brief Assistant
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleFetchTrends}
+            disabled={fetchingTrends}
+            variant="primary"
+            className="flex items-center gap-2"
+          >
+            {fetchingTrends ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            {fetchingTrends ? 'Fetching...' : 'Fetch Live Trends'}
+          </Button>
+          <Button
+            onClick={() => setShowVoiceAssistant(true)}
+            variant="secondary"
+            className="flex items-center gap-2"
+          >
+            <Mic className="h-4 w-4" />
+            Voice Brief
+          </Button>
+        </div>
       </div>
+
+      {trendError && (
+        <div className="rounded-lg border border-amber-800 bg-amber-950/50 px-4 py-2 text-sm text-amber-400">
+          Could not fetch live trends: {trendError}. Showing demo data instead.
+        </div>
+      )}
 
       {/* Two-column layout */}
       <div className="grid gap-6 lg:grid-cols-2">
@@ -122,6 +212,8 @@ export function TrendsPage() {
         <div className="space-y-6">
           <TrendSelector
             session={session}
+            availableSearchTrends={availableSearchTrends}
+            availableYtTrends={availableYtTrends}
             selectedSearchTrends={selectedSearchTrends}
             selectedYtTrends={selectedYtTrends}
             onToggleSearchTrend={toggleSearchTrend}

@@ -26,7 +26,6 @@ interface VoiceBriefAssistantProps {
 }
 
 export function VoiceBriefAssistant({ onClose, isFloating = false }: VoiceBriefAssistantProps) {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   const [isMinimized, setIsMinimized] = useState(false);
 
   const {
@@ -38,7 +37,6 @@ export function VoiceBriefAssistant({ onClose, isFloating = false }: VoiceBriefA
     isRecording,
     isConnected,
   } = useVoiceSession({
-    apiKey,
     systemPrompt: SYSTEM_PROMPT,
   });
 

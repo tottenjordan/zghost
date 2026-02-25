@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { ConnectionState, TranscriptMessage, VoiceSessionConfig } from './types';
 
-const GEMINI_WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 const SAMPLE_RATE = 16000;
 
 export function useVoiceSession(config: VoiceSessionConfig) {
@@ -64,16 +63,10 @@ export function useVoiceSession(config: VoiceSessionConfig) {
           const inputData = e.inputBuffer.getChannelData(0);
           const pcmData = floatTo16BitPCM(inputData);
 
-          // Send audio data to Gemini
+          // Send audio data to backend proxy
           const message = {
-            realtimeInput: {
-              mediaChunks: [
-                {
-                  mimeType: 'audio/pcm',
-                  data: btoa(String.fromCharCode(...new Uint8Array(pcmData))),
-                },
-              ],
-            },
+            mime_type: 'audio/pcm',
+            data: btoa(String.fromCharCode(...new Uint8Array(pcmData))),
           };
           wsRef.current.send(JSON.stringify(message));
         }
@@ -156,33 +149,18 @@ export function useVoiceSession(config: VoiceSessionConfig) {
     setError(null);
 
     try {
-      const ws = new WebSocket(`${GEMINI_WS_URL}?key=${config.apiKey}`);
+      // Generate session ID
+      const sessionId = 'voice-' + Date.now();
+
+      // Connect to backend proxy through Vite proxy
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/ws/${sessionId}`;
+
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('WebSocket connected');
-
-        // Send setup message with system instructions
-        const setupMessage = {
-          setup: {
-            model: 'models/gemini-2.0-flash-live-001',
-            systemInstruction: {
-              parts: [{ text: config.systemPrompt }],
-            },
-            generationConfig: {
-              responseModalities: 'audio',
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: {
-                    voiceName: 'Aoede',
-                  },
-                },
-              },
-            },
-          },
-        };
-
-        ws.send(JSON.stringify(setupMessage));
+        console.log('WebSocket connected to backend proxy');
         setConnectionState('connected');
       };
 
@@ -190,42 +168,47 @@ export function useVoiceSession(config: VoiceSessionConfig) {
         try {
           const data = JSON.parse(event.data);
 
-          // Handle setup complete
-          if (data.setupComplete) {
-            console.log('Setup complete');
+          // Handle errors
+          if (data.type === 'error') {
+            setError(data.message);
             return;
           }
 
-          // Handle server content (audio response)
-          if (data.serverContent?.modelTurn?.parts) {
-            const parts = data.serverContent.modelTurn.parts;
-
-            // Handle text transcript
-            const textPart = parts.find((p: { text?: string }) => p.text);
-            if (textPart?.text) {
-              setTranscript((prev) => [
-                ...prev,
-                {
-                  id: `assistant-${Date.now()}`,
-                  role: 'assistant',
-                  content: textPart.text,
-                  timestamp: Date.now(),
-                },
-              ]);
-            }
-
-            // Handle audio
-            const audioPart = parts.find((p: { inlineData?: { data: string; mimeType?: string } }) =>
-              p.inlineData?.mimeType?.startsWith('audio/')
-            );
-            if (audioPart?.inlineData?.data) {
-              playAudio(audioPart.inlineData.data);
-            }
+          // Handle turn complete
+          if (data.turn_complete) {
+            setConnectionState('connected');
+            return;
           }
 
-          // Handle turn complete
-          if (data.serverContent?.turnComplete) {
-            setConnectionState('connected');
+          // Handle text from model
+          if (data.mime_type === 'text/plain' && data.role === 'model') {
+            setTranscript((prev) => [
+              ...prev,
+              {
+                id: `assistant-${Date.now()}`,
+                role: 'assistant',
+                content: data.data,
+                timestamp: Date.now(),
+              },
+            ]);
+          }
+
+          // Handle user transcription
+          if (data.mime_type === 'text/plain' && data.role === 'user') {
+            setTranscript((prev) => [
+              ...prev,
+              {
+                id: `user-${Date.now()}`,
+                role: 'user',
+                content: data.data,
+                timestamp: Date.now(),
+              },
+            ]);
+          }
+
+          // Handle audio from model
+          if (data.mime_type === 'audio/pcm' && data.data) {
+            playAudio(data.data);
           }
         } catch (err) {
           console.error('Failed to parse WebSocket message:', err);
@@ -250,7 +233,7 @@ export function useVoiceSession(config: VoiceSessionConfig) {
       setError('Failed to connect to voice service');
       setConnectionState('error');
     }
-  }, [config.apiKey, config.systemPrompt, connectionState, playAudio, stopRecording]);
+  }, [connectionState, playAudio, stopRecording]);
 
   // Disconnect WebSocket
   const disconnect = useCallback(() => {

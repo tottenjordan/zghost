@@ -25,12 +25,26 @@ class ApiClient {
     return response.json();
   }
 
+  private mapSession(adkResponse: any): Session {
+    return {
+      session_id: adkResponse.id,
+      app_name: adkResponse.appName,
+      user_id: adkResponse.userId,
+      created_at: adkResponse.createdAt || new Date().toISOString(),
+      state: adkResponse.state || {},
+    };
+  }
+
   // Session Management
+  // ADK api_server creates sessions implicitly on first /run call.
+  // We generate a session ID client-side and create the session via POST with initial state.
   async createSession(appName: string, userId: string): Promise<Session> {
-    return this.request<Session>(
-      `/apps/${appName}/users/${userId}/sessions`,
-      { method: 'POST' }
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    await this.request(
+      `/apps/${appName}/users/${userId}/sessions/${sessionId}`,
+      { method: 'POST', body: JSON.stringify({}) }
     );
+    return { session_id: sessionId, app_name: appName, user_id: userId, created_at: new Date().toISOString(), state: {} as Session['state'] };
   }
 
   async getSession(
@@ -38,9 +52,10 @@ class ApiClient {
     userId: string,
     sessionId: string
   ): Promise<Session> {
-    return this.request<Session>(
+    const adkResponse = await this.request<any>(
       `/apps/${appName}/users/${userId}/sessions/${sessionId}`
     );
+    return this.mapSession(adkResponse);
   }
 
   async updateSessionState(
@@ -49,20 +64,51 @@ class ApiClient {
     sessionId: string,
     stateUpdate: Partial<Session['state']>
   ): Promise<Session> {
-    return this.request<Session>(
+    const adkResponse = await this.request<any>(
       `/apps/${appName}/users/${userId}/sessions/${sessionId}`,
       {
         method: 'PATCH',
         body: JSON.stringify({ state: stateUpdate }),
       }
     );
+    return this.mapSession(adkResponse);
   }
 
-  // Agent Execution
+  // Agent Execution — ADK api_server /run format (camelCase)
   async sendMessage(payload: RunPayload): Promise<any> {
+    const adkPayload = {
+      appName: payload.app_name,
+      userId: payload.user_id,
+      sessionId: payload.session_id,
+      newMessage: {
+        role: 'user',
+        parts: [{ text: payload.message }],
+      },
+      streaming: payload.stream ?? false,
+    };
     return this.request('/run', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify(adkPayload),
+    });
+  }
+
+  // Streaming execution via SSE
+  async sendMessageSSE(payload: RunPayload): Promise<Response> {
+    const adkPayload = {
+      appName: payload.app_name,
+      userId: payload.user_id,
+      sessionId: payload.session_id,
+      newMessage: {
+        role: 'user',
+        parts: [{ text: payload.message }],
+      },
+      streaming: true,
+    };
+    const url = `${API_BASE}/run_sse`;
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(adkPayload),
     });
   }
 

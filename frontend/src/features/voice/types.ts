@@ -15,8 +15,8 @@ export interface TranscriptMessage {
 }
 
 export interface VoiceSessionConfig {
-  apiKey: string;
   systemPrompt: string;
+  wsUrl?: string;
   voiceConfig?: {
     sampleRate?: number;
     channels?: number;

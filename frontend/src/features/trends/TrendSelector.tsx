@@ -10,6 +10,8 @@ import type { Session } from '../../types/session';
 
 interface TrendSelectorProps {
   session: Session | null;
+  availableSearchTrends?: SearchTrend[];
+  availableYtTrends?: YTTrend[];
   selectedSearchTrends: SearchTrend[];
   selectedYtTrends: YTTrend[];
   onToggleSearchTrend: (trend: SearchTrend) => void;
@@ -19,6 +21,8 @@ interface TrendSelectorProps {
 
 export function TrendSelector({
   session,
+  availableSearchTrends: propAvailableSearchTrends,
+  availableYtTrends: propAvailableYtTrends,
   selectedSearchTrends,
   selectedYtTrends,
   onToggleSearchTrend,
@@ -28,10 +32,10 @@ export function TrendSelector({
   const [searchFilter, setSearchFilter] = useState('');
   const [ytFilter, setYtFilter] = useState('');
 
-  // Get available trends from session state, falling back to mock data for demo
+  // Use trends from props if available, otherwise fall back to mock data for demo
   const availableSearchTrends: SearchTrend[] = useMemo(() => {
-    if (session?.state?.available_search_trends) {
-      return session.state.available_search_trends as SearchTrend[];
+    if (propAvailableSearchTrends && propAvailableSearchTrends.length > 0) {
+      return propAvailableSearchTrends;
     }
     return [
       {
@@ -70,11 +74,11 @@ export function TrendSelector({
         traffic: '80000',
       },
     ];
-  }, [session]);
+  }, [propAvailableSearchTrends]);
 
   const availableYtTrends: YTTrend[] = useMemo(() => {
-    if (session?.state?.available_yt_trends) {
-      return session.state.available_yt_trends as YTTrend[];
+    if (propAvailableYtTrends && propAvailableYtTrends.length > 0) {
+      return propAvailableYtTrends;
     }
     return [
       {
@@ -133,7 +137,7 @@ export function TrendSelector({
         publishedTime: '4 days ago',
       },
     ];
-  }, [session]);
+  }, [propAvailableYtTrends]);
 
   // Filter trends based on search
   const filteredSearchTrends = useMemo(() => {
