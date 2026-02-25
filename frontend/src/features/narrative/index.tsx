@@ -1,0 +1,1 @@
+export { NarrativePage } from './NarrativePage';

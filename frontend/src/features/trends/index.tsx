@@ -1,0 +1,1 @@
+export { TrendsPage } from './TrendsPage';

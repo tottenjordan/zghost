@@ -1,0 +1,1076 @@
+"""
+Extended API server for the marketing intelligence frontend.
+Wraps ADK's runner with additional endpoints for parallel dispatch,
+orchestration status, ratings, and enhanced streaming.
+"""
+
+import asyncio
+import json
+import logging
+import os
+import time
+import uuid
+from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import Any, AsyncIterator, Dict, List, Optional
+
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from google.adk.runners import InMemoryRunner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
+
+from .agent import root_agent
+from .api_models import (
+    AgentHierarchyResponse,
+    AgentMetadata,
+    AgentRunRequest,
+    AgentRunResponse,
+    ArtifactInfo,
+    AvailableTrendsResponse,
+    DispatchConfig,
+    DispatchResponse,
+    ExecutionTraceResponse,
+    OrchestrationStatusResponse,
+    PipelineStatus,
+    RatingListResponse,
+    RatingResponse,
+    RatingSubmitRequest,
+    RubricCreateRequest,
+    RubricListResponse,
+    RubricResponse,
+    SessionArtifactsResponse,
+    SessionCreateRequest,
+    SessionCreateResponse,
+    SessionStateResponse,
+    SessionStateUpdateRequest,
+    StreamEvent,
+    StreamInfo,
+    TraceEvent,
+    TrendAutoSelectRequest,
+    TrendAutoSelectResponse,
+    TrendInfo,
+)
+from .shared_libraries.config import setup_config
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+# =====================================
+# Global State Management
+# =====================================
+
+
+class AppState:
+    """Global application state."""
+
+    def __init__(self):
+        self.session_service: Optional[InMemorySessionService] = None
+        self.runner: Optional[InMemoryRunner] = None
+        # Track active dispatches: dispatch_id -> List[StreamInfo]
+        self.active_dispatches: Dict[str, List[StreamInfo]] = {}
+        # Track stream tasks: stream_id -> asyncio.Task
+        self.stream_tasks: Dict[str, asyncio.Task] = {}
+        # Track stream events: stream_id -> List[Dict]
+        self.stream_events: Dict[str, List[Dict]] = {}
+        # Track execution traces: session_id -> List[TraceEvent]
+        self.execution_traces: Dict[str, List[TraceEvent]] = {}
+        # Track pipeline statuses: session_id -> PipelineStatus
+        self.pipeline_statuses: Dict[str, PipelineStatus] = {}
+        # Ratings storage: rating_id -> RatingResponse
+        self.ratings: Dict[str, RatingResponse] = {}
+        # Rubrics storage: rubric_id -> RubricResponse
+        self.rubrics: Dict[str, RubricResponse] = {}
+
+
+app_state = AppState()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifecycle manager for FastAPI app."""
+    # Startup
+    logger.info("Initializing ADK session service and runner...")
+    app_state.session_service = InMemorySessionService()
+    app_state.runner = InMemoryRunner(agent=root_agent)
+    logger.info("API server ready")
+
+    yield
+
+    # Shutdown
+    logger.info("Shutting down API server...")
+    # Cancel all active stream tasks
+    for task in app_state.stream_tasks.values():
+        if not task.done():
+            task.cancel()
+    await asyncio.gather(*app_state.stream_tasks.values(), return_exceptions=True)
+    logger.info("API server shutdown complete")
+
+
+app = FastAPI(
+    title="Marketing Intelligence API",
+    description="Extended API for the ADK-based marketing intelligence agent system",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# CORS middleware for frontend dev server
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# =====================================
+# Helper Functions
+# =====================================
+
+
+def load_preset_config(preset_name: str) -> Dict[str, Any]:
+    """Load a preset configuration from the profiles directory."""
+    profiles_dir = os.path.join(
+        os.path.dirname(__file__), "shared_libraries", "profiles"
+    )
+    preset_path = os.path.join(profiles_dir, f"{preset_name}.json")
+
+    if not os.path.exists(preset_path):
+        # Try without .json extension
+        preset_path = os.path.join(profiles_dir, preset_name)
+
+    if not os.path.exists(preset_path):
+        raise HTTPException(
+            status_code=404, detail=f"Preset configuration '{preset_name}' not found"
+        )
+
+    try:
+        with open(preset_path, "r") as f:
+            data = json.load(f)
+            # Extract state if it's wrapped in a "state" key
+            if "state" in data and isinstance(data["state"], dict):
+                return data["state"]
+            return data
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=400, detail=f"Invalid JSON in preset configuration: {str(e)}"
+        )
+
+
+def format_event_for_sse(event: Any) -> Dict[str, Any]:
+    """Format an ADK event for SSE streaming."""
+    event_data = {
+        "type": "unknown",
+        "timestamp": datetime.utcnow().isoformat(),
+        "data": {},
+    }
+
+    # Determine event type and extract relevant data
+    if hasattr(event, "__class__"):
+        event_type = event.__class__.__name__
+        event_data["type"] = event_type
+
+        # Extract common fields
+        if hasattr(event, "agent_name"):
+            event_data["agent_name"] = event.agent_name
+        if hasattr(event, "tool_name"):
+            event_data["tool_name"] = event.tool_name
+
+        # Handle specific event types
+        if "ModelResponse" in event_type or "Content" in event_type:
+            if hasattr(event, "parts"):
+                event_data["data"]["parts"] = [
+                    {"text": part.text} if hasattr(part, "text") else str(part)
+                    for part in event.parts
+                ]
+            elif hasattr(event, "text"):
+                event_data["data"]["text"] = event.text
+
+        elif "ToolCall" in event_type:
+            if hasattr(event, "name"):
+                event_data["data"]["tool_name"] = event.name
+            if hasattr(event, "args"):
+                event_data["data"]["args"] = (
+                    event.args if isinstance(event.args, dict) else str(event.args)
+                )
+
+        elif "Error" in event_type:
+            event_data["data"]["error"] = str(event)
+
+    return event_data
+
+
+async def stream_agent_events(
+    runner: InMemoryRunner, session_id: str, user_id: str, message: str
+) -> AsyncIterator[str]:
+    """Stream SSE-formatted events from agent execution."""
+    try:
+        # Create user message content
+        user_content = types.Content(
+            role="user", parts=[types.Part.from_text(message)]
+        )
+
+        # Stream events from the runner
+        async for event in runner.run_async_iter(
+            user_id=user_id, session_id=session_id, new_message=user_content
+        ):
+            # Format event for SSE
+            event_data = format_event_for_sse(event)
+
+            # Track event in execution trace
+            if session_id not in app_state.execution_traces:
+                app_state.execution_traces[session_id] = []
+
+            trace_event = TraceEvent(
+                event_id=str(uuid.uuid4()),
+                timestamp=datetime.utcnow(),
+                agent_name=event_data.get("agent_name", "unknown"),
+                event_type=event_data.get("type", "unknown"),
+                details=event_data.get("data", {}),
+                parent_event_id=None,
+            )
+            app_state.execution_traces[session_id].append(trace_event)
+
+            # Yield SSE-formatted event
+            yield f"data: {json.dumps(event_data)}\n\n"
+
+        # Send completion event
+        completion_event = {
+            "type": "stream_complete",
+            "timestamp": datetime.utcnow().isoformat(),
+            "session_id": session_id,
+        }
+        yield f"data: {json.dumps(completion_event)}\n\n"
+
+    except Exception as e:
+        logger.error(f"Error in stream_agent_events: {str(e)}", exc_info=True)
+        error_event = {
+            "type": "stream_error",
+            "timestamp": datetime.utcnow().isoformat(),
+            "error": str(e),
+        }
+        yield f"data: {json.dumps(error_event)}\n\n"
+
+
+async def run_parallel_stream(
+    stream_id: str, stream_name: str, cloned_agent, session_id: str, user_id: str
+):
+    """Run a single parallel stream and collect events."""
+    try:
+        logger.info(f"Starting parallel stream: {stream_name} (stream_id={stream_id})")
+
+        # Update stream status
+        for streams in app_state.active_dispatches.values():
+            for stream_info in streams:
+                if stream_info.stream_id == stream_id:
+                    stream_info.status = "running"
+
+        # Initialize event storage for this stream
+        app_state.stream_events[stream_id] = []
+
+        # Create a runner for this cloned agent
+        runner = InMemoryRunner(agent=cloned_agent)
+
+        # Run the agent (this will trigger initial state loading via callbacks)
+        async for event in runner.run_async_iter(
+            user_id=user_id,
+            session_id=session_id,
+            new_message=types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_text(
+                        f"Stream '{stream_name}' initialized. Ready to process trends."
+                    )
+                ],
+            ),
+        ):
+            # Format and store event
+            event_data = format_event_for_sse(event)
+            app_state.stream_events[stream_id].append(
+                {
+                    "stream_id": stream_id,
+                    "stream_name": stream_name,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "event": event_data,
+                }
+            )
+
+        # Mark stream as completed
+        for streams in app_state.active_dispatches.values():
+            for stream_info in streams:
+                if stream_info.stream_id == stream_id:
+                    stream_info.status = "completed"
+
+        logger.info(f"Completed parallel stream: {stream_name} (stream_id={stream_id})")
+
+    except asyncio.CancelledError:
+        logger.info(f"Stream {stream_name} cancelled")
+        for streams in app_state.active_dispatches.values():
+            for stream_info in streams:
+                if stream_info.stream_id == stream_id:
+                    stream_info.status = "cancelled"
+        raise
+
+    except Exception as e:
+        logger.error(f"Error in parallel stream {stream_name}: {str(e)}", exc_info=True)
+        for streams in app_state.active_dispatches.values():
+            for stream_info in streams:
+                if stream_info.stream_id == stream_id:
+                    stream_info.status = "failed"
+
+
+# =====================================
+# Session Management Endpoints
+# =====================================
+
+
+@app.post("/api/v1/sessions", response_model=SessionCreateResponse)
+async def create_session(request: SessionCreateRequest):
+    """Create a new session with optional preset configuration."""
+    try:
+        # Generate IDs
+        session_id = str(uuid.uuid4())
+        user_id = "default-user"
+
+        # Create session
+        await app_state.session_service.create_session(
+            session_id=session_id, user_id=user_id, app_name="trends_and_insights_agent"
+        )
+
+        # Load preset config if specified
+        initial_state = {}
+        if request.preset_config:
+            initial_state = load_preset_config(request.preset_config)
+        elif request.initial_state:
+            initial_state = request.initial_state
+
+        # Update session state if initial state provided
+        if initial_state:
+            session = await app_state.session_service.get_session(
+                session_id=session_id, user_id=user_id
+            )
+            # Merge with default state structure
+            default_state = setup_config.empty_session_state.get("state", {})
+            merged_state = {**default_state, **initial_state}
+
+            # Update session state
+            for key, value in merged_state.items():
+                session.state[key] = value
+
+        return SessionCreateResponse(
+            session_id=session_id, user_id=user_id, created_at=datetime.utcnow()
+        )
+
+    except Exception as e:
+        logger.error(f"Error creating session: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to create session: {str(e)}")
+
+
+@app.get("/api/v1/sessions/{session_id}/state", response_model=SessionStateResponse)
+async def get_session_state(session_id: str, user_id: str = Query(default="default-user")):
+    """Get full session state."""
+    try:
+        session = await app_state.session_service.get_session(
+            session_id=session_id, user_id=user_id
+        )
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+        return SessionStateResponse(
+            session_id=session_id, state=dict(session.state.to_dict())
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting session state: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get session state: {str(e)}"
+        )
+
+
+@app.patch("/api/v1/sessions/{session_id}/state")
+async def update_session_state(
+    session_id: str, request: SessionStateUpdateRequest, user_id: str = Query(default="default-user")
+):
+    """Update specific session state keys."""
+    try:
+        session = await app_state.session_service.get_session(
+            session_id=session_id, user_id=user_id
+        )
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+        # Update state keys
+        for key, value in request.updates.items():
+            session.state[key] = value
+
+        return {"status": "success", "updated_keys": list(request.updates.keys())}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating session state: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to update session state: {str(e)}"
+        )
+
+
+@app.get("/api/v1/sessions/{session_id}/artifacts", response_model=SessionArtifactsResponse)
+async def get_session_artifacts(
+    session_id: str, user_id: str = Query(default="default-user")
+):
+    """List artifacts for a session."""
+    try:
+        session = await app_state.session_service.get_session(
+            session_id=session_id, user_id=user_id
+        )
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+        # Extract artifact information from session state
+        artifacts = []
+        state_dict = session.state.to_dict()
+
+        # Check for image artifacts
+        if "img_artifact_keys" in state_dict:
+            img_keys = state_dict.get("img_artifact_keys", {})
+            if isinstance(img_keys, dict):
+                img_keys = img_keys.get("img_artifact_keys", [])
+            for key in img_keys:
+                artifacts.append(
+                    ArtifactInfo(
+                        key=key,
+                        version=1,
+                        mime_type="image/png",
+                        size_bytes=None,
+                        created_at=None,
+                    )
+                )
+
+        # Check for video artifacts
+        if "vid_artifact_keys" in state_dict:
+            vid_keys = state_dict.get("vid_artifact_keys", {})
+            if isinstance(vid_keys, dict):
+                vid_keys = vid_keys.get("vid_artifact_keys", [])
+            for key in vid_keys:
+                artifacts.append(
+                    ArtifactInfo(
+                        key=key,
+                        version=1,
+                        mime_type="video/mp4",
+                        size_bytes=None,
+                        created_at=None,
+                    )
+                )
+
+        # Check for commercial artifact
+        if state_dict.get("commercial_artifact"):
+            artifacts.append(
+                ArtifactInfo(
+                    key="commercial_artifact",
+                    version=1,
+                    mime_type="video/mp4",
+                    size_bytes=None,
+                    created_at=None,
+                )
+            )
+
+        return SessionArtifactsResponse(session_id=session_id, artifacts=artifacts)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting session artifacts: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get session artifacts: {str(e)}"
+        )
+
+
+# =====================================
+# Agent Execution Endpoints
+# =====================================
+
+
+@app.post("/api/v1/run", response_model=AgentRunResponse)
+async def run_agent(request: AgentRunRequest):
+    """Send message to agent and get stream URL."""
+    try:
+        # Use provided session_id or create new one
+        session_id = request.session_id or str(uuid.uuid4())
+        user_id = request.user_id or "default-user"
+
+        # Create session if it doesn't exist
+        try:
+            await app_state.session_service.get_session(
+                session_id=session_id, user_id=user_id
+            )
+        except:
+            await app_state.session_service.create_session(
+                session_id=session_id, user_id=user_id
+            )
+
+        # Return stream URL
+        stream_url = f"/api/v1/run/{session_id}/stream?user_id={user_id}&message={request.message}"
+
+        return AgentRunResponse(
+            session_id=session_id, user_id=user_id, stream_url=stream_url
+        )
+
+    except Exception as e:
+        logger.error(f"Error running agent: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to run agent: {str(e)}")
+
+
+@app.get("/api/v1/run/{session_id}/stream")
+async def stream_agent_run(
+    session_id: str, user_id: str = Query(default="default-user"), message: str = Query(...)
+):
+    """SSE stream for agent execution."""
+    return StreamingResponse(
+        stream_agent_events(app_state.runner, session_id, user_id, message),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+# =====================================
+# Parallel Dispatch Endpoints
+# =====================================
+
+
+@app.post("/api/v1/dispatch", response_model=DispatchResponse)
+async def dispatch_parallel(request: DispatchConfig):
+    """Clone agent and run multiple configs in parallel."""
+    try:
+        dispatch_id = str(uuid.uuid4())
+        streams = []
+        user_id = "default-user"
+
+        # Limit parallelism
+        max_parallel = request.max_parallel or len(request.streams)
+
+        for stream_config in request.streams:
+            # Generate IDs
+            stream_id = str(uuid.uuid4())
+            session_id = str(uuid.uuid4())
+
+            # Clone the root agent with a unique name
+            cloned_agent = root_agent.clone(
+                update={"name": f"stream_{stream_config.name}"}
+            )
+
+            # Create session
+            await app_state.session_service.create_session(
+                session_id=session_id, user_id=user_id
+            )
+
+            # Apply trend config to session state
+            session = await app_state.session_service.get_session(
+                session_id=session_id, user_id=user_id
+            )
+
+            # Load preset if specified
+            if stream_config.session_preset:
+                preset_state = load_preset_config(stream_config.session_preset)
+                for key, value in preset_state.items():
+                    session.state[key] = value
+
+            # Apply trend config
+            for key, value in stream_config.trend_config.items():
+                session.state[key] = value
+
+            # Create stream info
+            stream_info = StreamInfo(
+                stream_id=stream_id,
+                stream_name=stream_config.name,
+                session_id=session_id,
+                status="pending",
+                created_at=datetime.utcnow(),
+            )
+            streams.append(stream_info)
+
+            # Start async execution
+            task = asyncio.create_task(
+                run_parallel_stream(stream_id, stream_config.name, cloned_agent, session_id, user_id)
+            )
+            app_state.stream_tasks[stream_id] = task
+
+        # Store dispatch info
+        app_state.active_dispatches[dispatch_id] = streams
+
+        # Return response
+        stream_url = f"/api/v1/dispatch/{dispatch_id}/stream"
+        return DispatchResponse(
+            dispatch_id=dispatch_id, streams=streams, stream_url=stream_url
+        )
+
+    except Exception as e:
+        logger.error(f"Error dispatching parallel streams: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to dispatch parallel streams: {str(e)}"
+        )
+
+
+@app.get("/api/v1/dispatch/{dispatch_id}/stream")
+async def stream_multiplexed_dispatch(dispatch_id: str):
+    """Multiplexed SSE stream for all parallel streams in a dispatch."""
+
+    async def generate_multiplexed_events():
+        try:
+            if dispatch_id not in app_state.active_dispatches:
+                error_event = {
+                    "type": "error",
+                    "error": f"Dispatch {dispatch_id} not found",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+                yield f"data: {json.dumps(error_event)}\n\n"
+                return
+
+            streams = app_state.active_dispatches[dispatch_id]
+            stream_ids = [s.stream_id for s in streams]
+
+            # Track last sent event index for each stream
+            last_sent_indices = {sid: 0 for sid in stream_ids}
+
+            # Poll for new events from all streams
+            while True:
+                all_completed = True
+                any_events_sent = False
+
+                for stream_id in stream_ids:
+                    # Check stream status
+                    stream_info = next(
+                        (s for s in streams if s.stream_id == stream_id), None
+                    )
+                    if stream_info and stream_info.status not in [
+                        "completed",
+                        "failed",
+                        "cancelled",
+                    ]:
+                        all_completed = False
+
+                    # Get new events for this stream
+                    if stream_id in app_state.stream_events:
+                        events = app_state.stream_events[stream_id]
+                        start_idx = last_sent_indices[stream_id]
+
+                        for event in events[start_idx:]:
+                            yield f"data: {json.dumps(event)}\n\n"
+                            any_events_sent = True
+                            last_sent_indices[stream_id] += 1
+
+                # If all streams completed, send final event and exit
+                if all_completed:
+                    completion_event = {
+                        "type": "dispatch_complete",
+                        "dispatch_id": dispatch_id,
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "streams": [
+                            {
+                                "stream_id": s.stream_id,
+                                "stream_name": s.stream_name,
+                                "status": s.status,
+                            }
+                            for s in streams
+                        ],
+                    }
+                    yield f"data: {json.dumps(completion_event)}\n\n"
+                    break
+
+                # Small delay between polls if no events
+                if not any_events_sent:
+                    await asyncio.sleep(0.5)
+
+        except Exception as e:
+            logger.error(f"Error in multiplexed stream: {str(e)}", exc_info=True)
+            error_event = {
+                "type": "stream_error",
+                "error": str(e),
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+            yield f"data: {json.dumps(error_event)}\n\n"
+
+    return StreamingResponse(
+        generate_multiplexed_events(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.delete("/api/v1/dispatch/{dispatch_id}/{stream_id}")
+async def cancel_stream(dispatch_id: str, stream_id: str):
+    """Cancel a specific stream in a dispatch."""
+    try:
+        if dispatch_id not in app_state.active_dispatches:
+            raise HTTPException(status_code=404, detail=f"Dispatch {dispatch_id} not found")
+
+        if stream_id not in app_state.stream_tasks:
+            raise HTTPException(status_code=404, detail=f"Stream {stream_id} not found")
+
+        # Cancel the task
+        task = app_state.stream_tasks[stream_id]
+        if not task.done():
+            task.cancel()
+
+        # Update stream status
+        for stream_info in app_state.active_dispatches[dispatch_id]:
+            if stream_info.stream_id == stream_id:
+                stream_info.status = "cancelled"
+
+        return {"status": "success", "stream_id": stream_id, "action": "cancelled"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling stream: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to cancel stream: {str(e)}")
+
+
+# =====================================
+# Orchestration Endpoints
+# =====================================
+
+
+@app.get("/api/v1/orchestration/status", response_model=OrchestrationStatusResponse)
+async def get_orchestration_status():
+    """Get status of all active pipelines."""
+    try:
+        active_pipelines = list(app_state.pipeline_statuses.values())
+        total_sessions = len(set(p.session_id for p in active_pipelines))
+
+        return OrchestrationStatusResponse(
+            active_pipelines=active_pipelines, total_sessions=total_sessions
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting orchestration status: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get orchestration status: {str(e)}"
+        )
+
+
+@app.get("/api/v1/orchestration/{session_id}/trace", response_model=ExecutionTraceResponse)
+async def get_execution_trace(session_id: str):
+    """Get execution trace for a session."""
+    try:
+        events = app_state.execution_traces.get(session_id, [])
+
+        return ExecutionTraceResponse(
+            session_id=session_id, events=events, total_events=len(events)
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting execution trace: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get execution trace: {str(e)}"
+        )
+
+
+@app.get("/api/v1/orchestration/agents", response_model=AgentHierarchyResponse)
+async def get_agent_hierarchy():
+    """Get agent hierarchy metadata."""
+    try:
+        # Build agent hierarchy from root_agent
+        agents = {}
+
+        def extract_agent_metadata(agent, parent_name=None):
+            # Extract tool names safely (tools can be functions or objects)
+            tool_names = []
+            if hasattr(agent, "tools") and agent.tools:
+                for tool in agent.tools:
+                    if hasattr(tool, "name"):
+                        tool_names.append(tool.name)
+                    elif hasattr(tool, "__name__"):
+                        tool_names.append(tool.__name__)
+                    else:
+                        tool_names.append(str(tool))
+
+            metadata = AgentMetadata(
+                name=agent.name,
+                description=agent.description or "",
+                agent_type="root" if parent_name is None else "worker",
+                sub_agents=[sa.name for sa in (agent.sub_agents or [])],
+                tools=tool_names,
+                model=str(agent.model) if hasattr(agent, "model") else "unknown",
+            )
+            agents[agent.name] = metadata
+
+            # Recursively process sub-agents
+            if hasattr(agent, "sub_agents") and agent.sub_agents:
+                for sub_agent in agent.sub_agents:
+                    extract_agent_metadata(sub_agent, parent_name=agent.name)
+
+        extract_agent_metadata(root_agent)
+
+        return AgentHierarchyResponse(agents=agents, root_agent=root_agent.name)
+
+    except Exception as e:
+        logger.error(f"Error getting agent hierarchy: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get agent hierarchy: {str(e)}"
+        )
+
+
+# =====================================
+# Trends Endpoints
+# =====================================
+
+
+@app.post("/api/v1/trends/auto-select", response_model=TrendAutoSelectResponse)
+async def auto_select_trends(request: TrendAutoSelectRequest):
+    """Auto-select trends based on campaign configuration."""
+    try:
+        # This would integrate with the trends_and_insights_agent
+        # For now, return a placeholder response
+        # TODO: Implement actual trend selection logic
+
+        return TrendAutoSelectResponse(
+            youtube_trends=[],
+            search_trends=[],
+            rationale="Auto-selection not yet implemented. Please use the agent's interactive trend selection.",
+        )
+
+    except Exception as e:
+        logger.error(f"Error auto-selecting trends: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to auto-select trends: {str(e)}"
+        )
+
+
+@app.get("/api/v1/trends/available", response_model=AvailableTrendsResponse)
+async def get_available_trends():
+    """Get available trends from APIs."""
+    try:
+        # This would call the YouTube and Google Trends APIs
+        # For now, return a placeholder response
+        # TODO: Implement actual trend fetching
+
+        return AvailableTrendsResponse(
+            youtube_trends=[],
+            search_trends=[],
+            last_updated=datetime.utcnow(),
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting available trends: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get available trends: {str(e)}"
+        )
+
+
+# =====================================
+# Rating Endpoints
+# =====================================
+
+
+@app.post("/api/v1/rubrics", response_model=RubricResponse)
+async def create_rubric(request: RubricCreateRequest):
+    """Create or update a rubric."""
+    try:
+        rubric_id = request.rubric_id or str(uuid.uuid4())
+        now = datetime.utcnow()
+
+        # Check if updating existing rubric
+        is_update = rubric_id in app_state.rubrics
+
+        rubric = RubricResponse(
+            rubric_id=rubric_id,
+            name=request.name,
+            description=request.description,
+            criteria=request.criteria,
+            artifact_type=request.artifact_type,
+            created_at=app_state.rubrics[rubric_id].created_at if is_update else now,
+            updated_at=now,
+        )
+
+        app_state.rubrics[rubric_id] = rubric
+
+        return rubric
+
+    except Exception as e:
+        logger.error(f"Error creating rubric: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to create rubric: {str(e)}")
+
+
+@app.get("/api/v1/rubrics", response_model=RubricListResponse)
+async def list_rubrics():
+    """List all rubrics."""
+    try:
+        return RubricListResponse(rubrics=list(app_state.rubrics.values()))
+
+    except Exception as e:
+        logger.error(f"Error listing rubrics: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to list rubrics: {str(e)}")
+
+
+@app.get("/api/v1/rubrics/{rubric_id}", response_model=RubricResponse)
+async def get_rubric(rubric_id: str):
+    """Get a specific rubric."""
+    try:
+        if rubric_id not in app_state.rubrics:
+            raise HTTPException(status_code=404, detail=f"Rubric {rubric_id} not found")
+
+        return app_state.rubrics[rubric_id]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting rubric: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to get rubric: {str(e)}")
+
+
+@app.post("/api/v1/ratings", response_model=RatingResponse)
+async def submit_rating(request: RatingSubmitRequest):
+    """Submit a rating for an artifact."""
+    try:
+        # Get the rubric to calculate weighted score
+        if request.rubric_id not in app_state.rubrics:
+            raise HTTPException(
+                status_code=404, detail=f"Rubric {request.rubric_id} not found"
+            )
+
+        rubric = app_state.rubrics[request.rubric_id]
+
+        # Calculate overall weighted score
+        total_weight = sum(c.weight for c in rubric.criteria)
+        weighted_sum = 0.0
+
+        for rating in request.ratings:
+            # Find the criterion
+            criterion = next(
+                (c for c in rubric.criteria if c.criterion_id == rating.criterion_id),
+                None,
+            )
+            if not criterion:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Criterion {rating.criterion_id} not found in rubric",
+                )
+
+            # Validate rating is within scale
+            if not (criterion.scale_min <= rating.rating <= criterion.scale_max):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Rating {rating.rating} for criterion {rating.criterion_id} is outside scale [{criterion.scale_min}, {criterion.scale_max}]",
+                )
+
+            # Normalize to 0-1 scale and apply weight
+            normalized = (rating.rating - criterion.scale_min) / (
+                criterion.scale_max - criterion.scale_min
+            )
+            weighted_sum += normalized * criterion.weight
+
+        overall_score = weighted_sum / total_weight if total_weight > 0 else 0.0
+
+        # Create rating response
+        rating_id = str(uuid.uuid4())
+        rating_response = RatingResponse(
+            rating_id=rating_id,
+            session_id=request.session_id,
+            artifact_key=request.artifact_key,
+            rubric_id=request.rubric_id,
+            ratings=request.ratings,
+            overall_score=overall_score,
+            overall_comment=request.overall_comment,
+            rater_id=request.rater_id,
+            created_at=datetime.utcnow(),
+        )
+
+        # Store rating
+        app_state.ratings[rating_id] = rating_response
+
+        return rating_response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting rating: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to submit rating: {str(e)}")
+
+
+@app.get("/api/v1/ratings", response_model=RatingListResponse)
+async def get_ratings(
+    session_id: Optional[str] = Query(default=None),
+    artifact_key: Optional[str] = Query(default=None),
+    rubric_id: Optional[str] = Query(default=None),
+):
+    """Get ratings, optionally filtered by session, artifact, or rubric."""
+    try:
+        # Filter ratings
+        filtered_ratings = list(app_state.ratings.values())
+
+        if session_id:
+            filtered_ratings = [r for r in filtered_ratings if r.session_id == session_id]
+
+        if artifact_key:
+            filtered_ratings = [
+                r for r in filtered_ratings if r.artifact_key == artifact_key
+            ]
+
+        if rubric_id:
+            filtered_ratings = [r for r in filtered_ratings if r.rubric_id == rubric_id]
+
+        # Calculate average score
+        average_score = None
+        if filtered_ratings:
+            average_score = sum(r.overall_score for r in filtered_ratings) / len(
+                filtered_ratings
+            )
+
+        return RatingListResponse(ratings=filtered_ratings, average_score=average_score)
+
+    except Exception as e:
+        logger.error(f"Error getting ratings: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to get ratings: {str(e)}")
+
+
+# =====================================
+# Health Check
+# =====================================
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "active_sessions": len(app_state.execution_traces),
+        "active_dispatches": len(app_state.active_dispatches),
+        "total_ratings": len(app_state.ratings),
+        "total_rubrics": len(app_state.rubrics),
+    }
+
+
+# =====================================
+# Main Entry Point
+# =====================================
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "trends_and_insights_agent.api_server:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info",
+    )
