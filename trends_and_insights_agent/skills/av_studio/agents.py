@@ -22,6 +22,7 @@ from .voice_tools import (
     generate_branded_tagline,
     mix_voice_with_audio,
 )
+from .recommendation_tools import recommend_audio_style
 from .prompts import AV_STUDIO_INSTR
 
 av_editing_studio_agent = Agent(
@@ -30,6 +31,8 @@ av_editing_studio_agent = Agent(
     description="Produces a 30-second commercial with professional audio: SILENT Veo video, Lyria music, and Chirp voice-over combined for broadcast-quality output.",
     instruction=AV_STUDIO_INSTR,
     tools=[
+        # Audio recommendations
+        recommend_audio_style,
         # Video generation (silent)
         generate_subject_image,
         generate_clip_with_frames,

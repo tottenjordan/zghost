@@ -10,4 +10,34 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background-color: #09090b; /* zinc-950 */
+  color: #fafafa; /* zinc-50 */
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #18181b; /* zinc-900 */
+}
+::-webkit-scrollbar-thumb {
+  background: #3f3f46; /* zinc-700 */
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b; /* zinc-600 */
+}
+
+/* Smooth focus ring transitions */
+* {
+  transition-property: box-shadow;
+  transition-duration: 150ms;
+}
+
+/* Selection highlight */
+::selection {
+  background-color: rgba(59, 130, 246, 0.3);
+  color: #fafafa;
 }

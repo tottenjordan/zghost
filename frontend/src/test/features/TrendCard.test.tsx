@@ -25,7 +25,7 @@ describe('SearchTrendCard', () => {
     render(<SearchTrendCard trend={mockTrend} selected={false} onToggle={vi.fn()} />);
 
     const badge = screen.getByText(mockTrend.formattedTraffic);
-    expect(badge).toHaveClass('bg-blue-600'); // info variant
+    expect(badge).toHaveClass('text-blue-400'); // info variant
   });
 
   it('selection toggle works', async () => {
@@ -103,7 +103,7 @@ describe('YTTrendCard', () => {
     render(<YTTrendCard trend={mockTrend} selected={false} onToggle={vi.fn()} />);
 
     const badge = screen.getByText(`#${mockTrend.rank}`);
-    expect(badge).toHaveClass('bg-green-600'); // success variant
+    expect(badge).toHaveClass('text-emerald-400'); // success variant
   });
 
   it('selection toggle works', async () => {

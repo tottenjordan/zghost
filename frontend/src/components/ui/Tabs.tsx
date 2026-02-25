@@ -35,7 +35,7 @@ export function TabsList({
   return (
     <div
       className={cn(
-        'inline-flex h-10 items-center justify-center rounded-md bg-zinc-800 p-1',
+        'inline-flex items-center gap-1 rounded-lg bg-zinc-800/60 p-1 backdrop-blur-sm',
         className
       )}
     >
@@ -61,9 +61,11 @@ export function TabsTrigger({
     <button
       onClick={() => setActiveTab(value)}
       className={cn(
-        'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium',
-        'transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-        isActive ? 'bg-zinc-900 text-zinc-50 shadow-sm' : 'text-zinc-400 hover:text-zinc-50'
+        'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium',
+        'transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+        isActive
+          ? 'bg-zinc-900 text-zinc-50 shadow-sm ring-1 ring-zinc-700/50'
+          : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
       )}
     >
       {children}

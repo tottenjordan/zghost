@@ -51,13 +51,13 @@ describe('Button', () => {
     it('renders secondary variant', () => {
       render(<Button variant="secondary">Secondary</Button>);
 
-      expect(screen.getByRole('button')).toHaveClass('bg-zinc-700');
+      expect(screen.getByRole('button')).toHaveClass('bg-zinc-800');
     });
 
     it('renders ghost variant', () => {
       render(<Button variant="ghost">Ghost</Button>);
 
-      expect(screen.getByRole('button')).toHaveClass('hover:bg-zinc-800');
+      expect(screen.getByRole('button')).toHaveClass('text-zinc-300');
     });
 
     it('renders danger variant', () => {
@@ -77,13 +77,13 @@ describe('Button', () => {
     it('renders medium size', () => {
       render(<Button size="md">Medium</Button>);
 
-      expect(screen.getByRole('button')).toHaveClass('h-10');
+      expect(screen.getByRole('button')).toHaveClass('h-9');
     });
 
     it('renders large size', () => {
       render(<Button size="lg">Large</Button>);
 
-      expect(screen.getByRole('button')).toHaveClass('h-12');
+      expect(screen.getByRole('button')).toHaveClass('h-11');
     });
   });
 

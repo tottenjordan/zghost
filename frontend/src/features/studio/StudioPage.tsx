@@ -6,6 +6,8 @@ import { ClipLibrary } from './ClipLibrary';
 import { CharacterGallery } from './CharacterGallery';
 import { CommercialPlayer } from './CommercialPlayer';
 import { AgentActivityPanel } from './AgentActivityPanel';
+import { VoiceSelector } from './VoiceSelector';
+import { MusicSelector } from './MusicSelector';
 import { useStudio } from './useStudio';
 import { Spinner } from '../../components/ui/Spinner';
 import type { Clip } from './types';
@@ -18,8 +20,23 @@ export function StudioPage() {
 
   const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
 
-  const { clips, characters, commercial, isLoading, reorderClips, removeClip } =
-    useStudio(sessionId);
+  const {
+    clips,
+    characters,
+    commercial,
+    voiceSamples,
+    musicSamples,
+    selectedVoice,
+    selectedMusic,
+    isLoading,
+    reorderClips,
+    removeClip,
+    selectVoice,
+    generateVoiceSample,
+    selectMusic,
+    generateMusicSample,
+    removeMusicSample,
+  } = useStudio(sessionId);
 
   const handleSelectClip = (clip: Clip) => {
     setSelectedClip(clip);
@@ -73,6 +90,8 @@ export function StudioPage() {
           <Tabs defaultValue="clips">
             <TabsList>
               <TabsTrigger value="clips">Clips ({clips.length})</TabsTrigger>
+              <TabsTrigger value="voice">Voice</TabsTrigger>
+              <TabsTrigger value="music">Music</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
               <TabsTrigger value="characters">
                 Characters ({characters.length})
@@ -104,6 +123,25 @@ export function StudioPage() {
                   )}
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="voice">
+              <VoiceSelector
+                samples={voiceSamples}
+                selectedVoice={selectedVoice}
+                onSelectVoice={selectVoice}
+                onGenerateSample={generateVoiceSample}
+              />
+            </TabsContent>
+
+            <TabsContent value="music">
+              <MusicSelector
+                samples={musicSamples}
+                selectedMusicId={selectedMusic}
+                onSelectMusic={selectMusic}
+                onGenerateSample={generateMusicSample}
+                onRemoveSample={removeMusicSample}
+              />
             </TabsContent>
 
             <TabsContent value="timeline">

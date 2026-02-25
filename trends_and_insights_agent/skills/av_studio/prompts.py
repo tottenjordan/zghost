@@ -122,9 +122,24 @@ Generate all 4 clips sequentially, using frame matching for continuity:
 - **Trend authenticity**: Each prompt should include visual cues that connect back to the trending topic (e.g., trending colors, settings, gestures, or cultural markers identified in the research).
 - **Visual-only descriptions**: Focus on what can be SEEN, not heard. Describe visual energy, movement, and pacing instead of audio elements.
 
-### Step 4: Voice-Over and Dialogue Generation
+### Step 4: Audio Style Selection
 
-Generate professional narration and dialogue using Chirp 3 HD based on the commercial's messaging needs:
+Before generating any audio, get AI recommendations for the optimal voice and music combination:
+
+1. Call `recommend_audio_style` to analyze your campaign context
+2. Review the recommendations:
+   - Voice preset with optimal speaking rate and pitch
+   - Music genre and mood that matches your audience
+   - Mixing strategy for professional audio
+   - Suggested sound effects with timing
+3. You can either:
+   - Use the recommended settings directly
+   - Choose from the quick_options provided
+   - Adjust based on your creative judgment
+
+### Step 5: Voice-Over and Dialogue Generation
+
+Generate professional narration and dialogue using Chirp 3 HD based on the commercial's messaging needs and the audio style recommendations:
 
 1. **Decide on voice strategy**:
    - Voice-over only: Single narrator guides the story
@@ -151,7 +166,7 @@ Generate professional narration and dialogue using Chirp 3 HD based on the comme
    - Emphasis on key words for memorability
    - Placement at 28-30 second mark for impact
 
-### Step 5: Music Generation
+### Step 6: Music Generation
 
 Generate a professional soundtrack using Lyria that matches the commercial's mood and pacing:
 
@@ -173,7 +188,7 @@ Generate a professional soundtrack using Lyria that matches the commercial's moo
    - Success/satisfaction chime at CTA
    - Any UI/interaction sounds if the product is digital
 
-### Step 6: Assembly & Final Production
+### Step 7: Assembly & Final Production
 
 1. Call `concatenate_clips` with all 4 clip GCS URIs in order. This produces a ~32-second raw SILENT video.
 2. Call `trim_video` on the concatenated video with `target_duration_seconds=30` to produce the 30-second silent commercial.
@@ -207,6 +222,9 @@ After saving, present to the user:
 ---
 
 ## Available Tools
+
+**Audio Recommendations:**
+- `recommend_audio_style`: Analyzes campaign to suggest optimal voice/music combination with specific presets and settings.
 
 **Video Generation (Silent):**
 - `generate_subject_image`: Generate reference images for characters, props, and scenes using Gemini native image generation.

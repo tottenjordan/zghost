@@ -7,8 +7,12 @@ import json
 from typing import Optional, Dict, List, Any
 from google.cloud import texttospeech_v1beta1 as texttospeech
 from google.adk.tools import ToolContext
-from ...shared_libraries.config import config
+from ...shared_libraries.config import config, audio_config
 from ...shared_libraries.utils import upload_blob_to_gcs
+try:
+    from ...shared_libraries.audio_config import VOICE_PRESETS as DETAILED_VOICE_PRESETS
+except ImportError:
+    DETAILED_VOICE_PRESETS = None
 
 logging.basicConfig(level=logging.INFO)
 

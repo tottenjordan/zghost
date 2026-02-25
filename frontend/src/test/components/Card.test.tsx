@@ -18,7 +18,7 @@ describe('Card', () => {
   it('applies default styling', () => {
     render(<Card>Content</Card>);
 
-    expect(screen.getByText('Content')).toHaveClass('rounded-lg', 'border', 'bg-zinc-900');
+    expect(screen.getByText('Content')).toHaveClass('rounded-xl', 'border');
   });
 });
 

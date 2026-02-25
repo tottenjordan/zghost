@@ -1,10 +1,13 @@
 import { useState, useCallback } from 'react';
+import { Mic } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useTrends } from './useTrends';
 import { CampaignConfig } from './CampaignConfig';
 import { TrendSelector } from './TrendSelector';
 import { AutoTrendSelector } from './AutoTrendSelector';
 import { TrendCompare } from './TrendCompare';
+import { VoiceBriefAssistant } from '../voice/VoiceBriefAssistant';
+import { Button } from '../../components/ui/Button';
 import type { CampaignConfigData } from './CampaignConfig';
 
 export function TrendsPage() {
@@ -21,11 +24,10 @@ export function TrendsPage() {
 
   const [showAutoSelect, setShowAutoSelect] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
-  const [savedConfig, setSavedConfig] = useState<CampaignConfigData | null>(null);
+  const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
 
-  const handleSaveConfig = useCallback((config: CampaignConfigData) => {
-    setSavedConfig(config);
+  const handleSaveConfig = useCallback((_config: CampaignConfigData) => {
     setConfigSaved(true);
     // Clear success indicator after 3 seconds
     setTimeout(() => setConfigSaved(false), 3000);
@@ -54,11 +56,21 @@ export function TrendsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="mb-2 text-3xl font-bold">Trend Discovery</h1>
-        <p className="text-zinc-400">
-          Configure your campaign and select trending topics to target
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="mb-2 text-3xl font-bold">Trend Discovery</h1>
+          <p className="text-zinc-400">
+            Configure your campaign and select trending topics to target
+          </p>
+        </div>
+        <Button
+          onClick={() => setShowVoiceAssistant(true)}
+          variant="secondary"
+          className="flex items-center gap-2"
+        >
+          <Mic className="h-4 w-4" />
+          Voice Brief Assistant
+        </Button>
       </div>
 
       {/* Two-column layout */}
@@ -137,6 +149,14 @@ export function TrendsPage() {
             Clear all selections
           </button>
         </div>
+      )}
+
+      {/* Voice Brief Assistant - Floating widget */}
+      {showVoiceAssistant && (
+        <VoiceBriefAssistant
+          isFloating
+          onClose={() => setShowVoiceAssistant(false)}
+        />
       )}
     </div>
   );

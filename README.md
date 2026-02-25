@@ -408,3 +408,37 @@ Delete agent:
 ./publish_to_agentspace_v2.sh --action delete --project-id my-project --project-number 12345 \
 --app-id my-app --agent-id 123456789
 ```
+
+## MCP Server Integration
+
+This project supports [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers for enhanced development workflows, design integration, and team collaboration.
+
+### Configured MCP Servers
+
+- **GitHub** - Repository management, CI/CD workflows, PR/issue tracking
+- **Puppeteer** - Browser automation, screenshots, web scraping
+- **Memory** - Persistent knowledge graph across sessions
+- **Sentry** - Error tracking and performance monitoring (optional)
+- **Slack** - Team communication and notifications (optional)
+- **Figma** - Design system integration (optional)
+
+### Quick Setup
+
+1. Add required environment variables to `.env`:
+   ```bash
+   # Minimum setup (GitHub only)
+   GITHUB_TOKEN=your_github_personal_access_token
+   ```
+
+2. Configuration is already in `.mcp.json` - just restart Claude Code
+
+3. See detailed setup instructions:
+   - `MCP_SERVERS_SETUP.md` - Complete configuration guide
+   - `MCP_QUICK_REFERENCE.md` - Quick reference and examples
+
+### Example MCP Queries
+
+- "Show me the CI/CD status for the latest commit"
+- "Take a screenshot of the marketing dashboard"
+- "Remember that our target audience is Gen Z"
+- "Send a campaign summary to #marketing on Slack"

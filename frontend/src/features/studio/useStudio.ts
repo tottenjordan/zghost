@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import type { SessionState } from '../../types/session';
-import type { Clip, Character, CommercialData, StudioData } from './types';
+import type { Clip, Character, CommercialData, StudioData, VoiceSample, MusicSample, VoiceStyleId } from './types';
 
 const BUCKET = import.meta.env.VITE_GCS_BUCKET || 'zghost-bucket';
 
@@ -96,6 +96,10 @@ export function useStudio(sessionId: string | null) {
     clips: [],
     characters: [],
     commercial: undefined,
+    voiceSamples: [],
+    musicSamples: [],
+    selectedVoice: null,
+    selectedMusic: null,
     isLoading: false,
   });
 
@@ -157,9 +161,100 @@ export function useStudio(sessionId: string | null) {
     }));
   };
 
+  // Voice management
+  const selectVoice = (styleId: VoiceStyleId) => {
+    setStudioData((prev) => ({ ...prev, selectedVoice: styleId }));
+  };
+
+  const generateVoiceSample = (config: {
+    style: VoiceStyleId;
+    speakingRate: number;
+    pitch: number;
+    script: string;
+  }) => {
+    const sample: VoiceSample = {
+      id: `voice-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      label: `${config.style} @ ${config.speakingRate}x`,
+      style: config.style,
+      speakingRate: config.speakingRate,
+      pitch: config.pitch,
+      script: config.script,
+      status: 'generating',
+    };
+
+    setStudioData((prev) => ({
+      ...prev,
+      voiceSamples: [...prev.voiceSamples, sample],
+      selectedVoice: config.style,
+    }));
+
+    // Simulate generation (backend call would go here)
+    setTimeout(() => {
+      setStudioData((prev) => ({
+        ...prev,
+        voiceSamples: prev.voiceSamples.map((s) =>
+          s.id === sample.id ? { ...s, status: 'ready' as const } : s
+        ),
+      }));
+    }, 2000);
+  };
+
+  // Music management
+  const selectMusic = (sampleId: string) => {
+    setStudioData((prev) => ({ ...prev, selectedMusic: sampleId }));
+  };
+
+  const generateMusicSample = (config: {
+    prompt: string;
+    durationSeconds: number;
+    genre: string;
+    mood: string;
+    instruments: string;
+  }) => {
+    const sample: MusicSample = {
+      id: `music-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      name: `${config.genre} - ${config.mood}`,
+      genre: config.genre,
+      mood: config.mood,
+      instruments: config.instruments,
+      prompt: config.prompt,
+      durationSeconds: config.durationSeconds,
+      status: 'generating',
+    };
+
+    setStudioData((prev) => ({
+      ...prev,
+      musicSamples: [...prev.musicSamples, sample],
+      selectedMusic: sample.id,
+    }));
+
+    // Simulate generation (backend call would go here)
+    setTimeout(() => {
+      setStudioData((prev) => ({
+        ...prev,
+        musicSamples: prev.musicSamples.map((s) =>
+          s.id === sample.id ? { ...s, status: 'ready' as const } : s
+        ),
+      }));
+    }, 3000);
+  };
+
+  const removeMusicSample = (sampleId: string) => {
+    setStudioData((prev) => ({
+      ...prev,
+      musicSamples: prev.musicSamples.filter((s) => s.id !== sampleId),
+      selectedMusic: prev.selectedMusic === sampleId ? null : prev.selectedMusic,
+    }));
+  };
+
   return {
     ...studioData,
     reorderClips,
     removeClip,
+    selectVoice,
+    generateVoiceSample,
+    selectMusic,
+    generateMusicSample,
+    removeMusicSample,
   };
 }

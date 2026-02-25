@@ -60,12 +60,12 @@ describe('Tabs', () => {
     const tab2 = screen.getByText('Tab 2');
 
     expect(tab1).toHaveClass('bg-zinc-900');
-    expect(tab2).toHaveClass('text-zinc-400');
+    expect(tab2).toHaveClass('text-zinc-500');
 
     await user.click(tab2);
 
     expect(tab2).toHaveClass('bg-zinc-900');
-    expect(tab1).toHaveClass('text-zinc-400');
+    expect(tab1).toHaveClass('text-zinc-500');
   });
 
   it('renders multiple tabs content', () => {

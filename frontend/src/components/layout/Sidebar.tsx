@@ -6,6 +6,7 @@ import {
   Star,
   Film,
   FileText,
+  Mic,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -17,6 +18,7 @@ const navItems = [
   { path: '/rating', icon: Star, label: 'Rating' },
   { path: '/studio', icon: Film, label: 'AV Studio' },
   { path: '/narrative', icon: FileText, label: 'Narrative' },
+  { path: '/voice', icon: Mic, label: 'Voice Assistant' },
 ];
 
 export function Sidebar() {
@@ -26,25 +28,25 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'flex h-full flex-col border-r border-zinc-800 bg-zinc-900 transition-all duration-300',
-        collapsed ? 'w-16' : 'w-64'
+        'flex h-full flex-col border-r border-zinc-800/60 bg-zinc-900/95 transition-all duration-300 ease-in-out',
+        collapsed ? 'w-16' : 'w-60'
       )}
     >
-      <div className="flex h-16 items-center justify-end border-b border-zinc-800 px-4">
+      <div className="flex h-14 items-center justify-end border-b border-zinc-800/60 px-3">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50"
+          className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? (
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-4 w-4" />
           ) : (
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4 w-4" />
           )}
         </button>
       </div>
 
-      <nav className="flex-1 space-y-1 p-2">
+      <nav className="flex-1 space-y-0.5 p-2">
         {navItems.map(({ path, icon: Icon, label }) => {
           const isActive = location.pathname === path;
           return (
@@ -52,15 +54,21 @@ export function Sidebar() {
               key={path}
               to={path}
               className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                 isActive
-                  ? 'bg-blue-600 text-white'
-                  : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50'
+                  ? 'bg-blue-600/15 text-blue-400 shadow-sm'
+                  : 'text-zinc-500 hover:bg-zinc-800/70 hover:text-zinc-200'
               )}
               title={collapsed ? label : undefined}
             >
-              <Icon className="h-5 w-5 flex-shrink-0" />
-              {!collapsed && <span>{label}</span>}
+              {isActive && (
+                <div className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-blue-500" />
+              )}
+              <Icon className={cn(
+                'h-[18px] w-[18px] flex-shrink-0 transition-colors',
+                isActive ? 'text-blue-400' : 'text-zinc-500 group-hover:text-zinc-300'
+              )} />
+              {!collapsed && <span className="truncate">{label}</span>}
             </Link>
           );
         })}

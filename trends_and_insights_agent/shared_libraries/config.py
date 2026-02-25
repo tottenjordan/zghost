@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Dict, Any
 
 
 @dataclass
@@ -78,3 +79,122 @@ class SetupConfiguration:
 
 
 setup_config = SetupConfiguration()
+
+
+@dataclass
+class AudioConfiguration:
+    """Configuration for audio generation (Chirp voice & Lyria music).
+
+    Provides presets and samples for different campaign styles, making it easier
+    to select appropriate voice and music combinations.
+    """
+
+    # Chirp voice model
+    chirp_model: str = "models/chirp-3-hd"  # Latest Chirp 3 HD model
+
+    # Lyria music model
+    lyria_model: str = "models/music-lyria-1"
+
+    # Quick access to popular voice/music combinations
+    quick_styles: Dict[str, Dict[str, Any]] = None
+
+    def __post_init__(self):
+        """Initialize quick style combinations."""
+        self.quick_styles = {
+            "tech_modern": {
+                "voice": {
+                    "style": "professional_male",
+                    "rate": 0.95,
+                    "pitch": -1.0,
+                    "description": "Authoritative tech narrator"
+                },
+                "music": {
+                    "genre": "electronic/ambient",
+                    "mood": "innovative",
+                    "tempo": "120-128 BPM",
+                    "instruments": "synths, digital drums"
+                }
+            },
+            "lifestyle_warm": {
+                "voice": {
+                    "style": "warm_female",
+                    "rate": 1.0,
+                    "pitch": 0.5,
+                    "description": "Friendly, relatable narrator"
+                },
+                "music": {
+                    "genre": "indie pop",
+                    "mood": "upbeat, optimistic",
+                    "tempo": "110-120 BPM",
+                    "instruments": "acoustic guitar, light percussion"
+                }
+            },
+            "youth_energy": {
+                "voice": {
+                    "style": "energetic_male",
+                    "rate": 1.15,
+                    "pitch": 2.0,
+                    "description": "Young, dynamic voice"
+                },
+                "music": {
+                    "genre": "hip hop/trap",
+                    "mood": "energetic, confident",
+                    "tempo": "140-160 BPM",
+                    "instruments": "808 drums, trap hi-hats"
+                }
+            },
+            "luxury_premium": {
+                "voice": {
+                    "style": "british_female",
+                    "rate": 0.9,
+                    "pitch": -0.5,
+                    "description": "Sophisticated, refined narrator"
+                },
+                "music": {
+                    "genre": "orchestral/minimal",
+                    "mood": "elegant, sophisticated",
+                    "tempo": "80-100 BPM",
+                    "instruments": "strings, piano"
+                }
+            },
+            "family_friendly": {
+                "voice": {
+                    "style": "warm_female",
+                    "rate": 0.95,
+                    "pitch": 0,
+                    "description": "Nurturing, clear for all ages"
+                },
+                "music": {
+                    "genre": "acoustic/folk",
+                    "mood": "warm, cheerful",
+                    "tempo": "100-110 BPM",
+                    "instruments": "ukulele, light drums, bells"
+                }
+            }
+        }
+
+
+audio_config = AudioConfiguration()
+
+
+# Import the detailed audio presets
+try:
+    from .audio_config import (
+        VOICE_PRESETS,
+        MUSIC_PRESETS,
+        CAMPAIGN_STYLES,
+        get_voice_preset,
+        get_music_preset,
+        get_campaign_style
+    )
+
+    # Extend AudioConfiguration with detailed presets
+    audio_config.voice_presets = VOICE_PRESETS
+    audio_config.music_presets = MUSIC_PRESETS
+    audio_config.campaign_styles = CAMPAIGN_STYLES
+    audio_config.get_voice_preset = get_voice_preset
+    audio_config.get_music_preset = get_music_preset
+    audio_config.get_campaign_style = get_campaign_style
+except ImportError:
+    # Fallback if detailed config not available
+    pass
