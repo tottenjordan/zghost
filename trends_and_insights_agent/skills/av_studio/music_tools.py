@@ -12,10 +12,14 @@ from ...shared_libraries.utils import upload_blob_to_gcs
 
 logging.basicConfig(level=logging.INFO)
 
-try:
-    GCS_BUCKET = os.environ["BUCKET"]
-except KeyError:
-    raise Exception("BUCKET environment variable not set")
+# Get GCS bucket at runtime (Agent Engine injects env vars after import)
+def get_gcs_bucket():
+    bucket = os.environ.get("BUCKET")
+    if not bucket:
+        raise Exception("BUCKET environment variable not set")
+    return bucket
+
+GCS_BUCKET = None  # Will be evaluated at runtime
 
 client = genai.Client()
 
@@ -116,7 +120,7 @@ Technical Requirements:
             destination_blob_name=destination_blob,
         )
 
-        bucket_name = GCS_BUCKET.replace("gs://", "")
+        bucket_name = get_gcs_bucket().replace("gs://", "")
         gcs_uri = f"gs://{bucket_name}/{destination_blob}"
 
         logging.info(f"Generated soundtrack at {gcs_uri}")
@@ -204,7 +208,7 @@ Brand tone: {tool_context.state.get('brand', 'modern')}"""
                             destination_blob_name=destination_blob,
                         )
 
-                        bucket_name = GCS_BUCKET.replace("gs://", "")
+                        bucket_name = get_gcs_bucket().replace("gs://", "")
                         gcs_uri = f"gs://{bucket_name}/{destination_blob}"
 
                         generated_effects.append({
@@ -257,7 +261,7 @@ def combine_audio_with_video(
         from google.cloud import storage
 
         storage_client = storage.Client()
-        bucket_name = GCS_BUCKET.replace("gs://", "")
+        bucket_name = get_gcs_bucket().replace("gs://", "")
 
         # Download video and music
         video_blob = video_gcs_uri.replace(f"gs://{bucket_name}/", "")

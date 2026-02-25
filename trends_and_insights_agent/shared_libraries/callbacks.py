@@ -17,10 +17,14 @@ from .config import config, setup_config
 
 
 # Get the cloud storage bucket from the environment variable
+# Note: In Agent Engine, env vars are injected after module import, so we defer this check
 try:
-    GCS_BUCKET = os.environ["BUCKET"]
-except KeyError:
-    raise Exception("BUCKET environment variable not set")
+    GCS_BUCKET = os.environ.get("BUCKET", None)
+    if GCS_BUCKET is None:
+        logging.warning("BUCKET environment variable not set at import time - will be checked at runtime")
+except Exception as e:
+    logging.warning(f"Could not get BUCKET env var at import time: {e}")
+    GCS_BUCKET = None
 
 
 # get initial session state json

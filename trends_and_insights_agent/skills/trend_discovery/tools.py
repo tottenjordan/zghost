@@ -12,21 +12,33 @@ from ...shared_libraries.secrets import access_secret_version
 
 
 # ========================
-# clients
+# clients — lazily initialized (Agent Engine injects env vars after import)
 # ========================
-try:
-    yt_secret_id = os.environ["YT_SECRET_MNGR_NAME"]
-except KeyError:
-    raise Exception("YT_SECRET_MNGR_NAME environment variable not set")
+_youtube_client = None
+_bq_client = None
 
-# youtube client
-YOUTUBE_DATA_API_KEY = access_secret_version(secret_id=yt_secret_id, version_id="1")
-youtube_client = googleapiclient.discovery.build(
-    serviceName="youtube", version="v3", developerKey=YOUTUBE_DATA_API_KEY
-)
 
-BQ_PROJECT = os.environ["GOOGLE_CLOUD_PROJECT"]
-bq_client = bigquery.Client(project=BQ_PROJECT)
+def get_youtube_client():
+    global _youtube_client
+    if _youtube_client is None:
+        yt_secret_id = os.environ.get("YT_SECRET_MNGR_NAME")
+        if not yt_secret_id:
+            raise Exception("YT_SECRET_MNGR_NAME environment variable not set")
+        api_key = access_secret_version(secret_id=yt_secret_id, version_id="1")
+        _youtube_client = googleapiclient.discovery.build(
+            serviceName="youtube", version="v3", developerKey=api_key
+        )
+    return _youtube_client
+
+
+def get_bq_client():
+    global _bq_client
+    if _bq_client is None:
+        project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+        if not project:
+            raise Exception("GOOGLE_CLOUD_PROJECT environment variable not set")
+        _bq_client = bigquery.Client(project=project)
+    return _bq_client
 
 
 def memorize(key: str, value: str, tool_context: ToolContext):
@@ -87,7 +99,7 @@ def get_youtube_trends(
         dict: The response from the YouTube Data API.
     """
 
-    request = youtube_client.videos().list(
+    request = get_youtube_client().videos().list(
         part="snippet,contentDetails",  # statistics
         chart="mostPopular",
         regionCode=region_code,
@@ -149,14 +161,11 @@ def get_gtrends_max_date() -> str:
          MAX(refresh_date) as max_date
         FROM `bigquery-public-data.google_trends.top_terms`
     """
-    max_date = bq_client.query(query).to_dataframe()
+    max_date = get_bq_client().query(query).to_dataframe()
     return max_date.iloc[0][0].strftime("%m/%d/%Y")
 
 
-max_date = get_gtrends_max_date()
-
-
-def get_daily_gtrends(today_date: str = max_date) -> dict:
+def get_daily_gtrends(today_date: str = None) -> dict:
     """
     Retrieves the top 25 Google Search Trends (term, rank, refresh_date).
 
@@ -184,7 +193,7 @@ def get_daily_gtrends(today_date: str = max_date) -> dict:
         ORDER BY (SELECT rank FROM UNNEST(x))
         """
     try:
-        df_t = bq_client.query(query).to_dataframe()
+        df_t = get_bq_client().query(query).to_dataframe()
         df_t.index += 1
         df_t["rank"] = df_t.index
         df_t = df_t.drop("x", axis=1)

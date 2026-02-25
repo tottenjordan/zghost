@@ -11,10 +11,14 @@ from google.adk.tools import ToolContext
 from ...shared_libraries.utils import upload_blob_to_gcs
 
 # Get the cloud storage bucket from the environment variable
-try:
-    GCS_BUCKET = os.environ["BUCKET"]
-except KeyError:
-    raise Exception("BUCKET environment variable not set")
+# Note: In Agent Engine, env vars are injected after module import
+def get_gcs_bucket():
+    bucket = os.environ.get("BUCKET")
+    if not bucket:
+        raise Exception("BUCKET environment variable not set")
+    return bucket
+
+GCS_BUCKET = None  # Will be set at runtime via get_gcs_bucket()
 
 
 # --- Tools ---
@@ -68,7 +72,7 @@ async def save_draft_report_artifact(tool_context: ToolContext) -> dict:
         shutil.rmtree(DIR)
         return {
             "status": "ok",
-            "gcs_bucket": GCS_BUCKET,
+            "gcs_bucket": get_gcs_bucket(),
             "gcs_folder": gcs_folder,
             "artifact_key": artifact_key,
         }

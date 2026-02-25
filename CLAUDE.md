@@ -54,7 +54,7 @@ uv sync                   # Install from lock file
 
 ### Skills-Based Agent Hierarchy
 
-The system is organized into 4 skills, each owned by a different team:
+The system is organized into 5 skills, each owned by a different team:
 
 ```
 root_agent (orchestrator)
@@ -89,8 +89,10 @@ root_agent (orchestrator)
 │       │   ├── visual_concept_critic
 │       │   └── visual_concept_finalizer
 │       └── visual_generator               # Imagen/Veo generation (AgentTool)
-└── [av-studio skill]
-    └── av_editing_studio_agent            # 30s commercial production
+├── [av-studio skill]
+│   └── av_editing_studio_agent            # 30s commercial production
+└── [focus-group skill]
+    └── focus_group_evaluator_agent        # Commercial evaluation with simulated focus group
 ```
 
 ### Key Directories
@@ -119,6 +121,10 @@ trends_and_insights_agent/
 │       ├── SKILL.md
 │       ├── agents.py, tools.py, prompts.py
 │       └── references/
+│   └── focus_group/            # Skill 5: Focus Group Evaluation team
+│       ├── SKILL.md
+│       ├── agents.py, tools.py, prompts.py
+│       └── references/
 ├── shared_libraries/           # Shared across all skills
 │   ├── config.py               # Model and rate limit configuration
 │   ├── callbacks.py            # Session state, rate limiting, citations
@@ -127,7 +133,6 @@ trends_and_insights_agent/
 │   ├── secrets.py              # Secret Manager access
 │   └── profiles/               # Example session state JSON configs
 tests/                          # Test suite (unit, E2E, eval datasets)
-hello_gemini_agent/             # Discovery Engine API client and test script
 installation_scripts/           # ffmpeg and opencv install scripts
 .github/workflows/              # CI/CD pipeline
 ```

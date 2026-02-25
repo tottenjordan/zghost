@@ -4,13 +4,6 @@ from typing import Optional
 from google.cloud import secretmanager as sm
 
 
-# Get the project ID from the environment variable
-try:
-    project_number = os.environ["GOOGLE_CLOUD_PROJECT_NUMBER"]
-except KeyError:
-    raise Exception("GOOGLE_CLOUD_PROJECT_NUMBER environment variable not set")
-
-
 # [START secretmanager_get_secret_version]
 
 
@@ -21,6 +14,10 @@ def access_secret_version(
     Access the payload for the given secret version if one exists. The version
     can be a version number as a string (e.g. "5") or an alias (e.g. "latest").
     """
+    # Get the project number at runtime (Agent Engine injects env vars after import)
+    project_number = os.environ.get("GOOGLE_CLOUD_PROJECT_NUMBER")
+    if not project_number:
+        raise Exception("GOOGLE_CLOUD_PROJECT_NUMBER environment variable not set")
 
     # Create the Secret Manager client.
     sm_client = sm.SecretManagerServiceClient()

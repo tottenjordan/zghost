@@ -25,6 +25,7 @@ dependencies = [
     "google-adk>=1.22.1",
     "fastapi>=0.133.0",
     "uvicorn>=0.41.0",
+    "google-cloud-texttospeech>=2.34.0",
 ]
 
 [build-system]

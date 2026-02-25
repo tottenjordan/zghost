@@ -21,10 +21,15 @@ from ...shared_libraries.utils import (
 
 logging.basicConfig(level=logging.INFO)
 
-try:
-    GCS_BUCKET = os.environ["BUCKET"]
-except KeyError:
-    raise Exception("BUCKET environment variable not set")
+# Get GCS bucket at runtime (Agent Engine injects env vars after import)
+def get_gcs_bucket():
+    bucket = os.environ.get("BUCKET")
+    if not bucket:
+        raise Exception("BUCKET environment variable not set")
+    return bucket
+
+# Lazy evaluation - will be called at runtime
+GCS_BUCKET = None
 
 client = genai.Client()
 storage_client = storage.Client()
@@ -92,7 +97,7 @@ def generate_subject_image(
             destination_blob_name=destination_blob,
         )
 
-        bucket_name = GCS_BUCKET.replace("gs://", "")
+        bucket_name = get_gcs_bucket().replace("gs://", "")
         gcs_uri = f"gs://{bucket_name}/{destination_blob}"
 
         logging.info(f"Generated subject image '{subject_name}' at {gcs_uri}")
@@ -146,7 +151,7 @@ def generate_clip_with_frames(
         gen_config = GenerateVideosConfig(
             aspect_ratio="16:9",
             number_of_videos=1,
-            output_gcs_uri=GCS_BUCKET,
+            output_gcs_uri=get_gcs_bucket(),
         )
 
         if last_frame_gcs_uri:
@@ -199,8 +204,8 @@ def generate_clip_with_frames(
                 ):
                     video_uri = generated_video.video.uri
 
-                    bucket_name = GCS_BUCKET.replace("gs://", "")
-                    source_blob = video_uri.replace(GCS_BUCKET, "").lstrip("/")
+                    bucket_name = get_gcs_bucket().replace("gs://", "")
+                    source_blob = video_uri.replace(get_gcs_bucket(), "").lstrip("/")
 
                     video_bytes = download_blob(
                         bucket_name=bucket_name, source_blob_name=source_blob
@@ -262,7 +267,7 @@ def extract_frame_from_clip(
         dict: Status and paths. Keys: "status", "gcs_uri", "local_path".
     """
     try:
-        bucket_name = GCS_BUCKET.replace("gs://", "")
+        bucket_name = get_gcs_bucket().replace("gs://", "")
         source_blob = video_gcs_uri.replace(f"gs://{bucket_name}/", "")
 
         local_dir = "session_media/av_studio/frames"
@@ -353,7 +358,7 @@ def concatenate_clips(
         return {"status": "failed", "error": "No clip URIs provided"}
 
     try:
-        bucket_name = GCS_BUCKET.replace("gs://", "")
+        bucket_name = get_gcs_bucket().replace("gs://", "")
 
         with tempfile.TemporaryDirectory() as temp_dir:
             local_clip_paths = []
@@ -461,7 +466,7 @@ def trim_video(
         dict: Status and paths. Keys: "status", "gcs_uri", "local_path", "duration_seconds".
     """
     try:
-        bucket_name = GCS_BUCKET.replace("gs://", "")
+        bucket_name = get_gcs_bucket().replace("gs://", "")
         source_blob = video_gcs_uri.replace(f"gs://{bucket_name}/", "")
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -551,7 +556,7 @@ async def save_commercial_artifact(
         dict: Status and artifact key. Keys: "status", "artifact_key".
     """
     try:
-        bucket_name = GCS_BUCKET.replace("gs://", "")
+        bucket_name = get_gcs_bucket().replace("gs://", "")
         source_blob = commercial_gcs_uri.replace(f"gs://{bucket_name}/", "")
 
         video_bytes = download_blob(
@@ -602,7 +607,7 @@ def validate_character_consistency(
         dict: Validation result with keys: "status", "score" (1-10), "matches", "mismatches", "suggestion".
     """
     try:
-        bucket_name = GCS_BUCKET.replace("gs://", "")
+        bucket_name = get_gcs_bucket().replace("gs://", "")
 
         # Download reference image
         ref_blob = reference_image_gcs_uri.replace(f"gs://{bucket_name}/", "")

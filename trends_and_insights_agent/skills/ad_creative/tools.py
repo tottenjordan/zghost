@@ -20,11 +20,12 @@ from ...shared_libraries.utils import (
     download_image_from_gcs,
 )
 
-# Get the cloud storage bucket from the environment variable
-try:
-    GCS_BUCKET = os.environ["BUCKET"]
-except KeyError:
-    raise Exception("BUCKET environment variable not set")
+# Get GCS bucket at runtime (Agent Engine injects env vars after import)
+def get_gcs_bucket():
+    bucket = os.environ.get("BUCKET")
+    if not bucket:
+        raise Exception("BUCKET environment variable not set")
+    return bucket
 
 client = genai.Client()
 storage_client = storage.Client()
@@ -116,7 +117,7 @@ async def generate_image(
 
     # Create output filename
     if concept_name:
-        filename_prefix = f"{concept_name.replace(",", "").replace(" ", "_")}"
+        filename_prefix = concept_name.replace(",", "").replace(" ", "_")
     else:
         filename_prefix = f"{str(uuid.uuid4())[:8]}"
 
@@ -189,18 +190,18 @@ async def generate_video(
     """
     # Create output filename
     if concept_name:
-        filename_prefix = f"{concept_name.replace(",", "").replace(" ", "_")}"
+        filename_prefix = concept_name.replace(",", "").replace(" ", "_")
     else:
         filename_prefix = f"{str(uuid.uuid4())[:8]}"
 
     gen_config = GenerateVideosConfig(
         aspect_ratio="16:9",
         number_of_videos=number_of_videos,
-        output_gcs_uri=os.environ["BUCKET"],
+        output_gcs_uri=get_gcs_bucket(),
         negative_prompt=negative_prompt,
     )
     if existing_image_filename != "":
-        gcs_location = f"{os.environ['BUCKET']}/{existing_image_filename}"
+        gcs_location = f"{get_gcs_bucket()}/{existing_image_filename}"
         existing_image = types.Image(gcs_uri=gcs_location, mime_type="image/png")
         operation = client.models.generate_videos(
             model=config.video_gen_model,
@@ -254,7 +255,7 @@ async def generate_video(
 
                         # save to common gcs location
                         DESTINATION_BLOB_NAME = (
-                            f"{tool_context.state["gcs_folder"]}/{artifact_key}"
+                            f"{tool_context.state['gcs_folder']}/{artifact_key}"
                         )
                         bucket = storage_client.get_bucket(BUCKET_NAME)
                         source_blob = bucket.blob(SOURCE_BLOB)
@@ -406,18 +407,18 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
             )
             # TODO: optimize
             path_str = f"![Example Image]({LOCAL_FILE_PATH})\n"
-            str_1 = f"## {entry["headline"]}\n"
+            str_1 = f"## {entry['headline']}\n"
             str_2 = (
-                f"*{os.path.join(GCS_BUCKET, gcs_folder, entry["artifact_key"])}*\n\n"
+                f"*{os.path.join(get_gcs_bucket(), gcs_folder, entry['artifact_key'])}*\n\n"
             )
             str_3 = f"{path_str}\n\n"
-            str_4 = f"**{entry["caption"]}**\n\n"
-            str_5 = f"**Trend(s):** {entry["trend"]}\n\n"
-            str_6 = f"**Visual Concept:** {entry["concept"]}\n\n"
-            str_7 = f"**How it markets target product:** {entry["markets_product"]}\n\n"
-            str_8 = f"**Target audience appeal:** {entry["audience_appeal"]}\n\n"
-            str_9 = f"**Why this will perform well:** {entry["rationale_perf"]}\n\n"
-            str_10 = f"**Prompt:** {entry["img_prompt"]}\n\n"
+            str_4 = f"**{entry['caption']}**\n\n"
+            str_5 = f"**Trend(s):** {entry['trend']}\n\n"
+            str_6 = f"**Visual Concept:** {entry['concept']}\n\n"
+            str_7 = f"**How it markets target product:** {entry['markets_product']}\n\n"
+            str_8 = f"**Target audience appeal:** {entry['audience_appeal']}\n\n"
+            str_9 = f"**Why this will perform well:** {entry['rationale_perf']}\n\n"
+            str_10 = f"**Prompt:** {entry['img_prompt']}\n\n"
             result = (
                 str_1
                 + " "
@@ -467,18 +468,18 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
             LOCAL_VID_FRAME = extract_single_frame(LOCAL_VID_PATH, 1, LOCAL_FRAME_PATH)
 
             path_str = f"![Thumbnail Image]({LOCAL_VID_FRAME})\n"
-            str_1 = f"## {entry["headline"]}\n"
+            str_1 = f"## {entry['headline']}\n"
             str_2 = (
-                f"*{os.path.join(GCS_BUCKET, gcs_folder, entry["artifact_key"])}*\n\n"
+                f"*{os.path.join(get_gcs_bucket(), gcs_folder, entry['artifact_key'])}*\n\n"
             )
             str_3 = f"{path_str}\n\n"
-            str_4 = f"**{entry["caption"]}**\n\n"
-            str_5 = f"**Trend(s):** {entry["trend"]}\n\n"
-            str_6 = f"**Visual Concept:** {entry["concept"]}\n\n"
-            str_7 = f"**How it markets target product:** {entry["markets_product"]}\n\n"
-            str_8 = f"**Target audience appeal:** {entry["audience_appeal"]}\n\n"
-            str_9 = f"**Why this will perform well:** {entry["rationale_perf"]}\n\n"
-            str_10 = f"**Prompt:** {entry["vid_prompt"]}\n\n"
+            str_4 = f"**{entry['caption']}**\n\n"
+            str_5 = f"**Trend(s):** {entry['trend']}\n\n"
+            str_6 = f"**Visual Concept:** {entry['concept']}\n\n"
+            str_7 = f"**How it markets target product:** {entry['markets_product']}\n\n"
+            str_8 = f"**Target audience appeal:** {entry['audience_appeal']}\n\n"
+            str_9 = f"**Why this will perform well:** {entry['rationale_perf']}\n\n"
+            str_10 = f"**Prompt:** {entry['vid_prompt']}\n\n"
 
             result = (
                 str_1
@@ -545,7 +546,7 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
         logging.info(f"Directory '{DIR}' and its contents removed successfully")
         return {
             "status": "ok",
-            "gcs_bucket": GCS_BUCKET,
+            "gcs_bucket": get_gcs_bucket(),
             "gcs_folder": gcs_folder,
             "artifact_key": artifact_key,
         }

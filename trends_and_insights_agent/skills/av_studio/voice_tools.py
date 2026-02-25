@@ -16,10 +16,12 @@ except ImportError:
 
 logging.basicConfig(level=logging.INFO)
 
-try:
-    GCS_BUCKET = os.environ["BUCKET"]
-except KeyError:
-    raise Exception("BUCKET environment variable not set")
+# Get GCS bucket at runtime (Agent Engine injects env vars after import)
+def get_gcs_bucket():
+    bucket = os.environ.get("BUCKET")
+    if not bucket:
+        raise Exception("BUCKET environment variable not set")
+    return bucket
 
 # Initialize Text-to-Speech client
 tts_client = texttospeech.TextToSpeechClient()
@@ -162,7 +164,7 @@ def generate_voice_over(
             destination_blob_name=destination_blob,
         )
 
-        bucket_name = GCS_BUCKET.replace("gs://", "")
+        bucket_name = get_gcs_bucket().replace("gs://", "")
         gcs_uri = f"gs://{bucket_name}/{destination_blob}"
 
         # Extract word timings if available
@@ -287,7 +289,7 @@ def generate_dialogue(
                 destination_blob_name=destination_blob,
             )
 
-            bucket_name = GCS_BUCKET.replace("gs://", "")
+            bucket_name = get_gcs_bucket().replace("gs://", "")
             gcs_uri = f"gs://{bucket_name}/{destination_blob}"
 
             # Calculate approximate duration
@@ -404,7 +406,7 @@ def generate_branded_tagline(
             destination_blob_name=destination_blob,
         )
 
-        bucket_name = GCS_BUCKET.replace("gs://", "")
+        bucket_name = get_gcs_bucket().replace("gs://", "")
         gcs_uri = f"gs://{bucket_name}/{destination_blob}"
 
         logging.info(f"Generated brand tagline at {gcs_uri}")
@@ -458,7 +460,7 @@ def mix_voice_with_audio(
         from google.cloud import storage
 
         storage_client = storage.Client()
-        bucket_name = GCS_BUCKET.replace("gs://", "")
+        bucket_name = get_gcs_bucket().replace("gs://", "")
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             # Download all media files

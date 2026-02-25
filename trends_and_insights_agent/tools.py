@@ -13,18 +13,23 @@ from .shared_libraries.secrets import access_secret_version
 
 
 # ========================
-# clients
+# clients — lazily initialized (Agent Engine injects env vars after import)
 # ========================
-try:
-    yt_secret_id = os.environ["YT_SECRET_MNGR_NAME"]
-except KeyError:
-    raise Exception("YT_SECRET_MNGR_NAME environment variable not set")
+_youtube_client = None
 
-# youtube client
-YOUTUBE_DATA_API_KEY = access_secret_version(secret_id=yt_secret_id, version_id="1")
-youtube_client = googleapiclient.discovery.build(
-    serviceName="youtube", version="v3", developerKey=YOUTUBE_DATA_API_KEY
-)
+
+def get_youtube_client():
+    global _youtube_client
+    if _youtube_client is None:
+        yt_secret_id = os.environ.get("YT_SECRET_MNGR_NAME")
+        if not yt_secret_id:
+            raise Exception("YT_SECRET_MNGR_NAME environment variable not set")
+        api_key = access_secret_version(secret_id=yt_secret_id, version_id="1")
+        _youtube_client = googleapiclient.discovery.build(
+            serviceName="youtube", version="v3", developerKey=api_key
+        )
+    return _youtube_client
+
 
 # google genai client
 client = Client()
@@ -82,7 +87,7 @@ def query_youtube_api(
     )
 
     # Using Search:list - https://developers.google.com/youtube/v3/docs/search/list
-    yt_data_api_request = youtube_client.search().list(
+    yt_data_api_request = get_youtube_client().search().list(
         type="video",
         part="id,snippet",
         relevanceLanguage="en",
