@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Mic, RefreshCw, Loader2 } from 'lucide-react';
+import { Mic, RefreshCw, Loader2, Star, ChevronDown } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useTrends } from './useTrends';
 import { useCampaignStore } from '../../stores/campaignStore';
@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { fetchLiveTrends, getCachedTrends, autoSelectFromAvailable } from '../../services/trendsCache';
+import { DEFAULT_RUBRICS, type ExtendedRubric } from '../rating/rubric-templates';
 import type { CampaignConfigData } from './CampaignConfig';
 import type { SearchTrend, YTTrend } from '../../types/trends';
 
@@ -21,8 +22,10 @@ export function TrendsPage() {
     config: storeConfig,
     selectedSearchTrends,
     selectedYtTrends,
+    activeRubric,
     setCampaignConfig: setStoreConfig,
-    setSelectedTrends
+    setSelectedTrends,
+    setActiveRubric,
   } = useCampaignStore();
 
   const [fetchingTrends, setFetchingTrends] = useState(false);
@@ -42,6 +45,18 @@ export function TrendsPage() {
   const [showCompare, setShowCompare] = useState(false);
   const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
+  const [showRubricPicker, setShowRubricPicker] = useState(false);
+
+  // Load available rubrics from localStorage (same source as RatingPage)
+  const [availableRubrics, setAvailableRubrics] = useState<ExtendedRubric[]>([]);
+  useEffect(() => {
+    const stored = localStorage.getItem('rating-rubrics');
+    if (stored) {
+      setAvailableRubrics(JSON.parse(stored));
+    } else {
+      setAvailableRubrics(DEFAULT_RUBRICS);
+    }
+  }, []);
 
   // Store parsed trends in local state
   const [availableSearchTrends, setAvailableSearchTrends] = useState<SearchTrend[]>([]);
@@ -380,6 +395,94 @@ export function TrendsPage() {
                       Total: {totalSelected} trend{totalSelected !== 1 ? 's' : ''} selected
                     </p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Inline Rubric Selector */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="w-4 h-4" />
+                    Evaluation Rubric
+                  </CardTitle>
+                  {activeRubric && (
+                    <button
+                      onClick={() => setActiveRubric(null)}
+                      className="text-xs text-zinc-500 hover:text-zinc-300"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {activeRubric ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-400 border border-green-700">
+                          {activeRubric.name}
+                        </span>
+                        <span className="text-xs text-zinc-500">
+                          {activeRubric.criteria.length} criteria
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {activeRubric.criteria.map((c) => (
+                          <div key={c.id} className="flex items-center justify-between text-xs">
+                            <span className="text-zinc-400">{c.name}</span>
+                            <span className="text-zinc-500">weight: {c.weight}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setShowRubricPicker(!showRubricPicker)}
+                        className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                      >
+                        <ChevronDown className="w-3 h-3" />
+                        Change rubric
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-xs text-amber-400">
+                        No rubric selected — pipeline will use default evaluation
+                      </p>
+                      <button
+                        onClick={() => setShowRubricPicker(!showRubricPicker)}
+                        className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                      >
+                        <ChevronDown className="w-3 h-3" />
+                        Select a rubric
+                      </button>
+                    </div>
+                  )}
+
+                  {showRubricPicker && (
+                    <div className="space-y-1 border-t border-zinc-800 pt-2">
+                      {availableRubrics.map((rubric) => (
+                        <button
+                          key={rubric.id}
+                          onClick={() => {
+                            setActiveRubric(rubric);
+                            setShowRubricPicker(false);
+                          }}
+                          className={`w-full text-left rounded px-3 py-2 text-sm transition-colors ${
+                            activeRubric?.id === rubric.id
+                              ? 'bg-blue-600/20 border border-blue-700/50 text-blue-300'
+                              : 'bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800'
+                          }`}
+                        >
+                          <div className="font-medium">{rubric.name}</div>
+                          <div className="text-xs text-zinc-500 mt-0.5">
+                            {rubric.criteria.length} criteria &middot; {rubric.description.slice(0, 60)}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

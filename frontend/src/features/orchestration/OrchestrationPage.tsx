@@ -6,6 +6,8 @@ import { EventStream } from './EventStream';
 import { TaskDrillDown } from './TaskDrillDown';
 import { ParallelStreamView } from './ParallelStreamView';
 import { SessionStatePanel } from './SessionStatePanel';
+import { AgentChat } from './AgentChat';
+import { ResultsGallery } from './ResultsGallery';
 import { PipelineControls } from './PipelineControls';
 import { SessionTabBar } from './SessionTabBar';
 import { useOrchestration } from './useOrchestration';
@@ -236,12 +238,22 @@ export function OrchestrationPage() {
 
         {/* Right: Detail panel (1 col) */}
         <div className="border border-zinc-800 rounded-lg overflow-hidden flex flex-col">
-          <Tabs defaultValue="details">
-            <TabsList className="w-full grid grid-cols-3">
+          <Tabs defaultValue="chat">
+            <TabsList className="w-full grid grid-cols-5">
+              <TabsTrigger value="chat">Chat</TabsTrigger>
+              <TabsTrigger value="results">Results</TabsTrigger>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="streams">Streams</TabsTrigger>
               <TabsTrigger value="state">State</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="chat" className="flex-1 overflow-hidden">
+              <AgentChat sessionId={sessionId} events={events} />
+            </TabsContent>
+
+            <TabsContent value="results" className="flex-1 overflow-auto">
+              <ResultsGallery sessionState={sessionState} />
+            </TabsContent>
 
             <TabsContent value="details" className="flex-1 overflow-auto">
               {selectedAgent ? (
