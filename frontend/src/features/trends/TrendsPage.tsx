@@ -9,6 +9,8 @@ import { AutoTrendSelector } from './AutoTrendSelector';
 import { TrendCompare } from './TrendCompare';
 import { VoiceBriefAssistant } from '../voice/VoiceBriefAssistant';
 import { Button } from '../../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { fetchLiveTrends, getCachedTrends, autoSelectFromAvailable } from '../../services/trendsCache';
 import type { CampaignConfigData } from './CampaignConfig';
 import type { SearchTrend, YTTrend } from '../../types/trends';
@@ -153,6 +155,7 @@ export function TrendsPage() {
   };
 
   const trendsLoaded = availableSearchTrends.length > 0 || availableYtTrends.length > 0;
+  const totalSelected = selectedSearchTrends.length + selectedYtTrends.length;
 
   return (
     <div className="space-y-6">
@@ -167,29 +170,6 @@ export function TrendsPage() {
               {availableSearchTrends.length} Google + {availableYtTrends.length} YouTube trends loaded
             </p>
           )}
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={handleFetchTrends}
-            disabled={fetchingTrends}
-            variant="primary"
-            className="flex items-center gap-2"
-          >
-            {fetchingTrends ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            {fetchingTrends ? 'Fetching...' : 'Refresh Trends'}
-          </Button>
-          <Button
-            onClick={() => setShowVoiceAssistant(true)}
-            variant="secondary"
-            className="flex items-center gap-2"
-          >
-            <Mic className="h-4 w-4" />
-            Voice Brief
-          </Button>
         </div>
       </div>
 
@@ -206,80 +186,206 @@ export function TrendsPage() {
         </div>
       )}
 
-      {/* Two-column layout */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left column: Campaign config */}
-        <div className="space-y-6">
-          <CampaignConfig session={session} onSave={handleSaveConfig} />
+      {/* Horizontal tabs layout */}
+      <Tabs defaultValue="campaign">
+        <TabsList>
+          <TabsTrigger value="campaign">Campaign</TabsTrigger>
+          <TabsTrigger value="trends">
+            Trends {totalSelected > 0 && `(${totalSelected})`}
+          </TabsTrigger>
+          <TabsTrigger value="review">Review</TabsTrigger>
+        </TabsList>
 
-          {configSaved && (
-            <div className="rounded-lg border border-green-800 bg-green-950/50 px-4 py-2 text-sm text-green-400">
-              Configuration saved successfully
-            </div>
-          )}
+        {/* Tab 1: Campaign Config */}
+        <TabsContent value="campaign">
+          <div className="space-y-6">
+            <CampaignConfig session={session} onSave={handleSaveConfig} />
 
-          {/* Toggle buttons for additional features */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowAutoSelect(!showAutoSelect)}
-              className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-medium transition-colors hover:bg-zinc-800"
-            >
-              {showAutoSelect ? 'Hide' : 'Show'} AI Auto-Select
-            </button>
-            <button
-              onClick={() => setShowCompare(!showCompare)}
-              className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-medium transition-colors hover:bg-zinc-800"
-            >
-              {showCompare ? 'Hide' : 'Show'} Compare
-            </button>
+            {configSaved && (
+              <div className="rounded-lg border border-green-800 bg-green-950/50 px-4 py-2 text-sm text-green-400">
+                Configuration saved successfully
+              </div>
+            )}
           </div>
+        </TabsContent>
 
-          {/* Auto-select panel */}
-          {showAutoSelect && (
-            <AutoTrendSelector
-              loading={autoSelectLoading}
-              onAutoSelect={handleAutoSelect}
-              autoSelectedSearchTrends={autoSelectedSearchTrends}
-              autoSelectedYtTrends={autoSelectedYtTrends}
-              aiReasoning={aiReasoning}
-              onAccept={handleAcceptAutoSelect}
-              onReject={handleRejectAutoSelect}
+        {/* Tab 2: Trends */}
+        <TabsContent value="trends">
+          <div className="space-y-6">
+            {/* Fetch and Voice buttons at the top of Trends tab */}
+            <div className="flex gap-2">
+              <Button
+                onClick={handleFetchTrends}
+                disabled={fetchingTrends}
+                variant="primary"
+                className="flex items-center gap-2"
+              >
+                {fetchingTrends ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                {fetchingTrends ? 'Fetching...' : 'Refresh Trends'}
+              </Button>
+              <Button
+                onClick={() => setShowVoiceAssistant(true)}
+                variant="secondary"
+                className="flex items-center gap-2"
+              >
+                <Mic className="h-4 w-4" />
+                Voice Brief
+              </Button>
+            </div>
+
+            {/* Toggle buttons for additional features */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowAutoSelect(!showAutoSelect)}
+                className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-medium transition-colors hover:bg-zinc-800"
+              >
+                {showAutoSelect ? 'Hide' : 'Show'} AI Auto-Select
+              </button>
+              <button
+                onClick={() => setShowCompare(!showCompare)}
+                className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-medium transition-colors hover:bg-zinc-800"
+              >
+                {showCompare ? 'Hide' : 'Show'} Compare
+              </button>
+            </div>
+
+            {/* Auto-select panel */}
+            {showAutoSelect && (
+              <AutoTrendSelector
+                loading={autoSelectLoading}
+                onAutoSelect={handleAutoSelect}
+                autoSelectedSearchTrends={autoSelectedSearchTrends}
+                autoSelectedYtTrends={autoSelectedYtTrends}
+                aiReasoning={aiReasoning}
+                onAccept={handleAcceptAutoSelect}
+                onReject={handleRejectAutoSelect}
+              />
+            )}
+
+            {/* Trend selector */}
+            <TrendSelector
+              availableSearchTrends={availableSearchTrends}
+              availableYtTrends={availableYtTrends}
+              selectedSearchTrends={selectedSearchTrends}
+              selectedYtTrends={selectedYtTrends}
+              onToggleSearchTrend={toggleSearchTrend}
+              onToggleYtTrend={toggleYtTrend}
             />
-          )}
-        </div>
 
-        {/* Right column: Trend selection */}
-        <div className="space-y-6">
-          <TrendSelector
-            availableSearchTrends={availableSearchTrends}
-            availableYtTrends={availableYtTrends}
-            selectedSearchTrends={selectedSearchTrends}
-            selectedYtTrends={selectedYtTrends}
-            onToggleSearchTrend={toggleSearchTrend}
-            onToggleYtTrend={toggleYtTrend}
-          />
+            {/* Comparison panel */}
+            {showCompare && (
+              <TrendCompare
+                availableSearchTrends={selectedSearchTrends}
+                availableYtTrends={selectedYtTrends}
+              />
+            )}
 
-          {/* Comparison panel */}
-          {showCompare && (
-            <TrendCompare
-              availableSearchTrends={selectedSearchTrends}
-              availableYtTrends={selectedYtTrends}
-            />
-          )}
-        </div>
-      </div>
+            {/* Clear selections button at bottom */}
+            {totalSelected > 0 && (
+              <div className="flex justify-center">
+                <button
+                  onClick={clearSelections}
+                  className="text-sm text-zinc-500 hover:text-zinc-400"
+                >
+                  Clear all selections
+                </button>
+              </div>
+            )}
+          </div>
+        </TabsContent>
 
-      {/* Clear selections button at bottom */}
-      {(selectedSearchTrends.length > 0 || selectedYtTrends.length > 0) && (
-        <div className="flex justify-center">
-          <button
-            onClick={clearSelections}
-            className="text-sm text-zinc-500 hover:text-zinc-400"
-          >
-            Clear all selections
-          </button>
-        </div>
-      )}
+        {/* Tab 3: Review */}
+        <TabsContent value="review">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Campaign Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <p className="text-sm font-medium text-zinc-400">Brand</p>
+                      <p className="mt-1 text-zinc-100">
+                        {storeConfig?.brand || 'Not set'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-zinc-400">Target Product</p>
+                      <p className="mt-1 text-zinc-100">
+                        {storeConfig?.target_product || 'Not set'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-zinc-400">Target Audience</p>
+                      <p className="mt-1 text-zinc-100">
+                        {storeConfig?.target_audience || 'Not set'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-zinc-400">Key Selling Points</p>
+                      <p className="mt-1 text-zinc-100">
+                        {storeConfig?.key_selling_points || 'Not set'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Selected Trends</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-zinc-400">
+                      Google Search Trends ({selectedSearchTrends.length})
+                    </p>
+                    {selectedSearchTrends.length > 0 ? (
+                      <ul className="mt-2 space-y-1">
+                        {selectedSearchTrends.map((trend) => (
+                          <li key={trend.rank} className="text-sm text-zinc-100">
+                            • {trend.title}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-2 text-sm text-zinc-500">No trends selected</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-zinc-400">
+                      YouTube Trends ({selectedYtTrends.length})
+                    </p>
+                    {selectedYtTrends.length > 0 ? (
+                      <ul className="mt-2 space-y-1">
+                        {selectedYtTrends.map((trend) => (
+                          <li key={trend.rank} className="text-sm text-zinc-100">
+                            • {trend.title}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-2 text-sm text-zinc-500">No trends selected</p>
+                    )}
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
+                    <p className="text-sm font-medium text-zinc-300">
+                      Total: {totalSelected} trend{totalSelected !== 1 ? 's' : ''} selected
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Voice Brief Assistant - Floating widget */}
       {showVoiceAssistant && (

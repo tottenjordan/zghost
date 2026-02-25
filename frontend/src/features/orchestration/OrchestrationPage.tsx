@@ -7,6 +7,7 @@ import { TaskDrillDown } from './TaskDrillDown';
 import { ParallelStreamView } from './ParallelStreamView';
 import { SessionStatePanel } from './SessionStatePanel';
 import { PipelineControls } from './PipelineControls';
+import { SessionTabBar } from './SessionTabBar';
 import { useOrchestration } from './useOrchestration';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { api } from '../../services/api';
@@ -27,8 +28,13 @@ export function OrchestrationPage() {
     selectedSearchTrends,
     selectedYtTrends,
     activeRubric,
+    sessions,
+    activeSessionIndex,
     sessionId,
     pipelineStatus,
+    addSession,
+    removeSession,
+    setActiveSession,
     setSessionId,
     setPipelineStatus,
     isReadyToLaunch,
@@ -53,10 +59,19 @@ export function OrchestrationPage() {
 
   const handleStart = useCallback(async (parallelCount: number) => {
     setStartError(null);
-    setPipelineStatus('running');
     try {
       const session = await api.createSession(APP_NAME, USER_ID);
-      setSessionId(session.session_id);
+
+      // Create new session entry
+      const newSession = {
+        id: `session-${Date.now()}`,
+        sessionId: session.session_id,
+        label: `Run ${sessions.length + 1}`,
+        status: 'running' as const,
+        startedAt: Date.now(),
+      };
+
+      addSession(newSession);
 
       const campaignMetadata = `Campaign for ${config.brand || '[brand]'} ${config.target_product || '[product]'}. Target audience: ${config.target_audience || '[not specified]'}. Key selling points: ${config.key_selling_points || '[not specified]'}`;
 
@@ -99,7 +114,7 @@ export function OrchestrationPage() {
       setStartError(msg);
       setPipelineStatus('error');
     }
-  }, [config, selectedSearchTrends, selectedYtTrends, activeRubric, setSessionId, setPipelineStatus]);
+  }, [config, selectedSearchTrends, selectedYtTrends, activeRubric, sessions, addSession, setPipelineStatus]);
 
   const handleStop = useCallback(() => {
     setSessionId(null);
@@ -163,6 +178,16 @@ export function OrchestrationPage() {
           </span>
         </div>
       </div>
+
+      {/* Session Tab Bar */}
+      <SessionTabBar
+        sessions={sessions}
+        activeSessionIndex={activeSessionIndex}
+        onSelectSession={setActiveSession}
+        onRemoveSession={removeSession}
+        onNewSession={() => handleStart(1)}
+        isRunning={isRunning}
+      />
 
       {/* Pipeline Controls */}
       <PipelineControls

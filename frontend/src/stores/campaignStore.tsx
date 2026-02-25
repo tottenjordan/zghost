@@ -11,11 +11,23 @@ export interface CampaignConfig {
   key_selling_points: string;
 }
 
+export interface PipelineSession {
+  id: string;
+  sessionId: string;
+  label: string;
+  status: 'running' | 'completed' | 'error' | 'idle';
+  startedAt: number;
+  completedAt?: number;
+}
+
 export interface CampaignStoreState {
   config: CampaignConfig;
   selectedSearchTrends: SearchTrend[];
   selectedYtTrends: YTTrend[];
   activeRubric: ExtendedRubric | null;
+  sessions: PipelineSession[];
+  activeSessionIndex: number;
+  // Backward compatibility - derived from active session
   sessionId: string | null;
   pipelineStatus: 'idle' | 'running' | 'completed' | 'error';
 }
@@ -26,6 +38,10 @@ interface CampaignStoreActions {
   setActiveRubric: (rubric: ExtendedRubric | null) => void;
   setSessionId: (id: string | null) => void;
   setPipelineStatus: (status: CampaignStoreState['pipelineStatus']) => void;
+  addSession: (session: PipelineSession) => void;
+  removeSession: (sessionId: string) => void;
+  setActiveSession: (index: number) => void;
+  updateSessionStatus: (sessionId: string, status: PipelineSession['status']) => void;
   reset: () => void;
   isReadyToLaunch: () => { ready: boolean; missing: string[] };
 }
@@ -37,6 +53,8 @@ const DEFAULT_STATE: CampaignStoreState = {
   selectedSearchTrends: [],
   selectedYtTrends: [],
   activeRubric: null,
+  sessions: [],
+  activeSessionIndex: -1,
   sessionId: null,
   pipelineStatus: 'idle',
 };
@@ -48,7 +66,21 @@ function loadFromStorage(): CampaignStoreState {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      return { ...DEFAULT_STATE, ...parsed, pipelineStatus: 'idle' };
+      // Ensure sessions array exists
+      const sessions = parsed.sessions || [];
+      const activeSessionIndex = parsed.activeSessionIndex ?? -1;
+
+      // Derive backward compat fields from active session
+      const activeSession = activeSessionIndex >= 0 ? sessions[activeSessionIndex] : null;
+
+      return {
+        ...DEFAULT_STATE,
+        ...parsed,
+        sessions,
+        activeSessionIndex,
+        sessionId: activeSession?.sessionId || null,
+        pipelineStatus: activeSession?.status || 'idle'
+      };
     }
   } catch {
     // ignore corrupt storage
@@ -58,8 +90,8 @@ function loadFromStorage(): CampaignStoreState {
 
 function saveToStorage(state: CampaignStoreState) {
   try {
-    // Don't persist transient state like pipelineStatus
-    const { pipelineStatus: _, ...persistable } = state;
+    // Don't persist transient backward-compat fields
+    const { pipelineStatus: _, sessionId: __, ...persistable } = state;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persistable));
   } catch {
     // storage full or unavailable
@@ -87,11 +119,111 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setSessionId = useCallback((id: string | null) => {
-    setState((prev) => ({ ...prev, sessionId: id }));
+    setState((prev) => {
+      // Update active session's sessionId
+      if (prev.activeSessionIndex >= 0 && prev.sessions.length > prev.activeSessionIndex) {
+        const updatedSessions = [...prev.sessions];
+        updatedSessions[prev.activeSessionIndex] = {
+          ...updatedSessions[prev.activeSessionIndex],
+          sessionId: id || '',
+        };
+        return { ...prev, sessions: updatedSessions, sessionId: id };
+      }
+      return { ...prev, sessionId: id };
+    });
   }, []);
 
   const setPipelineStatus = useCallback((status: CampaignStoreState['pipelineStatus']) => {
-    setState((prev) => ({ ...prev, pipelineStatus: status }));
+    setState((prev) => {
+      // Update active session's status
+      if (prev.activeSessionIndex >= 0 && prev.sessions.length > prev.activeSessionIndex) {
+        const updatedSessions = [...prev.sessions];
+        updatedSessions[prev.activeSessionIndex] = {
+          ...updatedSessions[prev.activeSessionIndex],
+          status,
+          completedAt: status === 'completed' || status === 'error' ? Date.now() : undefined,
+        };
+        return { ...prev, sessions: updatedSessions, pipelineStatus: status };
+      }
+      return { ...prev, pipelineStatus: status };
+    });
+  }, []);
+
+  const addSession = useCallback((session: PipelineSession) => {
+    setState((prev) => {
+      const sessions = [...prev.sessions, session];
+      const activeSessionIndex = sessions.length - 1;
+      return {
+        ...prev,
+        sessions,
+        activeSessionIndex,
+        sessionId: session.sessionId,
+        pipelineStatus: session.status,
+      };
+    });
+  }, []);
+
+  const removeSession = useCallback((sessionId: string) => {
+    setState((prev) => {
+      const sessionIndex = prev.sessions.findIndex((s) => s.sessionId === sessionId);
+      if (sessionIndex === -1) return prev;
+
+      const sessions = prev.sessions.filter((s) => s.sessionId !== sessionId);
+      let activeSessionIndex = prev.activeSessionIndex;
+
+      // Adjust active index if needed
+      if (activeSessionIndex === sessionIndex) {
+        activeSessionIndex = sessions.length > 0 ? Math.max(0, sessionIndex - 1) : -1;
+      } else if (activeSessionIndex > sessionIndex) {
+        activeSessionIndex--;
+      }
+
+      const activeSession = activeSessionIndex >= 0 ? sessions[activeSessionIndex] : null;
+
+      return {
+        ...prev,
+        sessions,
+        activeSessionIndex,
+        sessionId: activeSession?.sessionId || null,
+        pipelineStatus: activeSession?.status || 'idle',
+      };
+    });
+  }, []);
+
+  const setActiveSession = useCallback((index: number) => {
+    setState((prev) => {
+      if (index < 0 || index >= prev.sessions.length) return prev;
+      const activeSession = prev.sessions[index];
+      return {
+        ...prev,
+        activeSessionIndex: index,
+        sessionId: activeSession.sessionId,
+        pipelineStatus: activeSession.status,
+      };
+    });
+  }, []);
+
+  const updateSessionStatus = useCallback((sessionId: string, status: PipelineSession['status']) => {
+    setState((prev) => {
+      const sessionIndex = prev.sessions.findIndex((s) => s.sessionId === sessionId);
+      if (sessionIndex === -1) return prev;
+
+      const updatedSessions = [...prev.sessions];
+      updatedSessions[sessionIndex] = {
+        ...updatedSessions[sessionIndex],
+        status,
+        completedAt: status === 'completed' || status === 'error' ? Date.now() : undefined,
+      };
+
+      // Update backward compat fields if this is active session
+      const isActive = prev.activeSessionIndex === sessionIndex;
+
+      return {
+        ...prev,
+        sessions: updatedSessions,
+        ...(isActive && { pipelineStatus: status }),
+      };
+    });
   }, []);
 
   const reset = useCallback(() => {
@@ -117,6 +249,10 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     setActiveRubric,
     setSessionId,
     setPipelineStatus,
+    addSession,
+    removeSession,
+    setActiveSession,
+    updateSessionStatus,
     reset,
     isReadyToLaunch,
   };

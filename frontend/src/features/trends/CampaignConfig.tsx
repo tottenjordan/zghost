@@ -72,58 +72,62 @@ export function CampaignConfig({ session, onSave }: CampaignConfigProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-300">
-              Brand
-            </label>
-            <Input
-              value={config.brand}
-              onChange={(e) => setConfig({ ...config, brand: e.target.value })}
-              placeholder="e.g., Google Pixel"
-            />
+          {/* Two-column grid for form fields */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-300">
+                Brand
+              </label>
+              <Input
+                value={config.brand}
+                onChange={(e) => setConfig({ ...config, brand: e.target.value })}
+                placeholder="e.g., Google Pixel"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-300">
+                Target Product
+              </label>
+              <Input
+                value={config.target_product}
+                onChange={(e) =>
+                  setConfig({ ...config, target_product: e.target.value })
+                }
+                placeholder="e.g., Pixel 9 Pro"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-300">
+                Target Audience
+              </label>
+              <Input
+                value={config.target_audience}
+                onChange={(e) =>
+                  setConfig({ ...config, target_audience: e.target.value })
+                }
+                placeholder="e.g., Tech-savvy millennials"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-300">
+                Key Selling Points
+              </label>
+              <textarea
+                value={config.key_selling_points}
+                onChange={(e) =>
+                  setConfig({ ...config, key_selling_points: e.target.value })
+                }
+                placeholder="e.g., AI-powered camera, long battery life, sleek design"
+                rows={3}
+                className="flex w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-300">
-              Target Product
-            </label>
-            <Input
-              value={config.target_product}
-              onChange={(e) =>
-                setConfig({ ...config, target_product: e.target.value })
-              }
-              placeholder="e.g., Pixel 9 Pro"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-300">
-              Target Audience
-            </label>
-            <Input
-              value={config.target_audience}
-              onChange={(e) =>
-                setConfig({ ...config, target_audience: e.target.value })
-              }
-              placeholder="e.g., Tech-savvy millennials"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-300">
-              Key Selling Points
-            </label>
-            <textarea
-              value={config.key_selling_points}
-              onChange={(e) =>
-                setConfig({ ...config, key_selling_points: e.target.value })
-              }
-              placeholder="e.g., AI-powered camera, long battery life, sleek design"
-              rows={3}
-              className="flex w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            />
-          </div>
-
+          {/* PDF upload - full width below the grid */}
           <div>
             <label className="mb-2 block text-sm font-medium text-zinc-300">
               Campaign Guide (PDF)

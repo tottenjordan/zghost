@@ -27,10 +27,10 @@ export function PipelineControls({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
-        {/* Session indicator */}
+        {/* Active session indicator */}
         <div className="flex items-center gap-2 flex-1">
           <Activity className={cn('w-4 h-4', isRunning && 'text-green-400 animate-pulse')} />
-          <span className="text-sm text-zinc-400">Session:</span>
+          <span className="text-sm text-zinc-400">Active Session:</span>
           {sessionId ? (
             <Badge variant="info" className="font-mono text-xs">
               {sessionId.slice(0, 8)}
