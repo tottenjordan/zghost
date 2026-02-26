@@ -93,8 +93,11 @@ async def lifespan(app: FastAPI):
     """Lifecycle manager for FastAPI app."""
     # Startup
     logger.info("Initializing ADK session service and runner...")
-    app_state.session_service = InMemorySessionService()
-    app_state.runner = InMemoryRunner(agent=root_agent)
+    app_state.runner = InMemoryRunner(
+        agent=root_agent, app_name="trends_and_insights_agent"
+    )
+    # Use the runner's internal session service so sessions are shared
+    app_state.session_service = app_state.runner.session_service
     logger.info("API server ready")
 
     yield
@@ -166,44 +169,50 @@ def load_preset_config(preset_name: str) -> Dict[str, Any]:
 
 
 def format_event_for_sse(event: Any) -> Dict[str, Any]:
-    """Format an ADK event for SSE streaming."""
+    """Format an ADK Event for SSE streaming.
+
+    ADK 1.25.1 Event fields: content (Content with parts), author, actions,
+    turn_complete, error_code, error_message, etc.
+    """
     event_data = {
-        "type": "unknown",
+        "type": "Event",
         "timestamp": datetime.utcnow().isoformat(),
         "data": {},
     }
 
-    # Determine event type and extract relevant data
-    if hasattr(event, "__class__"):
-        event_type = event.__class__.__name__
-        event_data["type"] = event_type
+    # Extract agent name from author field
+    if hasattr(event, "author"):
+        event_data["agent_name"] = event.author
 
-        # Extract common fields
-        if hasattr(event, "agent_name"):
-            event_data["agent_name"] = event.agent_name
-        if hasattr(event, "tool_name"):
-            event_data["tool_name"] = event.tool_name
+    # Extract content parts (text, function_call, function_response)
+    content = getattr(event, "content", None)
+    if content and hasattr(content, "parts") and content.parts:
+        parts_data = []
+        for part in content.parts:
+            part_dict = {}
+            if hasattr(part, "text") and part.text:
+                part_dict["text"] = part.text
+            if hasattr(part, "function_call") and part.function_call:
+                fc = part.function_call
+                part_dict["function_call"] = {
+                    "name": getattr(fc, "name", "unknown"),
+                    "args": getattr(fc, "args", {}),
+                }
+                event_data["tool_name"] = getattr(fc, "name", "")
+            if hasattr(part, "function_response") and part.function_response:
+                fr = part.function_response
+                part_dict["function_response"] = {
+                    "name": getattr(fr, "name", "unknown"),
+                    "response": getattr(fr, "response", {}),
+                }
+            if part_dict:
+                parts_data.append(part_dict)
+        if parts_data:
+            event_data["data"]["parts"] = parts_data
 
-        # Handle specific event types
-        if "ModelResponse" in event_type or "Content" in event_type:
-            if hasattr(event, "parts"):
-                event_data["data"]["parts"] = [
-                    {"text": part.text} if hasattr(part, "text") else str(part)
-                    for part in event.parts
-                ]
-            elif hasattr(event, "text"):
-                event_data["data"]["text"] = event.text
-
-        elif "ToolCall" in event_type:
-            if hasattr(event, "name"):
-                event_data["data"]["tool_name"] = event.name
-            if hasattr(event, "args"):
-                event_data["data"]["args"] = (
-                    event.args if isinstance(event.args, dict) else str(event.args)
-                )
-
-        elif "Error" in event_type:
-            event_data["data"]["error"] = str(event)
+    # Handle errors
+    if hasattr(event, "error_message") and event.error_message:
+        event_data["data"]["error"] = event.error_message
 
     return event_data
 
@@ -215,11 +224,11 @@ async def stream_agent_events(
     try:
         # Create user message content
         user_content = types.Content(
-            role="user", parts=[types.Part.from_text(message)]
+            role="user", parts=[types.Part(text=message)]
         )
 
         # Stream events from the runner
-        async for event in runner.run_async_iter(
+        async for event in runner.run_async(
             user_id=user_id, session_id=session_id, new_message=user_content
         ):
             # Format event for SSE
@@ -280,13 +289,13 @@ async def run_parallel_stream(
         runner = InMemoryRunner(agent=cloned_agent)
 
         # Run the agent (this will trigger initial state loading via callbacks)
-        async for event in runner.run_async_iter(
+        async for event in runner.run_async(
             user_id=user_id,
             session_id=session_id,
             new_message=types.Content(
                 role="user",
                 parts=[
-                    types.Part.from_text(
+                    types.Part(text=
                         f"Stream '{stream_name}' initialized. Ready to process trends."
                     )
                 ],
@@ -340,11 +349,6 @@ async def create_session(request: SessionCreateRequest):
         session_id = str(uuid.uuid4())
         user_id = "default-user"
 
-        # Create session
-        await app_state.session_service.create_session(
-            session_id=session_id, user_id=user_id, app_name="trends_and_insights_agent"
-        )
-
         # Load preset config if specified
         initial_state = {}
         if request.preset_config:
@@ -352,18 +356,18 @@ async def create_session(request: SessionCreateRequest):
         elif request.initial_state:
             initial_state = request.initial_state
 
-        # Update session state if initial state provided
-        if initial_state:
-            session = await app_state.session_service.get_session(
-                session_id=session_id, user_id=user_id
-            )
-            # Merge with default state structure
-            default_state = setup_config.empty_session_state.get("state", {})
-            merged_state = {**default_state, **initial_state}
+        # Merge with default state structure
+        default_state = setup_config.empty_session_state.get("state", {})
+        merged_state = {**default_state, **initial_state}
 
-            # Update session state
-            for key, value in merged_state.items():
-                session.state[key] = value
+        # Create session with state included (InMemorySessionService returns
+        # a deep copy, so we must pass state at creation time)
+        await app_state.session_service.create_session(
+            session_id=session_id,
+            user_id=user_id,
+            app_name="trends_and_insights_agent",
+            state=merged_state,
+        )
 
         return SessionCreateResponse(
             session_id=session_id, user_id=user_id, created_at=datetime.utcnow()
@@ -379,13 +383,13 @@ async def get_session_state(session_id: str, user_id: str = Query(default="defau
     """Get full session state."""
     try:
         session = await app_state.session_service.get_session(
-            session_id=session_id, user_id=user_id
+            session_id=session_id, user_id=user_id, app_name="trends_and_insights_agent"
         )
         if not session:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
         return SessionStateResponse(
-            session_id=session_id, state=dict(session.state.to_dict())
+            session_id=session_id, state=dict(session.state)
         )
 
     except HTTPException:
@@ -404,7 +408,7 @@ async def update_session_state(
     """Update specific session state keys."""
     try:
         session = await app_state.session_service.get_session(
-            session_id=session_id, user_id=user_id
+            session_id=session_id, user_id=user_id, app_name="trends_and_insights_agent"
         )
         if not session:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
@@ -431,14 +435,14 @@ async def get_session_artifacts(
     """List artifacts for a session."""
     try:
         session = await app_state.session_service.get_session(
-            session_id=session_id, user_id=user_id
+            session_id=session_id, user_id=user_id, app_name="trends_and_insights_agent"
         )
         if not session:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
         # Extract artifact information from session state
         artifacts = []
-        state_dict = session.state.to_dict()
+        state_dict = dict(session.state)
 
         # Check for image artifacts
         if "img_artifact_keys" in state_dict:
@@ -511,7 +515,7 @@ async def run_agent(request: AgentRunRequest):
         # Create session if it doesn't exist
         try:
             await app_state.session_service.get_session(
-                session_id=session_id, user_id=user_id
+                session_id=session_id, user_id=user_id, app_name="trends_and_insights_agent"
             )
         except:
             await app_state.session_service.create_session(
@@ -579,7 +583,7 @@ async def dispatch_parallel(request: DispatchConfig):
 
             # Apply trend config to session state
             session = await app_state.session_service.get_session(
-                session_id=session_id, user_id=user_id
+                session_id=session_id, user_id=user_id, app_name="trends_and_insights_agent"
             )
 
             # Load preset if specified

@@ -51,7 +51,11 @@ def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
         target[setup_config.state_init] = True
         target["gcs_folder"] = pd.Timestamp.utcnow().strftime("%Y_%m_%d_%H_%M")
 
-        target.update(source)
+        # Only set defaults for keys not already populated (preserves presets)
+        for key, value in source.items():
+            existing = target.get(key)
+            if existing is None or existing == "" or existing == [] or existing == {}:
+                target[key] = value
 
     # Always ensure required template variables have defaults to prevent
     # KeyError in ADK's inject_session_state when processing {var} patterns
