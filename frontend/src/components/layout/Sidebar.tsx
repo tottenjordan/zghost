@@ -1,24 +1,22 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  TrendingUp,
+  Settings,
   Workflow,
   Star,
   Film,
   FileText,
-  Mic,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const navItems = [
-  { path: '/trends', icon: TrendingUp, label: 'Trends', step: 1 },
-  { path: '/rating', icon: Star, label: 'Rating', step: 2 },
-  { path: '/orchestration', icon: Workflow, label: 'Orchestration', step: 3 },
-  { path: '/narrative', icon: FileText, label: 'Narrative', step: null },
-  { path: '/studio', icon: Film, label: 'AV Studio', step: null },
-  { path: '/voice', icon: Mic, label: 'Voice Assistant', step: null },
+  { path: '/trends', icon: Settings, label: 'Configure' },
+  { path: '/orchestration', icon: Workflow, label: 'Orchestration' },
+  { path: '/narrative', icon: FileText, label: 'Narrative' },
+  { path: '/studio', icon: Film, label: 'AV Studio' },
+  { path: '/rating', icon: Star, label: 'Evaluation Studio' },
 ];
 
 export function Sidebar() {
@@ -47,7 +45,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-0.5 p-2">
-        {navItems.map(({ path, icon: Icon, label, step }) => {
+        {navItems.map(({ path, icon: Icon, label }) => {
           const isActive = location.pathname === path;
           return (
             <Link
@@ -63,11 +61,6 @@ export function Sidebar() {
             >
               {isActive && (
                 <div className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-blue-500" />
-              )}
-              {!collapsed && step !== null && (
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-zinc-800 text-[10px] font-semibold text-zinc-400">
-                  {step}
-                </span>
               )}
               <Icon className={cn(
                 'h-[18px] w-[18px] flex-shrink-0 transition-colors',

@@ -37,7 +37,7 @@ ad_copy_drafter = Agent(
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             thinking_level="LOW",
-            include_thoughts=False,
+            include_thoughts=True,
         )
     ),
     instruction="""You are a creative copywriter generating initial ad copy ideas.
@@ -98,7 +98,7 @@ ad_copy_critic = Agent(
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             thinking_level="MEDIUM",
-            include_thoughts=False,
+            include_thoughts=True,
         )
     ),
     instruction="""You are a strategic marketing critic evaluating ad copy ideas.
@@ -148,7 +148,7 @@ visual_concept_drafter = Agent(
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             thinking_level="LOW",
-            include_thoughts=False,
+            include_thoughts=True,
         )
     ),
     instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
@@ -195,7 +195,7 @@ visual_concept_critic = Agent(
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             thinking_level="MEDIUM",
-            include_thoughts=False,
+            include_thoughts=True,
         )
     ),
     instruction=f"""You are a creative director evaluating visual concepts and high quality prompts that result in high impact.
@@ -260,7 +260,7 @@ visual_concept_finalizer = Agent(
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
     output_key="final_visual_concepts",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="LOW")
+        thinking_config=types.ThinkingConfig(thinking_level="LOW", include_thoughts=True)
     ),
 )
 
@@ -318,7 +318,7 @@ visual_generator = Agent(
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="MEDIUM")
+        thinking_config=types.ThinkingConfig(thinking_level="MEDIUM", include_thoughts=True)
     ),
     before_model_callback=callbacks.rate_limit_callback,
 )
@@ -342,6 +342,6 @@ ad_content_generator_agent = Agent(
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="LOW")
+        thinking_config=types.ThinkingConfig(thinking_level="LOW", include_thoughts=True)
     ),
 )

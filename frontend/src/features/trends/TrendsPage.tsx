@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Mic, RefreshCw, Loader2, Star, ChevronDown } from 'lucide-react';
+import { RefreshCw, Loader2, Star, ChevronDown, Check, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import { useTrends } from './useTrends';
 import { useCampaignStore } from '../../stores/campaignStore';
@@ -7,18 +8,29 @@ import { CampaignConfig } from './CampaignConfig';
 import { TrendSelector } from './TrendSelector';
 import { AutoTrendSelector } from './AutoTrendSelector';
 import { TrendCompare } from './TrendCompare';
-import { VoiceBriefAssistant } from '../voice/VoiceBriefAssistant';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { fetchLiveTrends, getCachedTrends, autoSelectFromAvailable } from '../../services/trendsCache';
+import { RubricLibrary } from '../rating/RubricLibrary';
+import { RubricEditor } from '../rating/RubricEditor';
 import { DEFAULT_RUBRICS, type ExtendedRubric } from '../rating/rubric-templates';
+import { cn } from '../../lib/utils';
 import type { CampaignConfigData } from './CampaignConfig';
 import type { SearchTrend, YTTrend } from '../../types/trends';
 import type { BrandSafetyResult } from '../../services/brandSafety';
 
+type WizardStep = 'campaign' | 'trends' | 'evaluation' | 'review';
+const STEPS: { key: WizardStep; label: string; tabLabel: string; number: number }[] = [
+  { key: 'campaign', label: 'Campaign Setup', tabLabel: 'Campaign', number: 1 },
+  { key: 'trends', label: 'Trend Selection', tabLabel: 'Trends', number: 2 },
+  { key: 'evaluation', label: 'Evaluation Rubric', tabLabel: 'Evaluation', number: 3 },
+  { key: 'review', label: 'Review & Launch', tabLabel: 'Review', number: 4 },
+];
+
 export function TrendsPage() {
-  const { session, createSession, loadSession } = useSession();
+  const navigate = useNavigate();
+  const { session } = useSession();
   const {
     config: storeConfig,
     selectedSearchTrends,
@@ -27,6 +39,7 @@ export function TrendsPage() {
     setCampaignConfig: setStoreConfig,
     setSelectedTrends,
     setActiveRubric,
+    isReadyToLaunch,
   } = useCampaignStore();
 
   const [fetchingTrends, setFetchingTrends] = useState(false);
@@ -44,11 +57,14 @@ export function TrendsPage() {
 
   const [showAutoSelect, setShowAutoSelect] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
-  const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
-  const [showRubricPicker, setShowRubricPicker] = useState(false);
+  const [activeStep, setActiveStep] = useState<WizardStep>('campaign');
 
-  // Load available rubrics from localStorage (same source as RatingPage)
+  // Rubric editor state
+  const [editingRubric, setEditingRubric] = useState<ExtendedRubric | null>(null);
+  const [isCreatingRubric, setIsCreatingRubric] = useState(false);
+
+  // Load available rubrics from localStorage
   const [availableRubrics, setAvailableRubrics] = useState<ExtendedRubric[]>([]);
   useEffect(() => {
     const stored = localStorage.getItem('rating-rubrics');
@@ -59,11 +75,16 @@ export function TrendsPage() {
     }
   }, []);
 
+  const saveRubricsToStorage = (rubrics: ExtendedRubric[]) => {
+    setAvailableRubrics(rubrics);
+    localStorage.setItem('rating-rubrics', JSON.stringify(rubrics));
+  };
+
   // Store parsed trends in local state
   const [availableSearchTrends, setAvailableSearchTrends] = useState<SearchTrend[]>([]);
   const [availableYtTrends, setAvailableYtTrends] = useState<YTTrend[]>([]);
 
-  // Auto-select results (staging area before user accepts)
+  // Auto-select results
   const [autoSelectedSearchTrends, setAutoSelectedSearchTrends] = useState<SearchTrend[]>([]);
   const [autoSelectedYtTrends, setAutoSelectedYtTrends] = useState<YTTrend[]>([]);
   const [aiReasoning, setAiReasoning] = useState<string>('');
@@ -76,19 +97,14 @@ export function TrendsPage() {
     setTimeout(() => setConfigSaved(false), 3000);
   }, [setStoreConfig]);
 
-  // Core trend fetch logic (used by auto-fetch and manual refresh)
+  // Core trend fetch logic
   const doFetchTrends = useCallback(async (force = false) => {
     setFetchingTrends(true);
     setTrendError(null);
     try {
       const result = await fetchLiveTrends(force);
-
-      if (result.searchTrends.length > 0) {
-        setAvailableSearchTrends(result.searchTrends);
-      }
-      if (result.ytTrends.length > 0) {
-        setAvailableYtTrends(result.ytTrends);
-      }
+      if (result.searchTrends.length > 0) setAvailableSearchTrends(result.searchTrends);
+      if (result.ytTrends.length > 0) setAvailableYtTrends(result.ytTrends);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch trends';
       setTrendError(msg);
@@ -97,29 +113,23 @@ export function TrendsPage() {
     }
   }, []);
 
-  // Auto-fetch on page load (uses cache if available)
+  // Auto-fetch on page load
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
-
-    // Check cache first — instant if valid
     const cached = getCachedTrends();
     if (cached) {
       if (cached.searchTrends.length > 0) setAvailableSearchTrends(cached.searchTrends);
       if (cached.ytTrends.length > 0) setAvailableYtTrends(cached.ytTrends);
       return;
     }
-
-    // Otherwise fetch from backend
     doFetchTrends();
   }, [doFetchTrends]);
 
-  // Manual refresh (force bypasses cache)
   const handleFetchTrends = useCallback(() => {
     doFetchTrends(true);
   }, [doFetchTrends]);
 
-  // Auto-select — works locally against available trends (no backend call)
   const handleAutoSelect = async (config: {
     num_search_trends: number;
     num_yt_trends: number;
@@ -129,7 +139,6 @@ export function TrendsPage() {
       setTrendError('No trends available yet. Wait for trends to load first.');
       return;
     }
-
     setAutoSelectLoading(true);
     try {
       const available = {
@@ -138,14 +147,12 @@ export function TrendsPage() {
         fetchedAt: Date.now(),
         sessionId: '',
       };
-
       const result = autoSelectFromAvailable(available, {
         num_search_trends: config.num_search_trends,
         num_yt_trends: config.num_yt_trends,
         strategy: config.strategy || 'relevance',
         campaign: storeConfig,
       });
-
       setAutoSelectedSearchTrends(result.searchTrends);
       setAutoSelectedYtTrends(result.ytTrends);
       setAiReasoning(result.reasoning);
@@ -155,10 +162,8 @@ export function TrendsPage() {
     }
   };
 
-  // Accept auto-selected trends — move them into the main selection
   const handleAcceptAutoSelect = () => {
-    setSelectedTrends(autoSelectedSearchTrends, autoSelectedYtTrends); // Persist to store
-    // Clear auto-select results and close panel
+    setSelectedTrends(autoSelectedSearchTrends, autoSelectedYtTrends);
     setAutoSelectedSearchTrends([]);
     setAutoSelectedYtTrends([]);
     setAiReasoning('');
@@ -166,7 +171,6 @@ export function TrendsPage() {
     setShowAutoSelect(false);
   };
 
-  // Reject auto-selection — clear results, keep panel open for retry
   const handleRejectAutoSelect = () => {
     setAutoSelectedSearchTrends([]);
     setAutoSelectedYtTrends([]);
@@ -174,23 +178,96 @@ export function TrendsPage() {
     setSafetyResult(undefined);
   };
 
-  const trendsLoaded = availableSearchTrends.length > 0 || availableYtTrends.length > 0;
+  // Rubric management handlers
+  const handleCreateRubric = () => {
+    setEditingRubric(null);
+    setIsCreatingRubric(true);
+  };
+
+  const handleEditRubric = (rubric: ExtendedRubric) => {
+    setEditingRubric(rubric);
+    setIsCreatingRubric(true);
+  };
+
+  const handleSaveRubric = (rubricData: Omit<ExtendedRubric, 'id'>) => {
+    if (editingRubric) {
+      const updated = availableRubrics.map(r =>
+        r.id === editingRubric.id ? { ...rubricData, id: editingRubric.id } : r
+      );
+      saveRubricsToStorage(updated);
+    } else {
+      const newRubric: ExtendedRubric = {
+        ...rubricData,
+        id: `rubric-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      };
+      saveRubricsToStorage([...availableRubrics, newRubric]);
+    }
+    setIsCreatingRubric(false);
+    setEditingRubric(null);
+  };
+
+  const handleCloneRubric = (id: string) => {
+    const source = availableRubrics.find(r => r.id === id);
+    if (!source) return;
+    const clone: ExtendedRubric = {
+      ...source,
+      id: `rubric-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      name: `${source.name} (Copy)`,
+    };
+    saveRubricsToStorage([...availableRubrics, clone]);
+  };
+
+  const handleDeleteRubric = (id: string) => {
+    saveRubricsToStorage(availableRubrics.filter(r => r.id !== id));
+    if (activeRubric?.id === id) setActiveRubric(null);
+  };
+
+  const handleCreateFromTemplate = (template: ExtendedRubric) => {
+    const newRubric: ExtendedRubric = {
+      ...template,
+      id: `rubric-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    };
+    saveRubricsToStorage([...availableRubrics, newRubric]);
+  };
+
+  // Step completion checks
+  const isCampaignComplete = !!(storeConfig?.brand || storeConfig?.target_product);
   const totalSelected = selectedSearchTrends.length + selectedYtTrends.length;
+  const isTrendsComplete = totalSelected > 0;
+  const isEvaluationComplete = !!activeRubric;
+  const { ready, missing } = isReadyToLaunch();
+
+  const getStepStatus = (step: WizardStep): 'pending' | 'active' | 'completed' => {
+    if (step === activeStep) return 'active';
+    switch (step) {
+      case 'campaign': return isCampaignComplete ? 'completed' : 'pending';
+      case 'trends': return isTrendsComplete ? 'completed' : 'pending';
+      case 'evaluation': return isEvaluationComplete ? 'completed' : 'pending';
+      case 'review': return 'pending';
+      default: return 'pending';
+    }
+  };
+
+  const currentStepIndex = STEPS.findIndex(s => s.key === activeStep);
+  const trendsLoaded = availableSearchTrends.length > 0 || availableYtTrends.length > 0;
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="mb-2 text-3xl font-bold">Trend Discovery</h1>
+          <h1 className="mb-2 text-3xl font-bold">Configure</h1>
           <p className="text-zinc-400">
-            Configure your campaign and select trending topics to target
+            Set up your campaign, select trends, and configure evaluation
           </p>
-          {trendsLoaded && (
-            <p className="mt-1 text-xs text-zinc-500">
-              {availableSearchTrends.length} Google + {availableYtTrends.length} YouTube trends loaded
-            </p>
-          )}
         </div>
+      </div>
+
+      {/* Step progress bar */}
+      <div className="flex items-center gap-2 text-sm text-zinc-400">
+        <span className="font-medium text-zinc-300">
+          Step {currentStepIndex + 1} of {STEPS.length}:
+        </span>
+        <span>{STEPS[currentStepIndex]?.label}</span>
       </div>
 
       {trendError && (
@@ -206,21 +283,40 @@ export function TrendsPage() {
         </div>
       )}
 
-      {/* Horizontal tabs layout */}
+      {/* Tabs with step indicators */}
       <Tabs defaultValue="campaign">
         <TabsList>
-          <TabsTrigger value="campaign">Campaign</TabsTrigger>
-          <TabsTrigger value="trends">
-            Trends {totalSelected > 0 && `(${totalSelected})`}
-          </TabsTrigger>
-          <TabsTrigger value="review">Review</TabsTrigger>
+          {STEPS.map((step) => {
+            const status = getStepStatus(step.key);
+            return (
+              <TabsTrigger key={step.key} value={step.key}>
+                <span
+                  onClick={() => setActiveStep(step.key)}
+                  className="flex items-center gap-1.5"
+                >
+                  <span className={cn(
+                    'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold transition-all',
+                    status === 'completed' && 'bg-green-600 text-white',
+                    status === 'active' && 'ring-2 ring-blue-500 bg-blue-600/20 text-blue-400',
+                    status === 'pending' && 'bg-zinc-700 text-zinc-400',
+                  )}>
+                    {status === 'completed' ? (
+                      <Check className="h-3 w-3" />
+                    ) : (
+                      step.number
+                    )}
+                  </span>
+                  {step.tabLabel}
+                </span>
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
-        {/* Tab 1: Campaign Config */}
+        {/* Step 1: Campaign Config */}
         <TabsContent value="campaign">
-          <div className="space-y-6">
+          <div className="space-y-6" onClick={() => setActiveStep('campaign')}>
             <CampaignConfig session={session} onSave={handleSaveConfig} />
-
             {configSaved && (
               <div className="rounded-lg border border-green-800 bg-green-950/50 px-4 py-2 text-sm text-green-400">
                 Configuration saved successfully
@@ -229,10 +325,9 @@ export function TrendsPage() {
           </div>
         </TabsContent>
 
-        {/* Tab 2: Trends */}
+        {/* Step 2: Trends */}
         <TabsContent value="trends">
-          <div className="space-y-6">
-            {/* Fetch and Voice buttons at the top of Trends tab */}
+          <div className="space-y-6" onClick={() => setActiveStep('trends')}>
             <div className="flex gap-2">
               <Button
                 onClick={handleFetchTrends}
@@ -247,17 +342,8 @@ export function TrendsPage() {
                 )}
                 {fetchingTrends ? 'Fetching...' : 'Refresh Trends'}
               </Button>
-              <Button
-                onClick={() => setShowVoiceAssistant(true)}
-                variant="secondary"
-                className="flex items-center gap-2"
-              >
-                <Mic className="h-4 w-4" />
-                Voice Brief
-              </Button>
             </div>
 
-            {/* Toggle buttons for additional features */}
             <div className="flex gap-2">
               <button
                 onClick={() => setShowAutoSelect(!showAutoSelect)}
@@ -273,7 +359,6 @@ export function TrendsPage() {
               </button>
             </div>
 
-            {/* Auto-select panel */}
             {showAutoSelect && (
               <AutoTrendSelector
                 loading={autoSelectLoading}
@@ -287,7 +372,6 @@ export function TrendsPage() {
               />
             )}
 
-            {/* Trend selector */}
             <TrendSelector
               availableSearchTrends={availableSearchTrends}
               availableYtTrends={availableYtTrends}
@@ -297,7 +381,6 @@ export function TrendsPage() {
               onToggleYtTrend={toggleYtTrend}
             />
 
-            {/* Comparison panel */}
             {showCompare && (
               <TrendCompare
                 availableSearchTrends={selectedSearchTrends}
@@ -305,7 +388,6 @@ export function TrendsPage() {
               />
             )}
 
-            {/* Clear selections button at bottom */}
             {totalSelected > 0 && (
               <div className="flex justify-center">
                 <button
@@ -319,9 +401,36 @@ export function TrendsPage() {
           </div>
         </TabsContent>
 
-        {/* Tab 3: Review */}
+        {/* Step 3: Evaluation */}
+        <TabsContent value="evaluation">
+          <div className="space-y-6" onClick={() => setActiveStep('evaluation')}>
+            {isCreatingRubric ? (
+              <RubricEditor
+                rubric={editingRubric || undefined}
+                onSave={handleSaveRubric}
+                onCancel={() => {
+                  setIsCreatingRubric(false);
+                  setEditingRubric(null);
+                }}
+              />
+            ) : (
+              <RubricLibrary
+                rubrics={availableRubrics}
+                onEdit={handleEditRubric}
+                onClone={handleCloneRubric}
+                onDelete={handleDeleteRubric}
+                onCreate={handleCreateRubric}
+                onCreateFromTemplate={handleCreateFromTemplate}
+                activeRubricId={activeRubric?.id}
+                onSetActive={setActiveRubric}
+              />
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Step 4: Review */}
         <TabsContent value="review">
-          <div className="space-y-6">
+          <div className="space-y-6" onClick={() => setActiveStep('review')}>
             <Card>
               <CardHeader>
                 <CardTitle>Campaign Summary</CardTitle>
@@ -372,7 +481,7 @@ export function TrendsPage() {
                       <ul className="mt-2 space-y-1">
                         {selectedSearchTrends.map((trend) => (
                           <li key={trend.rank} className="text-sm text-zinc-100">
-                            • {trend.title}
+                            &bull; {trend.title}
                           </li>
                         ))}
                       </ul>
@@ -388,7 +497,7 @@ export function TrendsPage() {
                       <ul className="mt-2 space-y-1">
                         {selectedYtTrends.map((trend) => (
                           <li key={trend.rank} className="text-sm text-zinc-100">
-                            • {trend.title}
+                            &bull; {trend.title}
                           </li>
                         ))}
                       </ul>
@@ -396,16 +505,11 @@ export function TrendsPage() {
                       <p className="mt-2 text-sm text-zinc-500">No trends selected</p>
                     )}
                   </div>
-                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
-                    <p className="text-sm font-medium text-zinc-300">
-                      Total: {totalSelected} trend{totalSelected !== 1 ? 's' : ''} selected
-                    </p>
-                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Inline Rubric Selector */}
+            {/* Rubric Preview */}
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -413,96 +517,61 @@ export function TrendsPage() {
                     <Star className="w-4 h-4" />
                     Evaluation Rubric
                   </CardTitle>
-                  {activeRubric && (
-                    <button
-                      onClick={() => setActiveRubric(null)}
-                      className="text-xs text-zinc-500 hover:text-zinc-300"
-                    >
-                      Clear
-                    </button>
-                  )}
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {activeRubric ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-400 border border-green-700">
-                          {activeRubric.name}
-                        </span>
-                        <span className="text-xs text-zinc-500">
-                          {activeRubric.criteria.length} criteria
-                        </span>
-                      </div>
-                      <div className="space-y-1">
-                        {activeRubric.criteria.map((c) => (
-                          <div key={c.id} className="flex items-center justify-between text-xs">
-                            <span className="text-zinc-400">{c.name}</span>
-                            <span className="text-zinc-500">weight: {c.weight}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        onClick={() => setShowRubricPicker(!showRubricPicker)}
-                        className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
-                      >
-                        <ChevronDown className="w-3 h-3" />
-                        Change rubric
-                      </button>
+                {activeRubric ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-400 border border-green-700">
+                        {activeRubric.name}
+                      </span>
+                      <span className="text-xs text-zinc-500">
+                        {activeRubric.criteria.length} criteria
+                      </span>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <p className="text-xs text-amber-400">
-                        No rubric selected — pipeline will use default evaluation
-                      </p>
-                      <button
-                        onClick={() => setShowRubricPicker(!showRubricPicker)}
-                        className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
-                      >
-                        <ChevronDown className="w-3 h-3" />
-                        Select a rubric
-                      </button>
-                    </div>
-                  )}
-
-                  {showRubricPicker && (
-                    <div className="space-y-1 border-t border-zinc-800 pt-2">
-                      {availableRubrics.map((rubric) => (
-                        <button
-                          key={rubric.id}
-                          onClick={() => {
-                            setActiveRubric(rubric);
-                            setShowRubricPicker(false);
-                          }}
-                          className={`w-full text-left rounded px-3 py-2 text-sm transition-colors ${
-                            activeRubric?.id === rubric.id
-                              ? 'bg-blue-600/20 border border-blue-700/50 text-blue-300'
-                              : 'bg-zinc-900 border border-zinc-800 text-zinc-300 hover:bg-zinc-800'
-                          }`}
-                        >
-                          <div className="font-medium">{rubric.name}</div>
-                          <div className="text-xs text-zinc-500 mt-0.5">
-                            {rubric.criteria.length} criteria &middot; {rubric.description.slice(0, 60)}
-                          </div>
-                        </button>
+                    <div className="space-y-1">
+                      {activeRubric.criteria.map((c) => (
+                        <div key={c.id} className="flex items-center justify-between text-xs">
+                          <span className="text-zinc-400">{c.name}</span>
+                          <span className="text-zinc-500">weight: {c.weight}</span>
+                        </div>
                       ))}
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-amber-400">
+                    No rubric selected &mdash; pipeline will use default evaluation
+                  </p>
+                )}
               </CardContent>
             </Card>
+
+            {/* Missing items warnings */}
+            {!ready && missing.length > 0 && (
+              <div className="space-y-1">
+                {missing.map((item) => (
+                  <div key={item} className="flex items-center gap-2 rounded-lg border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-sm text-amber-400">
+                    <span className="text-amber-500">&#9888;</span>
+                    Missing: {item}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Launch button */}
+            <Button
+              onClick={() => navigate('/orchestration')}
+              disabled={!ready}
+              variant="primary"
+              className="w-full py-3 text-base font-semibold flex items-center justify-center gap-2"
+            >
+              Add Execution Run to Orchestrator
+              <ArrowRight className="h-5 w-5" />
+            </Button>
           </div>
         </TabsContent>
       </Tabs>
-
-      {/* Voice Brief Assistant - Floating widget */}
-      {showVoiceAssistant && (
-        <VoiceBriefAssistant
-          isFloating
-          onClose={() => setShowVoiceAssistant(false)}
-        />
-      )}
     </div>
   );
 }

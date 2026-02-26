@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Image, Film, FileText, ExternalLink, Download, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Image, Film, FileText, ExternalLink, Download, ChevronRight, ImageOff, FileWarning } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
 
 interface ResultsGalleryProps {
@@ -15,7 +17,6 @@ interface AdCopy {
 }
 
 function gcsToHttpUrl(gcsPath: string): string {
-  // Convert gs://bucket/path to https://storage.googleapis.com/bucket/path
   return gcsPath.replace('gs://', 'https://storage.googleapis.com/');
 }
 
@@ -23,7 +24,6 @@ function parseAdCopies(state: Record<string, any>): AdCopy[] {
   const raw = state.final_select_ad_copies;
   if (!raw) return [];
 
-  // Could be a nested object with final_select_ad_copies key
   const copies = raw.final_select_ad_copies || raw;
   if (Array.isArray(copies)) {
     return copies.map((c: any) => ({
@@ -40,14 +40,12 @@ function parseAdCopies(state: Record<string, any>): AdCopy[] {
 function parseMediaKeys(state: Record<string, any>): { images: string[]; videos: string[] } {
   const gcsFolder = state.gcs_folder || '';
 
-  // Try artifact keys first
   let imgKeys = state.img_artifact_keys?.img_artifact_keys || state.img_artifact_keys || [];
   let vidKeys = state.vid_artifact_keys?.vid_artifact_keys || state.vid_artifact_keys || [];
 
   if (!Array.isArray(imgKeys)) imgKeys = [];
   if (!Array.isArray(vidKeys)) vidKeys = [];
 
-  // If keys are relative paths, prepend GCS folder
   const images = imgKeys.map((k: string) =>
     k.startsWith('gs://') ? k : `gs://zghost-media-center/${gcsFolder}/${k}`
   );
@@ -58,8 +56,23 @@ function parseMediaKeys(state: Record<string, any>): { images: string[]; videos:
   return { images, videos };
 }
 
+function MediaFallback({ type }: { type: 'image' | 'video' }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 rounded border border-zinc-700 bg-zinc-900/50">
+      <ImageOff className="w-8 h-8 text-zinc-600 mb-2" />
+      <p className="text-xs text-zinc-500">
+        {type === 'image' ? 'Image' : 'Video'} could not be loaded
+      </p>
+      <p className="text-xs text-zinc-600 mt-0.5">
+        Media may require authenticated access
+      </p>
+    </div>
+  );
+}
+
 export function ResultsGallery({ sessionState }: ResultsGalleryProps) {
   const [expandedCopy, setExpandedCopy] = useState<number | null>(null);
+  const [failedMedia, setFailedMedia] = useState<Set<string>>(new Set());
   const adCopies = parseAdCopies(sessionState);
   const { images, videos } = parseMediaKeys(sessionState);
   const gcsFolder = sessionState.gcs_folder || '';
@@ -68,6 +81,10 @@ export function ResultsGallery({ sessionState }: ResultsGalleryProps) {
 
   const totalMedia = images.length + videos.length;
   const hasAny = adCopies.length > 0 || totalMedia > 0 || hasReport || hasVisualConcepts;
+
+  const handleMediaError = (url: string) => {
+    setFailedMedia(prev => new Set(prev).add(url));
+  };
 
   if (!hasAny) {
     return (
@@ -100,21 +117,32 @@ export function ResultsGallery({ sessionState }: ResultsGalleryProps) {
       </div>
 
       {/* Research Report */}
-      {hasReport && gcsFolder && (
+      {hasReport && (
         <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
           <div className="flex items-center gap-2 mb-2">
             <FileText className="w-4 h-4 text-blue-400" />
             <span className="text-sm font-medium text-zinc-300">Research Report</span>
           </div>
-          <a
-            href={gcsToHttpUrl(`gs://zghost-media-center/${gcsFolder}/draft_research_report_with_citations.pdf`)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300"
-          >
-            <ExternalLink className="w-3 h-3" />
-            View PDF Report
-          </a>
+          <div className="flex items-center gap-2">
+            {gcsFolder && (
+              <a
+                href={gcsToHttpUrl(`gs://zghost-media-center/${gcsFolder}/draft_research_report_with_citations.pdf`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300"
+              >
+                <ExternalLink className="w-3 h-3" />
+                View PDF Report
+              </a>
+            )}
+            <Link
+              to="/narrative"
+              className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 ml-auto px-2 py-1 rounded border border-blue-800/50 bg-blue-950/30 hover:bg-blue-950/50 transition-colors"
+            >
+              <FileText className="w-3 h-3" />
+              View in Narrative
+            </Link>
+          </div>
         </div>
       )}
 
@@ -177,7 +205,18 @@ export function ResultsGallery({ sessionState }: ResultsGalleryProps) {
       {/* Generated Media */}
       {(images.length > 0 || videos.length > 0) && (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-zinc-400">Generated Media</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-zinc-400">Generated Media</h3>
+            {videos.length > 0 && (
+              <Link
+                to="/studio"
+                className="flex items-center gap-1.5 text-xs text-green-400 hover:text-green-300 px-2 py-1 rounded border border-green-800/50 bg-green-950/30 hover:bg-green-950/50 transition-colors"
+              >
+                <Film className="w-3 h-3" />
+                Open in AV Studio
+              </Link>
+            )}
+          </div>
 
           {videos.map((url, i) => (
             <div key={`vid-${i}`} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
@@ -195,12 +234,17 @@ export function ResultsGallery({ sessionState }: ResultsGalleryProps) {
                   <Download className="w-3.5 h-3.5" />
                 </a>
               </div>
-              <video
-                src={gcsToHttpUrl(url)}
-                controls
-                className="w-full rounded border border-zinc-700"
-                preload="metadata"
-              />
+              {failedMedia.has(url) ? (
+                <MediaFallback type="video" />
+              ) : (
+                <video
+                  src={gcsToHttpUrl(url)}
+                  controls
+                  className="w-full rounded border border-zinc-700"
+                  preload="metadata"
+                  onError={() => handleMediaError(url)}
+                />
+              )}
             </div>
           ))}
 
@@ -220,12 +264,17 @@ export function ResultsGallery({ sessionState }: ResultsGalleryProps) {
                   <Download className="w-3.5 h-3.5" />
                 </a>
               </div>
-              <img
-                src={gcsToHttpUrl(url)}
-                alt={`Generated ad ${i + 1}`}
-                className="w-full rounded border border-zinc-700"
-                loading="lazy"
-              />
+              {failedMedia.has(url) ? (
+                <MediaFallback type="image" />
+              ) : (
+                <img
+                  src={gcsToHttpUrl(url)}
+                  alt={`Generated ad ${i + 1}`}
+                  className="w-full rounded border border-zinc-700"
+                  loading="lazy"
+                  onError={() => handleMediaError(url)}
+                />
+              )}
             </div>
           ))}
         </div>

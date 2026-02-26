@@ -105,4 +105,21 @@ describe('Tabs', () => {
 
     consoleError.mockRestore();
   });
+
+  it('TabsContent forwards className prop', () => {
+    const { container } = render(
+      <Tabs defaultValue="tab1">
+        <TabsList>
+          <TabsTrigger value="tab1">Tab 1</TabsTrigger>
+        </TabsList>
+        <TabsContent value="tab1" className="flex-1 min-h-[400px]">
+          Content 1
+        </TabsContent>
+      </Tabs>
+    );
+
+    const contentDiv = container.querySelector('.flex-1.min-h-\\[400px\\]');
+    expect(contentDiv).toBeInTheDocument();
+    expect(contentDiv).toHaveClass('mt-2', 'flex-1');
+  });
 });

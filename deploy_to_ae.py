@@ -47,7 +47,7 @@ vertexai.init(
 
 remote_agent = agent_engines.create(
     agent_engine=my_agent,
-    display_name="trends-and-insights-2026-02-25",
+    display_name="trends-and-insights-2026-02-26",
     description="You are a helpful AI assistant, part of a multi-agent system designed for advanced web research and ad creative generation.",
     requirements=[
         "google-cloud-aiplatform[agent-engines]>=1.139.0",

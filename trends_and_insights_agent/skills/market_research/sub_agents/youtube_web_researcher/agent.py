@@ -33,7 +33,7 @@ yt_analysis_generator_agent = Agent(
     tools=[analyze_youtube_videos],
     output_key="yt_video_analysis",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="LOW")
+        thinking_config=types.ThinkingConfig(thinking_level="LOW", include_thoughts=True)
     ),
 )
 
@@ -68,7 +68,7 @@ yt_web_planner = Agent(
     """,
     output_key="initial_yt_queries",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="MINIMAL")
+        thinking_config=types.ThinkingConfig(thinking_level="MINIMAL", include_thoughts=True)
     ),
 )
 
@@ -80,7 +80,7 @@ yt_web_searcher = Agent(
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             thinking_level="LOW",
-            include_thoughts=False,
+            include_thoughts=True,
         )
     ),
     instruction="""

@@ -2,6 +2,7 @@ import { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
+import { CampaignStoreProvider } from '../stores/campaignStore';
 
 // Create a custom render function that includes providers
 function createTestQueryClient() {
@@ -23,7 +24,9 @@ function AllTheProviders({ children }: AllTheProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>{children}</BrowserRouter>
+      <CampaignStoreProvider>
+        <BrowserRouter>{children}</BrowserRouter>
+      </CampaignStoreProvider>
     </QueryClientProvider>
   );
 }

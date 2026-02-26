@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
 import { SessionBreadcrumb } from './SessionBreadcrumb';
 import { Sidebar } from './Sidebar';
+import { VoiceAssistantFAB } from '../../features/voice/VoiceAssistantFAB';
 
 export function AppShell() {
   return (
@@ -16,6 +17,7 @@ export function AppShell() {
           </div>
         </main>
       </div>
+      <VoiceAssistantFAB />
     </div>
   );
 }

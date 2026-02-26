@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import type { ConnectionState, TranscriptMessage, VoiceSessionConfig } from './types';
 
 const SAMPLE_RATE = 16000; // Input sample rate for microphone
-const GEMINI_SAMPLE_RATE = 24000; // Gemini Live API output sample rate
+const PLAYBACK_SAMPLE_RATE = 24000; // Gemini Live API output sample rate
 
 export function useVoiceSession(config: VoiceSessionConfig) {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
@@ -10,7 +10,9 @@ export function useVoiceSession(config: VoiceSessionConfig) {
   const [error, setError] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const recordingContextRef = useRef<AudioContext | null>(null);
+  const playbackContextRef = useRef<AudioContext | null>(null);
+  const playerNodeRef = useRef<AudioWorkletNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -21,15 +23,30 @@ export function useVoiceSession(config: VoiceSessionConfig) {
     connectionStateRef.current = connectionState;
   }, [connectionState]);
 
-  // Initialize audio context
-  const initAudioContext = useCallback(async () => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
+  // Initialize recording audio context (16kHz for mic input)
+  const initRecordingContext = useCallback(async () => {
+    if (!recordingContextRef.current) {
+      recordingContextRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
     }
-    if (audioContextRef.current.state === 'suspended') {
-      await audioContextRef.current.resume();
+    if (recordingContextRef.current.state === 'suspended') {
+      await recordingContextRef.current.resume();
     }
-    return audioContextRef.current;
+    return recordingContextRef.current;
+  }, []);
+
+  // Initialize playback audio context (24kHz) with AudioWorklet
+  const initPlaybackContext = useCallback(async () => {
+    if (!playbackContextRef.current) {
+      playbackContextRef.current = new AudioContext({ sampleRate: PLAYBACK_SAMPLE_RATE });
+      await playbackContextRef.current.audioWorklet.addModule('/pcm-player-processor.js');
+      const playerNode = new AudioWorkletNode(playbackContextRef.current, 'pcm-player-processor');
+      playerNode.connect(playbackContextRef.current.destination);
+      playerNodeRef.current = playerNode;
+    }
+    if (playbackContextRef.current.state === 'suspended') {
+      await playbackContextRef.current.resume();
+    }
+    return playbackContextRef.current;
   }, []);
 
   // Convert Float32Array to 16-bit PCM
@@ -46,7 +63,7 @@ export function useVoiceSession(config: VoiceSessionConfig) {
   // Start recording from microphone
   const startRecording = useCallback(async () => {
     try {
-      const audioContext = await initAudioContext();
+      const audioContext = await initRecordingContext();
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: SAMPLE_RATE,
@@ -88,7 +105,7 @@ export function useVoiceSession(config: VoiceSessionConfig) {
       setError('Failed to access microphone');
       setConnectionState('error');
     }
-  }, [initAudioContext, floatTo16BitPCM]);
+  }, [initRecordingContext, floatTo16BitPCM]);
 
   // Stop recording
   const stopRecording = useCallback(() => {
@@ -106,46 +123,28 @@ export function useVoiceSession(config: VoiceSessionConfig) {
     }
   }, []);
 
-  // Play audio response
+  // Play audio response via AudioWorklet ring buffer
   const playAudio = useCallback(async (audioData: string) => {
     try {
-      const audioContext = await initAudioContext();
+      await initPlaybackContext();
 
-      // Decode base64 PCM data
+      // Decode base64 PCM data to raw ArrayBuffer
       const binaryString = atob(audioData);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      // Convert PCM to Float32Array
-      const int16Array = new Int16Array(bytes.buffer);
-      const float32Array = new Float32Array(int16Array.length);
-      for (let i = 0; i < int16Array.length; i++) {
-        float32Array[i] = int16Array[i] / 0x8000;
+      // Post raw Int16 PCM data directly to the AudioWorklet ring buffer
+      if (playerNodeRef.current) {
+        playerNodeRef.current.port.postMessage(bytes.buffer);
       }
 
-      // Create audio buffer at Gemini's output sample rate (24kHz)
-      // This prevents pitch/speed distortion when playing 24kHz audio
-      const audioBuffer = audioContext.createBuffer(1, float32Array.length, GEMINI_SAMPLE_RATE);
-      audioBuffer.getChannelData(0).set(float32Array);
-
-      // Play audio
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
-
       setConnectionState('speaking');
-
-      source.onended = () => {
-        setConnectionState('connected');
-      };
-
-      source.start(0);
     } catch (err) {
       console.error('Failed to play audio:', err);
     }
-  }, [initAudioContext]);
+  }, [initPlaybackContext]);
 
   // Connect to WebSocket
   const connect = useCallback(async () => {
@@ -167,8 +166,10 @@ export function useVoiceSession(config: VoiceSessionConfig) {
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
-      ws.onopen = () => {
+      ws.onopen = async () => {
         console.log('WebSocket connected to backend proxy');
+        // Pre-initialize playback context so AudioWorklet is ready
+        await initPlaybackContext();
         setConnectionState('connected');
       };
 
@@ -184,6 +185,10 @@ export function useVoiceSession(config: VoiceSessionConfig) {
 
           // Handle turn complete
           if (data.turn_complete) {
+            // Signal end of audio to worklet so it flushes the buffer
+            if (playerNodeRef.current) {
+              playerNodeRef.current.port.postMessage({ command: 'endOfAudio' });
+            }
             setConnectionState('connected');
             return;
           }
@@ -241,11 +246,15 @@ export function useVoiceSession(config: VoiceSessionConfig) {
       setError('Failed to connect to voice service');
       setConnectionState('error');
     }
-  }, [playAudio, stopRecording]);
+  }, [playAudio, stopRecording, initPlaybackContext]);
 
   // Disconnect WebSocket
   const disconnect = useCallback(() => {
     stopRecording();
+    // Clear the audio worklet buffer
+    if (playerNodeRef.current) {
+      playerNodeRef.current.port.postMessage({ command: 'clear' });
+    }
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -285,8 +294,15 @@ export function useVoiceSession(config: VoiceSessionConfig) {
   useEffect(() => {
     return () => {
       disconnect();
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+      if (recordingContextRef.current) {
+        recordingContextRef.current.close();
+      }
+      if (playbackContextRef.current) {
+        if (playerNodeRef.current) {
+          playerNodeRef.current.disconnect();
+          playerNodeRef.current = null;
+        }
+        playbackContextRef.current.close();
       }
     };
   }, [disconnect]);

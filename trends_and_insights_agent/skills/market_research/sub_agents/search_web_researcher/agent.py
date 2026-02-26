@@ -41,7 +41,7 @@ gs_web_planner = Agent(
     """,
     output_key="initial_gs_queries",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="MINIMAL")
+        thinking_config=types.ThinkingConfig(thinking_level="MINIMAL", include_thoughts=True)
     ),
 )
 
@@ -53,7 +53,7 @@ gs_web_searcher = Agent(
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             thinking_level="LOW",
-            include_thoughts=False,
+            include_thoughts=True,
         )
     ),
     instruction="""

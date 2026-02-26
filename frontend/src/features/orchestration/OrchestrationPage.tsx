@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { ChevronDown, ChevronUp, FileText, Film, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { PipelineGraph } from './PipelineGraph';
 import { DAGTimeline } from './DAGTimeline';
 import { EventStream } from './EventStream';
@@ -8,6 +9,7 @@ import { ParallelStreamView } from './ParallelStreamView';
 import { SessionStatePanel } from './SessionStatePanel';
 import { AgentChat } from './AgentChat';
 import { ResultsGallery } from './ResultsGallery';
+import { EvaluationPanel } from './EvaluationPanel';
 import { PipelineControls } from './PipelineControls';
 import { SessionTabBar } from './SessionTabBar';
 import { useOrchestration } from './useOrchestration';
@@ -24,6 +26,9 @@ export function OrchestrationPage() {
   const [streamUrl] = useState<string | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
   const [eventStreamOpen, setEventStreamOpen] = useState(true);
+  const [isWaitingForInput, setIsWaitingForInput] = useState(false);
+  const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
+  const originalTitleRef = useRef(document.title);
 
   const {
     config,
@@ -61,12 +66,47 @@ export function OrchestrationPage() {
     togglePause,
   } = useOrchestration(sessionId, streamUrl);
 
+  // Flash browser tab title when input is needed and page not focused
+  useEffect(() => {
+    if (!isWaitingForInput) {
+      document.title = originalTitleRef.current;
+      return;
+    }
+
+    let flashInterval: ReturnType<typeof setInterval> | null = null;
+    let isFlashing = false;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && isWaitingForInput) {
+        isFlashing = true;
+        let showAlert = true;
+        flashInterval = setInterval(() => {
+          document.title = showAlert ? '** Input Needed **' : originalTitleRef.current;
+          showAlert = !showAlert;
+        }, 1000);
+      } else {
+        if (flashInterval) clearInterval(flashInterval);
+        flashInterval = null;
+        isFlashing = false;
+        document.title = originalTitleRef.current;
+      }
+    };
+
+    handleVisibilityChange();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (flashInterval) clearInterval(flashInterval);
+      document.title = originalTitleRef.current;
+    };
+  }, [isWaitingForInput]);
+
   const handleStart = useCallback(async (parallelCount: number) => {
     setStartError(null);
     try {
       const session = await api.createSession(APP_NAME, USER_ID);
 
-      // Create new session entry
       const newSession = {
         id: `session-${Date.now()}`,
         sessionId: session.session_id,
@@ -152,10 +192,17 @@ export function OrchestrationPage() {
     [updateFilters]
   );
 
-  // Parallel streams
-  const ytEvents = getAgentEvents('yt_sequential_planner');
-  const gsEvents = getAgentEvents('gs_sequential_planner');
-  const caEvents = getAgentEvents('ca_sequential_planner');
+  const dismissBanner = (key: string) => {
+    setDismissedBanners(prev => new Set(prev).add(key));
+  };
+
+  // Parallel streams — use substring matching since ADK author field may not exactly match
+  const getStreamEvents = (keywords: string[]) =>
+    events.filter(e => keywords.some(kw => e.agentName.toLowerCase().includes(kw)));
+
+  const ytEvents = getStreamEvents(['yt_sequential', 'yt_analysis', 'yt_web']);
+  const gsEvents = getStreamEvents(['gs_sequential', 'gs_web']);
+  const caEvents = getStreamEvents(['ca_sequential', 'campaign_web']);
 
   const parallelStreams = [
     { id: 'stream-1', name: 'YouTube Research', status: ytEvents.length > 0 ? ('running' as const) : ('pending' as const), progress: Math.min(100, ytEvents.length * 10), currentStage: ytEvents.length > 5 ? 'web_scraping' : ytEvents.length > 0 ? 'planning' : undefined, events: ytEvents },
@@ -168,8 +215,59 @@ export function OrchestrationPage() {
   const { ready, missing } = isReadyToLaunch();
   const totalTrends = selectedSearchTrends.length + selectedYtTrends.length;
 
+  // Auto-navigation detection
+  const hasResearchReport = !!sessionState.combined_final_cited_report;
+  const hasCommercialVideo = !!(
+    sessionState.vid_artifact_keys?.vid_artifact_keys?.length > 0 ||
+    (Array.isArray(sessionState.vid_artifact_keys) && sessionState.vid_artifact_keys.length > 0)
+  );
+
   return (
     <div className="flex flex-col h-full gap-3">
+      {/* Input alert banner */}
+      {isWaitingForInput && (
+        <div className="flex items-center gap-3 p-3 bg-amber-950/50 border border-amber-700 rounded-lg animate-pulse">
+          <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+          <span className="text-sm text-amber-300 flex-1">The agent is waiting for your input</span>
+          <span className="text-xs text-amber-500">Check the Chat tab to respond</span>
+        </div>
+      )}
+
+      {/* Auto-navigation banners */}
+      {hasResearchReport && !dismissedBanners.has('report') && (
+        <div
+          className="flex items-center gap-3 p-3 bg-blue-950/50 border border-blue-700 rounded-lg cursor-pointer hover:bg-blue-950/70 transition-colors"
+          onClick={() => dismissBanner('report')}
+        >
+          <FileText className="w-5 h-5 text-blue-400" />
+          <span className="text-sm text-blue-300">Research report is ready</span>
+          <Link
+            to="/narrative"
+            className="ml-auto text-xs text-blue-400 underline hover:text-blue-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Open in Narrative
+          </Link>
+        </div>
+      )}
+
+      {hasCommercialVideo && !dismissedBanners.has('commercial') && (
+        <div
+          className="flex items-center gap-3 p-3 bg-green-950/50 border border-green-700 rounded-lg cursor-pointer hover:bg-green-950/70 transition-colors"
+          onClick={() => dismissBanner('commercial')}
+        >
+          <Film className="w-5 h-5 text-green-400" />
+          <span className="text-sm text-green-300">Commercial video generated</span>
+          <Link
+            to="/studio"
+            className="ml-auto text-xs text-green-400 underline hover:text-green-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Open in AV Studio
+          </Link>
+        </div>
+      )}
+
       {/* Compact header + config summary */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -252,20 +350,29 @@ export function OrchestrationPage() {
         {/* Right: Detail panel (1 col) */}
         <div className="border border-zinc-800 rounded-lg overflow-hidden flex flex-col">
           <Tabs defaultValue="chat">
-            <TabsList className="w-full grid grid-cols-5">
+            <TabsList className="w-full grid grid-cols-6">
               <TabsTrigger value="chat">Chat</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
+              <TabsTrigger value="evaluation">Eval</TabsTrigger>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="streams">Streams</TabsTrigger>
               <TabsTrigger value="state">State</TabsTrigger>
             </TabsList>
 
             <TabsContent value="chat" className="flex-1 overflow-hidden">
-              <AgentChat sessionId={sessionId} events={events} />
+              <AgentChat
+                sessionId={sessionId}
+                events={events}
+                onWaitingForInput={setIsWaitingForInput}
+              />
             </TabsContent>
 
             <TabsContent value="results" className="flex-1 overflow-auto">
               <ResultsGallery sessionState={sessionState} />
+            </TabsContent>
+
+            <TabsContent value="evaluation" className="flex-1 overflow-auto">
+              <EvaluationPanel sessionState={sessionState} rubric={activeRubric} />
             </TabsContent>
 
             <TabsContent value="details" className="flex-1 overflow-auto">

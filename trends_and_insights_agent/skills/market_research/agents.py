@@ -60,7 +60,7 @@ merge_planners = Agent(
     """,
     output_key="combined_web_search_insights",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="LOW")
+        thinking_config=types.ThinkingConfig(thinking_level="LOW", include_thoughts=True)
     ),
 )
 
@@ -95,7 +95,7 @@ combined_web_evaluator = Agent(
     disallow_transfer_to_peers=True,
     output_key="combined_research_evaluation",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="MEDIUM")
+        thinking_config=types.ThinkingConfig(thinking_level="MEDIUM", include_thoughts=True)
     ),
     before_model_callback=callbacks.rate_limit_callback,
 )
@@ -108,7 +108,7 @@ enhanced_combined_searcher = Agent(
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             thinking_level="LOW",
-            include_thoughts=False,
+            include_thoughts=True,
         )
     ),
     instruction="""
@@ -181,7 +181,7 @@ combined_report_composer = Agent(
     """,
     output_key="combined_final_cited_report",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="LOW")
+        thinking_config=types.ThinkingConfig(thinking_level="LOW", include_thoughts=True)
     ),
     after_agent_callback=callbacks.citation_replacement_callback,
     before_model_callback=callbacks.rate_limit_callback,

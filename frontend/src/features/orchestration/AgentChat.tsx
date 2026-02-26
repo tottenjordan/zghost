@@ -10,6 +10,7 @@ const USER_ID = 'frontend-user';
 interface AgentChatProps {
   sessionId: string | null;
   events: AgentEvent[];
+  onWaitingForInput?: (waiting: boolean) => void;
 }
 
 interface ChatMessage {
@@ -43,7 +44,7 @@ function extractChatMessages(events: AgentEvent[]): ChatMessage[] {
   return messages;
 }
 
-export function AgentChat({ sessionId, events }: AgentChatProps) {
+export function AgentChat({ sessionId, events, onWaitingForInput }: AgentChatProps) {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -87,10 +88,26 @@ export function AgentChat({ sessionId, events }: AgentChatProps) {
   };
 
   const lastAgentMessage = messages.filter(m => m.role === 'agent').slice(-1)[0];
+  const lastAgentText = lastAgentMessage?.text?.toLowerCase() || '';
   const isWaitingForApproval = lastAgentMessage?.text?.includes('?') ||
-    lastAgentMessage?.text?.toLowerCase().includes('approve') ||
-    lastAgentMessage?.text?.toLowerCase().includes('look good') ||
-    lastAgentMessage?.text?.toLowerCase().includes('proceed');
+    lastAgentText.includes('approve') ||
+    lastAgentText.includes('look good') ||
+    lastAgentText.includes('proceed') ||
+    lastAgentText.includes('select') ||
+    lastAgentText.includes('choose') ||
+    lastAgentText.includes('confirm') ||
+    lastAgentText.includes('verify') ||
+    lastAgentText.includes('provide') ||
+    lastAgentText.includes('enter') ||
+    lastAgentText.includes('specify') ||
+    lastAgentText.includes('would you like') ||
+    lastAgentText.includes('yes or no') ||
+    lastAgentText.includes('ready to');
+
+  // Notify parent about input waiting state
+  useEffect(() => {
+    onWaitingForInput?.(isWaitingForApproval);
+  }, [isWaitingForApproval, onWaitingForInput]);
 
   return (
     <div className="flex flex-col h-full">
