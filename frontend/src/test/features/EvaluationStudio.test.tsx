@@ -22,15 +22,17 @@ const mockStoreState = {
   config: { brand: '', target_product: '', target_audience: '', key_selling_points: '' },
   selectedSearchTrends: [] as any[],
   selectedYtTrends: [] as any[],
-  activeRubric: null as any,
+  activeRubrics: [] as any[],
   sessions: [] as any[],
   activeSessionIndex: -1,
   sessionId: null as string | null,
   pipelineStatus: 'idle' as string,
   commercialDuration: 30 as 10 | 15 | 30,
+  autoStart: false,
   setCampaignConfig: vi.fn(),
   setSelectedTrends: vi.fn(),
-  setActiveRubric: vi.fn(),
+  toggleActiveRubric: vi.fn(),
+  setAutoStart: vi.fn(),
   setSessionId: vi.fn(),
   setPipelineStatus: vi.fn(),
   addSession: vi.fn(),
@@ -56,7 +58,7 @@ describe('CUJ 3d: Evaluation Studio', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    mockStoreState.activeRubric = null;
+    mockStoreState.activeRubrics = [];
     mockUseRating.rubrics = [
       {
         id: 'ad-copy-quality',

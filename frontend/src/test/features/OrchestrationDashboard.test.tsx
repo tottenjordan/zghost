@@ -19,18 +19,20 @@ const mockStoreState = {
   config: { brand: 'TestBrand', target_product: 'TestProduct', target_audience: '', key_selling_points: '' },
   selectedSearchTrends: [{ rank: 1, title: 'Test Trend', relatedQueries: '' }] as any[],
   selectedYtTrends: [] as any[],
-  activeRubric: null as any,
+  activeRubrics: [] as any[],
   sessions: [] as any[],
   activeSessionIndex: -1,
   sessionId: null as string | null,
   pipelineStatus: 'idle' as string,
   commercialDuration: 30 as 10 | 15 | 30,
+  autoStart: false,
   addSession: vi.fn(),
   removeSession: vi.fn(),
   setActiveSession: vi.fn(),
   setSessionId: vi.fn(),
   setPipelineStatus: vi.fn(),
   setCommercialDuration: vi.fn(),
+  setAutoStart: vi.fn(),
   isReadyToLaunch: vi.fn(() => ({ ready: true, missing: [] })),
 };
 
@@ -165,7 +167,7 @@ describe('CUJ 2: Orchestration Dashboard', () => {
     mockStoreState.config = { brand: 'TestBrand', target_product: 'TestProduct', target_audience: '', key_selling_points: '' };
     mockStoreState.selectedSearchTrends = [{ rank: 1, title: 'Test Trend', relatedQueries: '' }];
     mockStoreState.selectedYtTrends = [];
-    mockStoreState.activeRubric = null;
+    mockStoreState.activeRubrics = [];
     mockStoreState.sessions = [];
     mockStoreState.activeSessionIndex = -1;
     mockStoreState.sessionId = null;

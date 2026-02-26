@@ -24,10 +24,11 @@ export interface CampaignStoreState {
   config: CampaignConfig;
   selectedSearchTrends: SearchTrend[];
   selectedYtTrends: YTTrend[];
-  activeRubric: ExtendedRubric | null;
+  activeRubrics: ExtendedRubric[];
   sessions: PipelineSession[];
   activeSessionIndex: number;
   commercialDuration: 10 | 15 | 30;
+  autoStart: boolean;
   // Backward compatibility - derived from active session
   sessionId: string | null;
   pipelineStatus: 'idle' | 'running' | 'completed' | 'error';
@@ -36,7 +37,8 @@ export interface CampaignStoreState {
 interface CampaignStoreActions {
   setCampaignConfig: (config: CampaignConfig) => void;
   setSelectedTrends: (search: SearchTrend[], yt: YTTrend[]) => void;
-  setActiveRubric: (rubric: ExtendedRubric | null) => void;
+  toggleActiveRubric: (rubric: ExtendedRubric) => void;
+  setAutoStart: (autoStart: boolean) => void;
   setSessionId: (id: string | null) => void;
   setPipelineStatus: (status: CampaignStoreState['pipelineStatus']) => void;
   addSession: (session: PipelineSession) => void;
@@ -54,10 +56,11 @@ const DEFAULT_STATE: CampaignStoreState = {
   config: { brand: '', target_product: '', target_audience: '', key_selling_points: '' },
   selectedSearchTrends: [],
   selectedYtTrends: [],
-  activeRubric: null,
+  activeRubrics: [],
   sessions: [],
   activeSessionIndex: -1,
   commercialDuration: 30,
+  autoStart: false,
   sessionId: null,
   pipelineStatus: 'idle',
 };
@@ -76,11 +79,18 @@ function loadFromStorage(): CampaignStoreState {
       // Derive backward compat fields from active session
       const activeSession = activeSessionIndex >= 0 ? sessions[activeSessionIndex] : null;
 
+      // Migrate activeRubric → activeRubrics for backward compat
+      let activeRubrics = parsed.activeRubrics || [];
+      if (!activeRubrics.length && parsed.activeRubric) {
+        activeRubrics = [parsed.activeRubric];
+      }
+
       return {
         ...DEFAULT_STATE,
         ...parsed,
         sessions,
         activeSessionIndex,
+        activeRubrics,
         sessionId: activeSession?.sessionId || null,
         pipelineStatus: activeSession?.status || 'idle'
       };
@@ -117,8 +127,20 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, selectedSearchTrends: search, selectedYtTrends: yt }));
   }, []);
 
-  const setActiveRubric = useCallback((rubric: ExtendedRubric | null) => {
-    setState((prev) => ({ ...prev, activeRubric: rubric }));
+  const toggleActiveRubric = useCallback((rubric: ExtendedRubric) => {
+    setState((prev) => {
+      const exists = prev.activeRubrics.some(r => r.id === rubric.id);
+      return {
+        ...prev,
+        activeRubrics: exists
+          ? prev.activeRubrics.filter(r => r.id !== rubric.id)
+          : [...prev.activeRubrics, rubric],
+      };
+    });
+  }, []);
+
+  const setAutoStart = useCallback((autoStart: boolean) => {
+    setState((prev) => ({ ...prev, autoStart }));
   }, []);
 
   const setSessionId = useCallback((id: string | null) => {
@@ -253,7 +275,8 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     ...state,
     setCampaignConfig,
     setSelectedTrends,
-    setActiveRubric,
+    toggleActiveRubric,
+    setAutoStart,
     setSessionId,
     setPipelineStatus,
     addSession,

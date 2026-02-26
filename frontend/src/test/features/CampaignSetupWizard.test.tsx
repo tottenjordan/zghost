@@ -17,10 +17,11 @@ const mockStoreState = {
   config: { brand: '', target_product: '', target_audience: '', key_selling_points: '' },
   selectedSearchTrends: [] as any[],
   selectedYtTrends: [] as any[],
-  activeRubric: null as any,
+  activeRubrics: [] as any[],
   setCampaignConfig: vi.fn(),
   setSelectedTrends: vi.fn(),
-  setActiveRubric: vi.fn(),
+  toggleActiveRubric: vi.fn(),
+  setAutoStart: vi.fn(),
   isReadyToLaunch: vi.fn(() => ({ ready: false, missing: ['Brand or Product', 'At least 1 trend'] })),
 };
 
@@ -63,7 +64,7 @@ describe('CUJ 1: Campaign Setup Wizard', () => {
     mockStoreState.config = { brand: '', target_product: '', target_audience: '', key_selling_points: '' };
     mockStoreState.selectedSearchTrends = [];
     mockStoreState.selectedYtTrends = [];
-    mockStoreState.activeRubric = null;
+    mockStoreState.activeRubrics = [];
     mockStoreState.isReadyToLaunch.mockReturnValue({ ready: false, missing: ['Brand or Product', 'At least 1 trend'] });
     // Default: trends fetch is pending, no cache
     mockFetchLiveTrends.mockReturnValue(new Promise(() => {}));

@@ -35,10 +35,11 @@ export function TrendsPage() {
     config: storeConfig,
     selectedSearchTrends,
     selectedYtTrends,
-    activeRubric,
+    activeRubrics,
     setCampaignConfig: setStoreConfig,
     setSelectedTrends,
-    setActiveRubric,
+    toggleActiveRubric,
+    setAutoStart,
     isReadyToLaunch,
   } = useCampaignStore();
 
@@ -219,7 +220,8 @@ export function TrendsPage() {
 
   const handleDeleteRubric = (id: string) => {
     saveRubricsToStorage(availableRubrics.filter(r => r.id !== id));
-    if (activeRubric?.id === id) setActiveRubric(null);
+    const rubricToRemove = activeRubrics.find(r => r.id === id);
+    if (rubricToRemove) toggleActiveRubric(rubricToRemove);
   };
 
   const handleCreateFromTemplate = (template: ExtendedRubric) => {
@@ -234,7 +236,7 @@ export function TrendsPage() {
   const isCampaignComplete = !!(storeConfig?.brand || storeConfig?.target_product);
   const totalSelected = selectedSearchTrends.length + selectedYtTrends.length;
   const isTrendsComplete = totalSelected > 0;
-  const isEvaluationComplete = !!activeRubric;
+  const isEvaluationComplete = activeRubrics.length > 0;
   const { ready, missing } = isReadyToLaunch();
 
   const getStepStatus = (step: WizardStep): 'pending' | 'active' | 'completed' => {
@@ -421,8 +423,8 @@ export function TrendsPage() {
                 onDelete={handleDeleteRubric}
                 onCreate={handleCreateRubric}
                 onCreateFromTemplate={handleCreateFromTemplate}
-                activeRubricId={activeRubric?.id}
-                onSetActive={setActiveRubric}
+                activeRubricIds={activeRubrics.map(r => r.id)}
+                onToggleActive={toggleActiveRubric}
               />
             )}
           </div>
@@ -520,24 +522,28 @@ export function TrendsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {activeRubric ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-400 border border-green-700">
-                        {activeRubric.name}
-                      </span>
-                      <span className="text-xs text-zinc-500">
-                        {activeRubric.criteria.length} criteria
-                      </span>
-                    </div>
-                    <div className="space-y-1">
-                      {activeRubric.criteria.map((c) => (
-                        <div key={c.id} className="flex items-center justify-between text-xs">
-                          <span className="text-zinc-400">{c.name}</span>
-                          <span className="text-zinc-500">weight: {c.weight}</span>
+                {activeRubrics.length > 0 ? (
+                  <div className="space-y-3">
+                    {activeRubrics.map((rubric) => (
+                      <div key={rubric.id} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-400 border border-green-700">
+                            {rubric.name}
+                          </span>
+                          <span className="text-xs text-zinc-500">
+                            {rubric.criteria.length} criteria
+                          </span>
                         </div>
-                      ))}
-                    </div>
+                        <div className="space-y-1">
+                          {rubric.criteria.map((c) => (
+                            <div key={c.id} className="flex items-center justify-between text-xs">
+                              <span className="text-zinc-400">{c.name}</span>
+                              <span className="text-zinc-500">weight: {c.weight}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <p className="text-xs text-amber-400">
@@ -561,7 +567,7 @@ export function TrendsPage() {
 
             {/* Launch button */}
             <Button
-              onClick={() => navigate('/orchestration')}
+              onClick={() => { setAutoStart(true); navigate('/orchestration'); }}
               disabled={!ready}
               variant="primary"
               className="w-full py-3 text-base font-semibold flex items-center justify-center gap-2"

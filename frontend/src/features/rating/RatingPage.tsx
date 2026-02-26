@@ -21,24 +21,24 @@ export function RatingPage() {
     submitRating,
   } = useRating();
 
-  const { activeRubric, setActiveRubric } = useCampaignStore();
+  const { activeRubrics, toggleActiveRubric } = useCampaignStore();
 
   const [editorMode, setEditorMode] = useState<EditorMode>('library');
   const [editingRubric, setEditingRubric] = useState<ExtendedRubric | undefined>();
 
   // Auto-activate rubric when there's only one
   useEffect(() => {
-    if (rubrics.length === 1 && !activeRubric) {
-      setActiveRubric(rubrics[0]);
+    if (rubrics.length === 1 && activeRubrics.length === 0) {
+      toggleActiveRubric(rubrics[0]);
     }
-  }, [rubrics, activeRubric, setActiveRubric]);
+  }, [rubrics, activeRubrics, toggleActiveRubric]);
 
   const handleCreateRubric = (rubric: Omit<ExtendedRubric, 'id'>) => {
     const created = createRubric(rubric);
     setEditorMode('library');
     // Auto-activate newly created rubric if none is active
-    if (!activeRubric) {
-      setActiveRubric(created);
+    if (activeRubrics.length === 0) {
+      toggleActiveRubric(created);
     }
   };
 
@@ -89,21 +89,14 @@ export function RatingPage() {
 
       {/* Active rubric banner */}
       <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3">
-        <span className="text-sm text-zinc-500">Pipeline rubric:</span>
-        {activeRubric ? (
-          <div className="flex items-center gap-2">
-            <span className="rounded-full bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-400 border border-green-700">
-              {activeRubric.name}
-            </span>
-            <span className="text-xs text-zinc-500">
-              {activeRubric.criteria.length} criteria
-            </span>
-            <button
-              onClick={() => setActiveRubric(null)}
-              className="ml-2 text-xs text-zinc-500 hover:text-zinc-300"
-            >
-              Clear
-            </button>
+        <span className="text-sm text-zinc-500">Pipeline rubrics:</span>
+        {activeRubrics.length > 0 ? (
+          <div className="flex items-center gap-2 flex-wrap">
+            {activeRubrics.map((r) => (
+              <span key={r.id} className="rounded-full bg-green-900/50 px-2.5 py-0.5 text-xs font-medium text-green-400 border border-green-700">
+                {r.name} ({r.criteria.length})
+              </span>
+            ))}
           </div>
         ) : (
           <span className="text-xs text-amber-400">
@@ -143,8 +136,8 @@ export function RatingPage() {
                 onDelete={deleteRubric}
                 onCreate={() => setEditorMode('create')}
                 onCreateFromTemplate={handleCreateFromTemplate}
-                activeRubricId={activeRubric?.id}
-                onSetActive={setActiveRubric}
+                activeRubricIds={activeRubrics.map(r => r.id)}
+                onToggleActive={toggleActiveRubric}
               />
             ) : (
               <RubricEditor

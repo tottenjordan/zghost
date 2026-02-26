@@ -11,8 +11,8 @@ interface RubricLibraryProps {
   onDelete: (id: string) => void;
   onCreate: () => void;
   onCreateFromTemplate: (template: ExtendedRubric) => void;
-  activeRubricId?: string;
-  onSetActive?: (rubric: ExtendedRubric | null) => void;
+  activeRubricIds?: string[];
+  onToggleActive?: (rubric: ExtendedRubric) => void;
 }
 
 export function RubricLibrary({
@@ -22,18 +22,18 @@ export function RubricLibrary({
   onDelete,
   onCreate,
   onCreateFromTemplate,
-  activeRubricId,
-  onSetActive,
+  activeRubricIds = [],
+  onToggleActive,
 }: RubricLibraryProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
 
   // Auto-activate when there's only one rubric
   useEffect(() => {
-    if (rubrics.length === 1 && !activeRubricId && onSetActive) {
-      onSetActive(rubrics[0]);
+    if (rubrics.length === 1 && activeRubricIds.length === 0 && onToggleActive) {
+      onToggleActive(rubrics[0]);
     }
-  }, [rubrics, activeRubricId, onSetActive]);
+  }, [rubrics, activeRubricIds, onToggleActive]);
 
   const formatDate = () => {
     // Since we don't have lastModified in the type, show creation indicator
@@ -52,6 +52,14 @@ export function RubricLibrary({
         </div>
       </div>
 
+      {activeRubricIds.length > 0 && (
+        <div className="flex items-center gap-2 text-sm text-zinc-400">
+          <span className="rounded-full bg-blue-900/50 px-2.5 py-0.5 text-xs font-medium text-blue-400 border border-blue-700">
+            {activeRubricIds.length} rubric{activeRubricIds.length !== 1 ? 's' : ''} active
+          </span>
+        </div>
+      )}
+
       {rubrics.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
@@ -69,7 +77,7 @@ export function RubricLibrary({
       ) : (
         <div className="space-y-2">
           {rubrics.map((rubric) => {
-            const isActive = activeRubricId === rubric.id;
+            const isActive = activeRubricIds.includes(rubric.id);
             return (
               <Card key={rubric.id}>
                 <CardContent className="flex items-center justify-between py-4">
@@ -90,23 +98,14 @@ export function RubricLibrary({
                     )}
                   </div>
                   <div className="flex gap-2">
-                    {onSetActive && !isActive && (
+                    {onToggleActive && (
                       <Button
                         size="sm"
-                        variant="primary"
-                        onClick={() => onSetActive(rubric)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                        variant={isActive ? 'secondary' : 'primary'}
+                        onClick={() => onToggleActive(rubric)}
+                        className={isActive ? '' : 'bg-blue-600 hover:bg-blue-700 text-white font-semibold'}
                       >
-                        Activate for Pipeline
-                      </Button>
-                    )}
-                    {isActive && onSetActive && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => onSetActive(null)}
-                      >
-                        Deactivate
+                        {isActive ? 'Deactivate' : 'Activate for Pipeline'}
                       </Button>
                     )}
                     <Button

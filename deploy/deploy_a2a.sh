@@ -41,11 +41,14 @@ IMAGE="gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME:latest"
 
 echo -e "${YELLOW}Building A2A container image...${NC}"
 
+# Cloud Build expects Dockerfile at project root
+cp deploy/Dockerfile.a2a Dockerfile
+trap 'rm -f Dockerfile' EXIT
+
 gcloud builds submit . \
   --tag=$IMAGE \
   --project=$GOOGLE_CLOUD_PROJECT \
-  --timeout=1800 \
-  -f deploy/Dockerfile.a2a
+  --timeout=1800
 
 echo -e "${GREEN}Image built successfully: $IMAGE${NC}"
 

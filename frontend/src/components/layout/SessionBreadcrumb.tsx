@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils';
 
 export function SessionBreadcrumb() {
   const navigate = useNavigate();
-  const { config, selectedSearchTrends, selectedYtTrends, activeRubric, pipelineStatus } = useCampaignStore();
+  const { config, selectedSearchTrends, selectedYtTrends, activeRubrics, pipelineStatus } = useCampaignStore();
 
   const totalTrends = selectedSearchTrends.length + selectedYtTrends.length;
   const brandName = config.brand || config.target_product;
@@ -21,8 +21,8 @@ export function SessionBreadcrumb() {
       onClick: () => navigate('/trends'),
     },
     {
-      label: activeRubric?.name || 'Default rubric',
-      color: activeRubric ? 'green' : 'gray',
+      label: activeRubrics.length > 0 ? `${activeRubrics.length} rubric${activeRubrics.length !== 1 ? 's' : ''}` : 'Default rubric',
+      color: activeRubrics.length > 0 ? 'green' : 'gray',
       onClick: () => navigate('/rating'),
     },
     {

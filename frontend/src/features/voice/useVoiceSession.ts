@@ -17,6 +17,7 @@ export function useVoiceSession(config: VoiceSessionConfig) {
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const connectionStateRef = useRef<ConnectionState>('idle');
+  const isSpeakingRef = useRef(false);
 
   // Keep connectionStateRef in sync with connectionState
   useEffect(() => {
@@ -83,7 +84,7 @@ export function useVoiceSession(config: VoiceSessionConfig) {
       processorRef.current = processor;
 
       processor.onaudioprocess = (e) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
+        if (wsRef.current?.readyState === WebSocket.OPEN && !isSpeakingRef.current) {
           const inputData = e.inputBuffer.getChannelData(0);
           const pcmData = floatTo16BitPCM(inputData);
 
@@ -140,6 +141,7 @@ export function useVoiceSession(config: VoiceSessionConfig) {
         playerNodeRef.current.port.postMessage(bytes.buffer);
       }
 
+      isSpeakingRef.current = true;
       setConnectionState('speaking');
     } catch (err) {
       console.error('Failed to play audio:', err);
@@ -189,6 +191,7 @@ export function useVoiceSession(config: VoiceSessionConfig) {
             if (playerNodeRef.current) {
               playerNodeRef.current.port.postMessage({ command: 'endOfAudio' });
             }
+            isSpeakingRef.current = false;
             setConnectionState('connected');
             return;
           }

@@ -19,7 +19,7 @@ describe('CUJ 3a: Rubric Library & Activation', () => {
     onDelete: mockOnDelete,
     onCreate: mockOnCreate,
     onCreateFromTemplate: mockOnCreateFromTemplate,
-    onSetActive: mockOnSetActive,
+    onToggleActive: mockOnSetActive,
   };
 
   it('shows rubric library with available rubrics', () => {
@@ -50,7 +50,7 @@ describe('CUJ 3a: Rubric Library & Activation', () => {
     render(
       <RubricLibrary
         {...defaultProps}
-        activeRubricId={DEFAULT_RUBRICS[0].id}
+        activeRubricIds={[DEFAULT_RUBRICS[0].id]}
       />
     );
 
@@ -61,7 +61,7 @@ describe('CUJ 3a: Rubric Library & Activation', () => {
     render(
       <RubricLibrary
         {...defaultProps}
-        activeRubricId={DEFAULT_RUBRICS[0].id}
+        activeRubricIds={[DEFAULT_RUBRICS[0].id]}
       />
     );
 
@@ -73,12 +73,12 @@ describe('CUJ 3a: Rubric Library & Activation', () => {
     render(
       <RubricLibrary
         {...defaultProps}
-        activeRubricId={DEFAULT_RUBRICS[0].id}
+        activeRubricIds={[DEFAULT_RUBRICS[0].id]}
       />
     );
 
     await user.click(screen.getByText('Deactivate'));
-    expect(mockOnSetActive).toHaveBeenCalledWith(null);
+    expect(mockOnSetActive).toHaveBeenCalledWith(DEFAULT_RUBRICS[0]);
   });
 
   it('shows criteria count for each rubric', () => {

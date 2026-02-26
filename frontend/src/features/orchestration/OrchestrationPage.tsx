@@ -28,24 +28,27 @@ export function OrchestrationPage() {
   const [eventStreamOpen, setEventStreamOpen] = useState(true);
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
+  const [configExpanded, setConfigExpanded] = useState(false);
   const originalTitleRef = useRef(document.title);
 
   const {
     config,
     selectedSearchTrends,
     selectedYtTrends,
-    activeRubric,
+    activeRubrics,
     sessions,
     activeSessionIndex,
     sessionId,
     pipelineStatus,
     commercialDuration,
+    autoStart,
     addSession,
     removeSession,
     setActiveSession,
     setSessionId,
     setPipelineStatus,
     setCommercialDuration,
+    setAutoStart,
     isReadyToLaunch,
   } = useCampaignStore();
 
@@ -124,11 +127,11 @@ export function OrchestrationPage() {
       const trendSelections = `Selected Google trends: ${searchTrendTitles || 'none'}. Selected YouTube trends: ${ytTrendTitles || 'none'}.`;
 
       let rubricGuidance = '';
-      if (activeRubric) {
-        const criteriaDesc = activeRubric.criteria
-          .map((c) => `${c.name} (weight: ${c.weight})`)
-          .join(', ');
-        rubricGuidance = `Evaluate outputs against these criteria: ${criteriaDesc}`;
+      if (activeRubrics.length > 0) {
+        const allCriteria = activeRubrics.flatMap((r) =>
+          r.criteria.map((c) => `[${r.name}] ${c.name} (weight: ${c.weight})`)
+        );
+        rubricGuidance = `Evaluate outputs against these criteria: ${allCriteria.join(', ')}`;
       }
 
       await api.sendMessage({
@@ -164,7 +167,7 @@ export function OrchestrationPage() {
       setStartError(msg);
       setPipelineStatus('error');
     }
-  }, [config, selectedSearchTrends, selectedYtTrends, activeRubric, commercialDuration, sessions, addSession, setPipelineStatus]);
+  }, [config, selectedSearchTrends, selectedYtTrends, activeRubrics, commercialDuration, sessions, addSession, setPipelineStatus]);
 
   const handleStop = useCallback(() => {
     setSessionId(null);
@@ -191,6 +194,17 @@ export function OrchestrationPage() {
     (searchTerm: string) => updateFilters({ searchTerm }),
     [updateFilters]
   );
+
+  // Auto-start pipeline when navigated from wizard with autoStart flag
+  useEffect(() => {
+    if (autoStart && isReadyToLaunch().ready && !isRunning) {
+      setAutoStart(false);
+      handleStart(1);
+    } else if (autoStart) {
+      setAutoStart(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const dismissBanner = (key: string) => {
     setDismissedBanners(prev => new Set(prev).add(key));
@@ -268,26 +282,100 @@ export function OrchestrationPage() {
         </div>
       )}
 
-      {/* Compact header + config summary */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold">Agent Orchestration</h1>
-          <p className="text-xs text-zinc-500 mt-0.5">Monitor and control the agent pipeline</p>
+      {/* Header + collapsible config panel */}
+      <div className="space-y-2">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold">Agent Orchestration</h1>
+            <p className="text-xs text-zinc-500 mt-0.5">Monitor and control the agent pipeline</p>
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            <span className={cn('px-2 py-0.5 rounded border', config.brand ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-amber-700/50 bg-amber-950/30 text-amber-400')}>
+              {config.brand || config.target_product || 'No brand'}
+            </span>
+            <span className={cn('px-2 py-0.5 rounded border', totalTrends > 0 ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-amber-700/50 bg-amber-950/30 text-amber-400')}>
+              {totalTrends > 0 ? `${totalTrends} trends` : 'No trends'}
+            </span>
+            <span className="px-2 py-0.5 rounded border border-blue-700/50 bg-blue-950/30 text-blue-400">
+              {commercialDuration}s commercial
+            </span>
+            <span className={cn('px-2 py-0.5 rounded border', activeRubrics.length > 0 ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-zinc-700/50 bg-zinc-800/50 text-zinc-500')}>
+              {activeRubrics.length > 0 ? `${activeRubrics.length} rubric${activeRubrics.length !== 1 ? 's' : ''}` : 'Default rubric'}
+            </span>
+            <button
+              onClick={() => setConfigExpanded(!configExpanded)}
+              className="px-2 py-0.5 rounded border border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700/50 transition-colors"
+            >
+              {configExpanded ? 'Hide config' : 'Show config'}
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-3 text-xs">
-          <span className={cn('px-2 py-0.5 rounded border', config.brand ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-amber-700/50 bg-amber-950/30 text-amber-400')}>
-            {config.brand || config.target_product || 'No brand'}
-          </span>
-          <span className={cn('px-2 py-0.5 rounded border', totalTrends > 0 ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-amber-700/50 bg-amber-950/30 text-amber-400')}>
-            {totalTrends > 0 ? `${totalTrends} trends` : 'No trends'}
-          </span>
-          <span className="px-2 py-0.5 rounded border border-blue-700/50 bg-blue-950/30 text-blue-400">
-            {commercialDuration}s commercial
-          </span>
-          <span className={cn('px-2 py-0.5 rounded border', activeRubric ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-zinc-700/50 bg-zinc-800/50 text-zinc-500')}>
-            {activeRubric?.name || 'Default rubric'}
-          </span>
-        </div>
+
+        {configExpanded && (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs font-medium text-zinc-500">Brand</p>
+                <p className="text-zinc-200">{config.brand || 'Not set'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-zinc-500">Product</p>
+                <p className="text-zinc-200">{config.target_product || 'Not set'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-zinc-500">Target Audience</p>
+                <p className="text-zinc-200">{config.target_audience || 'Not set'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-zinc-500">Key Selling Points</p>
+                <p className="text-zinc-200">{config.key_selling_points || 'Not set'}</p>
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs font-medium text-zinc-500">Google Trends ({selectedSearchTrends.length})</p>
+                {selectedSearchTrends.length > 0 ? (
+                  <ul className="mt-1 space-y-0.5">
+                    {selectedSearchTrends.map((t) => (
+                      <li key={t.rank} className="text-xs text-zinc-300">&bull; {t.title}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-zinc-500 mt-1">None</p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-medium text-zinc-500">YouTube Trends ({selectedYtTrends.length})</p>
+                {selectedYtTrends.length > 0 ? (
+                  <ul className="mt-1 space-y-0.5">
+                    {selectedYtTrends.map((t) => (
+                      <li key={t.rank} className="text-xs text-zinc-300">&bull; {t.title}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-zinc-500 mt-1">None</p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-medium text-zinc-500">Active Rubrics ({activeRubrics.length})</p>
+                {activeRubrics.length > 0 ? (
+                  <ul className="mt-1 space-y-0.5">
+                    {activeRubrics.map((r) => (
+                      <li key={r.id} className="text-xs text-zinc-300">
+                        &bull; {r.name} ({r.criteria.length} criteria)
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-zinc-500 mt-1">Default evaluation</p>
+                )}
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-zinc-500">
+              Commercial duration: {commercialDuration}s
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Session Tab Bar */}
@@ -372,7 +460,7 @@ export function OrchestrationPage() {
             </TabsContent>
 
             <TabsContent value="evaluation" className="flex-1 overflow-auto">
-              <EvaluationPanel sessionState={sessionState} rubric={activeRubric} />
+              <EvaluationPanel sessionState={sessionState} rubrics={activeRubrics} />
             </TabsContent>
 
             <TabsContent value="details" className="flex-1 overflow-auto">
