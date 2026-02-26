@@ -1,0 +1,24 @@
+# Lightweight Dockerfile for A2A agent endpoint (no frontend/nginx)
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY trends_and_insights_agent/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt uvicorn
+
+COPY trends_and_insights_agent/ ./trends_and_insights_agent/
+COPY a2a_server.py .
+
+EXPOSE 8080
+
+CMD ["uvicorn", "a2a_server:app", "--host", "0.0.0.0", "--port", "8080"]
