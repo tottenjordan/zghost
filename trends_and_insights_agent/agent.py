@@ -55,4 +55,5 @@ root_agent = Agent(
         callbacks.campaign_callback_function,
     ],
     before_model_callback=callbacks.rate_limit_callback,
+    after_agent_callback=callbacks.save_session_to_memory_callback,
 )

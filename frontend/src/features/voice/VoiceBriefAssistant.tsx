@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Mic, MicOff, X, Volume2 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { AudioVisualizer } from './AudioVisualizer';
 import { useVoiceSession } from './useVoiceSession';
+import { useVoiceActions } from './useVoiceActions';
+import { useCampaignStore } from '../../stores/campaignStore';
 import { VoiceCommandRouter } from './VoiceCommandRouter';
+import { getCachedTrends } from '../../services/trendsCache';
 import type { ConnectionState } from './types';
 import { cn } from '../../lib/utils';
 
@@ -28,6 +32,9 @@ interface VoiceBriefAssistantProps {
 
 export function VoiceBriefAssistant({ onClose, isFloating = false }: VoiceBriefAssistantProps) {
   const [isMinimized, setIsMinimized] = useState(false);
+  const { executeAction } = useVoiceActions();
+  const store = useCampaignStore();
+  const location = useLocation();
 
   const {
     connectionState,
@@ -37,9 +44,47 @@ export function VoiceBriefAssistant({ onClose, isFloating = false }: VoiceBriefA
     disconnect,
     isRecording,
     isConnected,
+    sendContext,
   } = useVoiceSession({
     systemPrompt: SYSTEM_PROMPT,
+    onAction: executeAction,
   });
+
+  // Send context updates when location or store state changes
+  useEffect(() => {
+    if (!isConnected) return;
+    const cached = getCachedTrends();
+    sendContext({
+      page: location.pathname.replace('/', '') || 'trends',
+      brand: store.config.brand,
+      product: store.config.target_product,
+      audience: store.config.target_audience,
+      selling_points: store.config.key_selling_points,
+      num_search_trends: store.selectedSearchTrends.length,
+      num_yt_trends: store.selectedYtTrends.length,
+      available_search_trends: cached?.searchTrends.map(t => ({ rank: t.rank, title: t.title })) || [],
+      available_yt_trends: cached?.ytTrends.map(t => ({ rank: t.rank, title: t.title })) || [],
+      selected_search_trend_titles: store.selectedSearchTrends.map(t => t.title),
+      selected_yt_trend_titles: store.selectedYtTrends.map(t => t.title),
+      active_rubric_names: store.activeRubrics.map(r => r.name),
+      rubric_criteria: store.activeRubrics.flatMap(r => r.criteria.map(c => c.name)),
+      commercial_duration: store.commercialDuration,
+      pipeline_status: store.pipelineStatus,
+    });
+  }, [
+    isConnected,
+    sendContext,
+    location.pathname,
+    store.config.brand,
+    store.config.target_product,
+    store.config.target_audience,
+    store.config.key_selling_points,
+    store.selectedSearchTrends,
+    store.selectedYtTrends,
+    store.activeRubrics,
+    store.commercialDuration,
+    store.pipelineStatus,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {

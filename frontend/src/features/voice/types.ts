@@ -14,8 +14,15 @@ export interface TranscriptMessage {
   timestamp: number;
 }
 
+export interface VoiceAction {
+  type: 'action';
+  action: string;
+  params?: Record<string, any>;
+}
+
 export interface VoiceSessionConfig {
   systemPrompt: string;
+  onAction?: (action: VoiceAction) => void;
   wsUrl?: string;
   voiceConfig?: {
     sampleRate?: number;

@@ -5,6 +5,7 @@ import { OrchestrationPage } from '../features/orchestration';
 import { RatingPage } from '../features/rating';
 import { StudioPage } from '../features/studio';
 import { NarrativePage } from '../features/narrative';
+import { SkillsPage } from '../features/skills';
 
 export const router = createBrowserRouter([
   {
@@ -34,6 +35,10 @@ export const router = createBrowserRouter([
       {
         path: 'narrative',
         element: <NarrativePage />,
+      },
+      {
+        path: 'skills',
+        element: <SkillsPage />,
       },
     ],
   },

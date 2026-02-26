@@ -78,6 +78,33 @@ export function RatingPage() {
     });
   };
 
+  // Voice action listener for scoring
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { action, params } = (e as CustomEvent).detail;
+      if (action === 'score_criterion' && params?.criterion_name && params?.score) {
+        // Find the criterion in active rubrics
+        for (const rubric of activeRubrics) {
+          const criterion = rubric.criteria.find(c =>
+            c.name.toLowerCase() === params.criterion_name.toLowerCase()
+          );
+          if (criterion) {
+            submitRating({
+              artifactId: 'voice-rated-' + Date.now(),
+              rubricId: rubric.id,
+              ratings: { [criterion.id]: params.score },
+              overallScore: params.score,
+              ratedBy: 'Voice Assistant',
+            });
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener('voice-action', handler);
+    return () => window.removeEventListener('voice-action', handler);
+  }, [activeRubrics, submitRating]);
+
   return (
     <div className="space-y-4">
       <div>

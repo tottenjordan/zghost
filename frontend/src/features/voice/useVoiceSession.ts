@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { ConnectionState, TranscriptMessage, VoiceSessionConfig } from './types';
+import type { ConnectionState, TranscriptMessage, VoiceSessionConfig, VoiceAction } from './types';
 
 const SAMPLE_RATE = 16000; // Input sample rate for microphone
 const PLAYBACK_SAMPLE_RATE = 24000; // Gemini Live API output sample rate
@@ -179,6 +179,12 @@ export function useVoiceSession(config: VoiceSessionConfig) {
         try {
           const data = JSON.parse(event.data);
 
+          // Handle action messages from backend tools
+          if (data.type === 'action') {
+            config.onAction?.(data as VoiceAction);
+            return;
+          }
+
           // Handle errors
           if (data.type === 'error') {
             setError(data.message);
@@ -293,6 +299,13 @@ export function useVoiceSession(config: VoiceSessionConfig) {
     ]);
   }, []);
 
+  // Send UI context to the backend voice agent
+  const sendContext = useCallback((context: Record<string, any>) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ mime_type: 'context_update', data: context }));
+    }
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -320,5 +333,6 @@ export function useVoiceSession(config: VoiceSessionConfig) {
     isRecording: connectionState === 'listening',
     isConnected: connectionState !== 'idle' && connectionState !== 'error',
     addUserMessage,
+    sendContext,
   };
 }

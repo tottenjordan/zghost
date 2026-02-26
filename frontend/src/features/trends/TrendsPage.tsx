@@ -127,6 +127,24 @@ export function TrendsPage() {
     doFetchTrends();
   }, [doFetchTrends]);
 
+  // Voice action listener for trend selection
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { action, params } = (e as CustomEvent).detail;
+      if (action === 'select_google_trend') {
+        const rank = params?.rank;
+        const trend = availableSearchTrends.find(t => t.rank === rank);
+        if (trend) toggleSearchTrend(trend);
+      } else if (action === 'select_youtube_trend') {
+        const rank = params?.rank;
+        const trend = availableYtTrends.find(t => t.rank === rank);
+        if (trend) toggleYtTrend(trend);
+      }
+    };
+    window.addEventListener('voice-action', handler);
+    return () => window.removeEventListener('voice-action', handler);
+  }, [availableSearchTrends, availableYtTrends, toggleSearchTrend, toggleYtTrend]);
+
   const handleFetchTrends = useCallback(() => {
     doFetchTrends(true);
   }, [doFetchTrends]);

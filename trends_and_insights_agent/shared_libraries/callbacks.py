@@ -420,3 +420,21 @@ async def before_agent_get_user_file(
     )
 
     return response
+
+
+async def save_session_to_memory_callback(callback_context: CallbackContext) -> None:
+    """Save session data to memory bank after agent completes.
+
+    Checks for a memory_service on the invocation context and saves
+    the current session to memory if available.
+    """
+    try:
+        invocation_context = callback_context._invocation_context
+        if hasattr(invocation_context, 'memory_service') and invocation_context.memory_service:
+            session = invocation_context.session
+            await invocation_context.memory_service.add_session_to_memory(session)
+            logging.info("Session saved to memory bank: %s", session.id)
+        else:
+            logging.debug("No memory service available, skipping memory save")
+    except Exception as e:
+        logging.warning("Failed to save session to memory: %s", e)

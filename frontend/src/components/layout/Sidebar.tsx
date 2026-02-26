@@ -8,6 +8,7 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
+  Blocks,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -17,6 +18,7 @@ const navItems = [
   { path: '/narrative', icon: FileText, label: 'Narrative' },
   { path: '/studio', icon: Film, label: 'AV Studio' },
   { path: '/rating', icon: Star, label: 'Evaluation Studio' },
+  { path: '/skills', icon: Blocks, label: 'Skills' },
 ];
 
 export function Sidebar() {

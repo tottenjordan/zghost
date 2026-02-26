@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { TimelineEditor } from './TimelineEditor';
 import { ClipViewer } from './ClipViewer';
@@ -19,6 +19,7 @@ export function StudioPage() {
   });
 
   const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
+  const [voiceDirections, setVoiceDirections] = useState<string[]>([]);
 
   const {
     clips,
@@ -49,6 +50,18 @@ export function StudioPage() {
     }
   };
 
+  // Voice action listener for studio direction
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { action, params } = (e as CustomEvent).detail;
+      if (action === 'send_studio_direction' && params?.direction) {
+        setVoiceDirections(prev => [...prev, params.direction]);
+      }
+    };
+    window.addEventListener('voice-action', handler);
+    return () => window.removeEventListener('voice-action', handler);
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -75,6 +88,16 @@ export function StudioPage() {
           {commercial && (
             <div className="mb-6">
               <CommercialPlayer commercial={commercial} />
+            </div>
+          )}
+
+          {/* Voice Directions */}
+          {voiceDirections.length > 0 && (
+            <div className="rounded-lg border border-blue-800 bg-blue-950/30 px-4 py-3">
+              <p className="text-xs font-medium text-blue-400 mb-2">Voice Directions</p>
+              {voiceDirections.map((d, i) => (
+                <p key={i} className="text-sm text-zinc-300">&bull; {d}</p>
+              ))}
             </div>
           )}
 

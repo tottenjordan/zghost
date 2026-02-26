@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NarrativeChat } from './NarrativeChat';
 import { StoryboardView } from './StoryboardView';
 import { NarrativeArc } from './NarrativeArc';
@@ -21,6 +21,18 @@ export function NarrativePage() {
     updateScene,
     updateNarrativeArc,
   } = useNarrative(sessionId);
+
+  // Voice action listener for narrative direction
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { action, params } = (e as CustomEvent).detail;
+      if (action === 'send_narrative_direction' && params?.direction) {
+        sendMessage(params.direction);
+      }
+    };
+    window.addEventListener('voice-action', handler);
+    return () => window.removeEventListener('voice-action', handler);
+  }, [sendMessage]);
 
   return (
     <div className="space-y-6">
