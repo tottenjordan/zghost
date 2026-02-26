@@ -33,7 +33,7 @@ echo ""
 
 # Export requirements
 echo -e "${YELLOW}Exporting Python requirements...${NC}"
-uv export --format requirements-txt --no-hashes --no-emit-project > trends_and_insights_agent/requirements.txt
+uv export --format requirements-txt --no-hashes --no-emit-project 2>/dev/null > trends_and_insights_agent/requirements.txt
 echo -e "${GREEN}Requirements exported successfully${NC}"
 
 # Build container image
