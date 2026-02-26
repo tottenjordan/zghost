@@ -8,6 +8,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      // Memory API must come before /api to avoid being caught by the broader rule
+      '/api/memories': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+      },
       '/apps': {
         target: 'http://localhost:8000',
         changeOrigin: true,
