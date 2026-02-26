@@ -33,7 +33,10 @@ describe('useSession', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.session).toEqual(mockSession);
+        expect(result.current.session).not.toBeNull();
+        expect(result.current.session?.session_id).toMatch(/^session_/);
+        expect(result.current.session?.app_name).toBe('trends_and_insights_agent');
+        expect(result.current.session?.user_id).toBe('test-user');
       });
     });
 

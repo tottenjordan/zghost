@@ -1,18 +1,18 @@
 import { http, HttpResponse } from 'msw';
-import { mockSession, mockSearchTrends, mockYTTrends } from './fixtures';
+import { mockAdkSession, mockSearchTrends, mockYTTrends } from './fixtures';
 
 export const handlers = [
-  // Session Management
+  // Session Management — return ADK-format responses
   http.post('*/apps/:appName/users/:userId/sessions', () => {
-    return HttpResponse.json(mockSession);
+    return HttpResponse.json(mockAdkSession);
   }),
 
   http.post('*/apps/:appName/users/:userId/sessions/:sessionId', () => {
-    return HttpResponse.json(mockSession);
+    return HttpResponse.json(mockAdkSession);
   }),
 
   http.get('*/apps/:appName/users/:userId/sessions/:sessionId', () => {
-    return HttpResponse.json(mockSession);
+    return HttpResponse.json(mockAdkSession);
   }),
 
   // Agent Execution (ADK api_server /run format)

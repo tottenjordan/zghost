@@ -4,7 +4,7 @@ import type { AgentEvent, AgentState, OrchestrationStatus } from '../../types/ag
 import type { Rubric, Rating, ArtifactRating } from '../../types/rating';
 import type { ImageArtifact, VideoArtifact, CommercialArtifact } from '../../types/artifacts';
 
-// Mock Session
+// Mock Session (frontend format, after mapping from ADK)
 export const mockSession: Session = {
   session_id: 'test-session-123',
   app_name: 'trends_and_insights_agent',
@@ -24,6 +24,30 @@ export const mockSession: Session = {
     sources: {},
     gcs_folder: 'test-folder',
   },
+  events: [],
+};
+
+// Mock ADK session response (ADK server format, before mapping)
+export const mockAdkSession = {
+  id: 'test-session-123',
+  appName: 'trends_and_insights_agent',
+  userId: 'test-user',
+  createdAt: '2024-01-01T00:00:00Z',
+  state: {
+    brand: 'Google',
+    target_product: 'Pixel 9',
+    target_audience: 'Tech enthusiasts aged 25-40',
+    key_selling_points: 'Advanced AI features, Pro camera',
+    target_search_trends: { target_search_trends: [] },
+    target_yt_trends: { target_yt_trends: [] },
+    img_artifact_keys: { img_artifact_keys: [] },
+    vid_artifact_keys: { vid_artifact_keys: [] },
+    commercial_artifact: '',
+    combined_final_cited_report: '',
+    sources: {},
+    gcs_folder: 'test-folder',
+  },
+  events: [],
 };
 
 // Mock Search Trends

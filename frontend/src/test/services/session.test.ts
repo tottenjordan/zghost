@@ -24,8 +24,10 @@ describe('SessionManager', () => {
     it('creates a new session and stores it', async () => {
       const session = await sessionManager.createSession('test-user');
 
-      expect(session).toEqual(mockSession);
-      expect(sessionManager.getCurrentSession()).toEqual(mockSession);
+      expect(session.session_id).toMatch(/^session_/);
+      expect(session.app_name).toBe('trends_and_insights_agent');
+      expect(session.user_id).toBe('test-user');
+      expect(sessionManager.getCurrentSession()).toBe(session);
     });
 
     it('returns session with correct structure', async () => {
@@ -61,9 +63,11 @@ describe('SessionManager', () => {
     });
 
     it('returns current session after creation', async () => {
-      await sessionManager.createSession('test-user');
+      const session = await sessionManager.createSession('test-user');
 
-      expect(sessionManager.getCurrentSession()).toEqual(mockSession);
+      expect(sessionManager.getCurrentSession()).toBe(session);
+      expect(session.app_name).toBe('trends_and_insights_agent');
+      expect(session.user_id).toBe('test-user');
     });
   });
 
