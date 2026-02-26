@@ -57,6 +57,9 @@ COPY trends_and_insights_agent/ ./trends_and_insights_agent/
 # Copy voice server
 COPY voice_server.py ./
 
+# Copy memory API server
+COPY memory_api.py ./
+
 # Copy installation scripts (in case they're needed)
 COPY installation_scripts/ ./installation_scripts/
 

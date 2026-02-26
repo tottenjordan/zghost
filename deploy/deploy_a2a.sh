@@ -41,12 +41,20 @@ IMAGE="gcr.io/$GOOGLE_CLOUD_PROJECT/$SERVICE_NAME:latest"
 
 echo -e "${YELLOW}Building A2A container image...${NC}"
 
-# Cloud Build expects Dockerfile at project root
-cp deploy/Dockerfile.a2a Dockerfile
-trap 'rm -f Dockerfile' EXIT
+# Use Cloud Build config to reference Dockerfile.a2a directly (avoids race
+# conditions when another deploy script copies its own Dockerfile to root).
+A2A_CB_CONFIG=$(mktemp /tmp/cloudbuild-a2a-XXXXXX.yaml)
+trap "rm -f '$A2A_CB_CONFIG'" EXIT
+cat > "$A2A_CB_CONFIG" <<CBEOF
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '$IMAGE', '-f', 'deploy/Dockerfile.a2a', '.']
+images:
+  - '$IMAGE'
+CBEOF
 
 gcloud builds submit . \
-  --tag=$IMAGE \
+  --config="$A2A_CB_CONFIG" \
   --project=$GOOGLE_CLOUD_PROJECT \
   --timeout=1800
 
@@ -68,7 +76,7 @@ gcloud run deploy $SERVICE_NAME \
   --concurrency=10 \
   --cpu-boost \
   --allow-unauthenticated \
-  --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=1,GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT,GOOGLE_CLOUD_PROJECT_NUMBER=$GOOGLE_CLOUD_PROJECT_NUMBER,GOOGLE_CLOUD_LOCATION=global,BUCKET=$BUCKET,YT_SECRET_MNGR_NAME=$YT_SECRET_MNGR_NAME"
+  --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=1,GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT,GOOGLE_CLOUD_PROJECT_NUMBER=$GOOGLE_CLOUD_PROJECT_NUMBER,GOOGLE_CLOUD_LOCATION=global,BUCKET=$BUCKET,YT_SECRET_MNGR_NAME=$YT_SECRET_MNGR_NAME,MEMORY_BANK_AGENT_ENGINE_ID=$MEMORY_BANK_AGENT_ENGINE_ID"
 
 if [ $? -eq 0 ]; then
     echo ""
