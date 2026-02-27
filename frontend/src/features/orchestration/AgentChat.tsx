@@ -10,6 +10,7 @@ interface AgentChatProps {
   sessionId: string | null;
   events: AgentEvent[];
   onWaitingForInput?: (waiting: boolean) => void;
+  onSendMessage?: (message: string) => void;
 }
 
 interface ChatMessage {
@@ -24,10 +25,22 @@ function extractChatMessages(events: AgentEvent[]): ChatMessage[] {
   const messages: ChatMessage[] = [];
 
   for (const event of events) {
-    const text = event.data?.content;
-    if (!text || typeof text !== 'string' || text.trim().length === 0) continue;
+    // Extract text from SSE event parts
+    let text = '';
+    if (event.data?.parts) {
+      for (const part of event.data.parts) {
+        if (part.text) text += part.text;
+      }
+    }
+    // Fallback to legacy content field
+    if (!text && event.data?.content && typeof event.data.content === 'string') {
+      text = event.data.content;
+    }
 
-    // Skip very short internal messages and tool calls
+    if (!text || text.trim().length === 0) continue;
+
+    // Skip tool calls and very short internal messages
+    if (event.type === 'tool_call' || event.type === 'tool_response') continue;
     if (text.length < 10 && !text.includes('?')) continue;
 
     const isUser = event.agentName === 'user';
@@ -43,7 +56,7 @@ function extractChatMessages(events: AgentEvent[]): ChatMessage[] {
   return messages;
 }
 
-export function AgentChat({ sessionId, events, onWaitingForInput }: AgentChatProps) {
+export function AgentChat({ sessionId, events, onWaitingForInput, onSendMessage }: AgentChatProps) {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -64,7 +77,13 @@ export function AgentChat({ sessionId, events, onWaitingForInput }: AgentChatPro
 
     setSending(true);
     try {
-      await api.sendMessage(sessionId, text.trim(), USER_ID);
+      if (onSendMessage) {
+        // Route through shared EventSource so events reach timeline/graph
+        onSendMessage(text.trim());
+      } else {
+        // Fallback: consume events privately
+        await api.sendMessage(sessionId, text.trim(), USER_ID);
+      }
       setInput('');
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -72,7 +91,7 @@ export function AgentChat({ sessionId, events, onWaitingForInput }: AgentChatPro
       setSending(false);
       inputRef.current?.focus();
     }
-  }, [sessionId, sending]);
+  }, [sessionId, sending, onSendMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

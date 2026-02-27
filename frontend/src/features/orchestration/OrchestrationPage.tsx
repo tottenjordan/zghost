@@ -199,6 +199,29 @@ export function OrchestrationPage() {
     [updateFilters]
   );
 
+  // Route chat messages through the shared EventSource so events
+  // reach the timeline, graph, and event stream
+  const handleChatMessage = useCallback((message: string) => {
+    if (!sessionId) return;
+    const url = api.getStreamUrl(sessionId, message, USER_ID);
+    setStreamUrl(url);
+  }, [sessionId]);
+
+  // Detect stale sessions (server restarted, session lost) and reset state
+  useEffect(() => {
+    if (!sessionId || !isRunning) return;
+    // If we have a sessionId + running status but no active stream,
+    // the session is likely stale from a previous server instance
+    if (!streamUrl) {
+      api.getSessionState(sessionId).catch(() => {
+        // Session doesn't exist on the server — reset to idle
+        setPipelineStatus('idle');
+        setSessionId(null);
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Auto-start pipeline when navigated from wizard with autoStart flag
   useEffect(() => {
     if (autoStart && isReadyToLaunch().ready && !isRunning) {
@@ -456,6 +479,7 @@ export function OrchestrationPage() {
                 sessionId={sessionId}
                 events={events}
                 onWaitingForInput={setIsWaitingForInput}
+                onSendMessage={handleChatMessage}
               />
             </TabsContent>
 
