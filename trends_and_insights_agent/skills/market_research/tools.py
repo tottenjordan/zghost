@@ -79,3 +79,42 @@ async def save_draft_report_artifact(tool_context: ToolContext) -> dict:
     except Exception as e:
         logging.error(f"Error saving artifact: {e}")
         return {"status": "failed", "error": str(e)}
+
+
+async def recall_prior_insights(tool_context: ToolContext, query: str) -> dict:
+    """Recall prior campaign insights from Memory Bank.
+
+    Use this tool to check if there are relevant insights from previous campaigns
+    that could inform the current research. For example: "What visual styles worked
+    for Nike before?" or "Which trends were effective for Gen Z audiences?"
+
+    Args:
+        tool_context: The tool context.
+        query: Natural language query about past campaign insights.
+
+    Returns:
+        dict: Retrieved insights from past campaigns.
+    """
+    try:
+        import aiohttp
+        scope = {"app_name": "trends_and_insights_agent", "user_id": "default-user"}
+        async with aiohttp.ClientSession() as session:
+            resp = await session.post(
+                "http://localhost:8082/api/memories/retrieve",
+                json={"scope": scope, "query": query},
+                timeout=aiohttp.ClientTimeout(total=10),
+            )
+            if resp.status == 200:
+                data = await resp.json()
+                memories = data.get("memories", [])
+                if memories:
+                    return {
+                        "status": "found",
+                        "insights": memories,
+                        "count": len(memories),
+                    }
+                return {"status": "no_insights", "message": "No prior insights found for this query."}
+            return {"status": "error", "message": f"Memory Bank returned status {resp.status}"}
+    except Exception as e:
+        logging.error(f"Error recalling prior insights: {e}")
+        return {"status": "error", "message": str(e)}

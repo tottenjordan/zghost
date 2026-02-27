@@ -18,7 +18,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from google.adk.runners import InMemoryRunner
-from google.adk.sessions import InMemorySessionService
+from google.adk.sessions import InMemorySessionService, VertexAiSessionService
 from google.genai import types
 
 from .agent import root_agent
@@ -67,7 +67,7 @@ class AppState:
     """Global application state."""
 
     def __init__(self):
-        self.session_service: Optional[InMemorySessionService] = None
+        self.session_service: Optional[InMemorySessionService | VertexAiSessionService] = None
         self.runner: Optional[InMemoryRunner] = None
         # Track active dispatches: dispatch_id -> List[StreamInfo]
         self.active_dispatches: Dict[str, List[StreamInfo]] = {}
@@ -90,16 +90,33 @@ class AppState:
 app_state = AppState()
 
 
+def _create_session_service():
+    """Create session service - VertexAI for production, InMemory for local dev."""
+    project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+    location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+    if project:
+        try:
+            svc = VertexAiSessionService(project=project, location=location)
+            logger.info(f"Using VertexAiSessionService (project={project}, location={location})")
+            return svc
+        except Exception as e:
+            logger.warning(f"Failed to create VertexAiSessionService: {e}, falling back to InMemory")
+    return InMemorySessionService()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifecycle manager for FastAPI app."""
     # Startup
     logger.info("Initializing ADK session service and runner...")
+    session_service = _create_session_service()
+    app_state.session_service = session_service
     app_state.runner = InMemoryRunner(
-        agent=root_agent, app_name="trends_and_insights_agent"
+        agent=root_agent,
+        app_name="trends_and_insights_agent",
     )
-    # Use the runner's internal session service so sessions are shared
-    app_state.session_service = app_state.runner.session_service
+    # Set the session service on the runner
+    app_state.runner.session_service = session_service
     logger.info("API server ready")
 
     yield
@@ -373,8 +390,6 @@ async def run_parallel_stream(
 async def create_session(request: SessionCreateRequest):
     """Create a new session with optional preset configuration."""
     try:
-        # Generate IDs
-        session_id = str(uuid.uuid4())
         user_id = "default-user"
 
         # Load preset config if specified
@@ -388,14 +403,54 @@ async def create_session(request: SessionCreateRequest):
         default_state = setup_config.empty_session_state.get("state", {})
         merged_state = {**default_state, **initial_state}
 
-        # Create session with state included (InMemorySessionService returns
-        # a deep copy, so we must pass state at creation time)
-        await app_state.session_service.create_session(
-            session_id=session_id,
-            user_id=user_id,
-            app_name="trends_and_insights_agent",
-            state=merged_state,
-        )
+        # Create session - VertexAI generates its own session IDs
+        is_vertex_session = isinstance(app_state.session_service, VertexAiSessionService)
+
+        if is_vertex_session:
+            # VertexAI generates its own session IDs
+            session = await app_state.session_service.create_session(
+                user_id=user_id,
+                app_name="trends_and_insights_agent",
+                state=merged_state,
+            )
+            session_id = session.id
+        else:
+            # InMemory allows user-provided session IDs
+            session_id = str(uuid.uuid4())
+            await app_state.session_service.create_session(
+                session_id=session_id,
+                user_id=user_id,
+                app_name="trends_and_insights_agent",
+                state=merged_state,
+            )
+
+        # After session creation, pre-load relevant memories
+        if merged_state.get("brand") or merged_state.get("target_product"):
+            try:
+                import aiohttp
+                query = f"{merged_state.get('brand', '')} {merged_state.get('target_product', '')}"
+                scope = {"app_name": "trends_and_insights_agent", "user_id": user_id}
+                async with aiohttp.ClientSession() as http_session:
+                    resp = await http_session.post(
+                        "http://localhost:8082/api/memories/retrieve",
+                        json={"scope": scope, "query": query.strip()},
+                        timeout=aiohttp.ClientTimeout(total=5),
+                    )
+                    if resp.status == 200:
+                        data = await resp.json()
+                        memories = data.get("memories", [])
+                        if memories:
+                            # Inject into session state
+                            session_obj = await app_state.session_service.get_session(
+                                session_id=session_id,
+                                user_id=user_id,
+                                app_name="trends_and_insights_agent",
+                            )
+                            if session_obj:
+                                session_obj.state["prior_campaign_insights"] = memories
+                                logger.info(f"Pre-loaded {len(memories)} prior insights for {query}")
+            except Exception as e:
+                logger.warning(f"Failed to pre-load memories: {e}")
 
         return SessionCreateResponse(
             session_id=session_id, user_id=user_id, created_at=datetime.utcnow()

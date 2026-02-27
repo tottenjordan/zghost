@@ -291,7 +291,7 @@ export function OrchestrationPage() {
           <FileText className="w-5 h-5 text-blue-400" />
           <span className="text-sm text-blue-300">Research report is ready</span>
           <Link
-            to="/narrative"
+            to={`/narrative?session=${sessionId}`}
             className="ml-auto text-xs text-blue-400 underline hover:text-blue-300"
             onClick={(e) => e.stopPropagation()}
           >
@@ -492,7 +492,7 @@ export function OrchestrationPage() {
             </TabsContent>
 
             <TabsContent value="results" className="flex-1 overflow-auto">
-              <ResultsGallery sessionState={sessionState} />
+              <ResultsGallery sessionState={sessionState} sessionId={sessionId} />
             </TabsContent>
 
             <TabsContent value="evaluation" className="flex-1 overflow-auto">

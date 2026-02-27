@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { NarrativeChat } from './NarrativeChat';
 import { StoryboardView } from './StoryboardView';
 import { NarrativeArc } from './NarrativeArc';
 import { useNarrative } from './useNarrative';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
+import { Button } from '../../components/ui/Button';
+import { CheckCircle, SkipForward } from 'lucide-react';
 
 export function NarrativePage() {
+  const navigate = useNavigate();
   const [sessionId] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('session') || null;
@@ -21,6 +25,17 @@ export function NarrativePage() {
     updateScene,
     updateNarrativeArc,
   } = useNarrative(sessionId);
+
+  const hasReport = messages.length > 0 && messages[0].id === 'report-initial';
+
+  const handleAcceptReport = () => {
+    sendMessage('I accept this research report. Let\'s proceed to creative development.');
+    setTimeout(() => navigate('/orchestration'), 1000);
+  };
+
+  const handleSkipToCreative = () => {
+    navigate('/orchestration');
+  };
 
   // Voice action listener for narrative direction
   useEffect(() => {
@@ -48,6 +63,38 @@ export function NarrativePage() {
           <p className="mt-1 text-xs text-zinc-600">Session: {sessionId}</p>
         )}
       </div>
+
+      {/* Action Bar - shown when report is loaded */}
+      {hasReport && (
+        <div className="flex items-center gap-3 p-4 bg-blue-950/30 border border-blue-800 rounded-lg">
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-blue-300">Research Report Loaded</h3>
+            <p className="text-xs text-blue-400/70 mt-0.5">
+              Review the report below and decide whether to refine it or proceed to creative development
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleAcceptReport}
+              variant="primary"
+              size="sm"
+              className="flex items-center gap-1.5"
+            >
+              <CheckCircle className="w-4 h-4" />
+              Accept Report
+            </Button>
+            <Button
+              onClick={handleSkipToCreative}
+              variant="secondary"
+              size="sm"
+              className="flex items-center gap-1.5"
+            >
+              <SkipForward className="w-4 h-4" />
+              Skip to Creative
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Two-Panel Layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

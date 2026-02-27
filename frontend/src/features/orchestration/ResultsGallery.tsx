@@ -7,6 +7,7 @@ import { cn } from '../../lib/utils';
 
 interface ResultsGalleryProps {
   sessionState: Record<string, any>;
+  sessionId: string;
 }
 
 interface AdCopy {
@@ -14,6 +15,16 @@ interface AdCopy {
   body?: string;
   cta?: string;
   score?: number;
+}
+
+interface MediaItem {
+  url: string;
+  headline?: string;
+  concept?: string;
+  caption?: string;
+  prompt?: string;
+  trend?: string;
+  type: 'image' | 'video';
 }
 
 function gcsToHttpUrl(gcsPath: string): string {
@@ -37,8 +48,9 @@ function parseAdCopies(state: Record<string, any>): AdCopy[] {
   return [];
 }
 
-function parseMediaKeys(state: Record<string, any>): { images: string[]; videos: string[] } {
+function parseMediaItems(state: Record<string, any>): MediaItem[] {
   const gcsFolder = state.gcs_folder || '';
+  const mediaItems: MediaItem[] = [];
 
   let imgKeys = state.img_artifact_keys?.img_artifact_keys || state.img_artifact_keys || [];
   let vidKeys = state.vid_artifact_keys?.vid_artifact_keys || state.vid_artifact_keys || [];
@@ -46,14 +58,57 @@ function parseMediaKeys(state: Record<string, any>): { images: string[]; videos:
   if (!Array.isArray(imgKeys)) imgKeys = [];
   if (!Array.isArray(vidKeys)) vidKeys = [];
 
-  const images = imgKeys.map((k: string) =>
-    k.startsWith('gs://') ? k : `gs://zghost-media-center/${gcsFolder}/${k}`
-  );
-  const videos = vidKeys.map((k: string) =>
-    k.startsWith('gs://') ? k : `gs://zghost-media-center/${gcsFolder}/${k}`
-  );
+  // Parse image items (can be string or object)
+  imgKeys.forEach((item: any) => {
+    if (typeof item === 'string') {
+      // Simple string format
+      const url = item.startsWith('gs://') ? item : `gs://zghost-media-center/${gcsFolder}/${item}`;
+      mediaItems.push({ url, type: 'image' });
+    } else if (item && typeof item === 'object') {
+      // Rich metadata object
+      const artifactKey = item.artifact_key || item.name || item.filename || '';
+      const url = artifactKey.startsWith('gs://')
+        ? artifactKey
+        : `gs://zghost-media-center/${gcsFolder}/${artifactKey}`;
 
-  return { images, videos };
+      mediaItems.push({
+        url,
+        type: 'image',
+        headline: item.headline,
+        concept: item.concept,
+        caption: item.caption,
+        prompt: item.img_prompt || item.prompt,
+        trend: item.trend,
+      });
+    }
+  });
+
+  // Parse video items (can be string or object)
+  vidKeys.forEach((item: any) => {
+    if (typeof item === 'string') {
+      // Simple string format
+      const url = item.startsWith('gs://') ? item : `gs://zghost-media-center/${gcsFolder}/${item}`;
+      mediaItems.push({ url, type: 'video' });
+    } else if (item && typeof item === 'object') {
+      // Rich metadata object
+      const artifactKey = item.artifact_key || item.name || item.filename || '';
+      const url = artifactKey.startsWith('gs://')
+        ? artifactKey
+        : `gs://zghost-media-center/${gcsFolder}/${artifactKey}`;
+
+      mediaItems.push({
+        url,
+        type: 'video',
+        headline: item.headline,
+        concept: item.concept,
+        caption: item.caption,
+        prompt: item.vid_prompt || item.prompt,
+        trend: item.trend,
+      });
+    }
+  });
+
+  return mediaItems;
 }
 
 function MediaFallback({ type }: { type: 'image' | 'video' }) {
@@ -70,16 +125,19 @@ function MediaFallback({ type }: { type: 'image' | 'video' }) {
   );
 }
 
-export function ResultsGallery({ sessionState }: ResultsGalleryProps) {
+export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps) {
   const [expandedCopy, setExpandedCopy] = useState<number | null>(null);
+  const [expandedMedia, setExpandedMedia] = useState<number | null>(null);
   const [failedMedia, setFailedMedia] = useState<Set<string>>(new Set());
   const adCopies = parseAdCopies(sessionState);
-  const { images, videos } = parseMediaKeys(sessionState);
+  const mediaItems = parseMediaItems(sessionState);
   const gcsFolder = sessionState.gcs_folder || '';
   const hasReport = !!sessionState.combined_final_cited_report;
   const hasVisualConcepts = !!sessionState.final_visual_concepts;
 
-  const totalMedia = images.length + videos.length;
+  const images = mediaItems.filter(m => m.type === 'image');
+  const videos = mediaItems.filter(m => m.type === 'video');
+  const totalMedia = mediaItems.length;
   const hasAny = adCopies.length > 0 || totalMedia > 0 || hasReport || hasVisualConcepts;
 
   const handleMediaError = (url: string) => {
@@ -136,7 +194,7 @@ export function ResultsGallery({ sessionState }: ResultsGalleryProps) {
               </a>
             )}
             <Link
-              to="/narrative"
+              to={`/narrative?session=${sessionId}`}
               className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 ml-auto px-2 py-1 rounded border border-blue-800/50 bg-blue-950/30 hover:bg-blue-950/50 transition-colors"
             >
               <FileText className="w-3 h-3" />
@@ -218,65 +276,93 @@ export function ResultsGallery({ sessionState }: ResultsGalleryProps) {
             )}
           </div>
 
-          {videos.map((url, i) => (
-            <div key={`vid-${i}`} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Film className="w-4 h-4 text-green-400" />
-                <span className="text-xs text-zinc-300 truncate flex-1">
-                  {url.split('/').pop()}
-                </span>
-                <a
-                  href={gcsToHttpUrl(url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-zinc-500 hover:text-zinc-300"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                </a>
-              </div>
-              {failedMedia.has(url) ? (
-                <MediaFallback type="video" />
-              ) : (
-                <video
-                  src={gcsToHttpUrl(url)}
-                  controls
-                  className="w-full rounded border border-zinc-700"
-                  preload="metadata"
-                  onError={() => handleMediaError(url)}
-                />
-              )}
-            </div>
-          ))}
+          {mediaItems.map((media, i) => {
+            const Icon = media.type === 'video' ? Film : Image;
+            const iconColor = media.type === 'video' ? 'text-green-400' : 'text-blue-400';
+            const isExpanded = expandedMedia === i;
 
-          {images.map((url, i) => (
-            <div key={`img-${i}`} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Image className="w-4 h-4 text-blue-400" />
-                <span className="text-xs text-zinc-300 truncate flex-1">
-                  {url.split('/').pop()}
-                </span>
-                <a
-                  href={gcsToHttpUrl(url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-zinc-500 hover:text-zinc-300"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                </a>
+            return (
+              <div key={`media-${i}`} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
+                {/* Header with title and actions */}
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon className={cn('w-4 h-4', iconColor)} />
+                  <span className="text-xs text-zinc-300 truncate flex-1">
+                    {media.headline || media.url.split('/').pop()}
+                  </span>
+                  <a
+                    href={gcsToHttpUrl(media.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-zinc-500 hover:text-zinc-300"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </a>
+                  {(media.concept || media.caption || media.prompt || media.trend) && (
+                    <button
+                      onClick={() => setExpandedMedia(isExpanded ? null : i)}
+                      className="text-zinc-500 hover:text-zinc-300"
+                    >
+                      <ChevronRight className={cn(
+                        'w-3.5 h-3.5 transition-transform',
+                        isExpanded && 'rotate-90'
+                      )} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Media Preview */}
+                {failedMedia.has(media.url) ? (
+                  <MediaFallback type={media.type} />
+                ) : media.type === 'video' ? (
+                  <video
+                    src={gcsToHttpUrl(media.url)}
+                    controls
+                    className="w-full rounded border border-zinc-700"
+                    preload="metadata"
+                    onError={() => handleMediaError(media.url)}
+                  />
+                ) : (
+                  <img
+                    src={gcsToHttpUrl(media.url)}
+                    alt={media.headline || `Generated ad ${i + 1}`}
+                    className="w-full rounded border border-zinc-700"
+                    loading="lazy"
+                    onError={() => handleMediaError(media.url)}
+                  />
+                )}
+
+                {/* Expandable Metadata */}
+                {isExpanded && (
+                  <div className="mt-3 space-y-2 border-t border-zinc-800 pt-3">
+                    {media.concept && (
+                      <div>
+                        <span className="text-xs font-medium text-zinc-500">Concept:</span>
+                        <p className="text-xs text-zinc-400 mt-0.5">{media.concept}</p>
+                      </div>
+                    )}
+                    {media.caption && (
+                      <div>
+                        <span className="text-xs font-medium text-zinc-500">Caption:</span>
+                        <p className="text-xs text-zinc-400 mt-0.5">{media.caption}</p>
+                      </div>
+                    )}
+                    {media.trend && (
+                      <div>
+                        <span className="text-xs font-medium text-zinc-500">Trend:</span>
+                        <p className="text-xs text-zinc-400 mt-0.5">{media.trend}</p>
+                      </div>
+                    )}
+                    {media.prompt && (
+                      <div>
+                        <span className="text-xs font-medium text-zinc-500">Generation Prompt:</span>
+                        <p className="text-xs text-zinc-400 mt-0.5 font-mono">{media.prompt}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              {failedMedia.has(url) ? (
-                <MediaFallback type="image" />
-              ) : (
-                <img
-                  src={gcsToHttpUrl(url)}
-                  alt={`Generated ad ${i + 1}`}
-                  className="w-full rounded border border-zinc-700"
-                  loading="lazy"
-                  onError={() => handleMediaError(url)}
-                />
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

@@ -9,7 +9,7 @@ import type { NodeChange, EdgeChange } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { AgentNode } from './AgentNode';
 import { PIPELINE_NODES, PIPELINE_EDGES } from './pipeline-config';
-import type { OrchestrationStatus, AgentEvent } from '../../types/agents';
+import type { OrchestrationStatus, AgentEvent, AgentStatus } from '../../types/agents';
 import type { Node } from 'reactflow';
 
 interface PipelineGraphProps {
@@ -31,9 +31,27 @@ export function PipelineGraph({
   const nodesWithStatus = useMemo(() => {
     return PIPELINE_NODES.map((node) => {
       const agentName = node.data.agentName;
-      const agentState = status?.agents[agentName];
       const agentEvents = events.filter((e) => e.agentName === agentName);
       const lastEvent = agentEvents[agentEvents.length - 1];
+      const firstEvent = agentEvents[0];
+
+      // Derive status from events (primary source)
+      let derivedStatus: AgentStatus = 'idle';
+      if (agentEvents.length > 0) {
+        if (lastEvent?.type === 'agent_complete') {
+          derivedStatus = 'completed';
+        } else if (lastEvent?.type === 'error') {
+          derivedStatus = 'error';
+        } else {
+          derivedStatus = 'running';
+        }
+      }
+
+      // Fall back to polling status if events don't provide info
+      const agentState = status?.agents[agentName];
+      const finalStatus = agentEvents.length > 0
+        ? derivedStatus
+        : (agentState?.status || 'idle');
 
       let currentTool: string | undefined;
       if (lastEvent?.type === 'tool_call' && lastEvent.data?.tool) {
@@ -41,15 +59,15 @@ export function PipelineGraph({
       }
 
       let elapsedTime: number | undefined;
-      if (agentState?.status === 'running' && agentState.startTime) {
-        elapsedTime = Date.now() - agentState.startTime;
+      if (finalStatus === 'running' && firstEvent?.timestamp) {
+        elapsedTime = Date.now() - firstEvent.timestamp;
       }
 
       return {
         ...node,
         data: {
           ...node.data,
-          status: agentState?.status || 'idle',
+          status: finalStatus,
           currentTool,
           elapsedTime,
         },
@@ -59,11 +77,32 @@ export function PipelineGraph({
 
   // Enhance edges with animation for active flows
   const edgesWithAnimation = useMemo(() => {
+    // Build sets of running/completed agents from events
+    const runningAgents = new Set<string>();
+    const completedAgents = new Set<string>();
+
+    const agentEventMap = new Map<string, AgentEvent[]>();
+    events.forEach((event) => {
+      if (!agentEventMap.has(event.agentName)) {
+        agentEventMap.set(event.agentName, []);
+      }
+      agentEventMap.get(event.agentName)!.push(event);
+    });
+
+    agentEventMap.forEach((agentEvents, agentName) => {
+      const lastEvent = agentEvents[agentEvents.length - 1];
+      if (lastEvent?.type === 'agent_complete') {
+        completedAgents.add(agentName);
+      } else if (lastEvent?.type === 'error') {
+        // Errors also count as "not running"
+      } else if (agentEvents.length > 0) {
+        runningAgents.add(agentName);
+      }
+    });
+
     return PIPELINE_EDGES.map((edge) => {
-      const sourceAgent = status?.agents[edge.source];
-      const targetAgent = status?.agents[edge.target];
       const isActive =
-        sourceAgent?.status === 'running' || targetAgent?.status === 'running';
+        runningAgents.has(edge.source) || runningAgents.has(edge.target);
 
       return {
         ...edge,
@@ -74,7 +113,7 @@ export function PipelineGraph({
         },
       };
     });
-  }, [status]);
+  }, [events]);
 
   // Allow drag interactions without crashing
   const onNodesChange = useCallback((_changes: NodeChange[]) => {

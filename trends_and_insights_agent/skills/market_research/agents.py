@@ -15,7 +15,7 @@ from ...shared_libraries.config import config
 from ...shared_libraries import callbacks, schema_types
 from ...skills.skill_loader import load_skill_from_dir
 
-from .tools import save_draft_report_artifact
+from .tools import save_draft_report_artifact, recall_prior_insights
 from .sub_agents.campaign_web_researcher.agent import ca_sequential_planner
 from .sub_agents.search_web_researcher.agent import gs_sequential_planner
 from .sub_agents.youtube_web_researcher.agent import yt_sequential_planner
@@ -218,6 +218,7 @@ research_orchestrator = Agent(
     """,
     tools=[
         save_draft_report_artifact,
+        recall_prior_insights,
         AgentTool(agent=combined_research_pipeline),
         _skill_toolset,
     ],

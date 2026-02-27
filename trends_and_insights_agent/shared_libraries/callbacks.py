@@ -442,3 +442,55 @@ async def save_session_to_memory_callback(callback_context: CallbackContext) -> 
             logging.debug("No memory service available, skipping memory save")
     except Exception as e:
         logging.warning("Failed to save session to memory: %s", e)
+
+
+async def save_campaign_insights_to_memory(callback_context: CallbackContext) -> None:
+    """Auto-save campaign insights to Memory Bank after pipeline completion."""
+    state = callback_context.state
+    report = state.get("combined_final_cited_report")
+    if not report:
+        return  # No report yet, skip
+
+    # Only save once per session
+    if state.get("_insights_saved_to_memory"):
+        return
+
+    brand = state.get("brand", "")
+    product = state.get("target_product", "")
+    audience = state.get("target_audience", "")
+
+    facts = []
+    # Extract key insights
+    if brand and product:
+        facts.append(f"Campaign run for {brand} {product} targeting {audience}")
+
+    # Ad copy themes
+    ad_copies = state.get("final_select_ad_copies", {})
+    copies_list = ad_copies.get("final_select_ad_copies", ad_copies) if isinstance(ad_copies, dict) else ad_copies
+    if isinstance(copies_list, list):
+        for copy in copies_list[:3]:
+            if isinstance(copy, dict) and copy.get("headline"):
+                facts.append(f"Ad copy theme: '{copy['headline']}' scored {copy.get('score', 'N/A')}")
+
+    # Focus group scores
+    focus_score = state.get("focus_group_score")
+    if focus_score:
+        facts.append(f"Focus group score: {focus_score}/10 for {brand} {product}")
+
+    if not facts:
+        return
+
+    # Call Memory Bank API
+    try:
+        import aiohttp
+        scope = {"app_name": "trends_and_insights_agent", "user_id": "default-user"}
+        async with aiohttp.ClientSession() as session:
+            await session.post(
+                "http://localhost:8082/api/memories/create",
+                json={"scope": scope, "facts": facts},
+                timeout=aiohttp.ClientTimeout(total=10),
+            )
+        state["_insights_saved_to_memory"] = True
+        logging.info(f"Saved {len(facts)} campaign insights to Memory Bank")
+    except Exception as e:
+        logging.warning(f"Failed to save insights to Memory Bank: {e}")

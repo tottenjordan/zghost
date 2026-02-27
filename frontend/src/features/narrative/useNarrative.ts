@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { api } from '../../services/api';
 import type { Message, Scene, NarrativeArc, NarrativeData } from './types';
 
@@ -9,6 +9,33 @@ export function useNarrative(sessionId: string | null) {
     narrativeArc: undefined,
     isStreaming: false,
   });
+
+  // Auto-load research report on mount when sessionId is provided
+  useEffect(() => {
+    if (!sessionId) return;
+
+    api.getSessionState(sessionId)
+      .then((result) => {
+        const report = result.state?.combined_final_cited_report;
+        if (report) {
+          setNarrativeData((prev) => ({
+            ...prev,
+            messages: [
+              {
+                id: 'report-initial',
+                role: 'assistant',
+                content:
+                  typeof report === 'string'
+                    ? report
+                    : 'Research report loaded. How would you like to refine it?',
+                timestamp: Date.now(),
+              },
+            ],
+          }));
+        }
+      })
+      .catch((err) => console.error('Failed to load session report:', err));
+  }, [sessionId]);
 
   const sendMessage = useCallback(
     async (content: string) => {
