@@ -72,9 +72,12 @@ export function AgentChat({ sessionId, events, onWaitingForInput, onSendMessage 
     }
   }, [messages.length, autoScroll]);
 
-  const handleSend = useCallback(async (text: string) => {
-    if (!sessionId || !text.trim() || sending) return;
+  const sendingRef = useRef(false);
 
+  const handleSend = useCallback(async (text: string) => {
+    if (!sessionId || !text.trim() || sending || sendingRef.current) return;
+
+    sendingRef.current = true;
     setSending(true);
     try {
       if (onSendMessage) {
@@ -88,6 +91,7 @@ export function AgentChat({ sessionId, events, onWaitingForInput, onSendMessage 
     } catch (err) {
       console.error('Failed to send message:', err);
     } finally {
+      sendingRef.current = false;
       setSending(false);
       inputRef.current?.focus();
     }

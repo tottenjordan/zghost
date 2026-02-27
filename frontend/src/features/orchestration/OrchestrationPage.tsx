@@ -28,7 +28,9 @@ export function OrchestrationPage() {
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
   const [configExpanded, setConfigExpanded] = useState(false);
+  const [detailTab, setDetailTab] = useState('chat');
   const originalTitleRef = useRef(document.title);
+  const isStartingRef = useRef(false);
 
   const {
     config,
@@ -106,6 +108,8 @@ export function OrchestrationPage() {
   }, [isWaitingForInput]);
 
   const handleStart = useCallback(async (parallelCount: number) => {
+    if (isStartingRef.current) return;
+    isStartingRef.current = true;
     setStartError(null);
     try {
       // Build initial state with campaign config, trends, and commercial duration
@@ -171,6 +175,8 @@ export function OrchestrationPage() {
       const msg = err instanceof Error ? err.message : 'Failed to start pipeline';
       setStartError(msg);
       setPipelineStatus('error');
+    } finally {
+      isStartingRef.current = false;
     }
   }, [config, selectedSearchTrends, selectedYtTrends, activeRubrics, commercialDuration, sessions, addSession, setSessionId, setPipelineStatus]);
 
@@ -231,8 +237,9 @@ export function OrchestrationPage() {
   }, []);
 
   // Auto-start pipeline when navigated from wizard with autoStart flag
+  // Bypass isReadyToLaunch() — the wizard already validated before setting autoStart
   useEffect(() => {
-    if (autoStart && isReadyToLaunch().ready && !isRunning) {
+    if (autoStart && !isRunning) {
       setAutoStart(false);
       handleStart(1);
     } else if (autoStart) {
@@ -261,7 +268,9 @@ export function OrchestrationPage() {
 
   const selectedAgentState = selectedAgent ? status?.agents[selectedAgent] : undefined;
   const selectedAgentEvents = selectedAgent ? getAgentEvents(selectedAgent) : [];
-  const { ready, missing } = isReadyToLaunch();
+  const { ready: storeReady, missing } = isReadyToLaunch();
+  // Suppress "missing trends" when already running with an active session
+  const ready = storeReady || (!!sessionId && isRunning);
   const totalTrends = selectedSearchTrends.length + selectedYtTrends.length;
 
   // Auto-navigation detection
@@ -275,10 +284,13 @@ export function OrchestrationPage() {
     <div className="flex flex-col h-full gap-3">
       {/* Input alert banner */}
       {isWaitingForInput && (
-        <div className="flex items-center gap-3 p-3 bg-amber-950/50 border border-amber-700 rounded-lg animate-pulse">
+        <div
+          className="flex items-center gap-3 p-3 bg-amber-950/50 border border-amber-700 rounded-lg animate-pulse cursor-pointer hover:bg-amber-950/70 transition-colors"
+          onClick={() => setDetailTab('chat')}
+        >
           <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
           <span className="text-sm text-amber-300 flex-1">The agent is waiting for your input</span>
-          <span className="text-xs text-amber-500">Check the Chat tab to respond</span>
+          <span className="text-xs text-amber-500">Click to open Chat</span>
         </div>
       )}
 
@@ -460,7 +472,7 @@ export function OrchestrationPage() {
               />
             </TabsContent>
 
-            <TabsContent value="graph" className="flex-1 min-h-[400px]">
+            <TabsContent value="graph" className="flex-1 h-[500px]">
               <PipelineGraph
                 status={status}
                 events={events}
@@ -472,7 +484,7 @@ export function OrchestrationPage() {
 
         {/* Right: Detail panel (1 col) */}
         <div className="border border-zinc-800 rounded-lg overflow-hidden flex flex-col">
-          <Tabs defaultValue="chat">
+          <Tabs value={detailTab} onValueChange={setDetailTab}>
             <TabsList className="w-full grid grid-cols-6">
               <TabsTrigger value="chat">Chat</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
