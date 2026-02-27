@@ -58,6 +58,7 @@ export function OrchestrationPage() {
     refetch,
     events,
     getAgentEvents,
+    addEvent,
     sessionState,
     changedKeys,
     selectedAgent,
@@ -203,9 +204,16 @@ export function OrchestrationPage() {
   // reach the timeline, graph, and event stream
   const handleChatMessage = useCallback((message: string) => {
     if (!sessionId) return;
+    // Add synthetic user event so chat shows the message immediately
+    addEvent({
+      type: 'agent_step',
+      agentName: 'user',
+      data: { parts: [{ text: message }] },
+      timestamp: Date.now(),
+    });
     const url = api.getStreamUrl(sessionId, message, USER_ID);
     setStreamUrl(url);
-  }, [sessionId]);
+  }, [sessionId, addEvent]);
 
   // Detect stale sessions (server restarted, session lost) and reset state
   useEffect(() => {

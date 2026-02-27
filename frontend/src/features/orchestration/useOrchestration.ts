@@ -31,6 +31,7 @@ export function useOrchestration(sessionId: string | null, streamUrl: string | n
     error: streamError,
     clearEvents,
     seedEvents,
+    addEvent,
   } = useStreaming(streamUrl);
 
   // Hydrate events from server when session exists but no live stream
@@ -150,6 +151,7 @@ export function useOrchestration(sessionId: string | null, streamUrl: string | n
     allEvents,
     getAgentEvents,
     clearEvents,
+    addEvent,
     isConnected,
 
     // Session state

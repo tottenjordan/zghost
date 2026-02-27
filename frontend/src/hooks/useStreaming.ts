@@ -42,6 +42,9 @@ export function useStreaming(streamUrl: string | null) {
   const seedEvents = (seed: AgentEvent[]) => {
     setEvents((prev) => prev.length === 0 ? seed : prev);
   };
+  const addEvent = (event: AgentEvent) => {
+    setEvents((prev) => [...prev, event]);
+  };
 
   return {
     events,
@@ -49,5 +52,6 @@ export function useStreaming(streamUrl: string | null) {
     error,
     clearEvents,
     seedEvents,
+    addEvent,
   };
 }
