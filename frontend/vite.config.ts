@@ -7,7 +7,7 @@ const useLocal = process.env.VITE_LOCAL_BACKEND === 'true'
 
 const apiTarget = useLocal ? 'http://localhost:8000' : CLOUD_RUN_URL
 const memoryTarget = useLocal ? 'http://localhost:8082' : CLOUD_RUN_URL
-const voiceTarget = useLocal ? 'ws://localhost:8081' : CLOUD_RUN_URL.replace('https', 'wss')
+const voiceTarget = useLocal ? 'http://localhost:8081' : CLOUD_RUN_URL
 
 // https://vite.dev/config/
 export default defineConfig({

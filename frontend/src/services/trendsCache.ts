@@ -53,6 +53,14 @@ async function _doFetch(forceRefresh = false): Promise<CachedTrends> {
 
   const data = await response.json();
 
+  // If server returned 200 but both arrays empty, treat as error
+  if (
+    (!data.search_trends || data.search_trends.length === 0) &&
+    (!data.youtube_trends || data.youtube_trends.length === 0)
+  ) {
+    throw new Error('Server returned no trends — backend APIs may be unavailable');
+  }
+
   // Map server TrendInfo objects to frontend SearchTrend/YTTrend types
   const searchTrends: SearchTrend[] = (data.search_trends || []).map(
     (t: any, index: number) => ({

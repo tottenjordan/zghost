@@ -24,9 +24,17 @@ trap cleanup SIGINT SIGTERM EXIT
 
 echo -e "${BLUE}Starting local development environment...${NC}"
 
-# 1. ADK web server (port 8000)
-echo -e "${GREEN}[1/4] Starting ADK web server on port 8000...${NC}"
-uv run adk web trends_and_insights_agent --port 8000 &
+# Load .env from agent directory (ADK does this automatically; uvicorn does not)
+if [ -f trends_and_insights_agent/.env ]; then
+  echo -e "${GREEN}Loading .env from trends_and_insights_agent/.env${NC}"
+  set -a
+  source trends_and_insights_agent/.env
+  set +a
+fi
+
+# 1. API server (port 8000) — same as Cloud Run (includes trends endpoint)
+echo -e "${GREEN}[1/4] Starting API server on port 8000...${NC}"
+uv run uvicorn trends_and_insights_agent.api_server:app --host 0.0.0.0 --port 8000 --log-level info &
 PIDS+=($!)
 
 # 2. Voice WebSocket server (port 8081)
@@ -47,7 +55,7 @@ cd ..
 
 echo ""
 echo -e "${GREEN}All services starting:${NC}"
-echo -e "  ADK Web:    ${BLUE}http://localhost:8000${NC}"
+echo -e "  API Server: ${BLUE}http://localhost:8000${NC}"
 echo -e "  Voice WS:   ${BLUE}ws://localhost:8081${NC}"
 echo -e "  Memory API: ${BLUE}http://localhost:8082${NC}"
 echo -e "  Frontend:   ${BLUE}http://localhost:5173${NC}"

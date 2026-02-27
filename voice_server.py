@@ -272,21 +272,9 @@ async def handle_voice_session(websocket):
     # Create per-session agent with tools
     agent = _create_voice_agent(action_queue, ui_context)
 
-    # Try VertexAI session service for persistence, fall back to in-memory
-    try:
-        if os.environ.get("GOOGLE_CLOUD_PROJECT"):
-            from google.adk.sessions import VertexAiSessionService
-            session_service = VertexAiSessionService(
-                project=os.environ["GOOGLE_CLOUD_PROJECT"],
-                location=os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1"),
-            )
-            logger.info("Using VertexAiSessionService for voice sessions")
-        else:
-            session_service = InMemorySessionService()
-            logger.info("Using InMemorySessionService (no GOOGLE_CLOUD_PROJECT)")
-    except Exception as e:
-        logger.warning("VertexAiSessionService unavailable, falling back to InMemory: %s", e)
-        session_service = InMemorySessionService()
+    # Voice sessions are ephemeral — use InMemorySessionService
+    # (VertexAiSessionService doesn't support user-provided session IDs)
+    session_service = InMemorySessionService()
 
     runner = Runner(app_name=APP_NAME, agent=agent, session_service=session_service)
 

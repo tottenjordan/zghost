@@ -174,9 +174,12 @@ def format_event_for_sse(event: Any) -> Dict[str, Any]:
     ADK 1.25.1 Event fields: content (Content with parts), author, actions,
     turn_complete, error_code, error_message, etc.
     """
+    now_ms = int(time.time() * 1000)
+    event_type = "agent_step"  # default
+
     event_data = {
-        "type": "Event",
-        "timestamp": datetime.utcnow().isoformat(),
+        "type": event_type,
+        "timestamp": now_ms,
         "data": {},
     }
 
@@ -184,14 +187,19 @@ def format_event_for_sse(event: Any) -> Dict[str, Any]:
     if hasattr(event, "author"):
         event_data["agent_name"] = event.author
 
-    # Extract content parts (text, function_call, function_response)
+    # Determine specific event type from content
     content = getattr(event, "content", None)
+    has_function_call = False
+    has_function_response = False
+    has_text = False
+
     if content and hasattr(content, "parts") and content.parts:
         parts_data = []
         for part in content.parts:
             part_dict = {}
             if hasattr(part, "text") and part.text:
                 part_dict["text"] = part.text
+                has_text = True
             if hasattr(part, "function_call") and part.function_call:
                 fc = part.function_call
                 part_dict["function_call"] = {
@@ -199,12 +207,14 @@ def format_event_for_sse(event: Any) -> Dict[str, Any]:
                     "args": getattr(fc, "args", {}),
                 }
                 event_data["tool_name"] = getattr(fc, "name", "")
+                has_function_call = True
             if hasattr(part, "function_response") and part.function_response:
                 fr = part.function_response
                 part_dict["function_response"] = {
                     "name": getattr(fr, "name", "unknown"),
                     "response": getattr(fr, "response", {}),
                 }
+                has_function_response = True
             if part_dict:
                 parts_data.append(part_dict)
         if parts_data:
@@ -213,7 +223,17 @@ def format_event_for_sse(event: Any) -> Dict[str, Any]:
     # Handle errors
     if hasattr(event, "error_message") and event.error_message:
         event_data["data"]["error"] = event.error_message
+        event_type = "error"
+    elif has_function_call:
+        event_type = "tool_call"
+    elif has_function_response:
+        event_type = "tool_response"
+    elif getattr(event, "turn_complete", False):
+        event_type = "agent_complete"
+    elif has_text:
+        event_type = "agent_step"
 
+    event_data["type"] = event_type
     return event_data
 
 
@@ -253,17 +273,18 @@ async def stream_agent_events(
 
         # Send completion event
         completion_event = {
-            "type": "stream_complete",
-            "timestamp": datetime.utcnow().isoformat(),
+            "type": "agent_complete",
+            "timestamp": int(time.time() * 1000),
             "session_id": session_id,
+            "agent_name": "root_agent",
         }
         yield f"data: {json.dumps(completion_event)}\n\n"
 
     except Exception as e:
         logger.error(f"Error in stream_agent_events: {str(e)}", exc_info=True)
         error_event = {
-            "type": "stream_error",
-            "timestamp": datetime.utcnow().isoformat(),
+            "type": "error",
+            "timestamp": int(time.time() * 1000),
             "error": str(e),
         }
         yield f"data: {json.dumps(error_event)}\n\n"
@@ -921,7 +942,7 @@ async def get_available_trends(force_refresh: bool = Query(default=False)):
                             continue
             logger.info("Fetched %d Google Search trends", len(search_trends))
         except Exception as e:
-            logger.warning("Failed to fetch Google Search trends: %s", e)
+            logger.error("Failed to fetch Google Search trends: %s", e, exc_info=True)
 
         # Fetch YouTube trends from YouTube Data API
         yt_trends = []
@@ -947,7 +968,14 @@ async def get_available_trends(force_refresh: bool = Query(default=False)):
                 )
             logger.info("Fetched %d YouTube trends", len(yt_trends))
         except Exception as e:
-            logger.warning("Failed to fetch YouTube trends: %s", e)
+            logger.error("Failed to fetch YouTube trends: %s", e, exc_info=True)
+
+        # If both sources returned empty, surface as error
+        if not search_trends and not yt_trends:
+            raise HTTPException(
+                status_code=503,
+                detail="Both trend sources returned empty. Check BigQuery and YouTube API access.",
+            )
 
         response = AvailableTrendsResponse(
             youtube_trends=yt_trends,
