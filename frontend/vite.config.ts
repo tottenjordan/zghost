@@ -3,7 +3,8 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 const CLOUD_RUN_URL = 'https://trends-and-insights-frontend-in2bk2mdwa-uc.a.run.app'
-const useLocal = process.env.VITE_LOCAL_BACKEND === 'true'
+// Default to local backend for dev; set VITE_CLOUD_BACKEND=true to proxy to Cloud Run
+const useLocal = process.env.VITE_CLOUD_BACKEND !== 'true'
 
 const apiTarget = useLocal ? 'http://localhost:8000' : CLOUD_RUN_URL
 const memoryTarget = useLocal ? 'http://localhost:8082' : CLOUD_RUN_URL
