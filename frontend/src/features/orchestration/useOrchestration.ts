@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAgentStatus } from '../../hooks/useAgentStatus';
 import { useStreaming } from '../../hooks/useStreaming';
 import { api } from '../../services/api';
+import { parseAgentEvent } from '../../services/streaming';
 import type { AgentEvent, AgentEventType } from '../../types/agents';
 
 const POLLING_INTERVAL = 5000;
@@ -29,7 +30,23 @@ export function useOrchestration(sessionId: string | null, streamUrl: string | n
     isConnected,
     error: streamError,
     clearEvents,
+    seedEvents,
   } = useStreaming(streamUrl);
+
+  // Hydrate events from server when session exists but no live stream
+  const hydratedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!sessionId || streamUrl || hydratedRef.current === sessionId) return;
+    hydratedRef.current = sessionId;
+    api.getSessionEvents(sessionId).then((result) => {
+      if (result.events.length > 0) {
+        const parsed = result.events.map(parseAgentEvent);
+        seedEvents(parsed);
+      }
+    }).catch(() => {
+      // Session events not available — that's OK
+    });
+  }, [sessionId, streamUrl, seedEvents]);
 
   // Poll session state (not events — events come from SSE stream)
   useEffect(() => {

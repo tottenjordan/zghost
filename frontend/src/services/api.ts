@@ -132,6 +132,22 @@ class ApiClient {
   }
 
   /**
+   * Fetch stored SSE events for a session (for hydrating timeline on revisit).
+   */
+  async getSessionEvents(
+    sessionId: string
+  ): Promise<{ session_id: string; events: any[]; total_events: number }> {
+    const url = `${API_BASE}/api/v1/orchestration/${sessionId}/events`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(
+        `API request failed (${response.status}): ${response.statusText || 'Unknown error'}`
+      );
+    }
+    return response.json();
+  }
+
+  /**
    * Build an SSE stream URL for a message.
    * Use with EventSource or fetch for real-time event streaming.
    */

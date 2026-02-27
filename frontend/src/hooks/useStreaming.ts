@@ -39,11 +39,15 @@ export function useStreaming(streamUrl: string | null) {
   }, [streamUrl]);
 
   const clearEvents = () => setEvents([]);
+  const seedEvents = (seed: AgentEvent[]) => {
+    setEvents((prev) => prev.length === 0 ? seed : prev);
+  };
 
   return {
     events,
     isConnected,
     error,
     clearEvents,
+    seedEvents,
   };
 }

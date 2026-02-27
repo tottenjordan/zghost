@@ -77,6 +77,8 @@ class AppState:
         self.stream_events: Dict[str, List[Dict]] = {}
         # Track execution traces: session_id -> List[TraceEvent]
         self.execution_traces: Dict[str, List[TraceEvent]] = {}
+        # Track SSE events for replay: session_id -> List[Dict]
+        self.session_sse_events: Dict[str, List[Dict]] = {}
         # Track pipeline statuses: session_id -> PipelineStatus
         self.pipeline_statuses: Dict[str, PipelineStatus] = {}
         # Ratings storage: rating_id -> RatingResponse
@@ -267,6 +269,11 @@ async def stream_agent_events(
                 parent_event_id=None,
             )
             app_state.execution_traces[session_id].append(trace_event)
+
+            # Store raw SSE event for frontend replay
+            if session_id not in app_state.session_sse_events:
+                app_state.session_sse_events[session_id] = []
+            app_state.session_sse_events[session_id].append(event_data)
 
             # Yield SSE-formatted event
             yield f"data: {json.dumps(event_data)}\n\n"
@@ -806,6 +813,13 @@ async def get_execution_trace(session_id: str):
         raise HTTPException(
             status_code=500, detail=f"Failed to get execution trace: {str(e)}"
         )
+
+
+@app.get("/api/v1/orchestration/{session_id}/events")
+async def get_session_events(session_id: str):
+    """Get stored SSE events for a session (for frontend replay/hydration)."""
+    events = app_state.session_sse_events.get(session_id, [])
+    return {"session_id": session_id, "events": events, "total_events": len(events)}
 
 
 @app.get("/api/v1/orchestration/agents", response_model=AgentHierarchyResponse)
