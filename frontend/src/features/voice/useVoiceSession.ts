@@ -88,10 +88,16 @@ export function useVoiceSession(config: VoiceSessionConfig) {
           const inputData = e.inputBuffer.getChannelData(0);
           const pcmData = floatTo16BitPCM(inputData);
 
-          // Send audio data to backend proxy
+          // Convert ArrayBuffer to base64 safely (spread operator fails on large buffers)
+          const uint8Array = new Uint8Array(pcmData);
+          let binary = '';
+          for (let i = 0; i < uint8Array.length; i++) {
+            binary += String.fromCharCode(uint8Array[i]);
+          }
+
           const message = {
             mime_type: 'audio/pcm',
-            data: btoa(String.fromCharCode(...new Uint8Array(pcmData))),
+            data: btoa(binary),
           };
           wsRef.current.send(JSON.stringify(message));
         }
@@ -271,10 +277,31 @@ export function useVoiceSession(config: VoiceSessionConfig) {
     setConnectionState('idle');
   }, [stopRecording]);
 
-  // Toggle recording
+  // Toggle recording — auto-starts recording after initial connection
   const toggleRecording = useCallback(async () => {
     if (connectionState === 'idle' || connectionState === 'error') {
       await connect();
+      // Wait briefly for WebSocket to open, then auto-start recording
+      const waitForConnection = () =>
+        new Promise<void>((resolve) => {
+          const check = () => {
+            if (connectionStateRef.current === 'connected') {
+              resolve();
+            } else if (
+              connectionStateRef.current === 'error' ||
+              connectionStateRef.current === 'idle'
+            ) {
+              resolve(); // Don't start recording on error
+            } else {
+              setTimeout(check, 100);
+            }
+          };
+          setTimeout(check, 100);
+        });
+      await waitForConnection();
+      if (connectionStateRef.current === 'connected') {
+        await startRecording();
+      }
       return;
     }
 

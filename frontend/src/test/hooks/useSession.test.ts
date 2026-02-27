@@ -3,7 +3,6 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { setupServer } from 'msw/node';
 import { handlers } from '../mocks/handlers';
 import { useSession } from '../../hooks/useSession';
-import { mockSession } from '../mocks/fixtures';
 
 const server = setupServer(...handlers);
 
@@ -15,7 +14,8 @@ describe('useSession', () => {
   it('initializes with null session', () => {
     const { result } = renderHook(() => useSession());
 
-    expect(result.current.session).toBeNull();
+    expect(result.current.sessionId).toBeNull();
+    expect(result.current.state).toBeNull();
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
   });
@@ -24,45 +24,26 @@ describe('useSession', () => {
     it('creates a new session', async () => {
       const { result } = renderHook(() => useSession());
 
-      expect(result.current.loading).toBe(false);
-
-      result.current.createSession('test-user');
+      result.current.createSession();
 
       await waitFor(() => {
         expect(result.current.loading).toBe(false);
       });
 
       await waitFor(() => {
-        expect(result.current.session).not.toBeNull();
-        expect(result.current.session?.session_id).toMatch(/^session_/);
-        expect(result.current.session?.app_name).toBe('trends_and_insights_agent');
-        expect(result.current.session?.user_id).toBe('test-user');
+        expect(result.current.sessionId).toBe('test-session-123');
       });
     });
 
-    it('sets loading state during creation', async () => {
+    it('creates session with initial state', async () => {
       const { result } = renderHook(() => useSession());
 
-      result.current.createSession('test-user');
+      result.current.createSession({ brand: 'Google' });
 
-      // Would check loading state in between, but needs proper async handling
       await waitFor(() => {
-        expect(result.current.loading).toBe(false);
+        expect(result.current.sessionId).not.toBeNull();
+        expect(result.current.state?.brand).toBe('Google');
       });
-    });
-
-    it('handles creation errors', async () => {
-      server.use(
-        // Add error handler here in full implementation
-      );
-
-      const { result } = renderHook(() => useSession());
-
-      try {
-        await result.current.createSession('test-user');
-      } catch (err) {
-        // Error should be caught
-      }
     });
   });
 
@@ -70,20 +51,11 @@ describe('useSession', () => {
     it('loads existing session by ID', async () => {
       const { result } = renderHook(() => useSession());
 
-      result.current.loadSession('test-user', 'session-123');
+      result.current.loadSession('test-session-123');
 
       await waitFor(() => {
-        expect(result.current.session).toEqual(mockSession);
-      });
-    });
-
-    it('sets loading state during load', async () => {
-      const { result } = renderHook(() => useSession());
-
-      result.current.loadSession('test-user', 'session-123');
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
+        expect(result.current.sessionId).toBe('test-session-123');
+        expect(result.current.state).toBeDefined();
       });
     });
   });
@@ -92,34 +64,18 @@ describe('useSession', () => {
     it('clears the current session', async () => {
       const { result } = renderHook(() => useSession());
 
-      await result.current.createSession('test-user');
+      await result.current.createSession();
 
       await waitFor(() => {
-        expect(result.current.session).not.toBeNull();
+        expect(result.current.sessionId).not.toBeNull();
       });
 
       result.current.clearSession();
 
       await waitFor(() => {
-        expect(result.current.session).toBeNull();
+        expect(result.current.sessionId).toBeNull();
+        expect(result.current.state).toBeNull();
       });
-    });
-  });
-
-  describe('error handling', () => {
-    it('sets error state on failure', async () => {
-      // Would implement error handler in MSW
-      const { result } = renderHook(() => useSession());
-
-      // Trigger error scenario
-      // Check that result.current.error is set
-    });
-
-    it('clears error on successful operation', async () => {
-      const { result } = renderHook(() => useSession());
-
-      // First trigger error, then successful operation
-      // Verify error is cleared
     });
   });
 });

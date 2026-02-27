@@ -1,21 +1,25 @@
 import { useState, useCallback } from 'react';
 import { sessionManager } from '../services/session';
-import type { Session } from '../types/session';
+import type { SessionState } from '../types/session';
 
 export function useSession() {
-  const [session, setSession] = useState<Session | null>(
-    sessionManager.getCurrentSession()
+  const [sessionId, setSessionId] = useState<string | null>(
+    sessionManager.getCurrentSessionId()
+  );
+  const [state, setState] = useState<SessionState | null>(
+    sessionManager.getCurrentState()
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const createSession = useCallback(async (userId: string) => {
+  const createSession = useCallback(async (initialState?: Record<string, any>) => {
     setLoading(true);
     setError(null);
     try {
-      const newSession = await sessionManager.createSession(userId);
-      setSession(newSession);
-      return newSession;
+      const result = await sessionManager.createSession(initialState);
+      setSessionId(result.session_id);
+      setState((initialState as SessionState) || {});
+      return result;
     } catch (err) {
       setError(err as Error);
       throw err;
@@ -25,13 +29,14 @@ export function useSession() {
   }, []);
 
   const loadSession = useCallback(
-    async (userId: string, sessionId: string) => {
+    async (id: string, userId?: string) => {
       setLoading(true);
       setError(null);
       try {
-        const loadedSession = await sessionManager.getSession(userId, sessionId);
-        setSession(loadedSession);
-        return loadedSession;
+        const result = await sessionManager.getSession(id, userId);
+        setSessionId(result.session_id);
+        setState(result.state);
+        return result;
       } catch (err) {
         setError(err as Error);
         throw err;
@@ -44,11 +49,13 @@ export function useSession() {
 
   const clearSession = useCallback(() => {
     sessionManager.clearSession();
-    setSession(null);
+    setSessionId(null);
+    setState(null);
   }, []);
 
   return {
-    session,
+    sessionId,
+    state,
     loading,
     error,
     createSession,

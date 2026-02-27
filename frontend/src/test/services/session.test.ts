@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach, beforeAll, afterEach, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterEach, afterAll } from 'vitest';
 import { setupServer } from 'msw/node';
 import { handlers } from '../mocks/handlers';
 import { SessionManager } from '../../services/session';
-import { mockSession } from '../mocks/fixtures';
 
 const server = setupServer(...handlers);
 
@@ -21,64 +20,52 @@ describe('SessionManager', () => {
   });
 
   describe('createSession', () => {
-    it('creates a new session and stores it', async () => {
-      const session = await sessionManager.createSession('test-user');
+    it('creates a new session and stores session ID', async () => {
+      const result = await sessionManager.createSession();
 
-      expect(session.session_id).toMatch(/^session_/);
-      expect(session.app_name).toBe('trends_and_insights_agent');
-      expect(session.user_id).toBe('test-user');
-      expect(sessionManager.getCurrentSession()).toBe(session);
+      expect(result.session_id).toBe('test-session-123');
+      expect(result.user_id).toBe('default-user');
+      expect(sessionManager.getCurrentSessionId()).toBe('test-session-123');
     });
 
-    it('returns session with correct structure', async () => {
-      const session = await sessionManager.createSession('test-user');
+    it('creates session with initial state', async () => {
+      const result = await sessionManager.createSession({ brand: 'Google' });
 
-      expect(session.session_id).toBeDefined();
-      expect(session.app_name).toBeDefined();
-      expect(session.user_id).toBe('test-user');
-      expect(session.state).toBeDefined();
+      expect(result.session_id).toBeDefined();
+      expect(sessionManager.getCurrentState()?.brand).toBe('Google');
     });
   });
 
   describe('getSession', () => {
-    it('retrieves existing session by ID', async () => {
-      const session = await sessionManager.getSession('test-user', 'session-123');
+    it('retrieves existing session state by ID', async () => {
+      const result = await sessionManager.getSession('test-session-123');
 
-      expect(session).toEqual(mockSession);
-      expect(sessionManager.getCurrentSession()).toEqual(mockSession);
-    });
-
-    it('updates current session reference', async () => {
-      expect(sessionManager.getCurrentSession()).toBeNull();
-
-      await sessionManager.getSession('test-user', 'session-123');
-
-      expect(sessionManager.getCurrentSession()).not.toBeNull();
+      expect(result.session_id).toBe('test-session-123');
+      expect(result.state).toBeDefined();
+      expect(sessionManager.getCurrentSessionId()).toBe('test-session-123');
     });
   });
 
-  describe('getCurrentSession', () => {
+  describe('getCurrentSessionId', () => {
     it('returns null when no session exists', () => {
-      expect(sessionManager.getCurrentSession()).toBeNull();
+      expect(sessionManager.getCurrentSessionId()).toBeNull();
     });
 
-    it('returns current session after creation', async () => {
-      const session = await sessionManager.createSession('test-user');
-
-      expect(sessionManager.getCurrentSession()).toBe(session);
-      expect(session.app_name).toBe('trends_and_insights_agent');
-      expect(session.user_id).toBe('test-user');
+    it('returns session ID after creation', async () => {
+      await sessionManager.createSession();
+      expect(sessionManager.getCurrentSessionId()).toBe('test-session-123');
     });
   });
 
   describe('clearSession', () => {
     it('clears the current session', async () => {
-      await sessionManager.createSession('test-user');
-      expect(sessionManager.getCurrentSession()).not.toBeNull();
+      await sessionManager.createSession();
+      expect(sessionManager.getCurrentSessionId()).not.toBeNull();
 
       sessionManager.clearSession();
 
-      expect(sessionManager.getCurrentSession()).toBeNull();
+      expect(sessionManager.getCurrentSessionId()).toBeNull();
+      expect(sessionManager.getCurrentState()).toBeNull();
     });
   });
 });

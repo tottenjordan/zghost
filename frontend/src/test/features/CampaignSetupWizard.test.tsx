@@ -34,7 +34,7 @@ vi.mock('../../stores/campaignStore', async (importOriginal) => {
 });
 
 vi.mock('../../hooks/useSession', () => ({
-  useSession: () => ({ session: null, createSession: vi.fn(), loadSession: vi.fn() }),
+  useSession: () => ({ sessionId: null, state: null, createSession: vi.fn(), loadSession: vi.fn() }),
 }));
 
 // Controllable trend fetch mocks

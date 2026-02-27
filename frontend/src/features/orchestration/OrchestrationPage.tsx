@@ -19,11 +19,10 @@ import { useCampaignStore } from '../../stores/campaignStore';
 import { cn } from '../../lib/utils';
 import type { AgentEventType } from '../../types/agents';
 
-const APP_NAME = import.meta.env.VITE_APP_NAME || 'trends_and_insights_agent';
-const USER_ID = 'frontend-user';
+const USER_ID = 'default-user';
 
 export function OrchestrationPage() {
-  const [streamUrl] = useState<string | null>(null);
+  const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
   const [eventStreamOpen, setEventStreamOpen] = useState(true);
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
@@ -108,7 +107,38 @@ export function OrchestrationPage() {
   const handleStart = useCallback(async (parallelCount: number) => {
     setStartError(null);
     try {
-      const session = await api.createSession(APP_NAME, USER_ID);
+      // Build initial state with campaign config, trends, and commercial duration
+      const initialState: Record<string, any> = {
+        brand: config.brand || '',
+        target_product: config.target_product || '',
+        target_audience: config.target_audience || '',
+        key_selling_points: config.key_selling_points || '',
+        commercial_duration: commercialDuration,
+      };
+
+      // Add selected trends to session state
+      if (selectedSearchTrends.length > 0) {
+        initialState.target_search_trends = {
+          target_search_trends: selectedSearchTrends.map((t) => ({
+            trend_title: t.title,
+            trend_rank: t.rank,
+            trend_refresh_date: '',
+          })),
+        };
+      }
+
+      if (selectedYtTrends.length > 0) {
+        initialState.target_yt_trends = {
+          target_yt_trends: selectedYtTrends.map((t) => ({
+            video_title: t.title,
+            video_duration: '',
+            video_url: t.videoUrl || '',
+          })),
+        };
+      }
+
+      // Create session with all config preloaded
+      const session = await api.createSession({ initial_state: initialState });
 
       const newSession = {
         id: `session-${Date.now()}`,
@@ -119,55 +149,29 @@ export function OrchestrationPage() {
       };
 
       addSession(newSession);
+      setSessionId(session.session_id);
+      setPipelineStatus('running');
 
-      const campaignMetadata = `Campaign for ${config.brand || '[brand]'} ${config.target_product || '[product]'}. Target audience: ${config.target_audience || '[not specified]'}. Key selling points: ${config.key_selling_points || '[not specified]'}`;
-
-      const searchTrendTitles = selectedSearchTrends.map((t) => t.title).join(', ');
-      const ytTrendTitles = selectedYtTrends.map((t) => t.title).join(', ');
-      const trendSelections = `Selected Google trends: ${searchTrendTitles || 'none'}. Selected YouTube trends: ${ytTrendTitles || 'none'}.`;
-
+      // Build the pipeline start message with context
       let rubricGuidance = '';
       if (activeRubrics.length > 0) {
         const allCriteria = activeRubrics.flatMap((r) =>
           r.criteria.map((c) => `[${r.name}] ${c.name} (weight: ${c.weight})`)
         );
-        rubricGuidance = `Evaluate outputs against these criteria: ${allCriteria.join(', ')}`;
+        rubricGuidance = ` Evaluate outputs against these criteria: ${allCriteria.join(', ')}.`;
       }
 
-      await api.sendMessage({
-        app_name: APP_NAME, user_id: USER_ID,
-        session_id: session.session_id, message: campaignMetadata,
-      });
+      const pipelineMessage = `Start the full pipeline with ${parallelCount} parallel stream(s), producing a ${commercialDuration}-second commercial.${rubricGuidance}`;
 
-      await api.sendMessage({
-        app_name: APP_NAME, user_id: USER_ID,
-        session_id: session.session_id, message: trendSelections,
-      });
-
-      if (rubricGuidance) {
-        await api.sendMessage({
-          app_name: APP_NAME, user_id: USER_ID,
-          session_id: session.session_id, message: rubricGuidance,
-        });
-      }
-
-      await api.sendMessage({
-        app_name: APP_NAME, user_id: USER_ID,
-        session_id: session.session_id,
-        message: `Set commercial duration to ${commercialDuration} seconds. commercial_duration=${commercialDuration}`,
-      });
-
-      await api.sendMessage({
-        app_name: APP_NAME, user_id: USER_ID,
-        session_id: session.session_id,
-        message: `start the full pipeline with ${parallelCount} parallel stream(s), producing a ${commercialDuration}-second commercial`,
-      });
+      // Set stream URL for live event monitoring (useOrchestration will connect)
+      const url = api.getStreamUrl(session.session_id, pipelineMessage, USER_ID);
+      setStreamUrl(url);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to start pipeline';
       setStartError(msg);
       setPipelineStatus('error');
     }
-  }, [config, selectedSearchTrends, selectedYtTrends, activeRubrics, commercialDuration, sessions, addSession, setPipelineStatus]);
+  }, [config, selectedSearchTrends, selectedYtTrends, activeRubrics, commercialDuration, sessions, addSession, setSessionId, setPipelineStatus]);
 
   const handleStop = useCallback(() => {
     setSessionId(null);

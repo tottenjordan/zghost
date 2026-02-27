@@ -858,19 +858,108 @@ async def auto_select_trends(request: TrendAutoSelectRequest):
         )
 
 
-@app.get("/api/v1/trends/available", response_model=AvailableTrendsResponse)
-async def get_available_trends():
-    """Get available trends from APIs."""
-    try:
-        # This would call the YouTube and Google Trends APIs
-        # For now, return a placeholder response
-        # TODO: Implement actual trend fetching
+# In-memory trends cache with 1-hour TTL
+_trends_cache: Dict[str, Any] = {
+    "data": None,
+    "timestamp": 0.0,
+}
+_TRENDS_CACHE_TTL = 3600  # 1 hour in seconds
 
-        return AvailableTrendsResponse(
-            youtube_trends=[],
-            search_trends=[],
+
+@app.get("/api/v1/trends/available", response_model=AvailableTrendsResponse)
+async def get_available_trends(force_refresh: bool = Query(default=False)):
+    """Get available trends from YouTube Data API and BigQuery Google Trends."""
+    try:
+        now = time.time()
+
+        # Check cache
+        if (
+            not force_refresh
+            and _trends_cache["data"] is not None
+            and (now - _trends_cache["timestamp"]) < _TRENDS_CACHE_TTL
+        ):
+            logger.info("Returning cached trends (age: %.0fs)", now - _trends_cache["timestamp"])
+            return _trends_cache["data"]
+
+        logger.info("Fetching fresh trends from APIs...")
+
+        # Import trend tools
+        from .skills.trend_discovery.tools import get_daily_gtrends, get_youtube_trends
+
+        # Fetch Google Search trends from BigQuery
+        search_trends = []
+        try:
+            gtrends_result = get_daily_gtrends()
+            if gtrends_result.get("status") == "ok" and gtrends_result.get("markdown_table"):
+                # Parse markdown table into TrendInfo objects
+                for line in gtrends_result["markdown_table"].split("\n"):
+                    line = line.strip()
+                    if not line.startswith("|") or "term" in line.lower() or line.startswith("|---") or line.startswith("| ---"):
+                        continue
+                    # Skip separator lines
+                    if all(c in "|- :" for c in line):
+                        continue
+                    cells = [c.strip() for c in line.split("|") if c.strip()]
+                    if len(cells) >= 3:
+                        try:
+                            rank = int(cells[0])
+                            term = cells[1]
+                            refresh_date = str(cells[3]) if len(cells) > 3 else ""
+                            search_trends.append(
+                                TrendInfo(
+                                    trend_id=f"gs-{rank}",
+                                    title=term,
+                                    source="google_search",
+                                    relevance_score=None,
+                                    metadata={
+                                        "rank": rank,
+                                        "refresh_date": refresh_date,
+                                    },
+                                )
+                            )
+                        except (ValueError, IndexError):
+                            continue
+            logger.info("Fetched %d Google Search trends", len(search_trends))
+        except Exception as e:
+            logger.warning("Failed to fetch Google Search trends: %s", e)
+
+        # Fetch YouTube trends from YouTube Data API
+        yt_trends = []
+        try:
+            yt_result = get_youtube_trends()
+            for key, video in yt_result.items():
+                if not key.startswith("row_"):
+                    continue
+                row_num = int(key.split("_")[1])
+                yt_trends.append(
+                    TrendInfo(
+                        trend_id=f"yt-{video.get('videoId', row_num)}",
+                        title=video.get("videoTitle", "Untitled"),
+                        source="youtube",
+                        relevance_score=None,
+                        metadata={
+                            "rank": row_num,
+                            "videoId": video.get("videoId", ""),
+                            "videoUrl": video.get("videoURL", ""),
+                            "duration": video.get("duration", ""),
+                        },
+                    )
+                )
+            logger.info("Fetched %d YouTube trends", len(yt_trends))
+        except Exception as e:
+            logger.warning("Failed to fetch YouTube trends: %s", e)
+
+        response = AvailableTrendsResponse(
+            youtube_trends=yt_trends,
+            search_trends=search_trends,
             last_updated=datetime.utcnow(),
         )
+
+        # Update cache
+        _trends_cache["data"] = response
+        _trends_cache["timestamp"] = now
+
+        return response
 
     except Exception as e:
         logger.error(f"Error getting available trends: {str(e)}", exc_info=True)

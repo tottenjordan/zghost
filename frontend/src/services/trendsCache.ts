@@ -1,11 +1,8 @@
 import type { SearchTrend, YTTrend } from '../types/trends';
-import { api } from './api';
-import { parseTrendsFromRunResponse } from '../utils/parseTrends';
 import { evaluateBrandSafety, type BrandSafetyResult } from './brandSafety';
 
-const APP_NAME = import.meta.env.VITE_APP_NAME || 'trends_and_insights_agent';
-const USER_ID = 'frontend-user';
-const TTL_MS = 10 * 60 * 1000; // 10 minutes
+const API_BASE = import.meta.env.VITE_API_BASE || '';
+const TTL_MS = 10 * 60 * 1000; // 10-minute client-side TTL (server has 1-hour cache)
 
 interface CachedTrends {
   searchTrends: SearchTrend[];
@@ -22,8 +19,8 @@ function isCacheValid(): boolean {
 }
 
 /**
- * Fetch live trends from the ADK backend, with 10-min TTL cache.
- * Returns cached data if still fresh. Deduplicates concurrent calls.
+ * Fetch live trends from the api_server, with 10-min client-side TTL cache.
+ * The server caches for 1 hour, so rapid refreshes are cheap.
  */
 export async function fetchLiveTrends(force = false): Promise<CachedTrends> {
   if (!force && isCacheValid()) {
@@ -35,7 +32,7 @@ export async function fetchLiveTrends(force = false): Promise<CachedTrends> {
     return fetchPromise;
   }
 
-  fetchPromise = _doFetch();
+  fetchPromise = _doFetch(force);
   try {
     const result = await fetchPromise;
     return result;
@@ -44,43 +41,47 @@ export async function fetchLiveTrends(force = false): Promise<CachedTrends> {
   }
 }
 
-async function _doFetch(): Promise<CachedTrends> {
-  // Create a dedicated session for trend fetching
-  const session = await api.createSession(APP_NAME, USER_ID);
+async function _doFetch(forceRefresh = false): Promise<CachedTrends> {
+  const params = forceRefresh ? '?force_refresh=true' : '';
+  const response = await fetch(`${API_BASE}/api/v1/trends/available${params}`);
 
-  // Send hello to initialize
-  await api.sendMessage({
-    app_name: APP_NAME,
-    user_id: USER_ID,
-    session_id: session.session_id,
-    message: 'hello',
-  });
+  if (!response.ok) {
+    throw new Error(
+      `API request failed (${response.status}): ${response.statusText || 'Unknown error'}`
+    );
+  }
 
-  // Fetch Google Search trends
-  const googleResponse = await api.sendMessage({
-    app_name: APP_NAME,
-    user_id: USER_ID,
-    session_id: session.session_id,
-    message: 'select a google trend',
-  });
+  const data = await response.json();
 
-  // Fetch YouTube trends
-  const ytResponse = await api.sendMessage({
-    app_name: APP_NAME,
-    user_id: USER_ID,
-    session_id: session.session_id,
-    message: 'select a yt trend',
-  });
+  // Map server TrendInfo objects to frontend SearchTrend/YTTrend types
+  const searchTrends: SearchTrend[] = (data.search_trends || []).map(
+    (t: any, index: number) => ({
+      rank: t.metadata?.rank ?? index + 1,
+      title: t.title,
+      formattedTraffic: 'N/A',
+      relatedQueries: '',
+    })
+  );
 
-  // Parse responses
-  const googleParsed = parseTrendsFromRunResponse(googleResponse);
-  const ytParsed = parseTrendsFromRunResponse(ytResponse);
+  const ytTrends: YTTrend[] = (data.youtube_trends || []).map(
+    (t: any, index: number) => ({
+      rank: t.metadata?.rank ?? index + 1,
+      title: t.title,
+      videoId: t.metadata?.videoId || t.trend_id?.replace('yt-', '') || '',
+      videoUrl: t.metadata?.videoUrl || '',
+      channelName: t.metadata?.channelName || 'Unknown',
+      channelUrl: '',
+      description: '',
+      viewCount: 'N/A',
+      publishedTime: 'N/A',
+    })
+  );
 
   cache = {
-    searchTrends: googleParsed.searchTrends,
-    ytTrends: ytParsed.ytTrends,
+    searchTrends,
+    ytTrends,
     fetchedAt: Date.now(),
-    sessionId: session.session_id,
+    sessionId: '',
   };
 
   return cache;

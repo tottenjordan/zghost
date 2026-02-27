@@ -74,14 +74,18 @@ vi.mock('../../features/orchestration/useOrchestration', () => ({
 const mockApi = {
   createSession: vi.fn(),
   sendMessage: vi.fn(),
-  getSession: vi.fn(),
+  getSessionState: vi.fn(),
+  updateSessionState: vi.fn(),
+  getStreamUrl: vi.fn(),
 };
 
 vi.mock('../../services/api', () => ({
   api: {
     createSession: (...args: any[]) => mockApi.createSession(...args),
     sendMessage: (...args: any[]) => mockApi.sendMessage(...args),
-    getSession: (...args: any[]) => mockApi.getSession(...args),
+    getSessionState: (...args: any[]) => mockApi.getSessionState(...args),
+    updateSessionState: (...args: any[]) => mockApi.updateSessionState(...args),
+    getStreamUrl: (...args: any[]) => mockApi.getStreamUrl(...args),
   },
 }));
 
@@ -182,8 +186,10 @@ describe('CUJ 2: Orchestration Dashboard', () => {
     mockOrchestration.changedKeys = new Set();
     mockOrchestration.selectedAgent = null;
 
-    mockApi.createSession.mockResolvedValue({ session_id: 'test-session-123' });
-    mockApi.sendMessage.mockResolvedValue({ response: 'ok' });
+    mockApi.createSession.mockResolvedValue({ session_id: 'test-session-123', user_id: 'default-user', created_at: new Date().toISOString() });
+    mockApi.sendMessage.mockResolvedValue('ok');
+    mockApi.getSessionState.mockResolvedValue({ session_id: 'test-session-123', state: {} });
+    mockApi.getStreamUrl.mockReturnValue('/api/v1/run/test-session-123/stream?user_id=default-user&message=start');
   });
 
   it('renders timeline and agent graph tabs', () => {
@@ -285,15 +291,16 @@ describe('CUJ 2: Orchestration Dashboard', () => {
       expect(mockApi.createSession).toHaveBeenCalled();
     });
 
-    await waitFor(() => {
-      expect(mockApi.sendMessage).toHaveBeenCalled();
-    });
+    // Verify session was created with initial_state containing campaign config
+    const createCall = mockApi.createSession.mock.calls[0];
+    const options = createCall[0] || {};
+    expect(options.initial_state?.brand).toBe('TestBrand');
+    expect(options.initial_state?.target_product).toBe('TestProduct');
 
-    // Verify campaign metadata was sent
-    const sendCalls = mockApi.sendMessage.mock.calls;
-    const messages = sendCalls.map((c: any[]) => c[0]?.message || '');
-    expect(messages.some((m: string) => m.includes('TestBrand'))).toBe(true);
-    expect(messages.some((m: string) => m.includes('Test Trend'))).toBe(true);
+    // Verify stream URL was built for pipeline start
+    await waitFor(() => {
+      expect(mockApi.getStreamUrl).toHaveBeenCalled();
+    });
   });
 
   it('shows page heading', () => {

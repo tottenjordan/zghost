@@ -110,13 +110,8 @@ export function useStudio(sessionId: string | null) {
       setStudioData((prev) => ({ ...prev, isLoading: true }));
 
       try {
-        const session = await api.getSession(
-          'trends_and_insights_agent',
-          'default_user',
-          sessionId
-        );
-
-        const state = session.state as SessionState;
+        const result = await api.getSessionState(sessionId, 'default-user');
+        const state = result.state as SessionState;
         const gcsFolder = state.gcs_folder || 'default';
 
         const vidKeys = state.vid_artifact_keys?.vid_artifact_keys || [];

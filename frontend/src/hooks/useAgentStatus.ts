@@ -2,9 +2,6 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import type { OrchestrationStatus } from '../types/agents';
 
-const APP_NAME = import.meta.env.VITE_APP_NAME || 'trends_and_insights_agent';
-const USER_ID = 'frontend-user';
-
 export function useAgentStatus(sessionId: string | null, pollingInterval = 3000) {
   const [status, setStatus] = useState<OrchestrationStatus | null>(null);
   const [loading, setLoading] = useState(false);
@@ -16,12 +13,11 @@ export function useAgentStatus(sessionId: string | null, pollingInterval = 3000)
 
     setLoading(true);
     try {
-      // Poll the actual ADK session endpoint for state updates
-      const session = await api.getSession(APP_NAME, USER_ID, sessionId);
+      const result = await api.getSessionState(sessionId);
+      const state = result.state || {};
 
       // Map session state to OrchestrationStatus format
       const agentStates: Record<string, any> = {};
-      const state = session.state || {};
 
       // Infer agent status from session state keys
       const agentNames = [
@@ -31,7 +27,7 @@ export function useAgentStatus(sessionId: string | null, pollingInterval = 3000)
       for (const name of agentNames) {
         agentStates[name] = {
           status: state._state_init ? 'running' : 'idle',
-          lastUpdate: session.created_at,
+          lastUpdate: new Date().toISOString(),
         };
       }
 
@@ -47,7 +43,7 @@ export function useAgentStatus(sessionId: string | null, pollingInterval = 3000)
         sessionId,
         pipelineStatus: 'running',
         agents: agentStates,
-        startedAt: session.created_at,
+        startedAt: new Date().toISOString(),
       });
       setError(null);
       hasLoggedError.current = false;

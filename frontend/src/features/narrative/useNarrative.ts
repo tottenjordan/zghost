@@ -43,18 +43,12 @@ export function useNarrative(sessionId: string | null) {
       }
 
       try {
-        const response = await api.sendMessage({
-          app_name: 'trends_and_insights_agent',
-          user_id: 'default_user',
-          session_id: sessionId,
-          message: content,
-          stream: false,
-        });
+        const responseText = await api.sendMessage(sessionId, content, 'default-user');
 
         const assistantMessage: Message = {
           id: `msg_${Date.now()}_assistant`,
           role: 'assistant',
-          content: response.response || 'No response',
+          content: responseText || 'No response',
           timestamp: Date.now(),
         };
 

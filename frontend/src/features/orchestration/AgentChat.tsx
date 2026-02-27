@@ -4,8 +4,7 @@ import { api } from '../../services/api';
 import { cn } from '../../lib/utils';
 import type { AgentEvent } from '../../types/agents';
 
-const APP_NAME = import.meta.env.VITE_APP_NAME || 'trends_and_insights_agent';
-const USER_ID = 'frontend-user';
+const USER_ID = 'default-user';
 
 interface AgentChatProps {
   sessionId: string | null;
@@ -65,12 +64,7 @@ export function AgentChat({ sessionId, events, onWaitingForInput }: AgentChatPro
 
     setSending(true);
     try {
-      await api.sendMessage({
-        app_name: APP_NAME,
-        user_id: USER_ID,
-        session_id: sessionId,
-        message: text.trim(),
-      });
+      await api.sendMessage(sessionId, text.trim(), USER_ID);
       setInput('');
     } catch (err) {
       console.error('Failed to send message:', err);

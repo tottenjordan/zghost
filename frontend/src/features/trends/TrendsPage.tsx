@@ -30,7 +30,7 @@ const STEPS: { key: WizardStep; label: string; tabLabel: string; number: number 
 
 export function TrendsPage() {
   const navigate = useNavigate();
-  const { session } = useSession();
+  const { state: sessionState } = useSession();
   const {
     config: storeConfig,
     selectedSearchTrends,
@@ -336,7 +336,7 @@ export function TrendsPage() {
         {/* Step 1: Campaign Config */}
         <TabsContent value="campaign">
           <div className="space-y-6" onClick={() => setActiveStep('campaign')}>
-            <CampaignConfig session={session} onSave={handleSaveConfig} />
+            <CampaignConfig sessionState={sessionState} onSave={handleSaveConfig} />
             {configSaved && (
               <div className="rounded-lg border border-green-800 bg-green-950/50 px-4 py-2 text-sm text-green-400">
                 Configuration saved successfully

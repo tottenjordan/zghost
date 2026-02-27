@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import type { Session } from '../../types/session';
+import type { SessionState } from '../../types/session';
 
 interface CampaignConfigProps {
-  session: Session | null;
+  sessionState: SessionState | null;
   onSave: (config: CampaignConfigData) => void;
 }
 
@@ -50,7 +50,7 @@ const PRESETS = [
   },
 ];
 
-export function CampaignConfig({ session, onSave }: CampaignConfigProps) {
+export function CampaignConfig({ sessionState, onSave }: CampaignConfigProps) {
   const [config, setConfig] = useState<CampaignConfigData>({
     brand: '',
     target_product: '',
@@ -68,15 +68,15 @@ export function CampaignConfig({ session, onSave }: CampaignConfigProps) {
 
   // Load from session state
   useEffect(() => {
-    if (session?.state) {
+    if (sessionState) {
       setConfig({
-        brand: session.state.brand || '',
-        target_product: session.state.target_product || '',
-        target_audience: session.state.target_audience || '',
-        key_selling_points: session.state.key_selling_points || '',
+        brand: sessionState.brand || '',
+        target_product: sessionState.target_product || '',
+        target_audience: sessionState.target_audience || '',
+        key_selling_points: sessionState.key_selling_points || '',
       });
     }
-  }, [session]);
+  }, [sessionState]);
 
   const handleSave = () => {
     onSave(config);

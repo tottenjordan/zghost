@@ -1,27 +1,35 @@
 import { api } from './api';
-import type { Session } from '../types/session';
-
-const APP_NAME = import.meta.env.VITE_APP_NAME || 'trends_and_insights_agent';
+import type { SessionState } from '../types/session';
 
 export class SessionManager {
-  private currentSession: Session | null = null;
+  private currentSessionId: string | null = null;
+  private currentState: SessionState | null = null;
 
-  async createSession(userId: string): Promise<Session> {
-    this.currentSession = await api.createSession(APP_NAME, userId);
-    return this.currentSession;
+  async createSession(initialState?: Record<string, any>): Promise<{ session_id: string; user_id: string }> {
+    const result = await api.createSession({ initial_state: initialState });
+    this.currentSessionId = result.session_id;
+    this.currentState = (initialState as SessionState) || {};
+    return result;
   }
 
-  async getSession(userId: string, sessionId: string): Promise<Session> {
-    this.currentSession = await api.getSession(APP_NAME, userId, sessionId);
-    return this.currentSession;
+  async getSession(sessionId: string, userId?: string): Promise<{ session_id: string; state: SessionState }> {
+    const result = await api.getSessionState(sessionId, userId);
+    this.currentSessionId = result.session_id;
+    this.currentState = result.state;
+    return result;
   }
 
-  getCurrentSession(): Session | null {
-    return this.currentSession;
+  getCurrentSessionId(): string | null {
+    return this.currentSessionId;
+  }
+
+  getCurrentState(): SessionState | null {
+    return this.currentState;
   }
 
   clearSession(): void {
-    this.currentSession = null;
+    this.currentSessionId = null;
+    this.currentState = null;
   }
 }
 

@@ -3,10 +3,7 @@ import { useAgentStatus } from '../../hooks/useAgentStatus';
 import { useStreaming } from '../../hooks/useStreaming';
 import { api } from '../../services/api';
 import type { AgentEvent, AgentEventType } from '../../types/agents';
-import type { SessionEvent } from '../../types/session';
 
-const APP_NAME = import.meta.env.VITE_APP_NAME || 'trends_and_insights_agent';
-const USER_ID = 'frontend-user';
 const POLLING_INTERVAL = 5000;
 
 export interface FilterOptions {
@@ -15,38 +12,10 @@ export interface FilterOptions {
   searchTerm?: string;
 }
 
-function parseSessionEvents(events: SessionEvent[]): AgentEvent[] {
-  return events.map((event, index) => {
-    const author = event.author || 'unknown';
-    const agentName = author.startsWith('user') ? 'user' : author;
-    const timestamp = Date.now() - (events.length - index) * 1000;
-
-    // Determine event type from content
-    let type: AgentEventType = 'agent_step';
-    if (event.content?.role === 'user') {
-      type = 'agent_start';
-    } else if (event.actions?.stateDelta) {
-      type = 'agent_step';
-    }
-
-    return {
-      type,
-      agentName,
-      timestamp,
-      data: {
-        content: event.content?.parts?.[0]?.text,
-        stateDelta: event.actions?.stateDelta,
-        invocationId: event.invocationId,
-      },
-    };
-  });
-}
-
 export function useOrchestration(sessionId: string | null, streamUrl: string | null) {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterOptions>({});
   const [isPaused, setIsPaused] = useState(false);
-  const [sessionEvents, setSessionEvents] = useState<AgentEvent[]>([]);
   const [sessionState, setSessionState] = useState<Record<string, any>>({});
   const [changedKeys, setChangedKeys] = useState<Set<string>>(new Set());
   const previousStateRef = useRef<Record<string, any>>({});
@@ -62,22 +31,14 @@ export function useOrchestration(sessionId: string | null, streamUrl: string | n
     clearEvents,
   } = useStreaming(streamUrl);
 
-  // Poll session for events and state
+  // Poll session state (not events — events come from SSE stream)
   useEffect(() => {
     if (!sessionId) return;
 
-    const pollSession = async () => {
+    const pollState = async () => {
       try {
-        const session = await api.getSession(APP_NAME, USER_ID, sessionId);
-
-        // Parse events from session
-        if (session.events && session.events.length > 0) {
-          const parsed = parseSessionEvents(session.events);
-          setSessionEvents(parsed);
-        }
-
-        // Track state changes
-        const currentState = session.state || {};
+        const result = await api.getSessionState(sessionId);
+        const currentState = result.state || {};
         setSessionState(currentState);
 
         const changed = new Set<string>();
@@ -99,17 +60,17 @@ export function useOrchestration(sessionId: string | null, streamUrl: string | n
           setChangedKeys(new Set());
         }, 3000);
       } catch (err) {
-        console.warn('Session polling failed:', err);
+        console.warn('Session state polling failed:', err);
       }
     };
 
-    pollSession();
-    const interval = setInterval(pollSession, POLLING_INTERVAL);
+    pollState();
+    const interval = setInterval(pollState, POLLING_INTERVAL);
     return () => clearInterval(interval);
   }, [sessionId]);
 
-  // Merge session events with stream events
-  const allEvents = [...sessionEvents, ...streamEvents];
+  // Events come from the SSE stream
+  const allEvents = streamEvents;
 
   // Filter events based on current filter options
   const filteredEvents = useCallback(() => {

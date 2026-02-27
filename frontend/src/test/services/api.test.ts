@@ -11,35 +11,26 @@ describe('ApiClient', () => {
   afterAll(() => server.close());
 
   describe('Session Management', () => {
-    it('createSession generates a session ID and returns session', async () => {
-      const result = await api.createSession('test-app', 'test-user');
+    it('createSession returns session_id and user_id', async () => {
+      const result = await api.createSession();
 
-      expect(result.session_id).toMatch(/^session_/);
-      expect(result.app_name).toBe('test-app');
-      expect(result.user_id).toBe('test-user');
+      expect(result.session_id).toBe('test-session-123');
+      expect(result.user_id).toBe('default-user');
     });
 
-    it('getSession retrieves session by ID', async () => {
-      const result = await api.getSession('test-app', 'test-user', 'session-123');
+    it('getSessionState retrieves session state', async () => {
+      const result = await api.getSessionState('test-session-123');
 
-      expect(result.session_id).toBeDefined();
+      expect(result.session_id).toBe('test-session-123');
+      expect(result.state).toBeDefined();
     });
   });
 
   describe('Agent Execution', () => {
-    it('sendMessage constructs proper payload', async () => {
-      const payload = {
-        app_name: 'test-app',
-        user_id: 'test-user',
-        session_id: 'session-123',
-        message: 'Test message',
-        stream: true,
-      };
+    it('sendMessage consumes SSE stream and returns text', async () => {
+      const result = await api.sendMessage('test-session-123', 'Test message');
 
-      const result = await api.sendMessage(payload);
-
-      expect(result.success).toBe(true);
-      expect(result.message).toBe('Test message');
+      expect(result).toContain('Test message');
     });
   });
 });

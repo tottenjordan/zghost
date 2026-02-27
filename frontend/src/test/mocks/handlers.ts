@@ -1,33 +1,52 @@
 import { http, HttpResponse } from 'msw';
-import { mockAdkSession, mockSearchTrends, mockYTTrends } from './fixtures';
+import { mockSearchTrends, mockYTTrends } from './fixtures';
 
 export const handlers = [
-  // Session Management — return ADK-format responses
-  http.post('*/apps/:appName/users/:userId/sessions', () => {
-    return HttpResponse.json(mockAdkSession);
+  // Session Management — api_server format
+  http.post('*/api/v1/sessions', () => {
+    return HttpResponse.json({
+      session_id: 'test-session-123',
+      user_id: 'default-user',
+      created_at: new Date().toISOString(),
+    });
   }),
 
-  http.post('*/apps/:appName/users/:userId/sessions/:sessionId', () => {
-    return HttpResponse.json(mockAdkSession);
+  http.get('*/api/v1/sessions/:sessionId/state', () => {
+    return HttpResponse.json({
+      session_id: 'test-session-123',
+      state: {},
+    });
   }),
 
-  http.get('*/apps/:appName/users/:userId/sessions/:sessionId', () => {
-    return HttpResponse.json(mockAdkSession);
+  http.patch('*/api/v1/sessions/:sessionId/state', () => {
+    return HttpResponse.json({ status: 'success', updated_keys: [] });
   }),
 
-  // Agent Execution (ADK api_server /run format)
-  http.post('*/run', async ({ request }) => {
-    const body = await request.json() as any;
-    const text = body.newMessage?.parts?.[0]?.text ?? body.new_message?.parts?.[0]?.text ?? body.message;
-    return HttpResponse.json({ success: true, message: text });
+  // Agent Execution — SSE stream
+  http.get('*/api/v1/run/:sessionId/stream', ({ request }) => {
+    const url = new URL(request.url);
+    const message = url.searchParams.get('message') || '';
+    const sseData = JSON.stringify({
+      type: 'Event',
+      data: { parts: [{ text: `Response to: ${message}` }] },
+      agent_name: 'root_agent',
+    });
+    const completion = JSON.stringify({
+      type: 'stream_complete',
+      session_id: 'test-session-123',
+    });
+    const body = `data: ${sseData}\n\ndata: ${completion}\n\n`;
+    return new HttpResponse(body, {
+      headers: { 'Content-Type': 'text/event-stream' },
+    });
   }),
 
-  // Trend endpoints (used by trendsCache)
-  http.get('*/api/v1/trends/search', () => {
-    return HttpResponse.json(mockSearchTrends);
-  }),
-
-  http.get('*/api/v1/trends/youtube', () => {
-    return HttpResponse.json(mockYTTrends);
+  // Trends endpoints
+  http.get('*/api/v1/trends/available', () => {
+    return HttpResponse.json({
+      youtube_trends: mockYTTrends,
+      search_trends: mockSearchTrends,
+      last_updated: new Date().toISOString(),
+    });
   }),
 ];
