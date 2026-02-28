@@ -12,6 +12,40 @@ import { PIPELINE_NODES, PIPELINE_EDGES } from './pipeline-config';
 import type { OrchestrationStatus, AgentEvent, AgentStatus } from '../../types/agents';
 import type { Node } from 'reactflow';
 
+/** Set of agent names known in the pipeline config */
+const KNOWN_AGENT_NAMES = new Set(PIPELINE_NODES.map((n) => n.data.agentName));
+
+/** Infer sub-agent activity from tool_call / tool_response events */
+function inferSubAgentStatus(events: AgentEvent[]): Map<string, { status: AgentStatus; start: number; end?: number }> {
+  const inferred = new Map<string, { status: AgentStatus; start: number; end?: number }>();
+
+  for (const event of events) {
+    const parts = event.data?.parts;
+    if (!parts || !Array.isArray(parts)) continue;
+
+    for (const part of parts) {
+      if (part.function_call?.name && KNOWN_AGENT_NAMES.has(part.function_call.name)) {
+        const name = part.function_call.name;
+        if (!inferred.has(name)) {
+          inferred.set(name, { status: 'running', start: event.timestamp });
+        }
+      }
+      if (part.function_response?.name && KNOWN_AGENT_NAMES.has(part.function_response.name)) {
+        const name = part.function_response.name;
+        const entry = inferred.get(name);
+        if (entry) {
+          entry.status = 'completed';
+          entry.end = event.timestamp;
+        } else {
+          inferred.set(name, { status: 'completed', start: event.timestamp, end: event.timestamp });
+        }
+      }
+    }
+  }
+
+  return inferred;
+}
+
 interface PipelineGraphProps {
   status: OrchestrationStatus | null;
   events: AgentEvent[];
@@ -98,6 +132,8 @@ export function PipelineGraph({
 }: PipelineGraphProps) {
   // Enhance nodes with runtime status
   const nodesWithStatus = useMemo(() => {
+    const inferredStatus = inferSubAgentStatus(events);
+
     return PIPELINE_NODES.map((node) => {
       const agentName = node.data.agentName;
       const agentEvents = events.filter((e) => e.agentName === agentName);
@@ -114,11 +150,14 @@ export function PipelineGraph({
         } else {
           derivedStatus = 'running';
         }
+      } else if (inferredStatus.has(agentName)) {
+        // No direct events, but inferred from tool_call/tool_response
+        derivedStatus = inferredStatus.get(agentName)!.status;
       }
 
       // Fall back to polling status if events don't provide info
       const agentState = status?.agents[agentName];
-      const finalStatus = agentEvents.length > 0
+      const finalStatus = (agentEvents.length > 0 || inferredStatus.has(agentName))
         ? derivedStatus
         : (agentState?.status || 'idle');
 
@@ -128,8 +167,9 @@ export function PipelineGraph({
       }
 
       let elapsedTime: number | undefined;
-      if (finalStatus === 'running' && firstEvent?.timestamp) {
-        elapsedTime = Date.now() - firstEvent.timestamp;
+      const effectiveStart = firstEvent?.timestamp || inferredStatus.get(agentName)?.start;
+      if (finalStatus === 'running' && effectiveStart) {
+        elapsedTime = Date.now() - effectiveStart;
       }
 
       return {
@@ -146,7 +186,7 @@ export function PipelineGraph({
 
   // Enhance edges with animation for active flows
   const edgesWithAnimation = useMemo(() => {
-    // Build sets of running/completed agents from events
+    // Build sets of running/completed agents from events + inference
     const runningAgents = new Set<string>();
     const completedAgents = new Set<string>();
 
@@ -167,6 +207,13 @@ export function PipelineGraph({
       } else if (agentEvents.length > 0) {
         runningAgents.add(agentName);
       }
+    });
+
+    // Also include inferred sub-agent status
+    const inferredStatus = inferSubAgentStatus(events);
+    inferredStatus.forEach((info, agentName) => {
+      if (info.status === 'running') runningAgents.add(agentName);
+      if (info.status === 'completed') completedAgents.add(agentName);
     });
 
     return PIPELINE_EDGES.map((edge) => {

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, CheckCircle, XCircle, ChevronDown, Loader2, FileText } from 'lucide-react';
+import { Send, CheckCircle, XCircle, ChevronDown, Loader2, FileText, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { cn } from '../../lib/utils';
@@ -17,11 +17,32 @@ interface AgentChatProps {
 
 interface ChatMessage {
   id: string;
-  role: 'user' | 'agent';
+  role: 'user' | 'agent' | 'status';
   agent?: string;
   text: string;
   timestamp: number;
 }
+
+/** Friendly labels for internal tool/agent names */
+const TOOL_LABELS: Record<string, string> = {
+  transfer_to_agent: '',  // skip — not user-facing
+  load_skill: '',         // skip — internal
+  combined_research_pipeline: 'Starting market research pipeline...',
+  research_orchestrator: 'Handing off to Research Orchestrator',
+  ad_content_generator_agent: 'Starting ad creative generation...',
+  ad_creative_pipeline: 'Drafting ad copy...',
+  visual_generation_pipeline: 'Creating visual concepts...',
+  visual_generator: 'Generating images & videos...',
+  generate_visuals_batch: 'Generating visuals in parallel...',
+  generate_image: 'Generating image...',
+  generate_video: 'Generating video...',
+  generate_subject_image: 'Generating product image...',
+  generate_clips_parallel: 'Generating video clips in parallel...',
+  generate_clip_with_frames: 'Generating video clip...',
+  av_editing_studio_agent: 'Starting AV commercial production...',
+  focus_group_evaluator_agent: 'Running focus group evaluation...',
+  trends_and_insights_agent: 'Starting trend discovery...',
+};
 
 function extractChatMessages(events: AgentEvent[]): ChatMessage[] {
   const messages: ChatMessage[] = [];
@@ -29,14 +50,31 @@ function extractChatMessages(events: AgentEvent[]): ChatMessage[] {
   for (const event of events) {
     // Extract text from SSE event parts
     let text = '';
+    let toolCallName = '';
     if (event.data?.parts) {
       for (const part of event.data.parts) {
         if (part.text) text += part.text;
+        if (part.function_call?.name) toolCallName = part.function_call.name;
       }
     }
     // Fallback to legacy content field
     if (!text && event.data?.content && typeof event.data.content === 'string') {
       text = event.data.content;
+    }
+
+    // Generate status message from tool_call events
+    if (!text && event.type === 'tool_call' && toolCallName) {
+      const label = TOOL_LABELS[toolCallName];
+      if (label === '') continue;  // explicitly skipped
+      const statusText = label || `Running ${toolCallName.replace(/_/g, ' ')}...`;
+      messages.push({
+        id: `${event.timestamp}-${event.agentName}-${toolCallName}`,
+        role: 'status',
+        agent: event.agentName,
+        text: statusText,
+        timestamp: event.timestamp,
+      });
+      continue;
     }
 
     if (!text || text.trim().length === 0) continue;
@@ -149,22 +187,19 @@ export function AgentChat({ sessionId, events, autopilot, onWaitingForInput, onS
   };
 
   const lastAgentText = lastAgentMessage?.text?.toLowerCase() || '';
+  const hasQuestionMark = lastAgentMessage?.text?.includes('?') || false;
   const isWaitingForApproval = lastAgentMessage &&
     lastAgentMessage.timestamp > lastApprovedTimestamp &&
-    (lastAgentMessage.text?.includes('?') ||
-    lastAgentText.includes('approve') ||
-    lastAgentText.includes('look good') ||
-    lastAgentText.includes('proceed') ||
-    lastAgentText.includes('select') ||
-    lastAgentText.includes('choose') ||
-    lastAgentText.includes('confirm') ||
-    lastAgentText.includes('verify') ||
-    lastAgentText.includes('provide') ||
-    lastAgentText.includes('enter') ||
-    lastAgentText.includes('specify') ||
+    // Must have a question mark, or contain a clear prompt phrase
+    (hasQuestionMark ||
     lastAgentText.includes('would you like') ||
     lastAgentText.includes('yes or no') ||
-    lastAgentText.includes('ready to'));
+    lastAgentText.includes('ready to') ||
+    lastAgentText.includes('look good') ||
+    lastAgentText.includes('please approve') ||
+    lastAgentText.includes('please confirm') ||
+    lastAgentText.includes('please select') ||
+    lastAgentText.includes('please choose'));
 
   // Notify parent about input waiting state
   useEffect(() => {
@@ -228,26 +263,37 @@ export function AgentChat({ sessionId, events, autopilot, onWaitingForInput, onS
           </div>
         ) : (
           messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={cn(
-                'rounded-lg px-3 py-2 text-sm max-w-[95%]',
-                msg.role === 'user'
-                  ? 'ml-auto bg-blue-600/20 text-blue-100 border border-blue-800/30'
-                  : 'bg-zinc-800/50 text-zinc-200 border border-zinc-700/30'
-              )}
-            >
-              {msg.agent && (
-                <div className="text-xs font-medium text-zinc-500 mb-1">
-                  {msg.agent}
-                </div>
-              )}
-              <div className="whitespace-pre-wrap text-xs leading-relaxed">
-                {msg.text.length > 500
-                  ? msg.text.slice(0, 500) + '...'
-                  : msg.text}
+            msg.role === 'status' ? (
+              <div
+                key={msg.id}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-500"
+              >
+                <ArrowRight className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                <span className="font-medium text-zinc-400">{msg.agent}</span>
+                <span>{msg.text}</span>
               </div>
-            </div>
+            ) : (
+              <div
+                key={msg.id}
+                className={cn(
+                  'rounded-lg px-3 py-2 text-sm max-w-[95%]',
+                  msg.role === 'user'
+                    ? 'ml-auto bg-blue-600/20 text-blue-100 border border-blue-800/30'
+                    : 'bg-zinc-800/50 text-zinc-200 border border-zinc-700/30'
+                )}
+              >
+                {msg.agent && (
+                  <div className="text-xs font-medium text-zinc-500 mb-1">
+                    {msg.agent}
+                  </div>
+                )}
+                <div className="whitespace-pre-wrap text-xs leading-relaxed">
+                  {msg.text.length > 500
+                    ? msg.text.slice(0, 500) + '...'
+                    : msg.text}
+                </div>
+              </div>
+            )
           ))
         )}
 

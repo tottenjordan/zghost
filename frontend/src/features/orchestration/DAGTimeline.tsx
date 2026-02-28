@@ -39,14 +39,58 @@ function formatElapsed(ms: number): string {
   return `${minutes}m ${remainingSeconds}s`;
 }
 
+/** Set of agent names known in the pipeline config */
+const KNOWN_AGENT_NAMES = new Set(PIPELINE_NODES.map((n) => n.data.agentName));
+
+/**
+ * Infer sub-agent activity from tool_call / tool_response events.
+ * When an agent calls an AgentTool, the function_call.name matches the
+ * wrapped agent's name. We create synthetic start/end markers so sub-agents
+ * that never emit their own SSE events still appear in the timeline.
+ */
+function inferSubAgentEvents(events: AgentEvent[]): Map<string, { start: number; end?: number }> {
+  const inferred = new Map<string, { start: number; end?: number }>();
+
+  for (const event of events) {
+    const parts = event.data?.parts;
+    if (!parts || !Array.isArray(parts)) continue;
+
+    for (const part of parts) {
+      // tool_call → sub-agent starts
+      if (part.function_call?.name && KNOWN_AGENT_NAMES.has(part.function_call.name)) {
+        const name = part.function_call.name;
+        if (!inferred.has(name)) {
+          inferred.set(name, { start: event.timestamp });
+        }
+      }
+      // tool_response → sub-agent ends
+      if (part.function_response?.name && KNOWN_AGENT_NAMES.has(part.function_response.name)) {
+        const name = part.function_response.name;
+        const entry = inferred.get(name);
+        if (entry) {
+          entry.end = event.timestamp;
+        } else {
+          inferred.set(name, { start: event.timestamp, end: event.timestamp });
+        }
+      }
+    }
+  }
+
+  return inferred;
+}
+
 /** Convert raw events into timeline tasks */
 function buildTimelineTasks(events: AgentEvent[]): TimelineTask[] {
+  // 1. Collect events by agentName (direct matches)
   const agentEvents = new Map<string, AgentEvent[]>();
   events.forEach((event) => {
     const list = agentEvents.get(event.agentName) || [];
     list.push(event);
     agentEvents.set(event.agentName, list);
   });
+
+  // 2. Infer sub-agent activity from tool_call/tool_response events
+  const inferred = inferSubAgentEvents(events);
 
   return PIPELINE_NODES.map((node) => {
     const agentName = node.data.agentName;
@@ -58,6 +102,7 @@ function buildTimelineTasks(events: AgentEvent[]): TimelineTask[] {
     let endTime: number | undefined;
 
     if (nodeEvents.length > 0) {
+      // Direct events available — use them
       startTime = nodeEvents[0].timestamp;
       const lastEvent = nodeEvents[nodeEvents.length - 1];
 
@@ -67,6 +112,16 @@ function buildTimelineTasks(events: AgentEvent[]): TimelineTask[] {
       } else if (lastEvent.type === 'error') {
         status = 'error';
         endTime = lastEvent.timestamp;
+      } else {
+        status = 'running';
+      }
+    } else if (inferred.has(agentName)) {
+      // No direct events, but inferred from tool_call/tool_response
+      const inf = inferred.get(agentName)!;
+      startTime = inf.start;
+      if (inf.end) {
+        status = 'completed';
+        endTime = inf.end;
       } else {
         status = 'running';
       }
@@ -80,7 +135,7 @@ function buildTimelineTasks(events: AgentEvent[]): TimelineTask[] {
       status,
       startTime,
       endTime,
-      eventCount: nodeEvents.length,
+      eventCount: nodeEvents.length || (inferred.has(agentName) ? 1 : 0),
     };
   });
 }

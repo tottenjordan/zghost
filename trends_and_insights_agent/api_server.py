@@ -310,6 +310,7 @@ async def stream_agent_events(
         ):
             # Format event for SSE
             event_data = format_event_for_sse(event)
+            logger.info(f"SSE event: agent={event_data.get('agent_name','?')} type={event_data.get('type','?')}")
 
             # Track event in execution trace
             if session_id not in app_state.execution_traces:

@@ -256,13 +256,17 @@ export function OrchestrationPage() {
     setStreamUrl(url);
   }, [sessionId, addEvent]);
 
-  // Detect stale sessions (server restarted, session lost) and reset state
+  // Reconnect to running session after page reload / frontend restart
   useEffect(() => {
     if (!sessionId || !isRunning) return;
     // If we have a sessionId + running status but no active stream,
-    // the session is likely stale from a previous server instance
+    // try to reconnect
     if (!streamUrl) {
-      api.getSessionState(sessionId).catch(() => {
+      api.getSessionState(sessionId).then(() => {
+        // Session still exists — reconnect SSE stream with a continue message
+        const url = api.getStreamUrl(sessionId, 'Continue where you left off.', USER_ID);
+        setStreamUrl(url);
+      }).catch(() => {
         // Session doesn't exist on the server — reset to idle
         setPipelineStatus('idle');
         setSessionId(null);
