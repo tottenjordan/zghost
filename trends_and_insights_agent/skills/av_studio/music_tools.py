@@ -81,11 +81,6 @@ Technical Requirements:
             contents=full_prompt,
             config=types.GenerateContentConfig(
                 response_modalities=["AUDIO"],
-                audio_config=types.AudioConfig(
-                    duration_seconds=duration_seconds,
-                    sample_rate=48000,  # High quality audio
-                    audio_format="mp3",
-                ),
             ),
         )
 
@@ -177,11 +172,6 @@ Brand tone: {tool_context.state.get('brand', 'modern')}"""
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_modalities=["AUDIO"],
-                    audio_config=types.AudioConfig(
-                        duration_seconds=3,  # Short SFX
-                        sample_rate=48000,
-                        audio_format="wav",  # WAV for SFX
-                    ),
                 ),
             )
 

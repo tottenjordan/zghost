@@ -38,7 +38,8 @@ export class OrchestrationPage {
 
   async goto() {
     await this.page.goto('/orchestration');
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.page.waitForTimeout(2_000);
   }
 
   async setDuration(duration: 10 | 15 | 30) {

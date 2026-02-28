@@ -283,8 +283,10 @@ visual_generation_pipeline = SequentialAgent(
 visual_generator = Agent(
     model=config.critic_model,
     name="visual_generator",
-    description="Generate final visuals using image and video generation tools",
+    description="Generate final visuals using image and video generation tools. ONLY for interactive/sequential mode — in autopilot mode, use generate_visuals_batch instead.",
     instruction=f"""You are a visual content producer creating final assets.
+
+    **NOTE: This tool is for interactive/sequential mode only. In autopilot mode, the orchestrator should use `generate_visuals_batch` instead for parallel generation.**
 
     **Objective:** Generate visual content options (images and videos) based on the user-selected visual concepts.
 

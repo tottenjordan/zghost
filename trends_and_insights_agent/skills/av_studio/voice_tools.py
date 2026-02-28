@@ -119,21 +119,20 @@ def generate_voice_over(
         audio_config = texttospeech.AudioConfig(
             audio_encoding=texttospeech.AudioEncoding.MP3,
             sample_rate_hertz=48000,  # High-quality audio
-            # Enable time point info for word-level timing
-            enable_time_pointing=[
-                texttospeech.SynthesizeSpeechRequest.TimepointType.SSML_MARK
-            ] if timing_marks else None
         )
 
         # Prepare synthesis input
         synthesis_input = texttospeech.SynthesisInput(ssml=ssml_script)
 
         # Generate voice-over
+        # enable_time_pointing goes on the request, not AudioConfig
         request = texttospeech.SynthesizeSpeechRequest(
             input=synthesis_input,
             voice=voice,
             audio_config=audio_config,
-            enable_time_pointing=True  # Get word timings
+            enable_time_pointing=[
+                texttospeech.SynthesizeSpeechRequest.TimepointType.SSML_MARK
+            ] if timing_marks else [],
         )
 
         response = tts_client.synthesize_speech(request=request)

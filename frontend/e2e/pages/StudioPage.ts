@@ -13,7 +13,8 @@ export class StudioPage {
 
   async goto(sessionId: string) {
     await this.page.goto(`/studio?session=${sessionId}`);
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.page.waitForTimeout(2_000);
   }
 
   async waitForCommercial(timeout = 60_000) {

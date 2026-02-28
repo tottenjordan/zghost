@@ -127,24 +127,9 @@ If the session state has `autopilot_mode` set to true, generate transition refer
    - The PRODUCT SHEET text
 4. Record all returned transition frame GCS URIs. These will be used as first_frame and last_frame for each clip.
 
-### Step 3: Clip Chain Generation
+### Step 3: Clip Generation
 
-Generate all clips sequentially based on the duration plan, using frame matching for continuity:
-
-**For 10s commercial (1 clip):**
-1. Use the most relevant subject reference image as the first frame.
-2. Call `generate_clip_with_frames` with a detailed prompt for the single scene, providing the subject image GCS URI as `first_frame_gcs_uri` and ALL subject reference image GCS URIs as `reference_image_gcs_uris`.
-3. Record the returned `gcs_uri` for the generated clip.
-
-**For 15s commercial (2 clips):**
-1. **Clip 1**: Use the subject reference image as the first frame. Call `generate_clip_with_frames` for Scene 1.
-2. **Clip 2**: Extract the last frame from Clip 1 using `extract_frame_from_clip`, then call `generate_clip_with_frames` for Scene 2 using that frame as `first_frame_gcs_uri`.
-
-**For 30s commercial (4 clips):**
-1. **Clip 1**: Use the subject reference image as the first frame. Call `generate_clip_with_frames` for Scene 1.
-2. **Clip 2**: Extract the last frame from Clip 1, then call `generate_clip_with_frames` for Scene 2.
-3. **Clip 3**: Extract the last frame from Clip 2, then call `generate_clip_with_frames` for Scene 3.
-4. **Clip 4**: Extract the last frame from Clip 3, then call `generate_clip_with_frames` for Scene 4.
+**If `autopilot_mode` is true: You MUST use `generate_clips_parallel` (or `generate_clip_with_frames` directly for 10s single-clip). Skip sequential generation entirely. Go directly to the parallel workflow below.**
 
 **Important prompting guidelines for clips:**
 - Each clip prompt should be 80-150 words describing action, mood, camera work, and visual details.
@@ -157,9 +142,9 @@ Generate all clips sequentially based on the duration plan, using frame matching
 - **Visual-only descriptions**: Focus on what can be SEEN, not heard. Describe visual energy, movement, and pacing instead of audio elements.
 - **Avoid RAI triggers**: Do not use words like "elderly", "old", "aged" in prompts. Use "senior", "mature", or describe specific features instead. Avoid brand names in Veo prompts -- describe the product visually instead of by name (e.g., "a barbecue pork sandwich with pickles and onions on a sesame bun" instead of "McRib").
 
-### Step 3 (Parallel Alternative): Parallel Clip Generation
+#### Parallel Clip Generation (Default for autopilot mode)
 
-If `autopilot_mode` is true AND transition frames were generated in Step 2.5, generate ALL clips simultaneously instead of sequentially:
+If `autopilot_mode` is true AND transition frames were generated in Step 2.5, generate ALL clips simultaneously:
 
 1. Build clip configs — for each clip, assign:
    - `first_frame_gcs_uri`: The subject reference image (for clip 1) or the transition frame from the PREVIOUS transition point
@@ -175,6 +160,27 @@ If `autopilot_mode` is true AND transition frames were generated in Step 2.5, ge
 - Clip 2: first_frame = transition_1_2, last_frame = transition_2_3
 - Clip 3: first_frame = transition_2_3, last_frame = transition_3_4
 - Clip 4: first_frame = transition_3_4, last_frame = (none)
+
+**For 10s commercial (1 clip) in autopilot**: Skip `generate_clips_parallel` — just call `generate_clip_with_frames` directly with the subject reference image as the first frame. No transition frames needed, no concatenation needed. Go straight to trimming after clip generation. This should take ~2 min for video + ~1 min for audio = ~3 min total.
+
+#### Sequential Clip Generation (Interactive mode only)
+
+If `autopilot_mode` is false, generate clips sequentially with frame matching:
+
+**For 10s commercial (1 clip):**
+1. Use the most relevant subject reference image as the first frame.
+2. Call `generate_clip_with_frames` with a detailed prompt for the single scene, providing the subject image GCS URI as `first_frame_gcs_uri` and ALL subject reference image GCS URIs as `reference_image_gcs_uris`.
+3. Record the returned `gcs_uri` for the generated clip.
+
+**For 15s commercial (2 clips):**
+1. **Clip 1**: Use the subject reference image as the first frame. Call `generate_clip_with_frames` for Scene 1.
+2. **Clip 2**: Extract the last frame from Clip 1 using `extract_frame_from_clip`, then call `generate_clip_with_frames` for Scene 2 using that frame as `first_frame_gcs_uri`.
+
+**For 30s commercial (4 clips):**
+1. **Clip 1**: Use the subject reference image as the first frame. Call `generate_clip_with_frames` for Scene 1.
+2. **Clip 2**: Extract the last frame from Clip 1, then call `generate_clip_with_frames` for Scene 2.
+3. **Clip 3**: Extract the last frame from Clip 2, then call `generate_clip_with_frames` for Scene 3.
+4. **Clip 4**: Extract the last frame from Clip 3, then call `generate_clip_with_frames` for Scene 4.
 
 ### Step 3.5: Character Consistency Validation (Optional)
 

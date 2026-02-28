@@ -28,7 +28,7 @@ focus_group_evaluator_agent = Agent(
     tools=[analyze_commercial_video, _skill_toolset],
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="MEDIUM", include_thoughts=True)
+        thinking_config=types.ThinkingConfig(thinking_level="LOW", include_thoughts=True)
     ),
     before_model_callback=callbacks.rate_limit_callback,
 )

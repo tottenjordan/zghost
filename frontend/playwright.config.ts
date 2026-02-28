@@ -7,7 +7,7 @@ export default defineConfig({
     timeout: 30_000,
   },
   fullyParallel: false,
-  workers: 1, // serial — shared backend state
+  workers: 2, // allow parallel tests (each creates its own session)
   retries: 0, // too long to retry
   reporter: [['html'], ['list']],
   use: {

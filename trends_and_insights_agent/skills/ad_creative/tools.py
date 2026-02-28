@@ -94,78 +94,90 @@ async def generate_image(
     prompt: str,
     tool_context: ToolContext,
     concept_name: str,
-    number_of_images: int = 1,
 ) -> dict:
-    f"""Generates an image based on the prompt for {config.image_gen_model}
+    f"""Generates an image based on the prompt using {config.image_gen_model} (Gemini native image generation).
 
     Args:
         prompt (str): The prompt to generate the image from.
         tool_context (ToolContext): The tool context.
-        concept_name (str, optional): The name of the concept.
-        number_of_images (int, optional): The number of images to generate. Defaults to 1.
+        concept_name (str): The name of the concept.
 
     Returns:
         dict: Status and the artifact_key of the generated image.
 
     """
-    response = client.models.generate_images(
-        model=config.image_gen_model,
-        prompt=prompt,
-        config={"number_of_images": number_of_images},
-    )
-    if not response.generated_images:
-        return {"status": "failed"}
-
-    # Create output filename
-    if concept_name:
-        filename_prefix = concept_name.replace(",", "").replace(" ", "_")
-    else:
-        filename_prefix = f"{str(uuid.uuid4())[:8]}"
-
-    DIR = "session_media"
-    SUBDIR = f"{DIR}/imgs"
-    if not os.path.exists(SUBDIR):
-        os.makedirs(SUBDIR)
-
-    for index, image_results in enumerate(response.generated_images):
-        if image_results.image is not None:
-            if image_results.image.image_bytes is not None:
-
-                image_bytes = image_results.image.image_bytes
-                artifact_key = f"{filename_prefix}_{index}.png"
-
-                await tool_context.save_artifact(
-                    filename=artifact_key,
-                    artifact=types.Part.from_bytes(
-                        data=image_bytes, mime_type="image/png"
-                    ),
-                )
-                local_filepath = f"{SUBDIR}/{artifact_key}"
-
-                # save the file locally for gcs upload
-                image = Image.open(BytesIO(image_bytes))
-                image.save(local_filepath)
-                gcs_folder = tool_context.state["gcs_folder"]
-                artifact_path = os.path.join(gcs_folder, artifact_key)
-                logging.info(f"\n\n `generate_image` listdir: {os.listdir('.')}\n\n")
-
-                upload_blob_to_gcs(
-                    source_file_name=local_filepath,
-                    destination_blob_name=artifact_path,
-                )
-                logging.info(
-                    f"Saved image artifact '{artifact_key}' to folder '{gcs_folder}'"
-                )
-
     try:
-        shutil.rmtree(SUBDIR)
-        logging.info(f"Directory '{SUBDIR}' and its contents removed successfully")
-    except FileNotFoundError:
-        logging.exception(f"Directory '{SUBDIR}' not found")
-    except OSError as e:
-        logging.exception(f"Error removing directory '{SUBDIR}': {e}")
+        response = client.models.generate_content(
+            model=config.image_gen_model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE"],
+            ),
+        )
 
-    return {"status": "ok", "artifact_key": f"{artifact_key}"}
+        if not response.candidates or not response.candidates[0].content.parts:
+            return {"status": "failed", "error": "No image generated"}
+
+        image_part = None
+        for part in response.candidates[0].content.parts:
+            if part.inline_data and part.inline_data.mime_type.startswith("image/"):
+                image_part = part
+                break
+
+        if image_part is None:
+            return {"status": "failed", "error": "No image data in response"}
+
+        image_bytes = image_part.inline_data.data
+        mime_type = image_part.inline_data.mime_type
+        ext = "png" if "png" in mime_type else "jpg"
+
+        # Create output filename
+        if concept_name:
+            filename_prefix = concept_name.replace(",", "").replace(" ", "_")
+        else:
+            filename_prefix = f"{str(uuid.uuid4())[:8]}"
+
+        artifact_key = f"{filename_prefix}_0.{ext}"
+
+        DIR = "session_media"
+        SUBDIR = f"{DIR}/imgs"
+        os.makedirs(SUBDIR, exist_ok=True)
+
+        await tool_context.save_artifact(
+            filename=artifact_key,
+            artifact=types.Part.from_bytes(
+                data=image_bytes, mime_type=mime_type
+            ),
+        )
+        local_filepath = f"{SUBDIR}/{artifact_key}"
+
+        # save the file locally for gcs upload
+        image = Image.open(BytesIO(image_bytes))
+        image.save(local_filepath)
+        gcs_folder = tool_context.state["gcs_folder"]
+        artifact_path = os.path.join(gcs_folder, artifact_key)
+
+        upload_blob_to_gcs(
+            source_file_name=local_filepath,
+            destination_blob_name=artifact_path,
+        )
+        logging.info(
+            f"Saved image artifact '{artifact_key}' to folder '{gcs_folder}'"
+        )
+
+        try:
+            shutil.rmtree(SUBDIR)
+            logging.info(f"Directory '{SUBDIR}' and its contents removed successfully")
+        except FileNotFoundError:
+            logging.exception(f"Directory '{SUBDIR}' not found")
+        except OSError as e:
+            logging.exception(f"Error removing directory '{SUBDIR}': {e}")
+
+        return {"status": "ok", "artifact_key": artifact_key}
+
+    except Exception as e:
+        logging.error(f"Error generating image: {e}")
+        return {"status": "failed", "error": str(e)}
 
 
 async def generate_video(
