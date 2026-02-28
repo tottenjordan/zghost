@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { api } from '../../services/api';
+import type { SessionState } from '../../types/session';
 import type { Message, Scene, NarrativeArc, NarrativeData } from './types';
 
 export function useNarrative(sessionId: string | null) {
@@ -9,32 +10,55 @@ export function useNarrative(sessionId: string | null) {
     narrativeArc: undefined,
     isStreaming: false,
   });
+  const [sessionState, setSessionState] = useState<SessionState>({});
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
-  // Auto-load research report on mount when sessionId is provided
+  // Auto-load research report and session state on mount
   useEffect(() => {
     if (!sessionId) return;
 
-    api.getSessionState(sessionId)
-      .then((result) => {
-        const report = result.state?.combined_final_cited_report;
-        if (report) {
-          setNarrativeData((prev) => ({
-            ...prev,
-            messages: [
-              {
-                id: 'report-initial',
-                role: 'assistant',
-                content:
-                  typeof report === 'string'
-                    ? report
-                    : 'Research report loaded. How would you like to refine it?',
-                timestamp: Date.now(),
-              },
-            ],
-          }));
-        }
-      })
-      .catch((err) => console.error('Failed to load session report:', err));
+    const loadSessionData = () => {
+      api.getSessionState(sessionId)
+        .then((result) => {
+          setSessionState(result.state);
+
+          // Check for PDF URLs
+          const draftPdf = result.state?.draft_pdf_url;
+          const finalPdf = result.state?.final_pdf_url;
+          if (finalPdf) {
+            setPdfUrl(finalPdf);
+          } else if (draftPdf) {
+            setPdfUrl(draftPdf);
+          }
+
+          const report = result.state?.combined_final_cited_report;
+          if (report) {
+            setNarrativeData((prev) => ({
+              ...prev,
+              messages: [
+                {
+                  id: 'report-initial',
+                  role: 'assistant',
+                  content:
+                    typeof report === 'string'
+                      ? report
+                      : 'Research report loaded. How would you like to refine it?',
+                  timestamp: Date.now(),
+                },
+              ],
+            }));
+          }
+        })
+        .catch((err) => console.error('Failed to load session data:', err));
+    };
+
+    // Initial load
+    loadSessionData();
+
+    // Poll for updates every 3 seconds
+    const intervalId = setInterval(loadSessionData, 3000);
+
+    return () => clearInterval(intervalId);
   }, [sessionId]);
 
   const sendMessage = useCallback(
@@ -135,6 +159,8 @@ export function useNarrative(sessionId: string | null) {
 
   return {
     ...narrativeData,
+    sessionState,
+    pdfUrl,
     sendMessage,
     reorderScenes,
     updateScene,

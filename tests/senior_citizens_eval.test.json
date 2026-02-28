@@ -1,0 +1,92 @@
+[
+  {
+    "query": "hello",
+    "expected_tool_use": [],
+    "expected_intermediate_agent_responses": [],
+    "reference": "Expert AI Marketing Research & Strategy Assistant"
+  },
+  {
+    "query": "Brand: McDonald's, Product: McRib and Shamrock Shake, Audience: Senior Citizens, Key Selling Points: McRib and Shamrock is back forever",
+    "expected_tool_use": [
+      {
+        "tool_name": "memorize",
+        "tool_input": {
+          "key": "brand",
+          "value": "McDonald's"
+        }
+      },
+      {
+        "tool_name": "memorize",
+        "tool_input": {
+          "key": "target_product",
+          "value": "McRib and Shamrock Shake"
+        }
+      },
+      {
+        "tool_name": "memorize",
+        "tool_input": {
+          "key": "target_audience",
+          "value": "Senior Citizens"
+        }
+      },
+      {
+        "tool_name": "memorize",
+        "tool_input": {
+          "key": "key_selling_points",
+          "value": "McRib and Shamrock is back forever"
+        }
+      }
+    ],
+    "expected_intermediate_agent_responses": [],
+    "reference": "campaign metadata"
+  },
+  {
+    "query": "Auto-select the best trends for this campaign. Pick brand-safe Google Search and YouTube trends relevant to McDonald's McRib and Shamrock Shake for Senior Citizens.",
+    "expected_tool_use": [
+      {
+        "tool_name": "get_daily_gtrends",
+        "tool_input": {}
+      },
+      {
+        "tool_name": "get_youtube_trends",
+        "tool_input": {}
+      }
+    ],
+    "expected_intermediate_agent_responses": [],
+    "reference": "trends selected"
+  },
+  {
+    "query": "Looks great, proceed with research.",
+    "expected_tool_use": [],
+    "expected_intermediate_agent_responses": [],
+    "reference": "research"
+  },
+  {
+    "query": "Report looks good, proceed to ad generation.",
+    "expected_tool_use": [],
+    "expected_intermediate_agent_responses": [],
+    "reference": "ad"
+  },
+  {
+    "query": "Now produce a 30-second commercial video.",
+    "expected_tool_use": [
+      {
+        "tool_name": "generate_subject_image",
+        "tool_input": {}
+      }
+    ],
+    "expected_intermediate_agent_responses": [],
+    "reference": "commercial"
+  },
+  {
+    "query": "Now evaluate the commercial with the focus group.",
+    "expected_tool_use": [
+      {
+        "tool_name": "analyze_commercial_video",
+        "tool_input": {}
+      }
+    ],
+    "expected_intermediate_agent_responses": [],
+    "reference": "score"
+  }
+]

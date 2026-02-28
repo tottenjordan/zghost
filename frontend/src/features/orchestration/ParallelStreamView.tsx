@@ -8,7 +8,7 @@ import { cn } from '../../lib/utils';
 interface StreamLane {
   id: string;
   name: string;
-  status: 'pending' | 'running' | 'completed' | 'error';
+  status: 'idle' | 'waiting' | 'pending' | 'running' | 'completed' | 'error';
   progress: number;
   currentStage?: string;
   events: AgentEvent[];
@@ -40,6 +40,8 @@ function StreamLaneComponent({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const statusIcon = {
+    idle: Loader2,
+    waiting: Loader2,
     pending: Loader2,
     running: Loader2,
     completed: CheckCircle2,
@@ -49,13 +51,17 @@ function StreamLaneComponent({
   const StatusIcon = statusIcon;
 
   const statusColor = {
-    pending: 'text-zinc-500',
+    idle: 'text-zinc-600',
+    waiting: 'text-zinc-500',
+    pending: 'text-yellow-400',
     running: 'text-blue-400',
     completed: 'text-green-400',
     error: 'text-red-400',
   }[stream.status];
 
   const badgeVariant = {
+    idle: 'default' as const,
+    waiting: 'default' as const,
     pending: 'default' as const,
     running: 'info' as const,
     completed: 'success' as const,
@@ -116,7 +122,12 @@ function StreamLaneComponent({
       {isExpanded && (
         <div className="mt-2 space-y-1 max-h-48 overflow-y-auto">
           {stream.events.length === 0 ? (
-            <div className="text-xs text-zinc-600 italic">No events yet</div>
+            <div className="text-xs text-zinc-600 italic">
+              {stream.status === 'waiting' && 'Waiting for parallel phase to start...'}
+              {stream.status === 'idle' && 'Not started'}
+              {stream.status === 'pending' && 'Starting soon...'}
+              {(stream.status === 'running' || stream.status === 'completed' || stream.status === 'error') && 'No events yet'}
+            </div>
           ) : (
             stream.events.map((event, index) => (
               <div

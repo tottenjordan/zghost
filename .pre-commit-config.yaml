@@ -1,0 +1,48 @@
+# Pre-commit hooks for code quality and security
+# Install with: pip install pre-commit && pre-commit install
+
+repos:
+  # Python formatting and linting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # Check for secrets
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+
+  # YAML formatting
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Dockerfile linting
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        files: deploy/Dockerfile
+
+  # Custom hook to check for forbidden retailer names
+  - repo: local
+    hooks:
+      - id: check-forbidden-names
+        name: Check for hardcoded retailer names
+        entry: bash -c 'if grep -r "Kroger\|HEB\|H-E-B\|Walmart\|Target" --include="*.py" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" --exclude-dir=tests trends_and_insights_agent/ frontend/src/ 2>/dev/null; then echo "Found forbidden retailer names!"; exit 1; fi'
+        language: system
+        pass_filenames: false

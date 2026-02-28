@@ -32,5 +32,6 @@
     "vertexai",
     "virtualenv",
     "wortz"
-  ]
+  ],
+  "git.ignoreLimitWarning": true
 }

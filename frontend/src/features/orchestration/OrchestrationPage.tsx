@@ -51,6 +51,7 @@ export function OrchestrationPage() {
     setCommercialDuration,
     setAutoStart,
     isReadyToLaunch,
+    setCampaignConfig,
   } = useCampaignStore();
 
   const isRunning = pipelineStatus === 'running';
@@ -252,18 +253,66 @@ export function OrchestrationPage() {
     setDismissedBanners(prev => new Set(prev).add(key));
   };
 
+  // Auto-navigation detection
+  const hasResearchReport = !!sessionState.combined_final_cited_report;
+  const hasCommercialVideo = !!(
+    sessionState.vid_artifact_keys?.vid_artifact_keys?.length > 0 ||
+    (Array.isArray(sessionState.vid_artifact_keys) && sessionState.vid_artifact_keys.length > 0)
+  );
+
   // Parallel streams — use substring matching since ADK author field may not exactly match
   const getStreamEvents = (keywords: string[]) =>
     events.filter(e => keywords.some(kw => e.agentName.toLowerCase().includes(kw)));
 
-  const ytEvents = getStreamEvents(['yt_sequential', 'yt_analysis', 'yt_web']);
-  const gsEvents = getStreamEvents(['gs_sequential', 'gs_web']);
-  const caEvents = getStreamEvents(['ca_sequential', 'campaign_web']);
+  // Expanded keywords to match all sub-agent names in the research pipeline
+  const ytEvents = getStreamEvents(['yt_sequential', 'yt_analysis_generator', 'yt_web_planner', 'yt_web_searcher']);
+  const gsEvents = getStreamEvents(['gs_sequential', 'gs_web_planner', 'gs_web_searcher']);
+  const caEvents = getStreamEvents(['ca_sequential', 'campaign_web_planner', 'campaign_web_searcher']);
+
+  // Detect if parallel phase has started (events from parallel orchestration agents)
+  const parallelPhaseStarted = events.some(e =>
+    e.agentName.toLowerCase().includes('parallel_planner') ||
+    e.agentName.toLowerCase().includes('merge_parallel') ||
+    ytEvents.length > 0 || gsEvents.length > 0 || caEvents.length > 0
+  );
+
+  // Detect if research is complete
+  const researchComplete = hasResearchReport;
+
+  // Helper to determine stream status
+  const getStreamStatus = (streamEvents: typeof ytEvents) => {
+    if (researchComplete) return 'completed' as const;
+    if (streamEvents.length > 0) return 'running' as const;
+    if (!sessionId || !isRunning) return 'idle' as const;
+    if (!parallelPhaseStarted) return 'waiting' as const;
+    return 'pending' as const;
+  };
 
   const parallelStreams = [
-    { id: 'stream-1', name: 'YouTube Research', status: ytEvents.length > 0 ? ('running' as const) : ('pending' as const), progress: Math.min(100, ytEvents.length * 10), currentStage: ytEvents.length > 5 ? 'web_scraping' : ytEvents.length > 0 ? 'planning' : undefined, events: ytEvents },
-    { id: 'stream-2', name: 'Google Search', status: gsEvents.length > 0 ? ('running' as const) : ('pending' as const), progress: Math.min(100, gsEvents.length * 10), currentStage: gsEvents.length > 5 ? 'searching' : gsEvents.length > 0 ? 'planning' : undefined, events: gsEvents },
-    { id: 'stream-3', name: 'Campaign Research', status: caEvents.length > 0 ? ('running' as const) : ('pending' as const), progress: Math.min(100, caEvents.length * 10), currentStage: caEvents.length > 5 ? 'analysis' : caEvents.length > 0 ? 'planning' : undefined, events: caEvents },
+    {
+      id: 'stream-1',
+      name: 'YouTube Research',
+      status: getStreamStatus(ytEvents),
+      progress: researchComplete ? 100 : Math.min(100, ytEvents.length * 10),
+      currentStage: researchComplete ? 'completed' : ytEvents.length > 5 ? 'web_scraping' : ytEvents.length > 0 ? 'planning' : undefined,
+      events: ytEvents
+    },
+    {
+      id: 'stream-2',
+      name: 'Google Search',
+      status: getStreamStatus(gsEvents),
+      progress: researchComplete ? 100 : Math.min(100, gsEvents.length * 10),
+      currentStage: researchComplete ? 'completed' : gsEvents.length > 5 ? 'searching' : gsEvents.length > 0 ? 'planning' : undefined,
+      events: gsEvents
+    },
+    {
+      id: 'stream-3',
+      name: 'Campaign Research',
+      status: getStreamStatus(caEvents),
+      progress: researchComplete ? 100 : Math.min(100, caEvents.length * 10),
+      currentStage: researchComplete ? 'completed' : caEvents.length > 5 ? 'analysis' : caEvents.length > 0 ? 'planning' : undefined,
+      events: caEvents
+    },
   ].filter(stream => stream.events.length > 0 || sessionId !== null);
 
   const selectedAgentState = selectedAgent ? status?.agents[selectedAgent] : undefined;
@@ -272,13 +321,6 @@ export function OrchestrationPage() {
   // Suppress "missing trends" when already running with an active session
   const ready = storeReady || (!!sessionId && isRunning);
   const totalTrends = selectedSearchTrends.length + selectedYtTrends.length;
-
-  // Auto-navigation detection
-  const hasResearchReport = !!sessionState.combined_final_cited_report;
-  const hasCommercialVideo = !!(
-    sessionState.vid_artifact_keys?.vid_artifact_keys?.length > 0 ||
-    (Array.isArray(sessionState.vid_artifact_keys) && sessionState.vid_artifact_keys.length > 0)
-  );
 
   return (
     <div className="flex flex-col h-full gap-3">
@@ -296,19 +338,34 @@ export function OrchestrationPage() {
 
       {/* Auto-navigation banners */}
       {hasResearchReport && !dismissedBanners.has('report') && (
-        <div
-          className="flex items-center gap-3 p-3 bg-blue-950/50 border border-blue-700 rounded-lg cursor-pointer hover:bg-blue-950/70 transition-colors"
-          onClick={() => dismissBanner('report')}
-        >
-          <FileText className="w-5 h-5 text-blue-400" />
-          <span className="text-sm text-blue-300">Research report is ready</span>
-          <Link
-            to={`/narrative?session=${sessionId}`}
-            className="ml-auto text-xs text-blue-400 underline hover:text-blue-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            Open in Narrative
-          </Link>
+        <div className="relative overflow-hidden rounded-lg border border-blue-600 bg-gradient-to-r from-blue-950 via-blue-900 to-blue-950 p-5 shadow-lg">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600/30 border border-blue-500">
+              <FileText className="h-6 w-6 text-blue-300" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base font-semibold text-blue-100">Research Report Ready</h3>
+              <p className="text-sm text-blue-300/80 mt-0.5">
+                Your comprehensive market research report is complete and ready for review
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link
+                to={`/narrative?session=${sessionId}`}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:bg-blue-500 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-zinc-900"
+              >
+                <FileText className="h-4 w-4" />
+                Open in Narrative
+              </Link>
+              <button
+                onClick={() => dismissBanner('report')}
+                className="rounded-lg p-2 text-blue-400 transition-colors hover:bg-blue-900/50 hover:text-blue-300"
+                aria-label="Dismiss banner"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -485,13 +542,14 @@ export function OrchestrationPage() {
         {/* Right: Detail panel (1 col) */}
         <div className="border border-zinc-800 rounded-lg overflow-hidden flex flex-col">
           <Tabs value={detailTab} onValueChange={setDetailTab}>
-            <TabsList className="w-full grid grid-cols-6">
+            <TabsList className="w-full grid grid-cols-7">
               <TabsTrigger value="chat">Chat</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
               <TabsTrigger value="evaluation">Eval</TabsTrigger>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="streams">Streams</TabsTrigger>
               <TabsTrigger value="state">State</TabsTrigger>
+              <TabsTrigger value="config">Config</TabsTrigger>
             </TabsList>
 
             <TabsContent value="chat" className="flex-1 overflow-hidden">
@@ -532,6 +590,124 @@ export function OrchestrationPage() {
 
             <TabsContent value="state" className="flex-1 overflow-auto">
               <SessionStatePanel state={sessionState} changedKeys={changedKeys} />
+            </TabsContent>
+
+            <TabsContent value="config" className="flex-1 overflow-auto p-4">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Brand */}
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-zinc-400">
+                      Brand <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={config.brand}
+                        onChange={(e) => setCampaignConfig({ ...config, brand: e.target.value })}
+                        placeholder="e.g., Google Pixel"
+                        className={cn(
+                          'flex h-9 w-full rounded-md border px-3 py-2 text-sm',
+                          'text-zinc-50 placeholder:text-zinc-500 bg-zinc-900',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                          config.brand.trim() !== ''
+                            ? 'border-zinc-700 border-l-4 border-l-green-500'
+                            : 'border-zinc-700'
+                        )}
+                      />
+                      {config.brand.trim() !== '' && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-xs">
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Product */}
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-zinc-400">
+                      Product <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={config.target_product}
+                        onChange={(e) => setCampaignConfig({ ...config, target_product: e.target.value })}
+                        placeholder="e.g., Pixel 9 Pro"
+                        className={cn(
+                          'flex h-9 w-full rounded-md border px-3 py-2 text-sm',
+                          'text-zinc-50 placeholder:text-zinc-500 bg-zinc-900',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                          config.target_product.trim() !== ''
+                            ? 'border-zinc-700 border-l-4 border-l-green-500'
+                            : 'border-zinc-700'
+                        )}
+                      />
+                      {config.target_product.trim() !== '' && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-xs">
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Audience */}
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-zinc-400">
+                      Target Audience
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={config.target_audience}
+                        onChange={(e) => setCampaignConfig({ ...config, target_audience: e.target.value })}
+                        placeholder="e.g., Tech-savvy millennials"
+                        className={cn(
+                          'flex h-9 w-full rounded-md border px-3 py-2 text-sm',
+                          'text-zinc-50 placeholder:text-zinc-500 bg-zinc-900',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                          config.target_audience.trim() !== ''
+                            ? 'border-zinc-700 border-l-4 border-l-green-500'
+                            : 'border-zinc-700'
+                        )}
+                      />
+                      {config.target_audience.trim() !== '' && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-xs">
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Selling Points */}
+                  <div>
+                    <label className="mb-2 block text-xs font-medium text-zinc-400">
+                      Key Selling Points
+                    </label>
+                    <div className="relative">
+                      <textarea
+                        value={config.key_selling_points}
+                        onChange={(e) => setCampaignConfig({ ...config, key_selling_points: e.target.value })}
+                        placeholder="e.g., AI camera, long battery"
+                        rows={3}
+                        className={cn(
+                          'flex w-full rounded-md border px-3 py-2 text-sm',
+                          'text-zinc-50 placeholder:text-zinc-500 bg-zinc-900',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 resize-none',
+                          config.key_selling_points.trim() !== ''
+                            ? 'border-zinc-700 border-l-4 border-l-green-500'
+                            : 'border-zinc-700'
+                        )}
+                      />
+                      {config.key_selling_points.trim() !== '' && (
+                        <span className="absolute right-3 top-2 text-green-500 text-xs">
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

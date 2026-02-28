@@ -20,6 +20,8 @@ export function NarrativePage() {
     scenes,
     narrativeArc,
     isStreaming,
+    sessionState,
+    pdfUrl,
     sendMessage,
     reorderScenes,
     updateScene,
@@ -27,6 +29,7 @@ export function NarrativePage() {
   } = useNarrative(sessionId);
 
   const hasReport = messages.length > 0 && messages[0].id === 'report-initial';
+  const hasPdf = !!pdfUrl;
 
   const handleAcceptReport = () => {
     sendMessage('I accept this research report. Let\'s proceed to creative development.');
@@ -107,32 +110,55 @@ export function NarrativePage() {
           />
         </div>
 
-        {/* Right Panel: Storyboard & Arc */}
-        <div className="flex h-[calc(100vh-16rem)] flex-col overflow-y-auto">
-          <Tabs defaultValue="storyboard">
-            <TabsList className="mb-4">
-              <TabsTrigger value="storyboard">
-                Storyboard ({scenes.length})
-              </TabsTrigger>
-              <TabsTrigger value="arc">Narrative Arc</TabsTrigger>
-            </TabsList>
+        {/* Right Panel: PDF Viewer or Storyboard & Arc */}
+        <div className="flex h-[calc(100vh-16rem)] flex-col overflow-hidden">
+          {hasPdf ? (
+            <div className="flex flex-col h-full border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/50">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-900">
+                <h3 className="text-sm font-medium text-zinc-300">
+                  {sessionState?.final_pdf_url ? 'Final Report' : 'Draft Report'}
+                </h3>
+                <span className="text-xs text-zinc-500">
+                  {sessionState?.final_pdf_url ? 'Ready for review' : 'Preview'}
+                </span>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <iframe
+                  src={pdfUrl}
+                  className="w-full h-full"
+                  title="Research Report PDF"
+                  style={{ border: 'none' }}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-y-auto">
+              <Tabs defaultValue="storyboard">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="storyboard">
+                    Storyboard ({scenes.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="arc">Narrative Arc</TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="storyboard">
-              <StoryboardView
-                scenes={scenes}
-                onReorder={reorderScenes}
-                onUpdateScene={updateScene}
-              />
-            </TabsContent>
+                <TabsContent value="storyboard">
+                  <StoryboardView
+                    scenes={scenes}
+                    onReorder={reorderScenes}
+                    onUpdateScene={updateScene}
+                  />
+                </TabsContent>
 
-            <TabsContent value="arc">
-              <NarrativeArc
-                narrativeArc={narrativeArc}
-                scenes={scenes}
-                onUpdate={updateNarrativeArc}
-              />
-            </TabsContent>
-          </Tabs>
+                <TabsContent value="arc">
+                  <NarrativeArc
+                    narrativeArc={narrativeArc}
+                    scenes={scenes}
+                    onUpdate={updateNarrativeArc}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
         </div>
       </div>
     </div>

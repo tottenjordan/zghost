@@ -97,16 +97,33 @@ def _create_session_service():
     name or ID, so it only works when deployed to Agent Engine. For local dev
     and Cloud Run, use InMemorySessionService.
 
-    Set USE_VERTEX_SESSIONS=true and VERTEX_SESSION_APP_NAME=<engine-id> to enable.
+    Set USE_VERTEX_SESSIONS=true and AGENT_ENGINE_ID=<engine-id> to enable.
+
+    Environment variable resolution (highest priority first):
+    - AGENT_ENGINE_ID (new unified variable)
+    - MEMORY_BANK_AGENT_ENGINE_ID (deprecated)
+    - VERTEX_SESSION_APP_NAME (deprecated)
     """
     use_vertex = os.environ.get("USE_VERTEX_SESSIONS", "").lower() == "true"
     if use_vertex:
         project = os.environ.get("GOOGLE_CLOUD_PROJECT")
         location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
-        if project:
+        # Unified Agent Engine ID with backward compatibility
+        engine_id = (
+            os.environ.get("AGENT_ENGINE_ID")
+            or os.environ.get("MEMORY_BANK_AGENT_ENGINE_ID")
+            or os.environ.get("VERTEX_SESSION_APP_NAME")
+        )
+        if project and engine_id:
             try:
-                svc = VertexAiSessionService(project=project, location=location)
-                logger.info(f"Using VertexAiSessionService (project={project}, location={location})")
+                svc = VertexAiSessionService(
+                    project=project,
+                    location=location,
+                    app_name=engine_id,
+                )
+                logger.info(
+                    f"Using VertexAiSessionService (project={project}, location={location}, app_name={engine_id})"
+                )
                 return svc
             except Exception as e:
                 logger.warning(f"Failed to create VertexAiSessionService: {e}, falling back to InMemory")
@@ -114,7 +131,13 @@ def _create_session_service():
 
 
 # App name for session service — ReasoningEngine ID when using VertexAI, otherwise arbitrary string
-SESSION_APP_NAME = os.environ.get("VERTEX_SESSION_APP_NAME", "trends_and_insights_agent")
+# Unified Agent Engine ID with backward compatibility
+SESSION_APP_NAME = (
+    os.environ.get("AGENT_ENGINE_ID")
+    or os.environ.get("MEMORY_BANK_AGENT_ENGINE_ID")
+    or os.environ.get("VERTEX_SESSION_APP_NAME")
+    or "trends_and_insights_agent"
+)
 
 
 @asynccontextmanager
@@ -123,9 +146,14 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Initializing ADK session service and runner...")
     app_state.runner = InMemoryRunner(
-        agent=root_agent, app_name="trends_and_insights_agent"
+        agent=root_agent, app_name=SESSION_APP_NAME
     )
-    # Use the runner's internal session service so sessions are shared
+    # Override with custom session service if VertexAI sessions are enabled
+    custom_session_service = _create_session_service()
+    if not isinstance(custom_session_service, InMemorySessionService):
+        logger.info("Overriding runner session service with custom VertexAiSessionService")
+        app_state.runner.session_service = custom_session_service
+    # Use the runner's session service so sessions are shared
     app_state.session_service = app_state.runner.session_service
     logger.info("API server ready")
 
@@ -312,6 +340,10 @@ async def stream_agent_events(
             "session_id": session_id,
             "agent_name": "root_agent",
         }
+        # Store completion event for polling-based detection
+        if session_id not in app_state.session_sse_events:
+            app_state.session_sse_events[session_id] = []
+        app_state.session_sse_events[session_id].append(completion_event)
         yield f"data: {json.dumps(completion_event)}\n\n"
 
     except Exception as e:
@@ -419,7 +451,7 @@ async def create_session(request: SessionCreateRequest):
         await app_state.session_service.create_session(
             session_id=session_id,
             user_id=user_id,
-            app_name="trends_and_insights_agent",
+            app_name=SESSION_APP_NAME,
             state=merged_state,
         )
 
@@ -442,7 +474,7 @@ async def create_session(request: SessionCreateRequest):
                             session_obj = await app_state.session_service.get_session(
                                 session_id=session_id,
                                 user_id=user_id,
-                                app_name="trends_and_insights_agent",
+                                app_name=SESSION_APP_NAME,
                             )
                             if session_obj:
                                 session_obj.state["prior_campaign_insights"] = memories
@@ -464,7 +496,7 @@ async def get_session_state(session_id: str, user_id: str = Query(default="defau
     """Get full session state."""
     try:
         session = await app_state.session_service.get_session(
-            session_id=session_id, user_id=user_id, app_name="trends_and_insights_agent"
+            session_id=session_id, user_id=user_id, app_name=SESSION_APP_NAME
         )
         if not session:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
@@ -489,7 +521,7 @@ async def update_session_state(
     """Update specific session state keys."""
     try:
         session = await app_state.session_service.get_session(
-            session_id=session_id, user_id=user_id, app_name="trends_and_insights_agent"
+            session_id=session_id, user_id=user_id, app_name=SESSION_APP_NAME
         )
         if not session:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
@@ -516,7 +548,7 @@ async def get_session_artifacts(
     """List artifacts for a session."""
     try:
         session = await app_state.session_service.get_session(
-            session_id=session_id, user_id=user_id, app_name="trends_and_insights_agent"
+            session_id=session_id, user_id=user_id, app_name=SESSION_APP_NAME
         )
         if not session:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
@@ -596,7 +628,7 @@ async def run_agent(request: AgentRunRequest):
         # Create session if it doesn't exist
         try:
             await app_state.session_service.get_session(
-                session_id=session_id, user_id=user_id, app_name="trends_and_insights_agent"
+                session_id=session_id, user_id=user_id, app_name=SESSION_APP_NAME
             )
         except:
             await app_state.session_service.create_session(
@@ -664,7 +696,7 @@ async def dispatch_parallel(request: DispatchConfig):
 
             # Apply trend config to session state
             session = await app_state.session_service.get_session(
-                session_id=session_id, user_id=user_id, app_name="trends_and_insights_agent"
+                session_id=session_id, user_id=user_id, app_name=SESSION_APP_NAME
             )
 
             # Load preset if specified

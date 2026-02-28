@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Badge } from '../../components/ui/Badge';
-import { Play, Square, RefreshCw, Activity, AlertTriangle } from 'lucide-react';
+import { Play, Square, RefreshCw, Activity, AlertTriangle, Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface PipelineControlsProps {
@@ -27,6 +27,34 @@ export function PipelineControls({
   onRefresh,
 }: PipelineControlsProps) {
   const [parallelCount, setParallelCount] = useState(1);
+  const [durationChanged, setDurationChanged] = useState(false);
+  const [parallelChanged, setParallelChanged] = useState(false);
+
+  // Clear duration change indicator after 2 seconds
+  useEffect(() => {
+    if (durationChanged) {
+      const timer = setTimeout(() => setDurationChanged(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [durationChanged]);
+
+  // Clear parallel change indicator after 2 seconds
+  useEffect(() => {
+    if (parallelChanged) {
+      const timer = setTimeout(() => setParallelChanged(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [parallelChanged]);
+
+  const handleDurationChange = (duration: 10 | 15 | 30) => {
+    onDurationChange(duration);
+    setDurationChanged(true);
+  };
+
+  const handleParallelChange = (count: number) => {
+    setParallelCount(count);
+    setParallelChanged(true);
+  };
 
   return (
     <div className="space-y-3">
@@ -54,14 +82,20 @@ export function PipelineControls({
           <select
             id="duration"
             value={commercialDuration}
-            onChange={(e) => onDurationChange(Number(e.target.value) as 10 | 15 | 30)}
+            onChange={(e) => handleDurationChange(Number(e.target.value) as 10 | 15 | 30)}
             disabled={isRunning}
-            className="px-3 py-1 text-sm bg-zinc-800 border border-zinc-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={cn(
+              "px-3 py-1 text-sm bg-zinc-800 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+              durationChanged ? "border-green-500" : "border-zinc-700"
+            )}
           >
             <option value={10}>10s</option>
             <option value={15}>15s</option>
             <option value={30}>30s</option>
           </select>
+          {durationChanged && (
+            <Check className="w-4 h-4 text-green-400 animate-in fade-in" />
+          )}
         </div>
 
         {/* Parallel stream count selector */}
@@ -72,9 +106,12 @@ export function PipelineControls({
           <select
             id="parallel-count"
             value={parallelCount}
-            onChange={(e) => setParallelCount(Number(e.target.value))}
+            onChange={(e) => handleParallelChange(Number(e.target.value))}
             disabled={isRunning}
-            className="px-3 py-1 text-sm bg-zinc-800 border border-zinc-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={cn(
+              "px-3 py-1 text-sm bg-zinc-800 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+              parallelChanged ? "border-green-500" : "border-zinc-700"
+            )}
           >
             {[1, 2, 3, 4, 5].map((count) => (
               <option key={count} value={count}>
@@ -82,6 +119,9 @@ export function PipelineControls({
               </option>
             ))}
           </select>
+          {parallelChanged && (
+            <Check className="w-4 h-4 text-green-400 animate-in fade-in" />
+          )}
         </div>
 
         {/* Control buttons */}

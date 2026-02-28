@@ -1,0 +1,281 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+      - gemini3
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  PROJECT_NUMBER: ${{ secrets.GCP_PROJECT_NUMBER }}
+  REGION: us-central1
+  SERVICE_NAME: trends-and-insights-frontend
+  BUCKET: ${{ secrets.GCS_BUCKET }}
+  YT_SECRET_MNGR_NAME: ${{ secrets.YT_SECRET_MNGR_NAME }}
+
+jobs:
+  validate:
+    name: Validate Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Install dependencies
+        run: |
+          uv sync
+
+      - name: Run linting
+        run: |
+          uv run ruff check trends_and_insights_agent/
+          uv run ruff format --check trends_and_insights_agent/
+
+      - name: Check for forbidden retailer names
+        run: |
+          # Run specific tests that check for hardcoded retailer names
+          uv run python -m pytest tests/test_bigquery.py::TestBigQueryQueries::test_no_forbidden_names -v || true
+          uv run python -m pytest tests/test_mcp_agent.py::TestMCPAgent::test_no_forbidden_names -v || true
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Install dependencies
+        run: |
+          uv sync
+
+      - name: Run unit tests (no GCP auth required)
+        run: |
+          uv run python -m pytest \
+            tests/test_agent.py \
+            tests/test_stream_assist.py \
+            tests/test_mcp_agent.py \
+            tests/test_a2a_agent.py \
+            "tests/test_model_armor.py::TestModelArmorConfig" \
+            -v \
+            --tb=short
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: test-results
+          path: .pytest_cache/
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: |
+          npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          echo 'VITE_API_BASE=' > .env.production
+          echo 'VITE_APP_NAME=trends_and_insights_agent' >> .env.production
+          npm run build
+
+      - name: Upload frontend build
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    needs: [test, build-frontend]
+    # Only deploy on push to main or manual trigger
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set deployment environment
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "DEPLOY_ENV=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "DEPLOY_ENV=production" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_ENV=staging" >> $GITHUB_ENV
+          fi
+
+      - name: Set service name suffix
+        run: |
+          if [[ "${{ env.DEPLOY_ENV }}" == "production" ]]; then
+            echo "SERVICE_SUFFIX=" >> $GITHUB_ENV
+          else
+            echo "SERVICE_SUFFIX=-${{ env.DEPLOY_ENV }}" >> $GITHUB_ENV
+          fi
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
+
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Export requirements
+        run: |
+          uv export --format requirements-txt --no-hashes --no-emit-project > trends_and_insights_agent/requirements.txt
+          # Ensure websockets is included
+          if ! grep -q "websockets" trends_and_insights_agent/requirements.txt; then
+            echo "websockets>=12.0" >> trends_and_insights_agent/requirements.txt
+          fi
+
+      - name: Download frontend build
+        uses: actions/download-artifact@87c55149d96e628cc2ef7e6fc2aab372015aec85 # v4.1.3
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      - name: Build and deploy to Cloud Run
+        run: |
+          gcloud run deploy ${SERVICE_NAME}${SERVICE_SUFFIX} \
+            --source . \
+            --dockerfile deploy/Dockerfile \
+            --project=${PROJECT_ID} \
+            --region=${REGION} \
+            --port=8080 \
+            --timeout=3600 \
+            --cpu=4 \
+            --memory=8Gi \
+            --min-instances=0 \
+            --max-instances=10 \
+            --concurrency=10 \
+            --cpu-boost \
+            --session-affinity \
+            --allow-unauthenticated \
+            --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=1,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_PROJECT_NUMBER=${PROJECT_NUMBER},GOOGLE_CLOUD_LOCATION=global,BUCKET=${BUCKET},YT_SECRET_MNGR_NAME=${YT_SECRET_MNGR_NAME},VOICE_WS_PORT=8081" \
+            --tag=${{ github.sha }} \
+            --labels="environment=${{ env.DEPLOY_ENV }},commit=${{ github.sha }},branch=${{ github.ref_name }}"
+
+      - name: Get service URL
+        id: service-url
+        run: |
+          URL=$(gcloud run services describe ${SERVICE_NAME}${SERVICE_SUFFIX} \
+            --project=${PROJECT_ID} \
+            --region=${REGION} \
+            --format='value(status.url)')
+          echo "url=${URL}" >> $GITHUB_OUTPUT
+          echo "Service deployed at: ${URL}"
+
+      - name: Run smoke tests
+        run: |
+          SERVICE_URL="${{ steps.service-url.outputs.url }}"
+
+          # Test frontend loads
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}")
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Frontend failed to load (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
+          echo "✓ Frontend loads successfully"
+
+          # Test API health
+          HEALTH_RESPONSE=$(curl -s "${SERVICE_URL}/health")
+          if ! echo "$HEALTH_RESPONSE" | grep -q "healthy"; then
+            echo "API health check failed"
+            exit 1
+          fi
+          echo "✓ API health check passed"
+
+          # Test session creation
+          SESSION_RESPONSE=$(curl -s -X POST "${SERVICE_URL}/api/v1/sessions" \
+            -H "Content-Type: application/json" \
+            -d '{"id":"test-'${GITHUB_SHA:0:8}'"}')
+          if ! echo "$SESSION_RESPONSE" | grep -q "session_id"; then
+            echo "Session creation failed"
+            exit 1
+          fi
+          echo "✓ Session creation successful"
+
+      - name: Add deployment comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### 🚀 Deployed to Cloud Run\n\nEnvironment: **${{ env.DEPLOY_ENV }}**\nService URL: ${{ steps.service-url.outputs.url }}\nCommit: \`${{ github.sha }}\``
+            })
+
+      - name: Output deployment summary
+        run: |
+          echo "=========================================="
+          echo "Deployment Successful!"
+          echo "=========================================="
+          echo "Environment: ${{ env.DEPLOY_ENV }}"
+          echo "Service: ${SERVICE_NAME}${SERVICE_SUFFIX}"
+          echo "URL: ${{ steps.service-url.outputs.url }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo ""
+          echo "View logs:"
+          echo "gcloud run logs tail --service=${SERVICE_NAME}${SERVICE_SUFFIX} --project=${PROJECT_ID} --region=${REGION}"

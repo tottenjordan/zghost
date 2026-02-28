@@ -90,5 +90,7 @@ resource_name = remote_agent.resource_name
 agent_id = resource_name.split("/")[-1]
 print(f"Resource Name: {resource_name}")
 print(f"Agent Engine ID: {agent_id}")
+print("\nAdd this to your .env file:")
+print(f"AGENT_ENGINE_ID={agent_id}")
 print("\nUse this ID to test the agent:")
 print(f"python test_deployed_agent.py {agent_id}")

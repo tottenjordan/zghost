@@ -1,0 +1,175 @@
+name: CI Tests
+
+on:
+  push:
+    branches: [main, gemini3]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.12"
+  GOOGLE_GENAI_USE_VERTEXAI: "1"
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: pip install -U poetry
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set environment variables
+        run: |
+          echo "GOOGLE_CLOUD_PROJECT=${{ secrets.GOOGLE_CLOUD_PROJECT }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLOUD_PROJECT_NUMBER=${{ secrets.GOOGLE_CLOUD_PROJECT_NUMBER }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLOUD_LOCATION=${{ secrets.GOOGLE_CLOUD_LOCATION }}" >> $GITHUB_ENV
+          echo "BUCKET=${{ secrets.BUCKET }}" >> $GITHUB_ENV
+          echo "YT_SECRET_MNGR_NAME=${{ secrets.YT_SECRET_MNGR_NAME }}" >> $GITHUB_ENV
+
+      - name: Run unit tests
+        run: |
+          uv run pytest \
+            tests/test_focus_group_evaluator.py \
+            tests/test_av_editing_studio.py \
+            tests/test_init.py \
+            -v --tb=short
+
+  adk-eval:
+    name: ADK Agent Evaluations
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set environment variables
+        run: |
+          echo "GOOGLE_CLOUD_PROJECT=${{ secrets.GOOGLE_CLOUD_PROJECT }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLOUD_PROJECT_NUMBER=${{ secrets.GOOGLE_CLOUD_PROJECT_NUMBER }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLOUD_LOCATION=${{ secrets.GOOGLE_CLOUD_LOCATION }}" >> $GITHUB_ENV
+          echo "BUCKET=${{ secrets.BUCKET }}" >> $GITHUB_ENV
+          echo "YT_SECRET_MNGR_NAME=${{ secrets.YT_SECRET_MNGR_NAME }}" >> $GITHUB_ENV
+
+      - name: Run ADK evaluations
+        run: |
+          uv run pytest \
+            tests/test_senior_citizens_eval.py \
+            tests/simple_agent_eval.py \
+            -v --tb=short --timeout=600
+
+  deploy-staging:
+    name: Deploy to Agent Engine (Staging)
+    runs-on: ubuntu-latest
+    needs: [unit-tests, adk-eval]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libgl1-mesa-glx
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set environment variables
+        run: |
+          echo "GOOGLE_GENAI_USE_VERTEXAI=1" >> $GITHUB_ENV
+          echo "GOOGLE_CLOUD_PROJECT=${{ secrets.GOOGLE_CLOUD_PROJECT }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLOUD_PROJECT_NUMBER=${{ secrets.GOOGLE_CLOUD_PROJECT_NUMBER }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLOUD_LOCATION=${{ secrets.GOOGLE_CLOUD_LOCATION }}" >> $GITHUB_ENV
+          echo "BUCKET=${{ secrets.BUCKET }}" >> $GITHUB_ENV
+          echo "YT_SECRET_MNGR_NAME=${{ secrets.YT_SECRET_MNGR_NAME }}" >> $GITHUB_ENV
+          echo "MEMORY_BANK_AGENT_ENGINE_ID=${{ secrets.MEMORY_BANK_AGENT_ENGINE_ID }}" >> $GITHUB_ENV
+
+      - name: Deploy to Agent Engine
+        run: python deploy_to_ae.py
+
+      - name: Post-deployment health check
+        run: |
+          echo "Deployment complete. Run E2E tests manually:"
+          echo "  python tests/ae_e2e_senior_citizens_test.py"

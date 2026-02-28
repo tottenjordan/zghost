@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
+import { Send, CheckCircle, XCircle, ChevronDown, Loader2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { cn } from '../../lib/utils';
 import type { AgentEvent } from '../../types/agents';
@@ -53,13 +53,37 @@ function extractChatMessages(events: AgentEvent[]): ChatMessage[] {
     });
   }
 
-  return messages;
+  return deduplicateMessages(messages);
+}
+
+function deduplicateMessages(messages: ChatMessage[]): ChatMessage[] {
+  const deduplicated: ChatMessage[] = [];
+  let lastUserMessage: ChatMessage | null = null;
+
+  for (const msg of messages) {
+    if (msg.role === 'user') {
+      // Skip if same text as previous user message within 5 seconds
+      if (
+        lastUserMessage &&
+        lastUserMessage.text === msg.text &&
+        msg.timestamp - lastUserMessage.timestamp < 5000
+      ) {
+        continue;
+      }
+      lastUserMessage = msg;
+    }
+    deduplicated.push(msg);
+  }
+
+  return deduplicated;
 }
 
 export function AgentChat({ sessionId, events, onWaitingForInput, onSendMessage }: AgentChatProps) {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [lastApprovedTimestamp, setLastApprovedTimestamp] = useState<number>(0);
+  const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -72,13 +96,29 @@ export function AgentChat({ sessionId, events, onWaitingForInput, onSendMessage 
     }
   }, [messages.length, autoScroll]);
 
+  const lastAgentMessage = messages.filter(m => m.role === 'agent').slice(-1)[0];
+
+  // Clear isSending state when new agent message arrives
+  useEffect(() => {
+    if (lastAgentMessage) {
+      setIsSending(false);
+    }
+  }, [lastAgentMessage?.timestamp]);
+
   const sendingRef = useRef(false);
 
-  const handleSend = useCallback(async (text: string) => {
+  const handleSend = useCallback(async (text: string, isApprovalAction = false) => {
     if (!sessionId || !text.trim() || sending || sendingRef.current) return;
 
     sendingRef.current = true;
     setSending(true);
+    setIsSending(true);
+
+    // Track approval timestamp to prevent button from re-appearing
+    if (isApprovalAction) {
+      setLastApprovedTimestamp(Date.now());
+    }
+
     try {
       if (onSendMessage) {
         // Route through shared EventSource so events reach timeline/graph
@@ -93,6 +133,7 @@ export function AgentChat({ sessionId, events, onWaitingForInput, onSendMessage 
     } finally {
       sendingRef.current = false;
       setSending(false);
+      // Don't clear isSending immediately - wait for new agent message
       inputRef.current?.focus();
     }
   }, [sessionId, sending, onSendMessage]);
@@ -104,9 +145,10 @@ export function AgentChat({ sessionId, events, onWaitingForInput, onSendMessage 
     }
   };
 
-  const lastAgentMessage = messages.filter(m => m.role === 'agent').slice(-1)[0];
   const lastAgentText = lastAgentMessage?.text?.toLowerCase() || '';
-  const isWaitingForApproval = lastAgentMessage?.text?.includes('?') ||
+  const isWaitingForApproval = lastAgentMessage &&
+    lastAgentMessage.timestamp > lastApprovedTimestamp &&
+    (lastAgentMessage.text?.includes('?') ||
     lastAgentText.includes('approve') ||
     lastAgentText.includes('look good') ||
     lastAgentText.includes('proceed') ||
@@ -119,7 +161,7 @@ export function AgentChat({ sessionId, events, onWaitingForInput, onSendMessage 
     lastAgentText.includes('specify') ||
     lastAgentText.includes('would you like') ||
     lastAgentText.includes('yes or no') ||
-    lastAgentText.includes('ready to');
+    lastAgentText.includes('ready to'));
 
   // Notify parent about input waiting state
   useEffect(() => {
@@ -198,19 +240,27 @@ export function AgentChat({ sessionId, events, onWaitingForInput, onSendMessage 
       {sessionId && isWaitingForApproval && (
         <div className="flex gap-2 px-3 py-2 border-t border-zinc-800/50">
           <button
-            onClick={() => handleSend('Looks good, proceed with all options.')}
-            disabled={sending}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-green-600/20 border border-green-700/50 text-green-400 text-xs font-medium hover:bg-green-600/30 disabled:opacity-50"
+            onClick={() => handleSend('Looks good, proceed with all options.', true)}
+            disabled={sending || isSending}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-green-600/20 border border-green-700/50 text-green-400 text-xs font-medium hover:bg-green-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <CheckCircle className="w-3.5 h-3.5" />
+            {isSending ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <CheckCircle className="w-3.5 h-3.5" />
+            )}
             Approve All
           </button>
           <button
-            onClick={() => handleSend('Please revise and try again with improvements.')}
-            disabled={sending}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-red-600/10 border border-red-700/50 text-red-400 text-xs font-medium hover:bg-red-600/20 disabled:opacity-50"
+            onClick={() => handleSend('Please revise and try again with improvements.', true)}
+            disabled={sending || isSending}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-red-600/10 border border-red-700/50 text-red-400 text-xs font-medium hover:bg-red-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <XCircle className="w-3.5 h-3.5" />
+            {isSending ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <XCircle className="w-3.5 h-3.5" />
+            )}
             Revise
           </button>
         </div>

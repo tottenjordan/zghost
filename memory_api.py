@@ -54,8 +54,16 @@ def _get_client():
 
 
 def _get_resource_name():
-    """Build the Agent Engine resource name for memory operations."""
-    engine_id = os.environ.get("MEMORY_BANK_AGENT_ENGINE_ID")
+    """Build the Agent Engine resource name for memory operations.
+
+    Environment variable resolution (highest priority first):
+    - AGENT_ENGINE_ID (new unified variable)
+    - MEMORY_BANK_AGENT_ENGINE_ID (deprecated)
+    """
+    engine_id = (
+        os.environ.get("AGENT_ENGINE_ID")
+        or os.environ.get("MEMORY_BANK_AGENT_ENGINE_ID")
+    )
     if not engine_id:
         return None
 
@@ -118,7 +126,7 @@ async def list_memories(
         if not resource_name:
             return {
                 "memories": [],
-                "message": "MEMORY_BANK_AGENT_ENGINE_ID not configured.",
+                "message": "AGENT_ENGINE_ID not configured.",
                 "source": "not_configured",
             }
 
@@ -177,7 +185,7 @@ async def create_memory(req: CreateMemoryRequest):
         resource_name = _get_resource_name()
 
         if not resource_name:
-            return {"error": "MEMORY_BANK_AGENT_ENGINE_ID not configured.", "source": "not_configured"}
+            return {"error": "AGENT_ENGINE_ID not configured.", "source": "not_configured"}
 
         operation = client.agent_engines.memories.create(
             name=resource_name,
@@ -206,7 +214,7 @@ async def populate_memories(req: PopulateMemoriesRequest):
         resource_name = _get_resource_name()
 
         if not resource_name:
-            return {"error": "MEMORY_BANK_AGENT_ENGINE_ID not configured.", "source": "not_configured"}
+            return {"error": "AGENT_ENGINE_ID not configured.", "source": "not_configured"}
 
         # API allows max 5 direct memories per call - batch accordingly
         batch_size = 5
@@ -243,7 +251,7 @@ async def purge_memories(
         resource_name = _get_resource_name()
 
         if not resource_name:
-            return {"error": "MEMORY_BANK_AGENT_ENGINE_ID not configured."}
+            return {"error": "AGENT_ENGINE_ID not configured."}
 
         client.agent_engines.memories.purge(
             name=resource_name,
@@ -262,7 +270,11 @@ async def purge_memories(
 @app.get("/api/memories/health")
 async def memory_health():
     """Check Memory Bank connectivity with a live probe."""
-    engine_id = os.environ.get("MEMORY_BANK_AGENT_ENGINE_ID")
+    # Use unified Agent Engine ID with backward compatibility
+    engine_id = (
+        os.environ.get("AGENT_ENGINE_ID")
+        or os.environ.get("MEMORY_BANK_AGENT_ENGINE_ID")
+    )
     project = os.environ.get("GOOGLE_CLOUD_PROJECT")
 
     result = {
