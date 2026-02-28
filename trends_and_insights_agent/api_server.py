@@ -43,8 +43,10 @@ from .api_models import (
     SessionArtifactsResponse,
     SessionCreateRequest,
     SessionCreateResponse,
+    SessionListResponse,
     SessionStateResponse,
     SessionStateUpdateRequest,
+    SessionSummary,
     StreamEvent,
     StreamInfo,
     TraceEvent,
@@ -427,6 +429,65 @@ async def run_parallel_stream(
 # =====================================
 # Session Management Endpoints
 # =====================================
+
+
+@app.get("/api/v1/sessions", response_model=SessionListResponse)
+async def list_sessions(user_id: str = Query(default="default-user")):
+    """List all sessions from the session service with metadata summaries."""
+    try:
+        result = await app_state.session_service.list_sessions(
+            app_name=SESSION_APP_NAME, user_id=user_id
+        )
+
+        summaries: list[SessionSummary] = []
+        for session in result.sessions:
+            state = session.state or {}
+
+            # Determine pipeline status from state
+            status = None
+            if state.get("commercial_artifact"):
+                status = "completed"
+            elif state.get("final_select_ad_copies"):
+                status = "ad_creative_done"
+            elif state.get("combined_final_cited_report"):
+                status = "research_done"
+            elif state.get("target_search_trends") or state.get("target_yt_trends"):
+                status = "trends_selected"
+
+            # Count media artifacts
+            img_keys = state.get("img_artifact_keys", {})
+            vid_keys = state.get("vid_artifact_keys", {})
+            img_list = img_keys.get("img_artifact_keys", []) if isinstance(img_keys, dict) else []
+            vid_list = vid_keys.get("vid_artifact_keys", []) if isinstance(vid_keys, dict) else []
+
+            summaries.append(
+                SessionSummary(
+                    session_id=session.id,
+                    user_id=session.user_id,
+                    last_update_time=session.last_update_time,
+                    brand=state.get("brand"),
+                    target_product=state.get("target_product"),
+                    target_audience=state.get("target_audience"),
+                    commercial_duration=state.get("commercial_duration"),
+                    autopilot_mode=state.get("autopilot_mode"),
+                    status=status,
+                    has_report=bool(state.get("combined_final_cited_report")),
+                    has_commercial=bool(state.get("commercial_artifact")),
+                    has_images=len(img_list) > 0,
+                    has_videos=len(vid_list) > 0,
+                    image_count=len(img_list),
+                    video_count=len(vid_list),
+                )
+            )
+
+        # Sort by last_update_time descending (most recent first)
+        summaries.sort(key=lambda s: s.last_update_time, reverse=True)
+
+        return SessionListResponse(sessions=summaries, total=len(summaries))
+
+    except Exception as e:
+        logger.error(f"Error listing sessions: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to list sessions: {str(e)}")
 
 
 @app.post("/api/v1/sessions", response_model=SessionCreateResponse)

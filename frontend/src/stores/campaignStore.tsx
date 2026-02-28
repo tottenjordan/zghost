@@ -20,6 +20,8 @@ export interface PipelineSession {
   status: RunStatus;
   startedAt: number;
   completedAt?: number;
+  /** ISO timestamp from the session service */
+  createdAt?: string;
   config?: CampaignConfig;
   commercialDuration?: 10 | 15 | 30;
   autopilot?: boolean;
@@ -30,6 +32,16 @@ export interface PipelineSession {
   eventCount?: number;
   /** Phase labels for progress display */
   currentPhase?: string;
+  /** Whether this session has a research report */
+  hasReport?: boolean;
+  /** Whether this session has a final commercial */
+  hasCommercial?: boolean;
+  /** Count of generated images */
+  imageCount?: number;
+  /** Count of generated videos */
+  videoCount?: number;
+  /** Whether this run was loaded from the backend session service */
+  fromBackend?: boolean;
 }
 
 export interface CampaignStoreState {

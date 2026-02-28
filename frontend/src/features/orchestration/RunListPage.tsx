@@ -1,8 +1,7 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
-  Play,
   Pause,
   Trash2,
   Copy,
@@ -16,13 +15,17 @@ import {
   Bot,
   ArrowUpDown,
   Filter,
+  FileText,
+  Film,
+  Image,
+  RefreshCw,
+  Database,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCampaignStore } from '../../stores/campaignStore';
 import type { PipelineSession, RunStatus } from '../../stores/campaignStore';
 import { api } from '../../services/api';
-
-const USER_ID = 'default-user';
+import type { SessionSummary } from '../../services/api';
 
 const STATUS_CONFIG: Record<RunStatus, { label: string; color: string; bgColor: string; icon: typeof Clock }> = {
   idle: { label: 'Idle', color: 'text-zinc-400', bgColor: 'bg-zinc-800', icon: Clock },
@@ -34,12 +37,34 @@ const STATUS_CONFIG: Record<RunStatus, { label: string; color: string; bgColor: 
   error: { label: 'Error', color: 'text-red-400', bgColor: 'bg-red-950/30', icon: XCircle },
 };
 
+/** Map backend status strings to RunStatus */
+function mapBackendStatus(status?: string | null): RunStatus {
+  if (!status) return 'idle';
+  if (status === 'completed') return 'completed';
+  if (status === 'ad_creative_done' || status === 'research_done') return 'running';
+  if (status === 'trends_selected') return 'configuring';
+  return 'idle';
+}
+
 function formatDuration(ms: number): string {
   const seconds = Math.floor(ms / 1000);
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);
   const sec = seconds % 60;
-  return `${minutes}m ${sec}s`;
+  if (minutes < 60) return `${minutes}m ${sec}s`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ${minutes % 60}m`;
+}
+
+function formatTimestamp(epochSeconds: number): string {
+  if (!epochSeconds) return '';
+  const d = new Date(epochSeconds * 1000);
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function formatTimeAgo(timestamp: number): string {
@@ -48,6 +73,16 @@ function formatTimeAgo(timestamp: number): string {
   if (ms < 3600000) return `${Math.floor(ms / 60000)}m ago`;
   if (ms < 86400000) return `${Math.floor(ms / 3600000)}h ago`;
   return new Date(timestamp).toLocaleDateString();
+}
+
+/** Generate a label from session ID and timestamp */
+function generateRunLabel(sessionId: string, timestamp: number, brand?: string): string {
+  const shortId = sessionId.slice(0, 8);
+  const d = new Date(timestamp);
+  const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const prefix = brand || 'Run';
+  return `${prefix} ${dateStr} ${timeStr} [${shortId}]`;
 }
 
 export function RunListPage() {
@@ -59,7 +94,6 @@ export function RunListPage() {
     selectedYtTrends,
     commercialDuration,
     autopilot,
-    activeRubrics,
     addSession,
     removeSession,
     setActiveSession,
@@ -67,17 +101,86 @@ export function RunListPage() {
     setCommercialDuration,
     setSessionId,
     setPipelineStatus,
-    setAutopilot,
-    setAutoStart,
   } = useCampaignStore();
 
   const [creating, setCreating] = useState(false);
+  const [loadingBackend, setLoadingBackend] = useState(false);
+  const [backendLoaded, setBackendLoaded] = useState(false);
 
   type SortField = 'time' | 'name' | 'status' | 'duration';
   type SortDir = 'asc' | 'desc';
   const [sortField, setSortField] = useState<SortField>('time');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [statusFilter, setStatusFilter] = useState<RunStatus | 'all'>('all');
+
+  // Fetch sessions from backend on mount
+  useEffect(() => {
+    if (backendLoaded) return;
+
+    const fetchBackendSessions = async () => {
+      setLoadingBackend(true);
+      try {
+        const result = await api.listSessions();
+        const existingIds = new Set(sessions.map((s) => s.sessionId));
+
+        for (const summary of result.sessions) {
+          // Skip sessions we already have locally
+          if (existingIds.has(summary.session_id)) {
+            // But update metadata on existing local sessions
+            const localSession = sessions.find((s) => s.sessionId === summary.session_id);
+            if (localSession) {
+              // Will be updated via updateSession in store
+            }
+            continue;
+          }
+
+          const backendStatus = mapBackendStatus(summary.status);
+          const startedAt = summary.last_update_time
+            ? summary.last_update_time * 1000
+            : Date.now();
+
+          const newSession: PipelineSession = {
+            id: `backend-${summary.session_id}`,
+            sessionId: summary.session_id,
+            label: generateRunLabel(
+              summary.session_id,
+              startedAt,
+              summary.brand || undefined
+            ),
+            status: backendStatus,
+            startedAt,
+            createdAt: new Date(startedAt).toISOString(),
+            config: {
+              brand: summary.brand || '',
+              target_product: summary.target_product || '',
+              target_audience: summary.target_audience || '',
+              key_selling_points: '',
+            },
+            commercialDuration: (summary.commercial_duration as 10 | 15 | 30) || 30,
+            autopilot: summary.autopilot_mode || false,
+            hasReport: summary.has_report,
+            hasCommercial: summary.has_commercial,
+            imageCount: summary.image_count,
+            videoCount: summary.video_count,
+            fromBackend: true,
+          };
+
+          addSession(newSession);
+        }
+      } catch (err) {
+        console.error('Failed to fetch backend sessions:', err);
+      } finally {
+        setLoadingBackend(false);
+        setBackendLoaded(true);
+      }
+    };
+
+    fetchBackendSessions();
+  }, [backendLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleRefreshSessions = useCallback(() => {
+    setBackendLoaded(false); // triggers re-fetch
+  }, []);
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -153,13 +256,15 @@ export function RunListPage() {
       }
 
       const session = await api.createSession({ initial_state: initialState });
+      const now = Date.now();
 
       const newSession: PipelineSession = {
-        id: `session-${Date.now()}`,
+        id: `session-${session.session_id}`,
         sessionId: session.session_id,
-        label: `Run ${sessions.length + 1}`,
+        label: generateRunLabel(session.session_id, now, config.brand || undefined),
         status: 'idle',
-        startedAt: Date.now(),
+        startedAt: now,
+        createdAt: new Date(now).toISOString(),
         config: { ...config },
         commercialDuration,
         autopilot,
@@ -175,7 +280,7 @@ export function RunListPage() {
     } finally {
       setCreating(false);
     }
-  }, [creating, config, commercialDuration, autopilot, selectedSearchTrends, selectedYtTrends, sessions.length, addSession, navigate]);
+  }, [creating, config, commercialDuration, autopilot, selectedSearchTrends, selectedYtTrends, addSession, navigate]);
 
   const handleOpenRun = useCallback((session: PipelineSession, index: number) => {
     setActiveSession(index);
@@ -234,6 +339,14 @@ export function RunListPage() {
               </span>
             )}
           </div>
+          <button
+            onClick={handleRefreshSessions}
+            disabled={loadingBackend}
+            className="p-2 rounded-lg border border-zinc-700 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors disabled:opacity-50"
+            title="Refresh from Vertex Session Service"
+          >
+            <RefreshCw className={cn('w-4 h-4', loadingBackend && 'animate-spin')} />
+          </button>
           <button
             onClick={handleNewRun}
             disabled={creating}
@@ -313,8 +426,16 @@ export function RunListPage() {
         </div>
       )}
 
+      {/* Loading indicator */}
+      {loadingBackend && sessions.length === 0 && (
+        <div className="flex items-center justify-center py-8 gap-2 text-zinc-500 text-sm">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Loading sessions from Vertex...
+        </div>
+      )}
+
       {/* Run List */}
-      {sessions.length === 0 ? (
+      {!loadingBackend && sessions.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4">
             <div className="mx-auto w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center">
@@ -377,7 +498,7 @@ export function RunListPage() {
 
                 {/* Main info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-sm font-semibold text-zinc-200 truncate">
                       {session.label}
                     </h3>
@@ -395,7 +516,15 @@ export function RunListPage() {
                         Autopilot
                       </span>
                     )}
+                    {session.fromBackend && (
+                      <span className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-950/30 text-purple-400 border border-purple-800/30">
+                        <Database className="w-2.5 h-2.5" />
+                        Vertex
+                      </span>
+                    )}
                   </div>
+
+                  {/* Metadata row */}
                   <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
                     {session.config?.brand && (
                       <span>{session.config.brand}</span>
@@ -409,7 +538,7 @@ export function RunListPage() {
                     {session.commercialDuration && (
                       <>
                         <span className="text-zinc-700">|</span>
-                        <span>{session.commercialDuration}s commercial</span>
+                        <span>{session.commercialDuration}s</span>
                       </>
                     )}
                     {session.currentPhase && (
@@ -419,6 +548,52 @@ export function RunListPage() {
                       </>
                     )}
                   </div>
+
+                  {/* Session ID + timestamp row */}
+                  <div className="flex items-center gap-3 mt-0.5 text-[10px] text-zinc-600 font-mono">
+                    <span title={session.sessionId}>
+                      {session.sessionId.slice(0, 12)}...
+                    </span>
+                    <span>
+                      {session.createdAt
+                        ? new Date(session.createdAt).toLocaleString('en-US', {
+                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                          })
+                        : new Date(session.startedAt).toLocaleString('en-US', {
+                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                          })}
+                    </span>
+                  </div>
+
+                  {/* Artifact tags */}
+                  {(session.hasReport || session.hasCommercial || (session.imageCount && session.imageCount > 0) || (session.videoCount && session.videoCount > 0)) && (
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      {session.hasReport && (
+                        <span className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] rounded bg-blue-950/20 text-blue-400 border border-blue-800/20">
+                          <FileText className="w-2.5 h-2.5" />
+                          Report
+                        </span>
+                      )}
+                      {session.imageCount && session.imageCount > 0 ? (
+                        <span className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] rounded bg-cyan-950/20 text-cyan-400 border border-cyan-800/20">
+                          <Image className="w-2.5 h-2.5" />
+                          {session.imageCount} images
+                        </span>
+                      ) : null}
+                      {session.videoCount && session.videoCount > 0 ? (
+                        <span className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] rounded bg-green-950/20 text-green-400 border border-green-800/20">
+                          <Film className="w-2.5 h-2.5" />
+                          {session.videoCount} videos
+                        </span>
+                      ) : null}
+                      {session.hasCommercial && (
+                        <span className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] rounded bg-amber-950/20 text-amber-400 border border-amber-800/20">
+                          <Film className="w-2.5 h-2.5" />
+                          Commercial
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Timing */}

@@ -49,6 +49,33 @@ class SessionStateUpdateRequest(BaseModel):
     )
 
 
+class SessionSummary(BaseModel):
+    """Summary of a session for the sessions list endpoint."""
+
+    session_id: str = Field(description="Unique session identifier")
+    user_id: str = Field(description="User ID")
+    last_update_time: float = Field(default=0.0, description="Epoch seconds of last update")
+    brand: Optional[str] = Field(default=None)
+    target_product: Optional[str] = Field(default=None)
+    target_audience: Optional[str] = Field(default=None)
+    commercial_duration: Optional[int] = Field(default=None)
+    autopilot_mode: Optional[bool] = Field(default=None)
+    status: Optional[str] = Field(default=None, description="Pipeline phase or completion status")
+    has_report: bool = Field(default=False)
+    has_commercial: bool = Field(default=False)
+    has_images: bool = Field(default=False)
+    has_videos: bool = Field(default=False)
+    image_count: int = Field(default=0)
+    video_count: int = Field(default=0)
+
+
+class SessionListResponse(BaseModel):
+    """Response listing all sessions."""
+
+    sessions: List[SessionSummary]
+    total: int
+
+
 class ArtifactInfo(BaseModel):
     """Information about a session artifact."""
 

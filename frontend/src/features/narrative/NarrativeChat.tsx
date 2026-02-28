@@ -25,14 +25,24 @@ export function NarrativeChat({
 }: NarrativeChatProps) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const prevMsgCount = useRef(messages.length);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // Auto-scroll only when new messages arrive AND user hasn't scrolled up
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (messages.length > prevMsgCount.current && autoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    prevMsgCount.current = messages.length;
+  }, [messages.length, autoScroll]);
+
+  // Scroll to bottom on initial load only
+  useEffect(() => {
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +71,17 @@ export function NarrativeChat({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto p-4"
+        onScroll={() => {
+          const el = scrollContainerRef.current;
+          if (el) {
+            const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+            setAutoScroll(atBottom);
+          }
+        }}
+      >
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">

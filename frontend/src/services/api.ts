@@ -18,7 +18,45 @@ export interface SessionStateResult {
   state: SessionState;
 }
 
+export interface SessionSummary {
+  session_id: string;
+  user_id: string;
+  last_update_time: number;
+  brand?: string;
+  target_product?: string;
+  target_audience?: string;
+  commercial_duration?: number;
+  autopilot_mode?: boolean;
+  status?: string;
+  has_report: boolean;
+  has_commercial: boolean;
+  has_images: boolean;
+  has_videos: boolean;
+  image_count: number;
+  video_count: number;
+}
+
+export interface SessionListResult {
+  sessions: SessionSummary[];
+  total: number;
+}
+
 class ApiClient {
+  /**
+   * List all sessions from the Vertex session service.
+   */
+  async listSessions(userId = 'default-user'): Promise<SessionListResult> {
+    const params = new URLSearchParams({ user_id: userId });
+    const url = `${API_BASE}/api/v1/sessions?${params}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(
+        `API request failed (${response.status}): ${response.statusText || 'Unknown error'}`
+      );
+    }
+    return response.json();
+  }
+
   /**
    * Create a new session on api_server.
    * Optionally pass a preset_config name or initial_state to preload.
