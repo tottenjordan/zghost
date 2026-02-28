@@ -44,6 +44,7 @@ export function useVoiceActions() {
         break;
       }
 
+      case 'set_detail_tab':
       case 'select_google_trend':
       case 'select_youtube_trend':
       case 'send_narrative_direction':

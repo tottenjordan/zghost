@@ -5,7 +5,7 @@ export interface PipelineNodeData {
   agentName: string;
   type: 'orchestrator' | 'sequential' | 'parallel' | 'tool';
   description?: string;
-  skill?: 'root' | 'trends' | 'research' | 'creative' | 'av';
+  skill?: 'root' | 'trends' | 'research' | 'creative' | 'av' | 'focus-group';
 }
 
 // Define the agent hierarchy as React Flow nodes
@@ -81,6 +81,20 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
     position: { x: 1200, y: 150 },
   },
 
+  // Skill 5: Focus Group
+  {
+    id: 'focus_group_evaluator_agent',
+    type: 'agentNode',
+    data: {
+      label: 'Focus Group Evaluator',
+      agentName: 'focus_group_evaluator_agent',
+      type: 'sequential',
+      description: 'Commercial evaluation with simulated focus group',
+      skill: 'focus-group',
+    },
+    position: { x: 1400, y: 150 },
+  },
+
   // Row 2: Sub-agents under their parents
   {
     id: 'combined_research_pipeline',
@@ -93,6 +107,18 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       skill: 'research',
     },
     position: { x: 400, y: 300 },
+  },
+  {
+    id: 'merge_parallel_insights',
+    type: 'agentNode',
+    data: {
+      label: 'Merge Parallel Insights',
+      agentName: 'merge_parallel_insights',
+      type: 'parallel',
+      description: 'Parallel research coordination',
+      skill: 'research',
+    },
+    position: { x: 200, y: 300 },
   },
   {
     id: 'ad_creative_pipeline',
@@ -131,7 +157,81 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
     position: { x: 1100, y: 300 },
   },
 
+  // Ad creative leaf agents
+  {
+    id: 'ad_copy_drafter',
+    type: 'agentNode',
+    data: {
+      label: 'Ad Copy Drafter',
+      agentName: 'ad_copy_drafter',
+      type: 'tool',
+      description: 'Drafts ad copy',
+      skill: 'creative',
+    },
+    position: { x: 650, y: 450 },
+  },
+  {
+    id: 'ad_copy_critic',
+    type: 'agentNode',
+    data: {
+      label: 'Ad Copy Critic',
+      agentName: 'ad_copy_critic',
+      type: 'tool',
+      description: 'Critiques ad copy',
+      skill: 'creative',
+    },
+    position: { x: 750, y: 450 },
+  },
+  {
+    id: 'visual_concept_drafter',
+    type: 'agentNode',
+    data: {
+      label: 'Visual Concept Drafter',
+      agentName: 'visual_concept_drafter',
+      type: 'tool',
+      description: 'Drafts visual concepts',
+      skill: 'creative',
+    },
+    position: { x: 850, y: 450 },
+  },
+  {
+    id: 'visual_concept_critic',
+    type: 'agentNode',
+    data: {
+      label: 'Visual Concept Critic',
+      agentName: 'visual_concept_critic',
+      type: 'tool',
+      description: 'Critiques visual concepts',
+      skill: 'creative',
+    },
+    position: { x: 950, y: 450 },
+  },
+  {
+    id: 'visual_concept_finalizer',
+    type: 'agentNode',
+    data: {
+      label: 'Visual Concept Finalizer',
+      agentName: 'visual_concept_finalizer',
+      type: 'tool',
+      description: 'Finalizes visual concepts',
+      skill: 'creative',
+    },
+    position: { x: 1050, y: 450 },
+  },
+
   // Row 3: Parallel planners spread wide
+  {
+    id: 'parallel_planner_agent',
+    type: 'agentNode',
+    data: {
+      label: 'Parallel Planner',
+      agentName: 'parallel_planner_agent',
+      type: 'parallel',
+      description: 'Runs 3 research types simultaneously',
+      skill: 'research',
+    },
+    position: { x: 400, y: 450 },
+  },
   {
     id: 'yt_sequential_planner',
     type: 'agentNode',
@@ -142,7 +242,7 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       description: 'YouTube trend analysis',
       skill: 'research',
     },
-    position: { x: 200, y: 450 },
+    position: { x: 200, y: 600 },
   },
   {
     id: 'gs_sequential_planner',
@@ -154,7 +254,7 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       description: 'Google Search trend analysis',
       skill: 'research',
     },
-    position: { x: 400, y: 450 },
+    position: { x: 400, y: 600 },
   },
   {
     id: 'ca_sequential_planner',
@@ -166,7 +266,93 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       description: 'Campaign research',
       skill: 'research',
     },
-    position: { x: 600, y: 450 },
+    position: { x: 600, y: 600 },
+  },
+
+  // Research leaf agents
+  {
+    id: 'yt_analysis_generator_agent',
+    type: 'agentNode',
+    data: {
+      label: 'YT Analysis Generator',
+      agentName: 'yt_analysis_generator_agent',
+      type: 'tool',
+      description: 'YouTube analysis generation',
+      skill: 'research',
+    },
+    position: { x: 100, y: 750 },
+  },
+  {
+    id: 'yt_web_planner',
+    type: 'agentNode',
+    data: {
+      label: 'YT Web Planner',
+      agentName: 'yt_web_planner',
+      type: 'tool',
+      description: 'YouTube web research planning',
+      skill: 'research',
+    },
+    position: { x: 200, y: 750 },
+  },
+  {
+    id: 'yt_web_searcher',
+    type: 'agentNode',
+    data: {
+      label: 'YT Web Searcher',
+      agentName: 'yt_web_searcher',
+      type: 'tool',
+      description: 'YouTube web searching',
+      skill: 'research',
+    },
+    position: { x: 300, y: 750 },
+  },
+  {
+    id: 'gs_web_planner',
+    type: 'agentNode',
+    data: {
+      label: 'GS Web Planner',
+      agentName: 'gs_web_planner',
+      type: 'tool',
+      description: 'Google Search planning',
+      skill: 'research',
+    },
+    position: { x: 400, y: 750 },
+  },
+  {
+    id: 'gs_web_searcher',
+    type: 'agentNode',
+    data: {
+      label: 'GS Web Searcher',
+      agentName: 'gs_web_searcher',
+      type: 'tool',
+      description: 'Google Search execution',
+      skill: 'research',
+    },
+    position: { x: 500, y: 750 },
+  },
+  {
+    id: 'campaign_web_planner',
+    type: 'agentNode',
+    data: {
+      label: 'Campaign Web Planner',
+      agentName: 'campaign_web_planner',
+      type: 'tool',
+      description: 'Campaign research planning',
+      skill: 'research',
+    },
+    position: { x: 600, y: 750 },
+  },
+  {
+    id: 'campaign_web_searcher',
+    type: 'agentNode',
+    data: {
+      label: 'Campaign Web Searcher',
+      agentName: 'campaign_web_searcher',
+      type: 'tool',
+      description: 'Campaign web searching',
+      skill: 'research',
+    },
+    position: { x: 700, y: 750 },
   },
 
   // Row 4: Merge planners
@@ -180,7 +366,7 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       description: 'Combines research plans',
       skill: 'research',
     },
-    position: { x: 400, y: 600 },
+    position: { x: 400, y: 900 },
   },
 
   // Row 5-7: Sequential evaluation chain
@@ -194,7 +380,7 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       description: 'Quality checks',
       skill: 'research',
     },
-    position: { x: 400, y: 750 },
+    position: { x: 400, y: 1050 },
   },
   {
     id: 'enhanced_combined_searcher',
@@ -206,7 +392,7 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       description: 'Refines results',
       skill: 'research',
     },
-    position: { x: 400, y: 900 },
+    position: { x: 400, y: 1200 },
   },
   {
     id: 'combined_report_composer',
@@ -218,7 +404,7 @@ export const PIPELINE_NODES: Node<PipelineNodeData>[] = [
       description: 'Generates unified report',
       skill: 'research',
     },
-    position: { x: 400, y: 1050 },
+    position: { x: 400, y: 1350 },
   },
 ];
 
@@ -229,6 +415,7 @@ export const PIPELINE_EDGES: Edge[] = [
   { id: 'e-root-research', source: 'root_agent', target: 'research_orchestrator' },
   { id: 'e-root-ad', source: 'root_agent', target: 'ad_content_generator_agent' },
   { id: 'e-root-av', source: 'root_agent', target: 'av_editing_studio_agent' },
+  { id: 'e-root-focus', source: 'root_agent', target: 'focus_group_evaluator_agent' },
 
   // Research orchestrator to pipeline
   {
@@ -237,27 +424,48 @@ export const PIPELINE_EDGES: Edge[] = [
     target: 'combined_research_pipeline',
   },
 
-  // Pipeline to parallel planners
+  // Pipeline to merge_parallel_insights
   {
-    id: 'e-pipeline-yt',
+    id: 'e-pipeline-merge-parallel',
     source: 'combined_research_pipeline',
+    target: 'merge_parallel_insights',
+  },
+
+  // merge_parallel_insights to parallel_planner_agent
+  {
+    id: 'e-merge-parallel-planner',
+    source: 'merge_parallel_insights',
+    target: 'parallel_planner_agent',
+  },
+
+  // Parallel planner to sequential planners
+  {
+    id: 'e-planner-yt',
+    source: 'parallel_planner_agent',
     target: 'yt_sequential_planner',
   },
   {
-    id: 'e-pipeline-gs',
-    source: 'combined_research_pipeline',
+    id: 'e-planner-gs',
+    source: 'parallel_planner_agent',
     target: 'gs_sequential_planner',
   },
   {
-    id: 'e-pipeline-ca',
-    source: 'combined_research_pipeline',
+    id: 'e-planner-ca',
+    source: 'parallel_planner_agent',
     target: 'ca_sequential_planner',
   },
 
-  // Parallel planners to merge
-  { id: 'e-yt-merge', source: 'yt_sequential_planner', target: 'merge_planners' },
-  { id: 'e-gs-merge', source: 'gs_sequential_planner', target: 'merge_planners' },
-  { id: 'e-ca-merge', source: 'ca_sequential_planner', target: 'merge_planners' },
+  // Sequential planners to leaf agents
+  { id: 'e-yt-analysis', source: 'yt_sequential_planner', target: 'yt_analysis_generator_agent' },
+  { id: 'e-yt-web-plan', source: 'yt_sequential_planner', target: 'yt_web_planner' },
+  { id: 'e-yt-web-search', source: 'yt_sequential_planner', target: 'yt_web_searcher' },
+  { id: 'e-gs-web-plan', source: 'gs_sequential_planner', target: 'gs_web_planner' },
+  { id: 'e-gs-web-search', source: 'gs_sequential_planner', target: 'gs_web_searcher' },
+  { id: 'e-ca-web-plan', source: 'ca_sequential_planner', target: 'campaign_web_planner' },
+  { id: 'e-ca-web-search', source: 'ca_sequential_planner', target: 'campaign_web_searcher' },
+
+  // merge_parallel_insights to merge_planners
+  { id: 'e-merge-parallel-merge', source: 'merge_parallel_insights', target: 'merge_planners' },
 
   // Sequential flow through research pipeline
   { id: 'e-merge-eval', source: 'merge_planners', target: 'combined_web_evaluator' },
@@ -288,4 +496,13 @@ export const PIPELINE_EDGES: Edge[] = [
     source: 'ad_content_generator_agent',
     target: 'visual_generator',
   },
+
+  // Ad creative pipeline to leaf agents
+  { id: 'e-creative-drafter', source: 'ad_creative_pipeline', target: 'ad_copy_drafter' },
+  { id: 'e-creative-critic', source: 'ad_creative_pipeline', target: 'ad_copy_critic' },
+
+  // Visual generation pipeline to leaf agents
+  { id: 'e-visual-drafter', source: 'visual_generation_pipeline', target: 'visual_concept_drafter' },
+  { id: 'e-visual-critic', source: 'visual_generation_pipeline', target: 'visual_concept_critic' },
+  { id: 'e-visual-finalizer', source: 'visual_generation_pipeline', target: 'visual_concept_finalizer' },
 ];

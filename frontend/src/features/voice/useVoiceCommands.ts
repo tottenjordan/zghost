@@ -26,6 +26,10 @@ const COMMAND_PATTERNS: CommandPattern[] = [
   { pattern: /go\s+to\s+(narrative|story)/i, intent: 'navigate', params: { path: '/narrative' } },
   { pattern: /show\s+(me\s+)?results/i, intent: 'navigate', params: { path: '/orchestration', tab: 'results' } },
   { pattern: /show\s+(me\s+)?trends/i, intent: 'navigate', params: { path: '/trends' } },
+  { pattern: /show\s+(me\s+)?config/i, intent: 'set_detail_tab', params: { tab: 'config' } },
+  { pattern: /show\s+(me\s+)?chat/i, intent: 'set_detail_tab', params: { tab: 'chat' } },
+  { pattern: /show\s+(me\s+)?state/i, intent: 'set_detail_tab', params: { tab: 'state' } },
+  { pattern: /show\s+(me\s+)?eval(uation)?/i, intent: 'set_detail_tab', params: { tab: 'evaluation' } },
   { pattern: /start\s+(the\s+)?pipeline/i, intent: 'start_pipeline' },
   { pattern: /run\s+(the\s+)?campaign/i, intent: 'start_pipeline' },
   { pattern: /stop\s+(the\s+)?pipeline/i, intent: 'stop_pipeline' },
@@ -107,8 +111,16 @@ export function useVoiceCommands(transcript: TranscriptMessage[]) {
         break;
 
       case 'select_trend':
-        // This would require integration with trend selection logic
-        console.log('Trend selection via voice:', command.params?.value);
+        // Dispatch as voice-action for page-level handling
+        window.dispatchEvent(new CustomEvent('voice-action', {
+          detail: { action: 'select_google_trend', params: { trend: command.params?.value } }
+        }));
+        break;
+
+      case 'set_detail_tab':
+        window.dispatchEvent(new CustomEvent('voice-action', {
+          detail: { action: 'set_detail_tab', params: { tab: command.params?.tab } }
+        }));
         break;
 
       default:

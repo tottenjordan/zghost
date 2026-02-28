@@ -13,6 +13,7 @@ from ...skills.skill_loader import load_skill_from_dir
 from .tools import (
     generate_image,
     generate_video,
+    generate_visuals_batch,
     save_img_artifact_key,
     save_vid_artifact_key,
     save_select_ad_copy,
@@ -33,7 +34,7 @@ _skill_toolset = SkillToolset(skills=[_skill])
 ad_copy_drafter = Agent(
     model=config.worker_model,
     name="ad_copy_drafter",
-    description="Generate 10-12 initial ad copy ideas based on campaign guidelines and trends",
+    description="Generate initial ad copy ideas based on campaign guidelines and trends",
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             thinking_level="LOW",
@@ -43,6 +44,8 @@ ad_copy_drafter = Agent(
     instruction="""You are a creative copywriter generating initial ad copy ideas.
 
     Your goal is to review the research and trends provided in the **Input Data** to generate 10-12 culturally relevant ad copy ideas.
+
+    If the session state `autopilot_mode` is set to true, generate 6 ad copy ideas instead of 10-12 to optimize for speed.
 
     ---
     ### Input Data
@@ -333,6 +336,7 @@ ad_content_generator_agent = Agent(
         AgentTool(agent=ad_creative_pipeline),
         AgentTool(agent=visual_generation_pipeline),
         AgentTool(agent=visual_generator),
+        generate_visuals_batch,
         save_img_artifact_key,
         save_vid_artifact_key,
         save_select_ad_copy,

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -21,6 +21,75 @@ interface PipelineGraphProps {
 const nodeTypes = {
   agentNode: AgentNode,
 };
+
+const PHASE_MAP: Record<string, { name: string; estimatedMin: number }> = {
+  'trends_and_insights_agent': { name: 'Trend Discovery', estimatedMin: 1 },
+  'research_orchestrator': { name: 'Market Research', estimatedMin: 3 },
+  'combined_research_pipeline': { name: 'Market Research', estimatedMin: 3 },
+  'ad_content_generator_agent': { name: 'Ad Creative', estimatedMin: 3 },
+  'ad_copy_drafter': { name: 'Drafting Ad Copy', estimatedMin: 1 },
+  'ad_copy_critic': { name: 'Critiquing Ad Copy', estimatedMin: 1 },
+  'visual_concept_drafter': { name: 'Drafting Visual Concepts', estimatedMin: 1 },
+  'visual_concept_critic': { name: 'Critiquing Visual Concepts', estimatedMin: 0.5 },
+  'visual_concept_finalizer': { name: 'Finalizing Visual Concepts', estimatedMin: 0.5 },
+  'visual_generator': { name: 'Generating Visuals', estimatedMin: 5 },
+  'av_editing_studio_agent': { name: 'AV Studio Production', estimatedMin: 5 },
+  'focus_group_evaluator_agent': { name: 'Focus Group Evaluation', estimatedMin: 2 },
+};
+
+function PhaseIndicator({ events }: { events: AgentEvent[] }) {
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const phase = useMemo(() => {
+    const agentLastEvent = new Map<string, AgentEvent>();
+    for (const event of events) {
+      agentLastEvent.set(event.agentName, event);
+    }
+    let latestRunning: { name: string; startTime: number; estimated: number } | null = null;
+    for (const [agentName, lastEvent] of agentLastEvent) {
+      if (lastEvent.type !== 'agent_complete' && lastEvent.type !== 'error') {
+        const p = PHASE_MAP[agentName];
+        if (p) {
+          const agentEvents = events.filter(e => e.agentName === agentName);
+          const startTime = agentEvents[0]?.timestamp || now;
+          if (!latestRunning || startTime > latestRunning.startTime) {
+            latestRunning = { name: p.name, startTime, estimated: p.estimatedMin };
+          }
+        }
+      }
+    }
+    if (!latestRunning) return null;
+    return {
+      name: latestRunning.name,
+      elapsed: now - latestRunning.startTime,
+      estimated: latestRunning.estimated,
+    };
+  }, [events, now]);
+
+  if (!phase) return null;
+
+  const elapsedSec = Math.floor(phase.elapsed / 1000);
+  const min = Math.floor(elapsedSec / 60);
+  const sec = elapsedSec % 60;
+  const timeStr = `${min}:${sec.toString().padStart(2, '0')}`;
+  const estStr = phase.estimated > 0 ? ` / ~${phase.estimated}m` : '';
+
+  return (
+    <div className="absolute top-3 left-3 z-10 flex items-center gap-2 rounded-lg bg-zinc-900/90 border border-zinc-700 px-3 py-1.5 shadow-lg backdrop-blur-sm">
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+      </span>
+      <span className="text-sm font-medium text-zinc-200">{phase.name}</span>
+      <span className="text-xs text-zinc-400">{timeStr}{estStr}</span>
+    </div>
+  );
+}
 
 export function PipelineGraph({
   status,
@@ -137,6 +206,7 @@ export function PipelineGraph({
 
   return (
     <div className="h-full w-full bg-zinc-950">
+      <PhaseIndicator events={events} />
       <ReactFlow
         nodes={nodesWithStatus}
         edges={edgesWithAnimation}

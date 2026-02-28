@@ -198,7 +198,7 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
               className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 ml-auto px-2 py-1 rounded border border-blue-800/50 bg-blue-950/30 hover:bg-blue-950/50 transition-colors"
             >
               <FileText className="w-3 h-3" />
-              View in Narrative
+              Iterate in Narrative
             </Link>
           </div>
         </div>

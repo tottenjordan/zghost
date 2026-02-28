@@ -1,3 +1,4 @@
+import asyncio
 import cv2
 import logging
 import subprocess
@@ -20,6 +21,8 @@ from ...shared_libraries.utils import (
 )
 
 logging.basicConfig(level=logging.INFO)
+
+MAX_VEO_POLL_SECONDS = 300  # 5 min
 
 # Get GCS bucket at runtime (Agent Engine injects env vars after import)
 def get_gcs_bucket():
@@ -114,7 +117,84 @@ def generate_subject_image(
         return {"status": "failed", "error": str(e)}
 
 
-def generate_clip_with_frames(
+async def generate_transition_frames(
+    transition_descriptions: list[dict],
+    character_sheet: str,
+    product_sheet: str,
+    tool_context: ToolContext,
+) -> dict:
+    """Pre-generates reference images for each transition point in the commercial.
+
+    These transition frames serve as boundary conditions: the last_frame of the
+    preceding clip and the first_frame of the following clip. This enables parallel
+    clip generation by removing sequential frame-extraction dependencies.
+
+    For a 10s commercial (1 clip): No transition frames needed.
+    For a 15s commercial (2 clips): 1 transition frame (between scenes 1 and 2).
+    For a 30s commercial (4 clips): 3 transition frames (between scenes 1-2, 2-3, 3-4).
+
+    Args:
+        transition_descriptions: List of dicts, each with:
+            name (str): Transition identifier (e.g., "scene1_to_scene2").
+            description (str): Visual description of the transition moment.
+        character_sheet (str): The full character sheet description (100+ words)
+            to maintain visual consistency.
+        product_sheet (str): The full product sheet description for consistency.
+        tool_context: The tool context.
+
+    Returns:
+        dict: Status and list of generated frame GCS URIs.
+            Keys: "status", "transition_frames" (list of {name, gcs_uri}).
+    """
+    transition_frames = []
+    errors = []
+
+    async def _generate_frame(transition):
+        try:
+            prompt = f"""Generate a photorealistic reference image for a commercial transition point.
+
+CHARACTER (use this EXACT description):
+{character_sheet}
+
+PRODUCT (use this EXACT description):
+{product_sheet}
+
+SCENE MOMENT:
+{transition['description']}
+
+Style: Photorealistic, cinematic lighting, 16:9 aspect ratio composition.
+IMPORTANT: Do NOT include any text, words, logos, or watermarks."""
+
+            result = generate_subject_image(
+                prompt=prompt,
+                subject_name=f"transition_{transition['name']}",
+                tool_context=tool_context,
+            )
+            if result.get("status") == "ok":
+                return {"name": transition["name"], "gcs_uri": result["gcs_uri"]}
+            else:
+                errors.append(f"Transition '{transition['name']}': {result.get('error', 'unknown error')}")
+                return None
+        except Exception as e:
+            errors.append(f"Transition '{transition['name']}': {e}")
+            return None
+
+    # Generate all transition frames in parallel
+    tasks = [_generate_frame(t) for t in transition_descriptions]
+    results = await asyncio.gather(*tasks)
+
+    transition_frames = [r for r in results if r is not None]
+
+    logging.info(f"generate_transition_frames: generated {len(transition_frames)}/{len(transition_descriptions)} transition frames")
+
+    return {
+        "status": "ok" if len(transition_frames) == len(transition_descriptions) else "partial",
+        "transition_frames": transition_frames,
+        "errors": errors,
+    }
+
+
+async def generate_clip_with_frames(
     prompt: str,
     clip_name: str,
     first_frame_gcs_uri: str,
@@ -185,10 +265,25 @@ def generate_clip_with_frames(
             config=gen_config,
         )
 
-        while not operation.done:
-            time.sleep(15)
-            operation = client.operations.get(operation)
-            logging.info(f"Clip '{clip_name}' generation status: {operation}")
+        for attempt in range(2):
+            start_time = time.time()
+            while not operation.done:
+                if time.time() - start_time > MAX_VEO_POLL_SECONDS:
+                    logging.warning(f"Veo clip '{clip_name}' timed out after {MAX_VEO_POLL_SECONDS}s, attempt {attempt + 1}/2, retrying...")
+                    break
+                await asyncio.sleep(15)
+                operation = client.operations.get(operation)
+                logging.info(f"Clip '{clip_name}' generation status: {operation}")
+            if operation.done:
+                break
+            if attempt == 0:
+                # Re-submit
+                operation = client.models.generate_videos(
+                    model=config.video_gen_model,
+                    prompt=prompt,
+                    image=first_frame_image,
+                    config=gen_config,
+                )
 
         if operation.error:
             return {"status": "failed", "error": str(operation.error)}
@@ -243,6 +338,74 @@ def generate_clip_with_frames(
     except Exception as e:
         logging.error(f"Error generating clip '{clip_name}': {e}")
         return {"status": "failed", "error": str(e)}
+
+
+async def generate_clips_parallel(
+    clip_configs: list[dict],
+    reference_image_gcs_uris: list[str],
+    tool_context: ToolContext,
+) -> dict:
+    """Generates all video clips concurrently using asyncio.gather().
+
+    Since each clip has pre-generated first AND last frames (from transition
+    frame generation), there is no sequential dependency between clips.
+
+    Args:
+        clip_configs: List of dicts, each with:
+            clip_name (str): Name for the clip (e.g., "clip_1_opening").
+            prompt (str): Detailed prompt for the clip.
+            first_frame_gcs_uri (str): GCS URI for the first frame.
+            last_frame_gcs_uri (str, optional): GCS URI for the last frame.
+        reference_image_gcs_uris: List of GCS URIs for character/object
+            reference images shared across all clips.
+        tool_context: The tool context.
+
+    Returns:
+        dict: Status and results. Keys: "status", "clips" (list of
+            {clip_name, gcs_uri, local_path}), "errors".
+    """
+    clips = []
+    errors = []
+
+    async def _gen_clip(clip_config):
+        try:
+            result = await generate_clip_with_frames(
+                prompt=clip_config["prompt"],
+                clip_name=clip_config["clip_name"],
+                first_frame_gcs_uri=clip_config["first_frame_gcs_uri"],
+                tool_context=tool_context,
+                last_frame_gcs_uri=clip_config.get("last_frame_gcs_uri", ""),
+                reference_image_gcs_uris=reference_image_gcs_uris,
+            )
+            if result.get("status") == "ok":
+                return {
+                    "clip_name": clip_config["clip_name"],
+                    "gcs_uri": result["gcs_uri"],
+                    "local_path": result.get("local_path", ""),
+                }
+            else:
+                errors.append(f"Clip '{clip_config['clip_name']}': {result.get('error', 'unknown')}")
+                return None
+        except Exception as e:
+            errors.append(f"Clip '{clip_config['clip_name']}': {e}")
+            return None
+
+    logging.info(f"generate_clips_parallel: launching {len(clip_configs)} clips in parallel")
+    tasks = [_gen_clip(c) for c in clip_configs]
+    results = await asyncio.gather(*tasks)
+
+    clips = [r for r in results if r is not None]
+    # Sort clips by name to maintain order
+    clips.sort(key=lambda c: c["clip_name"])
+
+    logging.info(f"generate_clips_parallel: completed. Success: {len(clips)}/{len(clip_configs)}, Errors: {len(errors)}")
+
+    return {
+        "status": "ok" if len(clips) == len(clip_configs) else "partial",
+        "clips": clips,
+        "clip_gcs_uris": [c["gcs_uri"] for c in clips],
+        "errors": errors,
+    }
 
 
 def extract_frame_from_clip(

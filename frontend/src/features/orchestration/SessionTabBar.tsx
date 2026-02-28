@@ -1,4 +1,4 @@
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Copy } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { PipelineSession } from '../../stores/campaignStore';
 
@@ -7,6 +7,7 @@ interface SessionTabBarProps {
   activeSessionIndex: number;
   onSelectSession: (index: number) => void;
   onRemoveSession: (sessionId: string) => void;
+  onDuplicate?: (session: PipelineSession) => void;
   onNewSession: () => void;
   isRunning: boolean;
 }
@@ -16,6 +17,7 @@ export function SessionTabBar({
   activeSessionIndex,
   onSelectSession,
   onRemoveSession,
+  onDuplicate,
   onNewSession,
   isRunning,
 }: SessionTabBarProps) {
@@ -69,13 +71,26 @@ export function SessionTabBar({
           >
             <span>{session.label}</span>
             <div className={cn('w-2 h-2 rounded-full', getStatusColor(session.status))} />
+            {canRemove && onDuplicate && (
+              <Copy
+                className="w-3 h-3 hover:text-blue-400 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDuplicate(session);
+                }}
+                title="Duplicate run with same config"
+              />
+            )}
             {canRemove && (
               <X
                 className="w-3 h-3 hover:text-red-400 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onRemoveSession(session.sessionId);
+                  if (window.confirm(`Delete "${session.label}"? This cannot be undone.`)) {
+                    onRemoveSession(session.sessionId);
+                  }
                 }}
+                title="Delete run"
               />
             )}
           </button>

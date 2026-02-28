@@ -10,7 +10,9 @@ from ...shared_libraries import callbacks
 from ...skills.skill_loader import load_skill_from_dir
 from .tools import (
     generate_subject_image,
+    generate_transition_frames,
     generate_clip_with_frames,
+    generate_clips_parallel,
     extract_frame_from_clip,
     concatenate_clips,
     trim_video,
@@ -46,7 +48,9 @@ av_editing_studio_agent = Agent(
         recommend_audio_style,
         # Video generation (silent)
         generate_subject_image,
+        generate_transition_frames,
         generate_clip_with_frames,
+        generate_clips_parallel,
         extract_frame_from_clip,
         concatenate_clips,
         trim_video,

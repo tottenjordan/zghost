@@ -5,7 +5,6 @@ import { PipelineGraph } from './PipelineGraph';
 import { DAGTimeline } from './DAGTimeline';
 import { EventStream } from './EventStream';
 import { TaskDrillDown } from './TaskDrillDown';
-import { ParallelStreamView } from './ParallelStreamView';
 import { SessionStatePanel } from './SessionStatePanel';
 import { AgentChat } from './AgentChat';
 import { ResultsGallery } from './ResultsGallery';
@@ -43,6 +42,7 @@ export function OrchestrationPage() {
     pipelineStatus,
     commercialDuration,
     autoStart,
+    autopilot,
     addSession,
     removeSession,
     setActiveSession,
@@ -50,6 +50,7 @@ export function OrchestrationPage() {
     setPipelineStatus,
     setCommercialDuration,
     setAutoStart,
+    setAutopilot,
     isReadyToLaunch,
     setCampaignConfig,
   } = useCampaignStore();
@@ -120,6 +121,7 @@ export function OrchestrationPage() {
         target_audience: config.target_audience || '',
         key_selling_points: config.key_selling_points || '',
         commercial_duration: commercialDuration,
+        autopilot_mode: autopilot,
       };
 
       // Add selected trends to session state
@@ -152,6 +154,10 @@ export function OrchestrationPage() {
         label: `Run ${sessions.length + 1}`,
         status: 'running' as const,
         startedAt: Date.now(),
+        config: { ...config },
+        commercialDuration,
+        searchTrends: [...selectedSearchTrends],
+        ytTrends: [...selectedYtTrends],
       };
 
       addSession(newSession);
@@ -167,7 +173,14 @@ export function OrchestrationPage() {
         rubricGuidance = ` Evaluate outputs against these criteria: ${allCriteria.join(', ')}.`;
       }
 
-      const pipelineMessage = `Start the full pipeline with ${parallelCount} parallel stream(s), producing a ${commercialDuration}-second commercial.${rubricGuidance}`;
+      const hasTrends = selectedSearchTrends.length > 0 && selectedYtTrends.length > 0;
+      const trendSkipNote = hasTrends
+        ? ' Campaign metadata and trends are already configured in session state — skip trend-discovery and proceed directly to market research.'
+        : '';
+      const autopilotNote = autopilot
+        ? ' Use auto-select mode for trends, approve all outputs automatically, and proceed through all steps without pausing for user confirmation.'
+        : '';
+      const pipelineMessage = `Start the full pipeline with ${parallelCount} parallel stream(s), producing a ${commercialDuration}-second commercial.${trendSkipNote}${autopilotNote}${rubricGuidance}`;
 
       // Set stream URL for live event monitoring (useOrchestration will connect)
       const url = api.getStreamUrl(session.session_id, pipelineMessage, USER_ID);
@@ -180,6 +193,17 @@ export function OrchestrationPage() {
       isStartingRef.current = false;
     }
   }, [config, selectedSearchTrends, selectedYtTrends, activeRubrics, commercialDuration, sessions, addSession, setSessionId, setPipelineStatus]);
+
+  const handleDuplicate = useCallback((session: import('../../stores/campaignStore').PipelineSession) => {
+    // Restore saved config from the session, then start a new run
+    if (session.config) {
+      setCampaignConfig(session.config);
+    }
+    if (session.commercialDuration) {
+      setCommercialDuration(session.commercialDuration);
+    }
+    handleStart(1);
+  }, [setCampaignConfig, setCommercialDuration, handleStart]);
 
   const handleStop = useCallback(() => {
     setSessionId(null);
@@ -237,6 +261,18 @@ export function OrchestrationPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Listen for voice-action events to switch tabs
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.action === 'set_detail_tab' && detail?.params?.tab) {
+        setDetailTab(detail.params.tab);
+      }
+    };
+    window.addEventListener('voice-action', handler);
+    return () => window.removeEventListener('voice-action', handler);
+  }, []);
+
   // Auto-start pipeline when navigated from wizard with autoStart flag
   // Bypass isReadyToLaunch() — the wizard already validated before setting autoStart
   useEffect(() => {
@@ -259,61 +295,6 @@ export function OrchestrationPage() {
     sessionState.vid_artifact_keys?.vid_artifact_keys?.length > 0 ||
     (Array.isArray(sessionState.vid_artifact_keys) && sessionState.vid_artifact_keys.length > 0)
   );
-
-  // Parallel streams — use substring matching since ADK author field may not exactly match
-  const getStreamEvents = (keywords: string[]) =>
-    events.filter(e => keywords.some(kw => e.agentName.toLowerCase().includes(kw)));
-
-  // Expanded keywords to match all sub-agent names in the research pipeline
-  const ytEvents = getStreamEvents(['yt_sequential', 'yt_analysis_generator', 'yt_web_planner', 'yt_web_searcher']);
-  const gsEvents = getStreamEvents(['gs_sequential', 'gs_web_planner', 'gs_web_searcher']);
-  const caEvents = getStreamEvents(['ca_sequential', 'campaign_web_planner', 'campaign_web_searcher']);
-
-  // Detect if parallel phase has started (events from parallel orchestration agents)
-  const parallelPhaseStarted = events.some(e =>
-    e.agentName.toLowerCase().includes('parallel_planner') ||
-    e.agentName.toLowerCase().includes('merge_parallel') ||
-    ytEvents.length > 0 || gsEvents.length > 0 || caEvents.length > 0
-  );
-
-  // Detect if research is complete
-  const researchComplete = hasResearchReport;
-
-  // Helper to determine stream status
-  const getStreamStatus = (streamEvents: typeof ytEvents) => {
-    if (researchComplete) return 'completed' as const;
-    if (streamEvents.length > 0) return 'running' as const;
-    if (!sessionId || !isRunning) return 'idle' as const;
-    if (!parallelPhaseStarted) return 'waiting' as const;
-    return 'pending' as const;
-  };
-
-  const parallelStreams = [
-    {
-      id: 'stream-1',
-      name: 'YouTube Research',
-      status: getStreamStatus(ytEvents),
-      progress: researchComplete ? 100 : Math.min(100, ytEvents.length * 10),
-      currentStage: researchComplete ? 'completed' : ytEvents.length > 5 ? 'web_scraping' : ytEvents.length > 0 ? 'planning' : undefined,
-      events: ytEvents
-    },
-    {
-      id: 'stream-2',
-      name: 'Google Search',
-      status: getStreamStatus(gsEvents),
-      progress: researchComplete ? 100 : Math.min(100, gsEvents.length * 10),
-      currentStage: researchComplete ? 'completed' : gsEvents.length > 5 ? 'searching' : gsEvents.length > 0 ? 'planning' : undefined,
-      events: gsEvents
-    },
-    {
-      id: 'stream-3',
-      name: 'Campaign Research',
-      status: getStreamStatus(caEvents),
-      progress: researchComplete ? 100 : Math.min(100, caEvents.length * 10),
-      currentStage: researchComplete ? 'completed' : caEvents.length > 5 ? 'analysis' : caEvents.length > 0 ? 'planning' : undefined,
-      events: caEvents
-    },
-  ].filter(stream => stream.events.length > 0 || sessionId !== null);
 
   const selectedAgentState = selectedAgent ? status?.agents[selectedAgent] : undefined;
   const selectedAgentEvents = selectedAgent ? getAgentEvents(selectedAgent) : [];
@@ -488,6 +469,7 @@ export function OrchestrationPage() {
         activeSessionIndex={activeSessionIndex}
         onSelectSession={setActiveSession}
         onRemoveSession={removeSession}
+        onDuplicate={handleDuplicate}
         onNewSession={() => handleStart(1)}
         isRunning={isRunning}
       />
@@ -542,20 +524,20 @@ export function OrchestrationPage() {
         {/* Right: Detail panel (1 col) */}
         <div className="border border-zinc-800 rounded-lg overflow-hidden flex flex-col">
           <Tabs value={detailTab} onValueChange={setDetailTab}>
-            <TabsList className="w-full grid grid-cols-7">
+            <TabsList className="w-full grid grid-cols-6">
               <TabsTrigger value="chat">Chat</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
               <TabsTrigger value="evaluation">Eval</TabsTrigger>
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="streams">Streams</TabsTrigger>
-              <TabsTrigger value="state">State</TabsTrigger>
               <TabsTrigger value="config">Config</TabsTrigger>
+              <TabsTrigger value="state">State</TabsTrigger>
             </TabsList>
 
             <TabsContent value="chat" className="flex-1 overflow-hidden">
               <AgentChat
                 sessionId={sessionId}
                 events={events}
+                autopilot={autopilot}
                 onWaitingForInput={setIsWaitingForInput}
                 onSendMessage={handleChatMessage}
               />
@@ -584,14 +566,6 @@ export function OrchestrationPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="streams" className="flex-1 overflow-auto">
-              <ParallelStreamView streams={parallelStreams} />
-            </TabsContent>
-
-            <TabsContent value="state" className="flex-1 overflow-auto">
-              <SessionStatePanel state={sessionState} changedKeys={changedKeys} />
-            </TabsContent>
-
             <TabsContent value="config" className="flex-1 overflow-auto p-4">
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -605,11 +579,13 @@ export function OrchestrationPage() {
                         type="text"
                         value={config.brand}
                         onChange={(e) => setCampaignConfig({ ...config, brand: e.target.value })}
+                        disabled={isRunning}
                         placeholder="e.g., Google Pixel"
                         className={cn(
                           'flex h-9 w-full rounded-md border px-3 py-2 text-sm',
                           'text-zinc-50 placeholder:text-zinc-500 bg-zinc-900',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                          'disabled:opacity-50 disabled:cursor-not-allowed',
                           config.brand.trim() !== ''
                             ? 'border-zinc-700 border-l-4 border-l-green-500'
                             : 'border-zinc-700'
@@ -633,11 +609,13 @@ export function OrchestrationPage() {
                         type="text"
                         value={config.target_product}
                         onChange={(e) => setCampaignConfig({ ...config, target_product: e.target.value })}
+                        disabled={isRunning}
                         placeholder="e.g., Pixel 9 Pro"
                         className={cn(
                           'flex h-9 w-full rounded-md border px-3 py-2 text-sm',
                           'text-zinc-50 placeholder:text-zinc-500 bg-zinc-900',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                          'disabled:opacity-50 disabled:cursor-not-allowed',
                           config.target_product.trim() !== ''
                             ? 'border-zinc-700 border-l-4 border-l-green-500'
                             : 'border-zinc-700'
@@ -661,11 +639,13 @@ export function OrchestrationPage() {
                         type="text"
                         value={config.target_audience}
                         onChange={(e) => setCampaignConfig({ ...config, target_audience: e.target.value })}
+                        disabled={isRunning}
                         placeholder="e.g., Tech-savvy millennials"
                         className={cn(
                           'flex h-9 w-full rounded-md border px-3 py-2 text-sm',
                           'text-zinc-50 placeholder:text-zinc-500 bg-zinc-900',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                          'disabled:opacity-50 disabled:cursor-not-allowed',
                           config.target_audience.trim() !== ''
                             ? 'border-zinc-700 border-l-4 border-l-green-500'
                             : 'border-zinc-700'
@@ -688,12 +668,14 @@ export function OrchestrationPage() {
                       <textarea
                         value={config.key_selling_points}
                         onChange={(e) => setCampaignConfig({ ...config, key_selling_points: e.target.value })}
+                        disabled={isRunning}
                         placeholder="e.g., AI camera, long battery"
                         rows={3}
                         className={cn(
                           'flex w-full rounded-md border px-3 py-2 text-sm',
                           'text-zinc-50 placeholder:text-zinc-500 bg-zinc-900',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 resize-none',
+                          'disabled:opacity-50 disabled:cursor-not-allowed',
                           config.key_selling_points.trim() !== ''
                             ? 'border-zinc-700 border-l-4 border-l-green-500'
                             : 'border-zinc-700'
@@ -707,7 +689,33 @@ export function OrchestrationPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Autopilot Toggle */}
+                <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
+                  <div>
+                    <label className="text-xs font-medium text-zinc-400">AI Autopilot Mode</label>
+                    <p className="text-xs text-zinc-600 mt-0.5">Auto-approve all agent outputs without pausing</p>
+                  </div>
+                  <button
+                    onClick={() => setAutopilot(!autopilot)}
+                    disabled={isRunning}
+                    className={cn(
+                      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                      'disabled:opacity-50 disabled:cursor-not-allowed',
+                      autopilot ? 'bg-blue-600' : 'bg-zinc-700'
+                    )}
+                  >
+                    <span className={cn(
+                      'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                      autopilot ? 'translate-x-6' : 'translate-x-1'
+                    )} />
+                  </button>
+                </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="state" className="flex-1 overflow-auto">
+              <SessionStatePanel state={sessionState} changedKeys={changedKeys} />
             </TabsContent>
           </Tabs>
         </div>

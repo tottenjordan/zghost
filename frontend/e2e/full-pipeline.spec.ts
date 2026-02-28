@@ -6,6 +6,7 @@ import { pollForKey, getSessionState } from './helpers/statePoller';
 
 test('Full pipeline: 10s commercial from wizard to focus group', async ({ page }) => {
   test.setTimeout(45 * 60 * 1000); // 45 min
+  const pipelineStartTime = Date.now();
 
   const trendsPage = new TrendsPage(page);
   const orchPage = new OrchestrationPage(page);
@@ -59,7 +60,7 @@ test('Full pipeline: 10s commercial from wizard to focus group', async ({ page }
   // ── PHASE 4: Wait for image artifacts (~10-20 min from start) ───────
   // Stay on orchestration page — don't navigate away during pipeline
   console.log('[phase-4] Waiting for image artifacts...');
-  await pollForKey(page, sessionId!, 'img_artifact_keys', 1_500_000, 10_000);
+  await pollForKey(page, sessionId!, 'img_artifact_keys', 600_000, 10_000);
   console.log('[phase-4] Image artifacts ready');
   await orchPage.screenshot('04-images-done');
 
@@ -71,7 +72,7 @@ test('Full pipeline: 10s commercial from wizard to focus group', async ({ page }
 
   // ── PHASE 6: Wait for commercial (~5-10 more min) ──────────────────
   console.log('[phase-6] Waiting for commercial artifact...');
-  const commercial = await pollForKey(page, sessionId!, 'commercial_artifact', 900_000, 10_000);
+  const commercial = await pollForKey(page, sessionId!, 'commercial_artifact', 600_000, 10_000);
   console.log('[phase-6] Commercial artifact:', JSON.stringify(commercial).substring(0, 200));
   await orchPage.screenshot('06-commercial-generated');
 
@@ -138,5 +139,10 @@ test('Full pipeline: 10s commercial from wizard to focus group', async ({ page }
   console.log(`  Commercial: ${artifactKey}`);
   console.log(`  Images:     ${finalImgs?.img_artifact_keys?.length ?? 0}`);
   console.log(`  Videos:     ${finalVids?.vid_artifact_keys?.length ?? 0}`);
+  const totalDurationMin = (Date.now() - pipelineStartTime) / 60000;
+  console.log(`  Duration:   ${totalDurationMin.toFixed(1)} min`);
+  if (totalDurationMin > 15) {
+    console.warn(`  ⚠ Pipeline exceeded 15-min target (took ${totalDurationMin.toFixed(1)} min)`);
+  }
   console.log('═══════════════════════════════════════════');
 });

@@ -112,6 +112,21 @@ Guidelines:
 - Keep track of ALL subject reference image GCS URIs -- you will pass them as `reference_image_gcs_uris` to every `generate_clip_with_frames` call.
 - IMPORTANT: Do NOT include any text, words, logos, or watermarks in reference image prompts.
 
+### Step 2.5: Transition Frame Generation (Parallel Mode)
+
+If the session state has `autopilot_mode` set to true, generate transition reference images for each cut point to enable parallel clip generation:
+
+1. Based on the storyboard, identify each transition point between scenes:
+   - For 15s (2 clips): 1 transition point (between Scene 1 and Scene 2)
+   - For 30s (4 clips): 3 transition points (between each pair of adjacent scenes)
+   - For 10s (1 clip): Skip this step entirely
+2. For each transition, describe the visual state at the cut point — what the character is doing, where they're positioned, and the scene setting.
+3. Call `generate_transition_frames` with:
+   - All transition descriptions (list of {name, description})
+   - The CHARACTER SHEET text
+   - The PRODUCT SHEET text
+4. Record all returned transition frame GCS URIs. These will be used as first_frame and last_frame for each clip.
+
 ### Step 3: Clip Chain Generation
 
 Generate all clips sequentially based on the duration plan, using frame matching for continuity:
@@ -142,6 +157,25 @@ Generate all clips sequentially based on the duration plan, using frame matching
 - **Visual-only descriptions**: Focus on what can be SEEN, not heard. Describe visual energy, movement, and pacing instead of audio elements.
 - **Avoid RAI triggers**: Do not use words like "elderly", "old", "aged" in prompts. Use "senior", "mature", or describe specific features instead. Avoid brand names in Veo prompts -- describe the product visually instead of by name (e.g., "a barbecue pork sandwich with pickles and onions on a sesame bun" instead of "McRib").
 
+### Step 3 (Parallel Alternative): Parallel Clip Generation
+
+If `autopilot_mode` is true AND transition frames were generated in Step 2.5, generate ALL clips simultaneously instead of sequentially:
+
+1. Build clip configs — for each clip, assign:
+   - `first_frame_gcs_uri`: The subject reference image (for clip 1) or the transition frame from the PREVIOUS transition point
+   - `last_frame_gcs_uri`: The transition frame at this clip's END (or empty for the last clip)
+   - `prompt`: The detailed clip prompt from the storyboard
+   - `clip_name`: e.g., "clip_1_hook", "clip_2_connection"
+2. Call `generate_clips_parallel` with all clip configs and the reference_image_gcs_uris from Step 2.
+3. All clips generate concurrently (~2 min instead of ~8 min for a 30s commercial).
+4. The returned `clip_gcs_uris` list is already sorted by clip name for concatenation.
+
+**Frame assignment example (30s, 4 clips):**
+- Clip 1: first_frame = subject_ref_image, last_frame = transition_1_2
+- Clip 2: first_frame = transition_1_2, last_frame = transition_2_3
+- Clip 3: first_frame = transition_2_3, last_frame = transition_3_4
+- Clip 4: first_frame = transition_3_4, last_frame = (none)
+
 ### Step 3.5: Character Consistency Validation (Optional)
 
 After generating all clips, optionally validate character consistency:
@@ -158,6 +192,8 @@ After generating all clips, optionally validate character consistency:
 3. If all clips score >= 7, proceed to Step 4. For single-clip commercials (10s), this step is quick; for multi-clip commercials (15s/30s), validate each clip.
 
 ### Step 4: Audio Style Selection
+
+**Optimization**: In autopilot mode, audio generation (Steps 4-6) can begin as soon as the storyboard is complete — audio only needs storyboard text, not the actual video clips. Start audio generation while clips are being produced to save time.
 
 Before generating any audio, get AI recommendations for the optimal voice and music combination:
 
@@ -268,6 +304,11 @@ After saving, present to the user:
 - `extract_frame_from_clip`: Extract the first or last frame from a video clip for use in frame matching.
 - `concatenate_clips`: Join multiple clips into a single continuous SILENT video using ffmpeg.
 - `trim_video`: Trim a video to a specific duration using ffmpeg.
+
+**Parallel Mode Tools:**
+- `generate_transition_frames`: Pre-generate reference images for transition points between scenes, enabling parallel clip generation.
+- `generate_clips_parallel`: Generate ALL clips simultaneously using pre-generated transition frames. Returns sorted list of clip GCS URIs.
+
 **Voice Generation (Chirp 3 HD):**
 - `generate_voice_over`: Create professional narration with Chirp 3 HD, supporting SSML markup for emphasis and pacing.
 - `generate_dialogue`: Generate natural character dialogue with different Chirp voices and emotions.

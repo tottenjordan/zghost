@@ -3,6 +3,7 @@ import logging
 from PIL import Image
 from io import BytesIO
 import uuid, shutil, time, os
+import asyncio
 from markdown_pdf import MarkdownPdf, Section
 
 logging.basicConfig(level=logging.INFO)
@@ -188,6 +189,8 @@ async def generate_video(
     Returns:
         dict: Status and the `artifact_key` of the generated video.
     """
+    MAX_VEO_POLL_SECONDS = 300  # 5 min timeout
+
     # Create output filename
     if concept_name:
         filename_prefix = concept_name.replace(",", "").replace(" ", "_")
@@ -213,10 +216,25 @@ async def generate_video(
         operation = client.models.generate_videos(
             model=config.video_gen_model, prompt=prompt, config=gen_config
         )
-    while not operation.done:
-        time.sleep(15)
-        operation = client.operations.get(operation)
-        logging.info(operation)
+
+    # Retry loop with timeout
+    for attempt in range(2):
+        start_time = time.time()
+        while not operation.done:
+            if time.time() - start_time > MAX_VEO_POLL_SECONDS:
+                logging.warning(f"Veo timed out after {MAX_VEO_POLL_SECONDS}s, attempt {attempt + 1}/2, retrying...")
+                break
+            await asyncio.sleep(15)
+            operation = client.operations.get(operation)
+            logging.info(operation)
+        if operation.done:
+            break
+        if attempt == 0:
+            # Re-submit
+            if existing_image_filename != "":
+                operation = client.models.generate_videos(model=config.video_gen_model, prompt=prompt, image=existing_image, config=gen_config)
+            else:
+                operation = client.models.generate_videos(model=config.video_gen_model, prompt=prompt, config=gen_config)
 
     if operation.error:
         return {"status": f"failed due to error: {operation.error}"}
@@ -330,6 +348,114 @@ async def save_vid_artifact_key(
     existing_vid_artifact_keys["vid_artifact_keys"].append(artifact_key_dict)
     tool_context.state["vid_artifact_keys"] = existing_vid_artifact_keys
     return {"status": "ok"}
+
+
+async def generate_visuals_batch(
+    visual_concepts: list[dict],
+    tool_context: ToolContext,
+) -> dict:
+    """Generates all images and videos in parallel using asyncio.gather().
+
+    Takes a list of visual concept dicts and generates all image/video assets
+    concurrently for maximum speed. Each concept dict should have:
+        name (str): Concept name for file naming.
+        type (str): "image" or "video".
+        prompt (str): The generation prompt.
+        headline (str): Ad copy headline.
+        caption (str): Social media caption.
+        trend (str): Referenced trend(s).
+        concept (str): Creative concept explanation.
+        rationale_perf (str): Performance rationale.
+        audience_appeal (str): Target audience appeal.
+        markets_product (str): How it markets the product.
+
+    Args:
+        visual_concepts: List of concept dicts with keys: name, type, prompt, headline, caption, trend, concept, rationale_perf, audience_appeal, markets_product.
+        tool_context: The tool context.
+
+    Returns:
+        dict: Summary with generated_images, generated_videos, and any errors.
+    """
+    import asyncio
+
+    image_concepts = [c for c in visual_concepts if c.get("type", "").lower() == "image"]
+    video_concepts = [c for c in visual_concepts if c.get("type", "").lower() == "video"]
+
+    results = {"generated_images": [], "generated_videos": [], "errors": []}
+
+    async def _gen_image(concept):
+        try:
+            result = await generate_image(
+                prompt=concept["prompt"],
+                tool_context=tool_context,
+                concept_name=concept.get("name", "unnamed"),
+            )
+            if result.get("status") == "ok":
+                await save_img_artifact_key(
+                    artifact_key_dict={
+                        "artifact_key": result["artifact_key"],
+                        "img_prompt": concept["prompt"],
+                        "concept": concept.get("concept", ""),
+                        "headline": concept.get("headline", ""),
+                        "caption": concept.get("caption", ""),
+                        "trend": concept.get("trend", ""),
+                        "rationale_perf": concept.get("rationale_perf", ""),
+                        "audience_appeal": concept.get("audience_appeal", ""),
+                        "markets_product": concept.get("markets_product", ""),
+                    },
+                    tool_context=tool_context,
+                )
+                results["generated_images"].append(result["artifact_key"])
+            else:
+                results["errors"].append(f"Image '{concept.get('name')}': {result}")
+        except Exception as e:
+            results["errors"].append(f"Image '{concept.get('name')}': {e}")
+
+    async def _gen_video(concept):
+        try:
+            result = await generate_video(
+                prompt=concept["prompt"],
+                concept_name=concept.get("name", "unnamed"),
+                tool_context=tool_context,
+            )
+            if result and result.get("status") == "ok":
+                await save_vid_artifact_key(
+                    artifact_key_dict={
+                        "artifact_key": result["artifact_key"],
+                        "vid_prompt": concept["prompt"],
+                        "concept": concept.get("concept", ""),
+                        "headline": concept.get("headline", ""),
+                        "caption": concept.get("caption", ""),
+                        "trend": concept.get("trend", ""),
+                        "rationale_perf": concept.get("rationale_perf", ""),
+                        "audience_appeal": concept.get("audience_appeal", ""),
+                        "markets_product": concept.get("markets_product", ""),
+                    },
+                    tool_context=tool_context,
+                )
+                results["generated_videos"].append(result["artifact_key"])
+            else:
+                results["errors"].append(f"Video '{concept.get('name')}': {result}")
+        except Exception as e:
+            results["errors"].append(f"Video '{concept.get('name')}': {e}")
+
+    tasks = []
+    for c in image_concepts:
+        tasks.append(_gen_image(c))
+    for c in video_concepts:
+        tasks.append(_gen_video(c))
+
+    logging.info(f"generate_visuals_batch: launching {len(image_concepts)} images + {len(video_concepts)} videos in parallel")
+    await asyncio.gather(*tasks)
+    logging.info(f"generate_visuals_batch: completed. Images: {len(results['generated_images'])}, Videos: {len(results['generated_videos'])}, Errors: {len(results['errors'])}")
+
+    return {
+        "status": "ok" if not results["errors"] else "partial",
+        "generated_images": results["generated_images"],
+        "generated_videos": results["generated_videos"],
+        "errors": results["errors"],
+        "total_generated": len(results["generated_images"]) + len(results["generated_videos"]),
+    }
 
 
 def extract_single_frame(video_path, frame_number, output_image_path) -> str:

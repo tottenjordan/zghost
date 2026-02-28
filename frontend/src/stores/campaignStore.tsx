@@ -18,6 +18,10 @@ export interface PipelineSession {
   status: 'running' | 'completed' | 'error' | 'idle';
   startedAt: number;
   completedAt?: number;
+  config?: CampaignConfig;
+  commercialDuration?: 10 | 15 | 30;
+  searchTrends?: SearchTrend[];
+  ytTrends?: YTTrend[];
 }
 
 export interface CampaignStoreState {
@@ -29,6 +33,7 @@ export interface CampaignStoreState {
   activeSessionIndex: number;
   commercialDuration: 10 | 15 | 30;
   autoStart: boolean;
+  autopilot: boolean;
   // Backward compatibility - derived from active session
   sessionId: string | null;
   pipelineStatus: 'idle' | 'running' | 'completed' | 'error';
@@ -39,6 +44,7 @@ interface CampaignStoreActions {
   setSelectedTrends: (search: SearchTrend[], yt: YTTrend[]) => void;
   toggleActiveRubric: (rubric: ExtendedRubric) => void;
   setAutoStart: (autoStart: boolean) => void;
+  setAutopilot: (autopilot: boolean) => void;
   setSessionId: (id: string | null) => void;
   setPipelineStatus: (status: CampaignStoreState['pipelineStatus']) => void;
   addSession: (session: PipelineSession) => void;
@@ -61,6 +67,7 @@ const DEFAULT_STATE: CampaignStoreState = {
   activeSessionIndex: -1,
   commercialDuration: 30,
   autoStart: false,
+  autopilot: false,
   sessionId: null,
   pipelineStatus: 'idle',
 };
@@ -141,6 +148,10 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
 
   const setAutoStart = useCallback((autoStart: boolean) => {
     setState((prev) => ({ ...prev, autoStart }));
+  }, []);
+
+  const setAutopilot = useCallback((autopilot: boolean) => {
+    setState((prev) => ({ ...prev, autopilot }));
   }, []);
 
   const setSessionId = useCallback((id: string | null) => {
@@ -277,6 +288,7 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     setSelectedTrends,
     toggleActiveRubric,
     setAutoStart,
+    setAutopilot,
     setSessionId,
     setPipelineStatus,
     addSession,

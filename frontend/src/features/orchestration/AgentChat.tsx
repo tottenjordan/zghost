@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, CheckCircle, XCircle, ChevronDown, Loader2 } from 'lucide-react';
+import { Send, CheckCircle, XCircle, ChevronDown, Loader2, FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { cn } from '../../lib/utils';
 import type { AgentEvent } from '../../types/agents';
@@ -9,6 +10,7 @@ const USER_ID = 'default-user';
 interface AgentChatProps {
   sessionId: string | null;
   events: AgentEvent[];
+  autopilot?: boolean;
   onWaitingForInput?: (waiting: boolean) => void;
   onSendMessage?: (message: string) => void;
 }
@@ -78,7 +80,7 @@ function deduplicateMessages(messages: ChatMessage[]): ChatMessage[] {
   return deduplicated;
 }
 
-export function AgentChat({ sessionId, events, onWaitingForInput, onSendMessage }: AgentChatProps) {
+export function AgentChat({ sessionId, events, autopilot, onWaitingForInput, onSendMessage }: AgentChatProps) {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -168,16 +170,45 @@ export function AgentChat({ sessionId, events, onWaitingForInput, onSendMessage 
     onWaitingForInput?.(isWaitingForApproval);
   }, [isWaitingForApproval, onWaitingForInput]);
 
+  // Autopilot: auto-send approval after 3s delay
+  const autopilotTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (autopilot && isWaitingForApproval && !isSending && !sending) {
+      autopilotTimerRef.current = setTimeout(() => {
+        handleSend('Looks good, proceed with all options.', true);
+      }, 3000);
+    }
+    return () => {
+      if (autopilotTimerRef.current) clearTimeout(autopilotTimerRef.current);
+    };
+  }, [autopilot, isWaitingForApproval, isSending, sending, handleSend]);
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800 flex-shrink-0">
         <span className="text-sm font-medium text-zinc-300">Agent Chat</span>
-        {isWaitingForApproval && (
-          <span className="px-2 py-0.5 rounded text-xs bg-amber-950/50 border border-amber-800/50 text-amber-400 animate-pulse">
-            Awaiting response
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {autopilot && (
+            <span className="px-2 py-0.5 rounded text-xs bg-blue-950/50 border border-blue-800/50 text-blue-400">
+              {isWaitingForApproval ? 'Autopilot: auto-approving...' : 'Autopilot ON'}
+            </span>
+          )}
+          {sessionId && (
+            <Link
+              to={`/narrative?session=${sessionId}`}
+              className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              <FileText className="w-3 h-3" />
+              Open in Narrative
+            </Link>
+          )}
+          {isWaitingForApproval && !autopilot && (
+            <span className="px-2 py-0.5 rounded text-xs bg-amber-950/50 border border-amber-800/50 text-amber-400 animate-pulse">
+              Awaiting response
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
