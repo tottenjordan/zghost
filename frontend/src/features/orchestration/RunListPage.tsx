@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -14,6 +14,8 @@ import {
   ChevronRight,
   Zap,
   Bot,
+  ArrowUpDown,
+  Filter,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCampaignStore } from '../../stores/campaignStore';
@@ -70,6 +72,51 @@ export function RunListPage() {
   } = useCampaignStore();
 
   const [creating, setCreating] = useState(false);
+
+  type SortField = 'time' | 'name' | 'status' | 'duration';
+  type SortDir = 'asc' | 'desc';
+  const [sortField, setSortField] = useState<SortField>('time');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [statusFilter, setStatusFilter] = useState<RunStatus | 'all'>('all');
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir(field === 'time' ? 'desc' : 'asc');
+    }
+  };
+
+  const sortedSessions = useMemo(() => {
+    let filtered = statusFilter === 'all'
+      ? [...sessions]
+      : sessions.filter((s) => s.status === statusFilter);
+
+    filtered.sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case 'time':
+          cmp = a.startedAt - b.startedAt;
+          break;
+        case 'name':
+          cmp = a.label.localeCompare(b.label);
+          break;
+        case 'status':
+          cmp = a.status.localeCompare(b.status);
+          break;
+        case 'duration': {
+          const dA = (a.completedAt || Date.now()) - a.startedAt;
+          const dB = (b.completedAt || Date.now()) - b.startedAt;
+          cmp = dA - dB;
+          break;
+        }
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return filtered;
+  }, [sessions, sortField, sortDir, statusFilter]);
 
   const handleNewRun = useCallback(async () => {
     if (creating) return;
@@ -202,6 +249,70 @@ export function RunListPage() {
         </div>
       </div>
 
+      {/* Sort & Filter Bar */}
+      {sessions.length > 1 && (
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Sort buttons */}
+          <div className="flex items-center gap-1">
+            <ArrowUpDown className="w-3 h-3 text-zinc-500 mr-1" />
+            {(['time', 'name', 'status', 'duration'] as SortField[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => toggleSort(f)}
+                className={cn(
+                  'px-2 py-0.5 rounded text-xs transition-colors',
+                  sortField === f
+                    ? 'bg-zinc-700 text-zinc-200 font-medium'
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+                )}
+              >
+                {f === 'time' ? 'Time' : f === 'name' ? 'Name' : f === 'status' ? 'Status' : 'Duration'}
+                {sortField === f && (
+                  <span className="ml-0.5">{sortDir === 'asc' ? '\u2191' : '\u2193'}</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="w-px h-4 bg-zinc-700" />
+
+          {/* Status filter */}
+          <div className="flex items-center gap-1">
+            <Filter className="w-3 h-3 text-zinc-500 mr-1" />
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={cn(
+                'px-2 py-0.5 rounded text-xs transition-colors',
+                statusFilter === 'all'
+                  ? 'bg-zinc-700 text-zinc-200 font-medium'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+              )}
+            >
+              All
+            </button>
+            {(['running', 'completed', 'error', 'idle'] as RunStatus[]).map((s) => {
+              const count = sessions.filter((sess) => sess.status === s).length;
+              if (count === 0) return null;
+              const cfg = STATUS_CONFIG[s];
+              return (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(statusFilter === s ? 'all' : s)}
+                  className={cn(
+                    'px-2 py-0.5 rounded text-xs transition-colors',
+                    statusFilter === s
+                      ? `${cfg.bgColor} ${cfg.color} font-medium`
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+                  )}
+                >
+                  {cfg.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Run List */}
       {sessions.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
@@ -227,7 +338,8 @@ export function RunListPage() {
         </div>
       ) : (
         <div className="flex-1 overflow-auto space-y-2">
-          {sessions.map((session, index) => {
+          {sortedSessions.map((session) => {
+            const index = sessions.findIndex((s) => s.id === session.id);
             const statusConfig = STATUS_CONFIG[session.status] || STATUS_CONFIG.idle;
             const StatusIcon = statusConfig.icon;
             const isRunning = session.status === 'running';

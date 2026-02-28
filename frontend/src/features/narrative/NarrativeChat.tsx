@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { Message } from './types';
 import { Button } from '../../components/ui/Button';
 import { Spinner } from '../../components/ui/Spinner';
+import { Markdown } from '../../components/ui/Markdown';
 
 interface NarrativeChatProps {
   messages: Message[];
@@ -84,7 +85,11 @@ export function NarrativeChat({
                       : 'bg-zinc-800 text-zinc-100'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                  {message.role === 'assistant' ? (
+                    <Markdown content={message.content} />
+                  ) : (
+                    <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                  )}
 
                   {/* Media Preview */}
                   {message.mediaPreview && (

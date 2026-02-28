@@ -33,10 +33,11 @@ function RichText({ text, sessionId }: { text: string; sessionId?: string | null
         </Link>
       );
     } else if (isMedia) {
+      const studioPath = sessionId ? `/studio?session=${sessionId}` : '/studio';
       parts.push(
         <Link
           key={match.index}
-          to="/studio"
+          to={studioPath}
           className="inline-flex items-center gap-1 text-green-400 hover:text-green-300 underline underline-offset-2"
         >
           <Film className="w-3 h-3 inline" />

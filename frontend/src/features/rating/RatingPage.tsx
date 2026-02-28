@@ -4,6 +4,7 @@ import { RaterView } from './RaterView';
 import { RubricLibrary } from './RubricLibrary';
 import { RubricEditor } from './RubricEditor';
 import { RatingSummary } from './RatingSummary';
+import { FocusGroupResults } from './FocusGroupResults';
 import { useRating } from './useRating';
 import { useCampaignStore } from '../../stores/campaignStore';
 import { api } from '../../services/api';
@@ -218,7 +219,13 @@ export function RatingPage() {
         </TabsContent>
 
         <TabsContent value="results">
-          <div className="mt-4">
+          <div className="mt-4 space-y-6">
+            {/* Focus Group Results */}
+            {selectedSessionId && (
+              <FocusGroupResults sessionId={selectedSessionId} />
+            )}
+
+            {/* Manual Rating Results */}
             <RatingSummary ratings={ratings} rubrics={rubrics} />
           </div>
         </TabsContent>

@@ -456,7 +456,7 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
             </h3>
             {videos.length > 0 && (
               <Link
-                to="/studio"
+                to={`/studio?session=${sessionId}`}
                 className="flex items-center gap-1.5 text-xs text-green-400 hover:text-green-300 px-2 py-1 rounded border border-green-800/50 bg-green-950/30 hover:bg-green-950/50 transition-colors"
               >
                 <Film className="w-3 h-3" />
@@ -479,7 +479,7 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
                   </span>
                   {media.type === 'image' && (
                     <Link
-                      to="/studio"
+                      to={`/studio?session=${sessionId}`}
                       className="text-xs text-blue-400 hover:text-blue-300"
                       title="Open in AV Studio"
                     >
