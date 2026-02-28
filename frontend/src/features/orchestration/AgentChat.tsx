@@ -41,8 +41,9 @@ function extractChatMessages(events: AgentEvent[]): ChatMessage[] {
 
     if (!text || text.trim().length === 0) continue;
 
-    // Skip tool calls and very short internal messages
-    if (event.type === 'tool_call' || event.type === 'tool_response') continue;
+    // Skip tool responses entirely; for tool_calls, only skip if no text
+    if (event.type === 'tool_response') continue;
+    if (event.type === 'tool_call' && !text) continue;
     if (text.length < 10 && !text.includes('?')) continue;
 
     const isUser = event.agentName === 'user';

@@ -8,7 +8,7 @@ export interface TimelineTask {
   id: string;
   agentName: string;
   label: string;
-  skill: 'root' | 'trends' | 'research' | 'creative' | 'av';
+  skill: 'root' | 'trends' | 'research' | 'creative' | 'av' | 'focus-group';
   status: 'pending' | 'running' | 'completed' | 'error';
   startTime?: number;
   endTime?: number;
@@ -28,6 +28,7 @@ const SKILL_META: Record<string, { label: string; color: string; bgColor: string
   research: { label: 'Market Research', color: 'text-blue-400', bgColor: 'bg-blue-950/20', borderColor: 'border-blue-800/40' },
   creative: { label: 'Ad Creative', color: 'text-purple-400', bgColor: 'bg-purple-950/20', borderColor: 'border-purple-800/40' },
   av: { label: 'AV Studio', color: 'text-amber-400', bgColor: 'bg-amber-950/20', borderColor: 'border-amber-800/40' },
+  'focus-group': { label: 'Focus Group', color: 'text-pink-400', bgColor: 'bg-pink-950/20', borderColor: 'border-pink-800/40' },
 };
 
 function formatElapsed(ms: number): string {
@@ -104,7 +105,7 @@ export function DAGTimeline({ events, pipelineStartTime, onSelectAgent, selected
 
   // Group tasks by skill
   const groups = useMemo(() => {
-    const skillOrder = ['root', 'trends', 'research', 'creative', 'av'];
+    const skillOrder = ['root', 'trends', 'research', 'creative', 'av', 'focus-group'];
     return skillOrder
       .map((skill) => ({
         skill,

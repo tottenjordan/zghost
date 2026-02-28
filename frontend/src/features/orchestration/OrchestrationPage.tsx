@@ -205,6 +205,16 @@ export function OrchestrationPage() {
     handleStart(1);
   }, [setCampaignConfig, setCommercialDuration, handleStart]);
 
+  // Sync autopilot state with backend session when toggled
+  const handleAutopilotChange = useCallback((enabled: boolean) => {
+    setAutopilot(enabled);
+    if (sessionId) {
+      api.updateSessionState(sessionId, { autopilot_mode: enabled }).catch((err) => {
+        console.warn('Failed to sync autopilot state:', err);
+      });
+    }
+  }, [sessionId, setAutopilot]);
+
   const handleStop = useCallback(() => {
     setSessionId(null);
     setPipelineStatus('idle');
@@ -481,7 +491,9 @@ export function OrchestrationPage() {
         readyToLaunch={ready}
         missingItems={missing}
         commercialDuration={commercialDuration}
+        autopilot={autopilot}
         onDurationChange={setCommercialDuration}
+        onAutopilotChange={handleAutopilotChange}
         onStart={handleStart}
         onStop={handleStop}
         onRefresh={handleRefresh}
@@ -697,7 +709,7 @@ export function OrchestrationPage() {
                     <p className="text-xs text-zinc-600 mt-0.5">Auto-approve all agent outputs without pausing</p>
                   </div>
                   <button
-                    onClick={() => setAutopilot(!autopilot)}
+                    onClick={() => handleAutopilotChange(!autopilot)}
                     disabled={isRunning}
                     className={cn(
                       'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',

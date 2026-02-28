@@ -9,7 +9,9 @@ interface PipelineControlsProps {
   readyToLaunch: boolean;
   missingItems: string[];
   commercialDuration: 10 | 15 | 30;
+  autopilot: boolean;
   onDurationChange: (duration: 10 | 15 | 30) => void;
+  onAutopilotChange: (autopilot: boolean) => void;
   onStart: (parallelCount: number) => void;
   onStop: () => void;
   onRefresh: () => void;
@@ -21,7 +23,9 @@ export function PipelineControls({
   readyToLaunch,
   missingItems,
   commercialDuration,
+  autopilot,
   onDurationChange,
+  onAutopilotChange,
   onStart,
   onStop,
   onRefresh,
@@ -122,6 +126,29 @@ export function PipelineControls({
           {parallelChanged && (
             <Check className="w-4 h-4 text-green-400 animate-in fade-in" />
           )}
+        </div>
+
+        {/* Autopilot toggle — always clickable */}
+        <div className="flex items-center gap-2 pl-2 border-l border-zinc-700">
+          <button
+            onClick={() => onAutopilotChange(!autopilot)}
+            className={cn(
+              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+              autopilot ? 'bg-blue-600' : 'bg-zinc-700'
+            )}
+            title={autopilot ? 'Autopilot ON — auto-approves all agent outputs' : 'Autopilot OFF — manual approval required'}
+          >
+            <span className={cn(
+              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+              autopilot ? 'translate-x-6' : 'translate-x-1'
+            )} />
+          </button>
+          <span className={cn(
+            'text-xs font-medium',
+            autopilot ? 'text-blue-400' : 'text-zinc-500'
+          )}>
+            {autopilot ? 'Autopilot' : 'Manual'}
+          </span>
         </div>
 
         {/* Control buttons */}
