@@ -20,30 +20,71 @@ React + TypeScript frontend for the multi-agent marketing intelligence system.
 npm install
 ```
 
-### Environment Setup
+### Running Locally (Recommended)
 
-Create a `.env` file based on `.env.example`:
+The easiest way to run the full stack is from the **project root**:
 
 ```bash
-cp .env.example .env
+cd ..          # navigate to zghost root
+./run_local.sh
 ```
 
-Edit `.env` to configure your backend API endpoint:
+This starts all backend services (API server, voice, memory) and the frontend dev server together. Open [http://localhost:5173](http://localhost:5173).
+
+See the [root README](../README.md) for full setup instructions.
+
+### Running the Frontend Only
+
+If the backend services are already running (or you're pointing at a Cloud Run deployment):
+
+```bash
+npm run dev
+```
+
+The app will be available at [http://localhost:5173](http://localhost:5173).
+
+### Services & Ports
+
+The frontend Vite dev server proxies all API requests to the backend automatically:
+
+| Route Pattern | Proxied To | Service |
+|---------------|-----------|---------|
+| `/api/memories/*` | `localhost:8082` | Memory Bank API |
+| `/api/*` | `localhost:8000` | API Server (ADK runner, sessions, SSE) |
+| `/ws/*` | `localhost:8081` | Voice WebSocket (Gemini Live) |
+
+This means you only need to open **port 5173** in your browser — all backend communication flows through Vite's proxy.
+
+To proxy to a Cloud Run deployment instead of local services:
+
+```bash
+VITE_CLOUD_BACKEND=true npm run dev
+```
+
+### Port Forwarding (Remote Development)
+
+If running on a remote machine (VM, Cloud Workstation, SSH):
+
+**VS Code Remote** — Open the **Ports** panel and forward port `5173`. VS Code usually auto-detects this. Since Vite proxies all backend routes, forwarding port 5173 alone is sufficient.
+
+**SSH tunnel**:
+
+```bash
+ssh -L 5173:localhost:5173 your-remote-host
+```
+
+Then open `http://localhost:5173` in your local browser.
+
+### Environment Setup
+
+Create a `.env` file for production builds:
 
 ```env
 VITE_API_BASE=http://localhost:8000
 VITE_APP_NAME=trends_and_insights_agent
 ```
 
-### Development
-
-Start the development server:
-
-```bash
-npm run dev
-```
-
-The app will be available at `http://localhost:5173`.
+For local development, no `.env` is required — the Vite proxy handles routing.
 
 ### Build for Production
 
@@ -61,16 +102,24 @@ npm run preview
 
 ### Testing
 
-Run tests:
+Run unit tests (Vitest):
 
 ```bash
 npm test
 ```
 
-Run tests with UI:
+Run unit tests with UI:
 
 ```bash
 npm run test:ui
+```
+
+Run Playwright E2E tests (requires all services running via `./run_local.sh`):
+
+```bash
+npx playwright test              # headless
+npx playwright test --headed     # watch in browser
+npx playwright show-report       # view HTML report
 ```
 
 ## Project Structure
@@ -126,7 +175,9 @@ src/
 
 ## Development Notes
 
-- The app proxies `/apps` and `/api` requests to the backend (port 8000)
+- Vite proxies `/api/memories/*` → port 8082, `/api/*` → port 8000, `/ws/*` → port 8081 (see `vite.config.ts`)
+- `/api/memories` proxy rule must come **before** `/api` in the config, or memory requests route to the wrong service
 - Dark mode is the default theme
 - All components use Tailwind CSS with a zinc/slate palette and blue accents
 - Type-only imports are required due to `verbatimModuleSyntax` in tsconfig
+- The API server takes ~2-3 minutes to finish loading `root_agent` — the UI loads instantly but pipelines won't run until the backend is ready

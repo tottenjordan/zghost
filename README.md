@@ -124,6 +124,99 @@ lsof -i :8000
 
 </details>
 
+### Option B: Full stack with frontend UI
+
+For the full experience (campaign wizard, orchestration dashboard, voice assistant), use `run_local.sh` which starts all services:
+
+```bash
+./run_local.sh
+```
+
+This launches 4 services:
+
+| Service | Port | Description |
+|---------|------|-------------|
+| API Server | `8000` | Custom FastAPI backend (ADK runner, session management, SSE streaming) |
+| Voice Server | `8081` | WebSocket server for Gemini Live voice assistant |
+| Memory API | `8082` | FastAPI server for Vertex AI Memory Bank |
+| Frontend | `5173` | Vite + React dev server |
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+> **Note:** The API server takes ~2-3 minutes to initialize (it loads the full agent tree on startup). The frontend UI will load immediately, but pipeline execution won't work until the API server finishes importing `root_agent`.
+
+Press `Ctrl+C` to stop all services.
+
+<details>
+  <summary>If a port is already in use</summary>
+
+Find and kill the process occupying the port:
+
+```bash
+# Check which process is using a port
+lsof -i :8000   # or :5173, :8081, :8082
+
+# Kill it
+kill -9 <PID>
+```
+
+Alternatively, kill all zghost-related processes:
+
+```bash
+pkill -f "api_server|voice_server|memory_api|vite"
+```
+
+</details>
+
+<details>
+  <summary>Opening ports in a remote IDE (VS Code, Cloud Workstations, SSH)</summary>
+
+If you're developing on a remote machine (VM, Cloud Workstation, or SSH session), you need to forward the ports to your local browser.
+
+**VS Code Remote (recommended)**
+
+VS Code automatically detects listening ports. Open the **Ports** panel (`Ctrl+Shift+P` → "Ports: Focus on Ports View") and forward:
+
+| Port | Label |
+|------|-------|
+| `5173` | Frontend (this is the one you open in the browser) |
+| `8000` | API Server (proxied by Vite — no need to forward separately) |
+| `8081` | Voice WebSocket (proxied by Vite) |
+| `8082` | Memory API (proxied by Vite) |
+
+Only port **5173** needs to be forwarded if you access the app through the frontend. Vite's dev proxy (`vite.config.ts`) routes `/api/*`, `/ws/*`, and `/api/memories/*` to the correct backend ports automatically.
+
+**Manual SSH port forwarding**
+
+```bash
+# Forward just the frontend (sufficient for most use cases)
+ssh -L 5173:localhost:5173 your-remote-host
+
+# Forward all ports (if you need direct backend access)
+ssh -L 5173:localhost:5173 \
+    -L 8000:localhost:8000 \
+    -L 8081:localhost:8081 \
+    -L 8082:localhost:8082 \
+    your-remote-host
+```
+
+**Google Cloud Workstations**
+
+Cloud Workstations automatically expose forwarded ports. Use the built-in port forwarding in the IDE, or access via the Workstation proxy URL.
+
+**tmux / screen users**
+
+Run `./run_local.sh` in a persistent tmux session so services survive terminal disconnects:
+
+```bash
+tmux new -s zghost
+./run_local.sh
+# Ctrl+B, D to detach
+# tmux attach -t zghost to reconnect
+```
+
+</details>
+
 ## How it works
 
 <details>
