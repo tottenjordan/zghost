@@ -1,9 +1,71 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, CheckCircle, XCircle, ChevronDown, Loader2, FileText, ArrowRight } from 'lucide-react';
+import { Send, CheckCircle, XCircle, ChevronDown, Loader2, FileText, ArrowRight, Film } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { cn } from '../../lib/utils';
 import type { AgentEvent } from '../../types/agents';
+
+/** Render text with clickable GCS links (PDF → Narrative, media → AV Studio) */
+function RichText({ text, sessionId }: { text: string; sessionId?: string | null }) {
+  // Match gs:// URLs
+  const gcsPattern = /gs:\/\/[^\s)]+/g;
+  const parts: (string | JSX.Element)[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = gcsPattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const url = match[0];
+    const isPdf = url.endsWith('.pdf');
+    const isMedia = /\.(mp4|webm|mov|png|jpg|jpeg|gif|webp|mp3|wav)$/i.test(url);
+
+    if (isPdf && sessionId) {
+      parts.push(
+        <Link
+          key={match.index}
+          to={`/narrative?session=${sessionId}`}
+          className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 underline underline-offset-2"
+        >
+          <FileText className="w-3 h-3 inline" />
+          View in Narrative Studio
+        </Link>
+      );
+    } else if (isMedia) {
+      parts.push(
+        <Link
+          key={match.index}
+          to="/studio"
+          className="inline-flex items-center gap-1 text-green-400 hover:text-green-300 underline underline-offset-2"
+        >
+          <Film className="w-3 h-3 inline" />
+          {url.split('/').pop()}
+        </Link>
+      );
+    } else {
+      const httpUrl = url.replace('gs://', 'https://storage.googleapis.com/');
+      parts.push(
+        <a
+          key={match.index}
+          href={httpUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+        >
+          {url.split('/').pop()}
+        </a>
+      );
+    }
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return <>{parts}</>;
+}
 
 const USER_ID = 'default-user';
 
@@ -288,9 +350,10 @@ export function AgentChat({ sessionId, events, autopilot, onWaitingForInput, onS
                   </div>
                 )}
                 <div className="whitespace-pre-wrap text-xs leading-relaxed">
-                  {msg.text.length > 500
-                    ? msg.text.slice(0, 500) + '...'
-                    : msg.text}
+                  <RichText
+                    text={msg.text.length > 500 ? msg.text.slice(0, 500) + '...' : msg.text}
+                    sessionId={sessionId}
+                  />
                 </div>
               </div>
             )

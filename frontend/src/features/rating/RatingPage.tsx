@@ -6,6 +6,9 @@ import { RubricEditor } from './RubricEditor';
 import { RatingSummary } from './RatingSummary';
 import { useRating } from './useRating';
 import { useCampaignStore } from '../../stores/campaignStore';
+import { api } from '../../services/api';
+import { cn } from '../../lib/utils';
+import { ChevronDown } from 'lucide-react';
 import type { ExtendedRubric } from './rubric-templates';
 
 type EditorMode = 'library' | 'create' | 'edit';
@@ -21,10 +24,20 @@ export function RatingPage() {
     submitRating,
   } = useRating();
 
-  const { activeRubrics, toggleActiveRubric } = useCampaignStore();
+  const { activeRubrics, toggleActiveRubric, sessions, sessionId: activeSessionId } = useCampaignStore();
 
+  const [selectedSessionId, setSelectedSessionId] = useState<string>(activeSessionId || '');
+  const [sessionState, setSessionState] = useState<Record<string, any>>({});
   const [editorMode, setEditorMode] = useState<EditorMode>('library');
   const [editingRubric, setEditingRubric] = useState<ExtendedRubric | undefined>();
+
+  // Load session state when run is selected
+  useEffect(() => {
+    if (!selectedSessionId) return;
+    api.getSessionState(selectedSessionId)
+      .then((result: any) => setSessionState(result.state || result || {}))
+      .catch(() => setSessionState({}));
+  }, [selectedSessionId]);
 
   // Auto-activate rubric when there's only one
   useEffect(() => {
@@ -107,11 +120,39 @@ export function RatingPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="mb-2 text-2xl font-bold text-zinc-50">Rating & Evaluation</h1>
-        <p className="text-zinc-400">
-          Configure rubrics and evaluate generated artifacts against custom criteria
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="mb-2 text-2xl font-bold text-zinc-50">Rating & Evaluation</h1>
+          <p className="text-zinc-400">
+            Configure rubrics and evaluate generated artifacts against custom criteria
+          </p>
+        </div>
+
+        {/* Run selector */}
+        {sessions.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-500">Run:</span>
+            <div className="relative">
+              <select
+                value={selectedSessionId}
+                onChange={(e) => setSelectedSessionId(e.target.value)}
+                className={cn(
+                  'appearance-none pl-3 pr-8 py-1.5 rounded-lg border text-xs',
+                  'bg-zinc-900 border-zinc-700 text-zinc-300',
+                  'focus:outline-none focus:ring-1 focus:ring-blue-500'
+                )}
+              >
+                <option value="" disabled>Select a run...</option>
+                {sessions.map((s) => (
+                  <option key={s.sessionId} value={s.sessionId}>
+                    {s.label} — {s.config?.brand || 'No brand'} ({s.status})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500 pointer-events-none" />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Active rubric banner */}

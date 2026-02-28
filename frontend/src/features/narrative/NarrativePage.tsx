@@ -1,19 +1,28 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { NarrativeChat } from './NarrativeChat';
 import { StoryboardView } from './StoryboardView';
 import { NarrativeArc } from './NarrativeArc';
 import { useNarrative } from './useNarrative';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { Button } from '../../components/ui/Button';
-import { CheckCircle, SkipForward } from 'lucide-react';
+import { CheckCircle, SkipForward, ChevronDown } from 'lucide-react';
+import { useCampaignStore } from '../../stores/campaignStore';
+import { cn } from '../../lib/utils';
 
 export function NarrativePage() {
   const navigate = useNavigate();
-  const [sessionId] = useState<string | null>(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('session') || null;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { sessions } = useCampaignStore();
+
+  const [sessionId, setSessionId] = useState<string | null>(() => {
+    return searchParams.get('session') || null;
   });
+
+  const handleSelectSession = (newSessionId: string) => {
+    setSessionId(newSessionId);
+    setSearchParams({ session: newSessionId });
+  };
 
   const {
     messages,
@@ -55,15 +64,40 @@ export function NarrativePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="mb-2 text-3xl font-bold text-zinc-50">
-          Narrative Interface
-        </h1>
-        <p className="text-zinc-400">
-          Collaborate with AI to craft and refine your commercial's story
-        </p>
-        {sessionId && (
-          <p className="mt-1 text-xs text-zinc-600">Session: {sessionId}</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="mb-2 text-3xl font-bold text-zinc-50">
+            Narrative Interface
+          </h1>
+          <p className="text-zinc-400">
+            Collaborate with AI to craft and refine your commercial's story
+          </p>
+        </div>
+
+        {/* Run selector */}
+        {sessions.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-500">Run:</span>
+            <div className="relative">
+              <select
+                value={sessionId || ''}
+                onChange={(e) => e.target.value && handleSelectSession(e.target.value)}
+                className={cn(
+                  'appearance-none pl-3 pr-8 py-1.5 rounded-lg border text-xs',
+                  'bg-zinc-900 border-zinc-700 text-zinc-300',
+                  'focus:outline-none focus:ring-1 focus:ring-blue-500'
+                )}
+              >
+                <option value="" disabled>Select a run...</option>
+                {sessions.map((s) => (
+                  <option key={s.sessionId} value={s.sessionId}>
+                    {s.label} — {s.config?.brand || 'No brand'} ({s.status})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500 pointer-events-none" />
+            </div>
+          </div>
         )}
       </div>
 

@@ -29,7 +29,7 @@ export function Tabs({
 
   return (
     <TabsContext.Provider value={{ activeTab, setActiveTab }}>
-      <div className="w-full">{children}</div>
+      <div className="w-full flex flex-col h-full">{children}</div>
     </TabsContext.Provider>
   );
 }
@@ -44,7 +44,7 @@ export function TabsList({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1 rounded-lg bg-zinc-800/60 p-1 backdrop-blur-sm',
+        'inline-flex items-center gap-1 rounded-lg bg-zinc-800/60 p-1 backdrop-blur-sm flex-shrink-0',
         className
       )}
     >
@@ -97,5 +97,5 @@ export function TabsContent({
   const { activeTab } = context;
   if (activeTab !== value) return null;
 
-  return <div className={cn('mt-2', className)}>{children}</div>;
+  return <div className={cn('mt-2 min-h-0', className)}>{children}</div>;
 }
