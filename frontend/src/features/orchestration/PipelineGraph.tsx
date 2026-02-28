@@ -15,6 +15,45 @@ import type { Node } from 'reactflow';
 /** Set of agent names known in the pipeline config */
 const KNOWN_AGENT_NAMES = new Set(PIPELINE_NODES.map((n) => n.data.agentName));
 
+/**
+ * Build a map of agent → all descendant agents using PIPELINE_EDGES.
+ * Reused across renders (static DAG structure).
+ */
+function buildDescendantMap(): Map<string, string[]> {
+  const nodeIdToAgent = new Map<string, string>();
+  for (const node of PIPELINE_NODES) {
+    nodeIdToAgent.set(node.id, node.data.agentName);
+  }
+  const children = new Map<string, string[]>();
+  for (const edge of PIPELINE_EDGES) {
+    const src = nodeIdToAgent.get(edge.source);
+    const tgt = nodeIdToAgent.get(edge.target);
+    if (src && tgt) {
+      const list = children.get(src) || [];
+      list.push(tgt);
+      children.set(src, list);
+    }
+  }
+  const descendants = new Map<string, string[]>();
+  for (const node of PIPELINE_NODES) {
+    const agent = node.data.agentName;
+    const visited = new Set<string>();
+    const queue = [...(children.get(agent) || [])];
+    for (const child of queue) {
+      if (!visited.has(child)) {
+        visited.add(child);
+        for (const gc of (children.get(child) || [])) {
+          if (!visited.has(gc)) queue.push(gc);
+        }
+      }
+    }
+    if (visited.size > 0) descendants.set(agent, Array.from(visited));
+  }
+  return descendants;
+}
+
+const DESCENDANT_MAP = buildDescendantMap();
+
 /** Infer sub-agent activity from tool_call / tool_response events */
 function inferSubAgentStatus(events: AgentEvent[]): Map<string, { status: AgentStatus; start: number; end?: number }> {
   const inferred = new Map<string, { status: AgentStatus; start: number; end?: number }>();
@@ -39,6 +78,18 @@ function inferSubAgentStatus(events: AgentEvent[]): Map<string, { status: AgentS
         } else {
           inferred.set(name, { status: 'completed', start: event.timestamp, end: event.timestamp });
         }
+      }
+    }
+  }
+
+  // Cascade inferred status to all descendants in the DAG.
+  // AgentTool isolates inner events, so we cascade parent status to children.
+  for (const [parentName, info] of inferred) {
+    const descendants = DESCENDANT_MAP.get(parentName);
+    if (!descendants) continue;
+    for (const desc of descendants) {
+      if (!inferred.has(desc)) {
+        inferred.set(desc, { ...info });
       }
     }
   }

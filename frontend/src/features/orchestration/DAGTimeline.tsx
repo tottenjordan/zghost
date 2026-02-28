@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { PIPELINE_NODES } from './pipeline-config';
+import { PIPELINE_NODES, PIPELINE_EDGES } from './pipeline-config';
 import type { AgentEvent } from '../../types/agents';
 
 export interface TimelineTask {
@@ -79,6 +79,52 @@ function inferSubAgentEvents(events: AgentEvent[]): Map<string, { start: number;
   return inferred;
 }
 
+/**
+ * Build a map of agent → all descendant agents using PIPELINE_EDGES.
+ * Used to cascade inferred status from AgentTool-wrapped agents to their
+ * inner sub-agents (which never emit their own SSE events).
+ */
+function buildDescendantMap(): Map<string, string[]> {
+  // Build adjacency list: source agentName → target agentNames
+  const children = new Map<string, string[]>();
+  const nodeIdToAgent = new Map<string, string>();
+  for (const node of PIPELINE_NODES) {
+    nodeIdToAgent.set(node.id, node.data.agentName);
+  }
+  for (const edge of PIPELINE_EDGES) {
+    const src = nodeIdToAgent.get(edge.source);
+    const tgt = nodeIdToAgent.get(edge.target);
+    if (src && tgt) {
+      const list = children.get(src) || [];
+      list.push(tgt);
+      children.set(src, list);
+    }
+  }
+
+  // For each node, compute all reachable descendants via BFS
+  const descendants = new Map<string, string[]>();
+  for (const node of PIPELINE_NODES) {
+    const agent = node.data.agentName;
+    const visited = new Set<string>();
+    const queue = children.get(agent) || [];
+    for (const child of queue) {
+      if (!visited.has(child)) {
+        visited.add(child);
+        const grandchildren = children.get(child) || [];
+        for (const gc of grandchildren) {
+          if (!visited.has(gc)) queue.push(gc);
+        }
+      }
+    }
+    if (visited.size > 0) {
+      descendants.set(agent, Array.from(visited));
+    }
+  }
+  return descendants;
+}
+
+const DESCENDANT_MAP = buildDescendantMap();
+
 /** Convert raw events into timeline tasks */
 function buildTimelineTasks(events: AgentEvent[]): TimelineTask[] {
   // 1. Collect events by agentName (direct matches)
@@ -91,6 +137,21 @@ function buildTimelineTasks(events: AgentEvent[]): TimelineTask[] {
 
   // 2. Infer sub-agent activity from tool_call/tool_response events
   const inferred = inferSubAgentEvents(events);
+
+  // 3. Cascade inferred status to descendants.
+  // AgentTool creates an isolated runner — inner sub-agent events never reach
+  // the outer SSE stream.  When we detect a parent as running/completed via
+  // inference, cascade that status to all its DAG descendants.
+  for (const [parentName, info] of inferred) {
+    const descendants = DESCENDANT_MAP.get(parentName);
+    if (!descendants) continue;
+    for (const desc of descendants) {
+      if (!inferred.has(desc)) {
+        // Inherit parent's start/end — descendants run within the parent's window
+        inferred.set(desc, { start: info.start, end: info.end });
+      }
+    }
+  }
 
   return PIPELINE_NODES.map((node) => {
     const agentName = node.data.agentName;
