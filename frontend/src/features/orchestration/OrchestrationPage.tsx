@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, FileText, Film, AlertCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ChevronDown, ChevronUp, FileText, Film, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { PipelineGraph } from './PipelineGraph';
 import { DAGTimeline } from './DAGTimeline';
 import { EventStream } from './EventStream';
@@ -10,8 +10,8 @@ import { AgentChat } from './AgentChat';
 import { ResultsGallery } from './ResultsGallery';
 import { EvaluationPanel } from './EvaluationPanel';
 import { PipelineControls } from './PipelineControls';
-import { SessionTabBar } from './SessionTabBar';
 import { useOrchestration } from './useOrchestration';
+// SessionTabBar replaced by RunListPage
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { api } from '../../services/api';
 import { useCampaignStore } from '../../stores/campaignStore';
@@ -21,6 +21,8 @@ import type { AgentEventType } from '../../types/agents';
 const USER_ID = 'default-user';
 
 export function OrchestrationPage() {
+  const { runId } = useParams<{ runId: string }>();
+  const navigate = useNavigate();
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
   const [eventStreamOpen, setEventStreamOpen] = useState(true);
@@ -53,6 +55,8 @@ export function OrchestrationPage() {
     setAutopilot,
     isReadyToLaunch,
     setCampaignConfig,
+    getSessionById,
+    updateSession,
   } = useCampaignStore();
 
   const isRunning = pipelineStatus === 'running';
@@ -194,17 +198,6 @@ export function OrchestrationPage() {
     }
   }, [config, selectedSearchTrends, selectedYtTrends, activeRubrics, commercialDuration, sessions, addSession, setSessionId, setPipelineStatus]);
 
-  const handleDuplicate = useCallback((session: import('../../stores/campaignStore').PipelineSession) => {
-    // Restore saved config from the session, then start a new run
-    if (session.config) {
-      setCampaignConfig(session.config);
-    }
-    if (session.commercialDuration) {
-      setCommercialDuration(session.commercialDuration);
-    }
-    handleStart(1);
-  }, [setCampaignConfig, setCommercialDuration, handleStart]);
-
   // Sync autopilot state with backend session when toggled
   const handleAutopilotChange = useCallback((enabled: boolean) => {
     setAutopilot(enabled);
@@ -286,6 +279,21 @@ export function OrchestrationPage() {
     window.addEventListener('voice-action', handler);
     return () => window.removeEventListener('voice-action', handler);
   }, []);
+
+  // Initialize from runId URL param
+  useEffect(() => {
+    if (!runId) return;
+    const session = getSessionById(runId);
+    if (session) {
+      const idx = sessions.findIndex(s => s.id === runId || s.sessionId === runId);
+      if (idx >= 0) {
+        setActiveSession(idx);
+        setSessionId(session.sessionId);
+        if (session.status === 'running') setPipelineStatus('running');
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runId]);
 
   // Auto-start pipeline when navigated from wizard with autoStart flag
   // Bypass isReadyToLaunch() — the wizard already validated before setting autoStart
@@ -384,9 +392,20 @@ export function OrchestrationPage() {
       {/* Header + collapsible config panel */}
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold">Agent Orchestration</h1>
-            <p className="text-xs text-zinc-500 mt-0.5">Monitor and control the agent pipeline</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/orchestration')}
+              className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
+              title="Back to runs"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-xl font-bold">
+                {sessions[activeSessionIndex]?.label || 'Run Detail'}
+              </h1>
+              <p className="text-xs text-zinc-500 mt-0.5">Monitor and control the agent pipeline</p>
+            </div>
           </div>
           <div className="flex items-center gap-3 text-xs">
             <span className={cn('px-2 py-0.5 rounded border', config.brand ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-amber-700/50 bg-amber-950/30 text-amber-400')}>
@@ -476,17 +495,6 @@ export function OrchestrationPage() {
           </div>
         )}
       </div>
-
-      {/* Session Tab Bar */}
-      <SessionTabBar
-        sessions={sessions}
-        activeSessionIndex={activeSessionIndex}
-        onSelectSession={setActiveSession}
-        onRemoveSession={removeSession}
-        onDuplicate={handleDuplicate}
-        onNewSession={() => handleStart(1)}
-        isRunning={isRunning}
-      />
 
       {/* Pipeline Controls */}
       <PipelineControls

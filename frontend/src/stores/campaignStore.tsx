@@ -11,17 +11,25 @@ export interface CampaignConfig {
   key_selling_points: string;
 }
 
+export type RunStatus = 'idle' | 'configuring' | 'queued' | 'running' | 'paused' | 'completed' | 'error';
+
 export interface PipelineSession {
   id: string;
   sessionId: string;
   label: string;
-  status: 'running' | 'completed' | 'error' | 'idle';
+  status: RunStatus;
   startedAt: number;
   completedAt?: number;
   config?: CampaignConfig;
   commercialDuration?: 10 | 15 | 30;
+  autopilot?: boolean;
+  parallelStreams?: number;
   searchTrends?: SearchTrend[];
   ytTrends?: YTTrend[];
+  /** Number of events received so far */
+  eventCount?: number;
+  /** Phase labels for progress display */
+  currentPhase?: string;
 }
 
 export interface CampaignStoreState {
@@ -36,7 +44,7 @@ export interface CampaignStoreState {
   autopilot: boolean;
   // Backward compatibility - derived from active session
   sessionId: string | null;
-  pipelineStatus: 'idle' | 'running' | 'completed' | 'error';
+  pipelineStatus: RunStatus;
 }
 
 interface CampaignStoreActions {
@@ -51,6 +59,8 @@ interface CampaignStoreActions {
   removeSession: (sessionId: string) => void;
   setActiveSession: (index: number) => void;
   updateSessionStatus: (sessionId: string, status: PipelineSession['status']) => void;
+  updateSession: (sessionId: string, updates: Partial<PipelineSession>) => void;
+  getSessionById: (id: string) => PipelineSession | undefined;
   setCommercialDuration: (duration: 10 | 15 | 30) => void;
   reset: () => void;
   isReadyToLaunch: () => { ready: boolean; missing: string[] };
@@ -262,6 +272,25 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const updateSession = useCallback((sessionId: string, updates: Partial<PipelineSession>) => {
+    setState((prev) => {
+      const idx = prev.sessions.findIndex((s) => s.sessionId === sessionId);
+      if (idx === -1) return prev;
+      const updatedSessions = [...prev.sessions];
+      updatedSessions[idx] = { ...updatedSessions[idx], ...updates };
+      const isActive = prev.activeSessionIndex === idx;
+      return {
+        ...prev,
+        sessions: updatedSessions,
+        ...(isActive && updates.status && { pipelineStatus: updates.status }),
+      };
+    });
+  }, []);
+
+  const getSessionById = useCallback((id: string) => {
+    return state.sessions.find((s) => s.id === id || s.sessionId === id);
+  }, [state.sessions]);
+
   const setCommercialDuration = useCallback((duration: 10 | 15 | 30) => {
     setState((prev) => ({ ...prev, commercialDuration: duration }));
   }, []);
@@ -295,6 +324,8 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     removeSession,
     setActiveSession,
     updateSessionStatus,
+    updateSession,
+    getSessionById,
     setCommercialDuration,
     reset,
     isReadyToLaunch,

@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell';
 import { TrendsPage } from '../features/trends';
-import { OrchestrationPage } from '../features/orchestration';
+import { RunListPage, OrchestrationPage } from '../features/orchestration';
 import { RatingPage } from '../features/rating';
 import { StudioPage } from '../features/studio';
 import { NarrativePage } from '../features/narrative';
@@ -22,6 +22,10 @@ export const router = createBrowserRouter([
       },
       {
         path: 'orchestration',
+        element: <RunListPage />,
+      },
+      {
+        path: 'orchestration/:runId',
         element: <OrchestrationPage />,
       },
       {
