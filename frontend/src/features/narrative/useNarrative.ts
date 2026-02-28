@@ -94,12 +94,18 @@ export function useNarrative(sessionId: string | null) {
       }
 
       try {
+        // Set a 2-minute timeout — the full pipeline takes much longer,
+        // so if it hasn't responded quickly this is likely a queued request
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 120_000);
+
         const responseText = await api.sendMessage(sessionId, content, 'default-user');
+        clearTimeout(timeout);
 
         const assistantMessage: Message = {
           id: `msg_${Date.now()}_assistant`,
           role: 'assistant',
-          content: responseText || 'No response',
+          content: responseText || 'No response received. The agent may still be processing — check the Orchestration tab for pipeline status.',
           timestamp: Date.now(),
         };
 
@@ -110,8 +116,18 @@ export function useNarrative(sessionId: string | null) {
         }));
       } catch (error) {
         console.error('Failed to send message:', error);
+        const errorMsg = error instanceof DOMException && error.name === 'AbortError'
+          ? 'Request timed out. The pipeline may still be running — check the Orchestration tab.'
+          : 'Failed to get a response. The agent may be busy with the current pipeline run.';
+        const assistantMessage: Message = {
+          id: `msg_${Date.now()}_error`,
+          role: 'assistant',
+          content: errorMsg,
+          timestamp: Date.now(),
+        };
         setNarrativeData((prev) => ({
           ...prev,
+          messages: [...prev.messages, assistantMessage],
           isStreaming: false,
         }));
       }
