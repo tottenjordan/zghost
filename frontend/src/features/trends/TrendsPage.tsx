@@ -384,16 +384,14 @@ export function TrendsPage() {
       )}
 
       {/* Tabs with step indicators */}
-      <Tabs defaultValue="campaign">
+      <Tabs value={activeStep} onValueChange={(v) => setActiveStep(v as WizardStep)}>
         <TabsList className="gap-2">
           {STEPS.map((step) => {
             const status = getStepStatus(step.key);
             return (
               <TabsTrigger key={step.key} value={step.key}>
-                <span
-                  onClick={() => setActiveStep(step.key)}
-                  className="flex items-center gap-1.5"
-                >
+                <span className="flex items-center gap-1.5">
+
                   <span className={cn(
                     'flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all',
                     status === 'completed' && 'bg-green-600 text-white',
@@ -415,7 +413,7 @@ export function TrendsPage() {
 
         {/* Step 1: Campaign Config */}
         <TabsContent value="campaign">
-          <div className="space-y-6" onClick={() => setActiveStep('campaign')}>
+          <div className="space-y-6">
             <CampaignConfig sessionState={sessionState} onSave={handleSaveConfig} />
             {configSaved && (
               <div className="rounded-lg border border-green-800 bg-green-950/50 px-4 py-2 text-sm text-green-400">
@@ -427,7 +425,7 @@ export function TrendsPage() {
 
         {/* Step 2: Trends */}
         <TabsContent value="trends">
-          <div className="space-y-6" onClick={() => setActiveStep('trends')}>
+          <div className="space-y-6">
             <div className="flex gap-2">
               <Button
                 onClick={handleFetchTrends}
@@ -511,7 +509,7 @@ export function TrendsPage() {
 
         {/* Step 3: Evaluation */}
         <TabsContent value="evaluation">
-          <div className="space-y-6" onClick={() => setActiveStep('evaluation')}>
+          <div className="space-y-6">
             {isCreatingRubric ? (
               <RubricEditor
                 rubric={editingRubric || undefined}
@@ -550,7 +548,7 @@ export function TrendsPage() {
 
         {/* Step 4: Review */}
         <TabsContent value="review">
-          <div className="space-y-6" onClick={() => setActiveStep('review')}>
+          <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Campaign Summary</CardTitle>
