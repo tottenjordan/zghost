@@ -211,6 +211,23 @@ class ApiClient {
   }
 
   /**
+   * Reconstruct synthetic events from session state for completed pipelines.
+   * Used as a fallback when in-memory SSE events are unavailable (e.g. server restart).
+   */
+  async reconstructSessionEvents(
+    sessionId: string
+  ): Promise<{ session_id: string; events: any[]; total_events: number; reconstructed: boolean }> {
+    const url = `${API_BASE}/api/v1/orchestration/${sessionId}/events/reconstruct`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(
+        `API request failed (${response.status}): ${response.statusText || 'Unknown error'}`
+      );
+    }
+    return response.json();
+  }
+
+  /**
    * Build an SSE stream URL for a message.
    * Use with EventSource or fetch for real-time event streaming.
    */

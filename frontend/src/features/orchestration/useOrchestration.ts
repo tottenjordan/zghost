@@ -34,7 +34,9 @@ export function useOrchestration(sessionId: string | null, streamUrl: string | n
     addEvent,
   } = useStreaming(streamUrl);
 
-  // Hydrate events from server when session exists but no live stream
+  // Hydrate events from server when session exists but no live stream.
+  // Tries in-memory SSE events first, then falls back to reconstruction
+  // from persistent session state.
   const hydratedRef = useRef<string | null>(null);
   useEffect(() => {
     // Reset hydration ref when sessionId becomes null (user navigates away)
@@ -47,14 +49,31 @@ export function useOrchestration(sessionId: string | null, streamUrl: string | n
     if (streamUrl || hydratedRef.current === sessionId) return;
 
     hydratedRef.current = sessionId;
-    api.getSessionEvents(sessionId).then((result) => {
-      if (result.events.length > 0) {
-        const parsed = result.events.map(parseAgentEvent);
-        seedEvents(parsed);
+
+    const hydrate = async () => {
+      // 1. Try in-memory SSE events (available if server hasn't restarted)
+      try {
+        const result = await api.getSessionEvents(sessionId);
+        if (result.events.length > 0) {
+          seedEvents(result.events.map(parseAgentEvent));
+          return;
+        }
+      } catch {
+        // In-memory events not available — try reconstruction
       }
-    }).catch(() => {
-      // Session events not available — that's OK
-    });
+
+      // 2. Fallback: reconstruct from persistent session state
+      try {
+        const reconstructed = await api.reconstructSessionEvents(sessionId);
+        if (reconstructed.events.length > 0) {
+          seedEvents(reconstructed.events.map(parseAgentEvent));
+        }
+      } catch {
+        // Reconstruction not available — timeline stays empty (graceful degradation)
+      }
+    };
+
+    hydrate();
   }, [sessionId, streamUrl, seedEvents]);
 
   // Poll session state (not events — events come from SSE stream)

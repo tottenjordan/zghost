@@ -392,9 +392,26 @@ export function OrchestrationPage() {
   const selectedAgentState = selectedAgent ? status?.agents[selectedAgent] : undefined;
   const selectedAgentEvents = selectedAgent ? getAgentEvents(selectedAgent) : [];
   const { ready: storeReady, missing } = isReadyToLaunch();
-  // Suppress "missing trends" when already running with an active session
-  const ready = storeReady || (!!sessionId && isRunning);
-  const totalTrends = selectedSearchTrends.length + selectedYtTrends.length;
+
+  // Derive display config from active session (for backend sessions) or global store
+  const activeSession = activeSessionIndex >= 0 ? sessions[activeSessionIndex] : null;
+  const displayBrand = activeSession?.config?.brand || config.brand;
+  const displayProduct = activeSession?.config?.target_product || config.target_product;
+  const displayAudience = activeSession?.config?.target_audience || config.target_audience;
+  const displayKsp = activeSession?.config?.key_selling_points || config.key_selling_points;
+  const displayDuration = activeSession?.commercialDuration || commercialDuration;
+
+  // Count trends from session state (backend sessions store trends there) or global store
+  const sessionTrendCount =
+    (sessionState.target_search_trends?.target_search_trends?.length || 0) +
+    (sessionState.target_yt_trends?.target_yt_trends?.length || 0);
+  const totalTrends = sessionTrendCount > 0
+    ? sessionTrendCount
+    : selectedSearchTrends.length + selectedYtTrends.length;
+
+  // Session is already completed or has a sessionId — suppress missing config warnings
+  const isCompletedOrHasSession = !!sessionId && (pipelineStatus === 'completed' || pipelineStatus === 'error' || activeSession?.fromBackend);
+  const ready = storeReady || (!!sessionId && isRunning) || isCompletedOrHasSession;
 
   return (
     <div className="flex flex-col h-full gap-3">
@@ -479,14 +496,14 @@ export function OrchestrationPage() {
             </div>
           </div>
           <div className="flex items-center gap-3 text-xs">
-            <span className={cn('px-2 py-0.5 rounded border', config.brand ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-amber-700/50 bg-amber-950/30 text-amber-400')}>
-              {config.brand || config.target_product || 'No brand'}
+            <span className={cn('px-2 py-0.5 rounded border', displayBrand ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-amber-700/50 bg-amber-950/30 text-amber-400')}>
+              {displayBrand || displayProduct || 'No brand'}
             </span>
             <span className={cn('px-2 py-0.5 rounded border', totalTrends > 0 ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-amber-700/50 bg-amber-950/30 text-amber-400')}>
               {totalTrends > 0 ? `${totalTrends} trends` : 'No trends'}
             </span>
             <span className="px-2 py-0.5 rounded border border-blue-700/50 bg-blue-950/30 text-blue-400">
-              {commercialDuration}s commercial
+              {displayDuration}s commercial
             </span>
             <span className={cn('px-2 py-0.5 rounded border', activeRubrics.length > 0 ? 'border-green-700/50 bg-green-950/30 text-green-400' : 'border-zinc-700/50 bg-zinc-800/50 text-zinc-500')}>
               {activeRubrics.length > 0 ? `${activeRubrics.length} rubric${activeRubrics.length !== 1 ? 's' : ''}` : 'Default rubric'}
@@ -505,19 +522,19 @@ export function OrchestrationPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-xs font-medium text-zinc-500">Brand</p>
-                <p className="text-zinc-200">{config.brand || 'Not set'}</p>
+                <p className="text-zinc-200">{displayBrand || 'Not set'}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-zinc-500">Product</p>
-                <p className="text-zinc-200">{config.target_product || 'Not set'}</p>
+                <p className="text-zinc-200">{displayProduct || 'Not set'}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-zinc-500">Target Audience</p>
-                <p className="text-zinc-200">{config.target_audience || 'Not set'}</p>
+                <p className="text-zinc-200">{displayAudience || 'Not set'}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-zinc-500">Key Selling Points</p>
-                <p className="text-zinc-200">{config.key_selling_points || 'Not set'}</p>
+                <p className="text-zinc-200">{displayKsp || 'Not set'}</p>
               </div>
             </div>
             <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -561,7 +578,7 @@ export function OrchestrationPage() {
               </div>
             </div>
             <div className="mt-3 text-xs text-zinc-500">
-              Commercial duration: {commercialDuration}s
+              Commercial duration: {displayDuration}s
             </div>
           </div>
         )}

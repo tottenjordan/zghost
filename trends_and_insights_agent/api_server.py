@@ -1254,6 +1254,281 @@ async def get_session_events(session_id: str):
     return {"session_id": session_id, "events": events, "total_events": len(events)}
 
 
+# =====================================
+# Event Reconstruction from Session State
+# =====================================
+
+# Phase definitions: (phase_name, trigger_key, agents_to_synthesize)
+_RECONSTRUCTION_PHASES = [
+    (
+        "trend_discovery",
+        ["target_search_trends", "target_yt_trends"],
+        ["trends_and_insights_agent"],
+    ),
+    (
+        "research",
+        ["combined_final_cited_report"],
+        ["research_orchestrator", "combined_research_pipeline", "combined_report_composer"],
+    ),
+    (
+        "ad_copy",
+        ["final_select_ad_copies"],
+        ["ad_content_generator_agent", "ad_copy_drafter", "ad_copy_critic"],
+    ),
+    (
+        "visual_concepts",
+        ["final_select_vis_concepts"],
+        ["visual_concept_drafter", "visual_concept_critic", "visual_concept_finalizer"],
+    ),
+    (
+        "media_generation",
+        ["img_artifact_keys", "vid_artifact_keys"],
+        ["visual_generator"],
+    ),
+    (
+        "commercial",
+        ["commercial_artifact"],
+        ["av_editing_studio_agent"],
+    ),
+    (
+        "focus_group",
+        ["focus_group_evaluation"],
+        ["focus_group_evaluator_agent"],
+    ),
+]
+
+# Estimated relative duration weights per phase (must sum to ~1.0)
+_PHASE_WEIGHTS = {
+    "trend_discovery": 0.05,
+    "research": 0.35,
+    "ad_copy": 0.10,
+    "visual_concepts": 0.10,
+    "media_generation": 0.20,
+    "commercial": 0.15,
+    "focus_group": 0.05,
+}
+
+
+def _extract_phase_content(phase_name: str, state: Dict[str, Any]) -> List[str]:
+    """Extract human-readable content snippets for a phase from session state."""
+    snippets = []
+
+    if phase_name == "trend_discovery":
+        brand = state.get("brand", "Unknown brand")
+        product = state.get("target_product", "Unknown product")
+        audience = state.get("target_audience", "")
+        snippets.append(f"Campaign setup: {brand} — {product}")
+        if audience:
+            aud_preview = audience[:150] + "..." if len(str(audience)) > 150 else str(audience)
+            snippets.append(f"Target audience: {aud_preview}")
+        # Selected trends
+        search_trends = state.get("target_search_trends", [])
+        yt_trends = state.get("target_yt_trends", [])
+        trend_titles = []
+        for t in (search_trends or [])[:3]:
+            title = t.get("title", t) if isinstance(t, dict) else str(t)
+            trend_titles.append(title)
+        for t in (yt_trends or [])[:3]:
+            title = t.get("title", t) if isinstance(t, dict) else str(t)
+            trend_titles.append(title)
+        if trend_titles:
+            snippets.append(f"Selected trends: {', '.join(trend_titles)}")
+
+    elif phase_name == "research":
+        report = state.get("combined_final_cited_report", "")
+        if report:
+            preview = str(report)[:300]
+            snippets.append(f"{preview}...")
+            snippets.append("View full report in Narrative tab.")
+
+    elif phase_name == "ad_copy":
+        copies = state.get("final_select_ad_copies", [])
+        if isinstance(copies, list):
+            for copy in copies[:3]:
+                if isinstance(copy, dict):
+                    headline = copy.get("headline", copy.get("title", ""))
+                    if headline:
+                        snippets.append(f"Ad copy: {headline}")
+                elif isinstance(copy, str):
+                    snippets.append(f"Ad copy: {copy[:100]}")
+
+    elif phase_name == "visual_concepts":
+        concepts = state.get("final_select_vis_concepts", [])
+        if isinstance(concepts, list):
+            for concept in concepts[:3]:
+                if isinstance(concept, dict):
+                    name = concept.get("concept_name", concept.get("name", ""))
+                    if name:
+                        snippets.append(f"Visual concept: {name}")
+
+    elif phase_name == "media_generation":
+        img_keys = state.get("img_artifact_keys", {})
+        vid_keys = state.get("vid_artifact_keys", {})
+        img_list = img_keys.get("img_artifact_keys", []) if isinstance(img_keys, dict) else []
+        vid_list = vid_keys.get("vid_artifact_keys", []) if isinstance(vid_keys, dict) else []
+        snippets.append(f"Generated {len(img_list)} images and {len(vid_list)} videos.")
+        snippets.append("View media in Results tab.")
+
+    elif phase_name == "commercial":
+        artifact = state.get("commercial_artifact", "")
+        duration = state.get("commercial_duration", 30)
+        if isinstance(artifact, dict):
+            key = artifact.get("artifact_key", "commercial")
+            snippets.append(f"{duration}s commercial produced: {key}")
+        else:
+            snippets.append(f"{duration}s commercial produced.")
+
+    elif phase_name == "focus_group":
+        evaluation = state.get("focus_group_evaluation", "")
+        if isinstance(evaluation, str) and evaluation:
+            preview = evaluation[:300]
+            snippets.append(f"Focus group evaluation: {preview}...")
+        elif isinstance(evaluation, dict):
+            summary = evaluation.get("summary", evaluation.get("overall", ""))
+            if summary:
+                snippets.append(f"Focus group: {str(summary)[:300]}")
+
+    return snippets if snippets else [f"{phase_name.replace('_', ' ').title()} completed."]
+
+
+def _reconstruct_events_from_state(
+    session_id: str,
+    state: Dict[str, Any],
+    last_update_time: Optional[float] = None,
+) -> List[Dict[str, Any]]:
+    """Synthesize AgentEvent dicts from session state keys.
+
+    Detects which pipeline phases completed based on state key presence,
+    then generates synthetic events matching the live SSE event format.
+    """
+    events: List[Dict[str, Any]] = []
+
+    # Determine time anchors
+    gcs_folder = state.get("gcs_folder", "")
+    start_ts = None
+    if gcs_folder:
+        try:
+            # Format: 2025_03_01_14_30
+            dt = datetime.strptime(gcs_folder, "%Y_%m_%d_%H_%M")
+            start_ts = dt.timestamp() * 1000
+        except ValueError:
+            pass
+
+    if start_ts is None:
+        # Fallback: use last_update_time minus 20 minutes
+        if last_update_time:
+            start_ts = last_update_time * 1000 - 20 * 60 * 1000
+        else:
+            start_ts = time.time() * 1000 - 20 * 60 * 1000
+
+    end_ts = (last_update_time * 1000) if last_update_time else time.time() * 1000
+    total_duration = max(end_ts - start_ts, 60_000)  # at least 1 minute
+
+    # Detect completed phases
+    completed_phases = []
+    for phase_name, trigger_keys, agents in _RECONSTRUCTION_PHASES:
+        has_trigger = any(
+            state.get(key) not in (None, "", [], {})
+            for key in trigger_keys
+        )
+        if has_trigger:
+            completed_phases.append((phase_name, agents))
+
+    if not completed_phases:
+        return []
+
+    # Compute cumulative time offsets for each completed phase
+    total_weight = sum(_PHASE_WEIGHTS.get(p, 0.1) for p, _ in completed_phases)
+    current_offset = 0.0
+
+    for phase_name, agents in completed_phases:
+        weight = _PHASE_WEIGHTS.get(phase_name, 0.1)
+        phase_duration = total_duration * (weight / total_weight)
+        phase_start = start_ts + current_offset
+        phase_end = phase_start + phase_duration
+
+        content_snippets = _extract_phase_content(phase_name, state)
+
+        # Generate events for this phase
+        # Event 1: agent_start for the primary agent
+        primary_agent = agents[0]
+        events.append({
+            "type": "agent_start",
+            "agent_name": primary_agent,
+            "timestamp": int(phase_start),
+            "data": {
+                "parts": [{"text": f"Starting {phase_name.replace('_', ' ')}..."}],
+            },
+        })
+
+        # Event 2+: agent_step events with content for each sub-agent
+        num_steps = len(agents)
+        for i, agent_name in enumerate(agents):
+            step_ts = int(phase_start + (phase_duration * (i + 1) / (num_steps + 1)))
+            snippet = content_snippets[i] if i < len(content_snippets) else ""
+            if snippet:
+                events.append({
+                    "type": "agent_step",
+                    "agent_name": agent_name,
+                    "timestamp": step_ts,
+                    "data": {
+                        "parts": [{"text": snippet}],
+                    },
+                })
+
+        # Final event: agent_complete for the primary agent
+        events.append({
+            "type": "agent_complete",
+            "agent_name": primary_agent,
+            "timestamp": int(phase_end),
+            "data": {},
+        })
+
+        current_offset += phase_duration
+
+    # Sort events by timestamp (should already be sorted, but be safe)
+    events.sort(key=lambda e: e["timestamp"])
+
+    return events
+
+
+@app.get("/api/v1/orchestration/{session_id}/events/reconstruct")
+async def reconstruct_session_events(session_id: str, user_id: str = "default-user"):
+    """Reconstruct synthetic events from session state for completed pipelines.
+
+    This endpoint synthesizes AgentEvent[] from session state keys, enabling
+    the Timeline, Chat, and Event Stream tabs to populate for sessions
+    loaded from persistent storage (Vertex Session Service) where in-memory
+    SSE events are no longer available.
+    """
+    try:
+        session = await app_state.session_service.get_session(
+            app_name=SESSION_APP_NAME,
+            user_id=user_id,
+            session_id=session_id,
+        )
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        state = dict(session.state) if session.state else {}
+        last_update = getattr(session, "last_update_time", None)
+
+        events = _reconstruct_events_from_state(session_id, state, last_update)
+
+        return {
+            "session_id": session_id,
+            "events": events,
+            "total_events": len(events),
+            "reconstructed": True,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error reconstructing events for session {session_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to reconstruct events: {str(e)}")
+
+
 @app.get("/api/v1/orchestration/agents", response_model=AgentHierarchyResponse)
 async def get_agent_hierarchy():
     """Get agent hierarchy metadata."""

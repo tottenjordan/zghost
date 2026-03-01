@@ -31,6 +31,26 @@ export const PIXEL_PRESET: CampaignConfig = {
 };
 
 /**
+ * McDonald's config for session persistence E2E test.
+ */
+export const MCDONALDS_PRESET: CampaignConfig = {
+  brand: "McDonald's",
+  target_product: 'Big Mac',
+  target_audience: [
+    'Demographics: Gen Z and millennials aged 18-34 in urban and suburban areas.',
+    'Psychographics: value-conscious consumers who enjoy convenience and familiarity.',
+    'Lifestyle: busy professionals, students, and families looking for quick meals.',
+    'Interests: sports, gaming, social media trends, pop culture.',
+  ],
+  key_selling_points: [
+    'Two all-beef patties, special sauce, lettuce, cheese, pickles, onions on a sesame seed bun — the iconic Big Mac.',
+    'Available at 40,000+ locations worldwide with fast, convenient service.',
+    'McDonald\'s app offers exclusive deals, rewards points, and mobile ordering.',
+    'Consistent quality and taste you can count on, anywhere in the world.',
+  ],
+};
+
+/**
  * Inject campaign config into localStorage so the Trends wizard is pre-filled.
  *
  * Must be called AFTER page.goto() to a same-origin page (localStorage needs a domain).
