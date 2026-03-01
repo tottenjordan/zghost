@@ -1309,6 +1309,17 @@ _PHASE_WEIGHTS = {
 }
 
 
+def _unwrap_state_value(value: Any, key: str) -> Any:
+    """Unwrap session state values that use the {key: actual_value} pattern.
+
+    Many session state keys store data as {"key_name": [actual list]} rather
+    than a bare list. This helper unwraps that pattern.
+    """
+    if isinstance(value, dict) and key in value:
+        return value[key]
+    return value
+
+
 def _extract_phase_content(phase_name: str, state: Dict[str, Any]) -> List[str]:
     """Extract human-readable content snippets for a phase from session state."""
     snippets = []
@@ -1321,15 +1332,21 @@ def _extract_phase_content(phase_name: str, state: Dict[str, Any]) -> List[str]:
         if audience:
             aud_preview = audience[:150] + "..." if len(str(audience)) > 150 else str(audience)
             snippets.append(f"Target audience: {aud_preview}")
-        # Selected trends
-        search_trends = state.get("target_search_trends", [])
-        yt_trends = state.get("target_yt_trends", [])
+        # Selected trends — unwrap {"target_search_trends": [...]} pattern
+        raw_search = state.get("target_search_trends", [])
+        raw_yt = state.get("target_yt_trends", [])
+        search_trends = _unwrap_state_value(raw_search, "target_search_trends")
+        yt_trends = _unwrap_state_value(raw_yt, "target_yt_trends")
+        if not isinstance(search_trends, list):
+            search_trends = []
+        if not isinstance(yt_trends, list):
+            yt_trends = []
         trend_titles = []
-        for t in (search_trends or [])[:3]:
-            title = t.get("title", t) if isinstance(t, dict) else str(t)
+        for t in search_trends[:3]:
+            title = t.get("trend_title", t.get("title", str(t))) if isinstance(t, dict) else str(t)
             trend_titles.append(title)
-        for t in (yt_trends or [])[:3]:
-            title = t.get("title", t) if isinstance(t, dict) else str(t)
+        for t in yt_trends[:3]:
+            title = t.get("video_title", t.get("title", str(t))) if isinstance(t, dict) else str(t)
             trend_titles.append(title)
         if trend_titles:
             snippets.append(f"Selected trends: {', '.join(trend_titles)}")
@@ -1342,7 +1359,8 @@ def _extract_phase_content(phase_name: str, state: Dict[str, Any]) -> List[str]:
             snippets.append("View full report in Narrative tab.")
 
     elif phase_name == "ad_copy":
-        copies = state.get("final_select_ad_copies", [])
+        raw_copies = state.get("final_select_ad_copies", [])
+        copies = _unwrap_state_value(raw_copies, "final_select_ad_copies")
         if isinstance(copies, list):
             for copy in copies[:3]:
                 if isinstance(copy, dict):
@@ -1353,7 +1371,8 @@ def _extract_phase_content(phase_name: str, state: Dict[str, Any]) -> List[str]:
                     snippets.append(f"Ad copy: {copy[:100]}")
 
     elif phase_name == "visual_concepts":
-        concepts = state.get("final_select_vis_concepts", [])
+        raw_concepts = state.get("final_select_vis_concepts", [])
+        concepts = _unwrap_state_value(raw_concepts, "final_select_vis_concepts")
         if isinstance(concepts, list):
             for concept in concepts[:3]:
                 if isinstance(concept, dict):
