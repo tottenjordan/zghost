@@ -219,6 +219,8 @@ export function AutoTrendSelector({
 }
 
 function SafetySummary({ safetyResult }: { safetyResult: BrandSafetyResult }) {
+  const [expanded, setExpanded] = useState(false);
+
   const allScores = [
     ...safetyResult.searchTrendScores,
     ...safetyResult.ytTrendScores,
@@ -231,38 +233,109 @@ function SafetySummary({ safetyResult }: { safetyResult: BrandSafetyResult }) {
 
   if (totalCount === 0) return null;
 
+  // Sort: unsafe first, then caution, then safe
+  const levelOrder = { unsafe: 0, caution: 1, safe: 2 };
+  const sortedScores = [...allScores].sort(
+    (a, b) => (levelOrder[a.level] ?? 2) - (levelOrder[b.level] ?? 2)
+  );
+
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <Shield className="h-4 w-4 text-blue-400" />
-        <h4 className="text-sm font-semibold text-zinc-300">
-          Brand Safety Summary
-        </h4>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {safeCount > 0 && (
-          <Badge variant="success" className="flex items-center gap-1">
-            <Shield className="h-3 w-3" />
-            {safeCount} Safe
-          </Badge>
-        )}
-        {cautionCount > 0 && (
-          <Badge variant="warning" className="flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            {cautionCount} Caution
-          </Badge>
-        )}
-        {unsafeCount > 0 && (
-          <Badge variant="error" className="flex items-center gap-1">
-            <XCircle className="h-3 w-3" />
-            {unsafeCount} Filtered (Unsafe)
-          </Badge>
-        )}
-      </div>
-      {unsafeCount > 0 && (
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between gap-2"
+      >
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4 text-blue-400" />
+          <h4 className="text-sm font-semibold text-zinc-300">
+            Brand Safety Analysis
+          </h4>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1.5">
+            {safeCount > 0 && (
+              <Badge variant="success" className="flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                {safeCount}
+              </Badge>
+            )}
+            {cautionCount > 0 && (
+              <Badge variant="warning" className="flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                {cautionCount}
+              </Badge>
+            )}
+            {unsafeCount > 0 && (
+              <Badge variant="error" className="flex items-center gap-1">
+                <XCircle className="h-3 w-3" />
+                {unsafeCount}
+              </Badge>
+            )}
+          </div>
+          <svg
+            className={`h-4 w-4 text-zinc-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
+
+      {unsafeCount > 0 && !expanded && (
         <p className="mt-2 text-xs text-amber-400">
-          Unsafe trends have been automatically filtered out from the selection.
+          {unsafeCount} unsafe trend{unsafeCount > 1 ? 's' : ''} filtered out.{' '}
+          <span className="text-zinc-500 cursor-pointer hover:text-zinc-400" onClick={() => setExpanded(true)}>
+            Show details
+          </span>
         </p>
+      )}
+
+      {expanded && (
+        <div className="mt-3 space-y-2">
+          {sortedScores.map((score) => (
+            <div
+              key={score.trendTitle}
+              className={`flex items-start gap-3 rounded-md px-3 py-2 text-sm ${
+                score.level === 'unsafe'
+                  ? 'bg-red-950/20 border border-red-900/30'
+                  : score.level === 'caution'
+                    ? 'bg-amber-950/20 border border-amber-900/30'
+                    : 'bg-zinc-800/30 border border-zinc-800'
+              }`}
+            >
+              <div className="mt-0.5 shrink-0">
+                {score.level === 'unsafe' ? (
+                  <XCircle className="h-4 w-4 text-red-400" />
+                ) : score.level === 'caution' ? (
+                  <AlertTriangle className="h-4 w-4 text-amber-400" />
+                ) : (
+                  <Shield className="h-4 w-4 text-green-400" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-zinc-200 truncate">
+                    {score.trendTitle}
+                  </span>
+                  {score.level === 'unsafe' && (
+                    <Badge variant="error" className="text-[10px] px-1.5 py-0 shrink-0">
+                      Filtered
+                    </Badge>
+                  )}
+                </div>
+                <p className="mt-0.5 text-xs text-zinc-400 leading-relaxed">
+                  {score.reasoning}
+                </p>
+              </div>
+              <span className="text-xs text-zinc-500 tabular-nums shrink-0">
+                {score.score}/10
+              </span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

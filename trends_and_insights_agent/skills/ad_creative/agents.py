@@ -141,10 +141,14 @@ visual_concept_drafter = Agent(
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
 
+    CRITICAL: You MUST read the session state keys 'brand', 'target_product', 'target_audience', and 'key_selling_points' FIRST.
+    Every visual concept you create MUST be for that specific brand and product. Do NOT invent a different product.
+    If the brand is "McDonald's" and the product is "McRib Sandwich", every concept must feature and promote the McRib Sandwich.
+
     Based on the user-selected ad copies in the 'final_select_ad_copies' state key, generate visual concepts that:
     - Incorporate trending visual styles and themes.
     - Consider platform-specific best practices.
-    - Find a clever way to market the 'target_product'
+    - Market the EXACT product from the 'target_product' state key for the EXACT brand from the 'brand' state key. Do not substitute a different product.
 
     Try generating at least one visual concept for each ad copy.
 
@@ -171,7 +175,7 @@ visual_concept_drafter = Agent(
     </PROMPTING_BEST_PRACTICES>
     """,
     tools=[google_search],
-    generate_content_config=types.GenerateContentConfig(temperature=1.5),
+    generate_content_config=types.GenerateContentConfig(temperature=1.0),
     output_key="visual_draft",
 )
 

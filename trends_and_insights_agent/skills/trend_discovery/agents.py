@@ -13,6 +13,7 @@ from .tools import (
     get_youtube_trends,
     save_yt_trends_to_session_state,
     save_search_trends_to_session_state,
+    auto_select_trends,
 )
 from .prompts import AUTO_TREND_AGENT_INSTR
 from ...shared_libraries.config import config
@@ -36,6 +37,7 @@ trends_and_insights_agent = Agent(
         get_youtube_trends,
         save_yt_trends_to_session_state,
         save_search_trends_to_session_state,
+        auto_select_trends,
         _skill_toolset,
     ],
     before_agent_callback=callbacks._load_session_state,

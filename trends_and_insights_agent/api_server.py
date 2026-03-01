@@ -1600,18 +1600,86 @@ async def get_agent_hierarchy():
 
 @app.post("/api/v1/trends/auto-select", response_model=TrendAutoSelectResponse)
 async def auto_select_trends(request: TrendAutoSelectRequest):
-    """Auto-select trends based on campaign configuration."""
+    """Auto-select trends based on campaign configuration with Gemini safety check + Google Search grounding."""
     try:
-        # This would integrate with the trends_and_insights_agent
-        # For now, return a placeholder response
-        # TODO: Implement actual trend selection logic
+        # 1. Fetch available trends (reuse cached if available)
+        available = await get_available_trends(force_refresh=False)
 
-        return TrendAutoSelectResponse(
-            youtube_trends=[],
-            search_trends=[],
-            rationale="Auto-selection not yet implemented. Please use the agent's interactive trend selection.",
+        # 2. Run safety check with Google Search grounding on all trends
+        all_trends = [
+            {"title": t.title, "source": t.source}
+            for t in available.search_trends + available.youtube_trends
+        ]
+        brand = request.campaign_config.get("brand", "")
+        audience = request.campaign_config.get("target_audience", "")
+
+        safety_request = TrendSafetyCheckRequest(
+            trends=all_trends,
+            brand=brand,
+            target_audience=audience,
+            safety_level="standard",
+        )
+        safety_response = await check_trend_safety(safety_request)
+
+        # Build lookup of safety results by title
+        safety_by_title = {r.trend_title: r for r in safety_response.results}
+
+        # 3. Filter out unsafe trends
+        safe_search = [
+            t for t in available.search_trends
+            if safety_by_title.get(t.title, TrendSafetyResult(
+                trend_title=t.title, safe=True, risk_level="safe", reason="", categories=[]
+            )).safe
+        ]
+        safe_yt = [
+            t for t in available.youtube_trends
+            if safety_by_title.get(t.title, TrendSafetyResult(
+                trend_title=t.title, safe=True, risk_level="safe", reason="", categories=[]
+            )).safe
+        ]
+
+        # 4. Score by keyword relevance to brand/product/audience
+        keywords = set()
+        for field in ["brand", "target_product", "target_audience", "key_selling_points"]:
+            val = request.campaign_config.get(field, "")
+            if val:
+                keywords.update(w.lower() for w in val.split() if len(w) > 2)
+
+        def relevance_score(trend: TrendInfo) -> float:
+            title_lower = trend.title.lower()
+            matches = sum(1 for kw in keywords if kw in title_lower)
+            return matches / max(len(keywords), 1)
+
+        safe_search.sort(key=relevance_score, reverse=True)
+        safe_yt.sort(key=relevance_score, reverse=True)
+
+        # 5. Select requested count
+        selected_search = safe_search[: request.num_search_trends]
+        selected_yt = safe_yt[: request.num_youtube_trends]
+
+        # 6. Build rationale
+        rationale_parts = []
+        rationale_parts.append(
+            f"Evaluated {len(available.search_trends)} search and {len(available.youtube_trends)} YouTube trends."
+        )
+        unsafe_count = sum(1 for r in safety_response.results if not r.safe)
+        if unsafe_count:
+            rationale_parts.append(
+                f"Filtered out {unsafe_count} unsafe trend(s) via Gemini + Google Search grounding."
+            )
+        rationale_parts.append(
+            f"Selected {len(selected_search)} search and {len(selected_yt)} YouTube trends"
+            + (f" optimized for '{brand}'." if brand else ".")
         )
 
+        return TrendAutoSelectResponse(
+            youtube_trends=selected_yt,
+            search_trends=selected_search,
+            rationale=" ".join(rationale_parts),
+        )
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error auto-selecting trends: {str(e)}", exc_info=True)
         raise HTTPException(
@@ -1766,6 +1834,8 @@ async def check_trend_safety(request: TrendSafetyCheckRequest):
 
         prompt = f"""You are a brand safety analyst. Evaluate each trend below for appropriateness as a marketing campaign topic.
 
+Use Google Search to look up each trend's current context before evaluating brand safety. Consider what the trend actually refers to right now, not just the title.
+
 Today's date: {today}
 {brand_context}
 {audience_context}
@@ -1800,9 +1870,14 @@ For "standard" safety: flag controversial topics as "caution"
 For "strict" safety: flag controversial AND potentially divisive topics as "unsafe"
 """
 
+        from google.genai import types as genai_types
+
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                tools=[genai_types.Tool(google_search=genai_types.GoogleSearch())],
+            ),
         )
 
         import json as json_mod

@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { fetchLiveTrends, getCachedTrends, autoSelectFromAvailable } from '../../services/trendsCache';
+import { api } from '../../services/api';
 import { RubricLibrary } from '../rating/RubricLibrary';
 import { RubricEditor } from '../rating/RubricEditor';
 import { DEFAULT_RUBRICS, type ExtendedRubric } from '../rating/rubric-templates';
@@ -160,6 +161,7 @@ export function TrendsPage() {
     }
     setAutoSelectLoading(true);
     try {
+      // 1. Client-side fast pass (keyword heuristic)
       const available = {
         searchTrends: availableSearchTrends,
         ytTrends: availableYtTrends,
@@ -172,10 +174,92 @@ export function TrendsPage() {
         strategy: config.strategy || 'relevance',
         campaign: storeConfig,
       });
+
+      // Show client-side results immediately
       setAutoSelectedSearchTrends(result.searchTrends);
       setAutoSelectedYtTrends(result.ytTrends);
       setAiReasoning(result.reasoning);
       setSafetyResult(result.safetyResult);
+
+      // 2. Server-side Gemini + Google Search grounding (async enhancement)
+      const allSelected = [
+        ...result.searchTrends.map((t) => ({ title: t.title, source: 'google_search' })),
+        ...result.ytTrends.map((t) => ({ title: t.title, source: 'youtube' })),
+      ];
+
+      if (allSelected.length > 0) {
+        try {
+          const serverSafety = await api.checkTrendSafety(
+            allSelected,
+            storeConfig.brand || '',
+            storeConfig.target_audience || '',
+            'standard'
+          );
+
+          // 3. Merge server results — override client-side scores
+          const serverByTitle = new Map(
+            serverSafety.results.map((r) => [r.trend_title, r])
+          );
+
+          const enhancedSearchScores = result.searchTrends.map((t) => {
+            const server = serverByTitle.get(t.title);
+            if (server) {
+              return {
+                trendTitle: t.title,
+                score: server.safe ? 10 : server.risk_level === 'caution' ? 6 : 2,
+                level: server.risk_level as 'safe' | 'caution' | 'unsafe',
+                reasoning: server.reason,
+              };
+            }
+            // Fall back to client-side score
+            return result.safetyResult?.searchTrendScores.find(
+              (s) => s.trendTitle === t.title
+            ) || { trendTitle: t.title, score: 10, level: 'safe' as const, reasoning: 'No concerns.' };
+          });
+
+          const enhancedYtScores = result.ytTrends.map((t) => {
+            const server = serverByTitle.get(t.title);
+            if (server) {
+              return {
+                trendTitle: t.title,
+                score: server.safe ? 10 : server.risk_level === 'caution' ? 6 : 2,
+                level: server.risk_level as 'safe' | 'caution' | 'unsafe',
+                reasoning: server.reason,
+              };
+            }
+            return result.safetyResult?.ytTrendScores.find(
+              (s) => s.trendTitle === t.title
+            ) || { trendTitle: t.title, score: 10, level: 'safe' as const, reasoning: 'No concerns.' };
+          });
+
+          // 4. Filter out trends the server flagged as unsafe
+          const safeSearch = result.searchTrends.filter((t) => {
+            const score = enhancedSearchScores.find((s) => s.trendTitle === t.title);
+            return score ? score.level !== 'unsafe' : true;
+          });
+          const safeYt = result.ytTrends.filter((t) => {
+            const score = enhancedYtScores.find((s) => s.trendTitle === t.title);
+            return score ? score.level !== 'unsafe' : true;
+          });
+
+          // 5. Update with enhanced server-side data
+          setAutoSelectedSearchTrends(safeSearch);
+          setAutoSelectedYtTrends(safeYt);
+          setSafetyResult({
+            searchTrendScores: enhancedSearchScores,
+            ytTrendScores: enhancedYtScores,
+          });
+          setAiReasoning(
+            result.reasoning +
+              (serverSafety.results.some((r) => !r.safe)
+                ? '\n\nServer-side safety check (Gemini + Google Search) filtered additional unsafe trends.'
+                : '\n\nServer-side safety check (Gemini + Google Search) confirmed all trends are safe.')
+          );
+        } catch (err) {
+          // Server-side check failed — keep client-side results
+          console.warn('Server-side safety check failed, using client-side results:', err);
+        }
+      }
     } finally {
       setAutoSelectLoading(false);
     }

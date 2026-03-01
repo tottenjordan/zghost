@@ -92,10 +92,6 @@ export function RunListPage() {
   const {
     sessions,
     config,
-    selectedSearchTrends,
-    selectedYtTrends,
-    commercialDuration,
-    autopilot,
     maxConcurrentRuns,
     queuedRuns,
     setMaxConcurrentRuns,
@@ -110,7 +106,6 @@ export function RunListPage() {
     setPipelineStatus,
   } = useCampaignStore();
 
-  const [creating, setCreating] = useState(false);
   const [loadingBackend, setLoadingBackend] = useState(false);
   const [backendLoaded, setBackendLoaded] = useState(false);
 
@@ -220,65 +215,9 @@ export function RunListPage() {
     return filtered;
   }, [sessions, sortField, sortDir, statusFilter]);
 
-  const handleNewRun = useCallback(async () => {
-    if (creating) return;
-    setCreating(true);
-
-    try {
-      const initialState: Record<string, any> = {
-        brand: config.brand || '',
-        target_product: config.target_product || '',
-        target_audience: config.target_audience || '',
-        key_selling_points: config.key_selling_points || '',
-        commercial_duration: commercialDuration,
-        autopilot_mode: autopilot,
-      };
-
-      if (selectedSearchTrends.length > 0) {
-        initialState.target_search_trends = {
-          target_search_trends: selectedSearchTrends.map((t) => ({
-            trend_title: t.title,
-            trend_rank: t.rank,
-            trend_refresh_date: '',
-          })),
-        };
-      }
-
-      if (selectedYtTrends.length > 0) {
-        initialState.target_yt_trends = {
-          target_yt_trends: selectedYtTrends.map((t) => ({
-            video_title: t.title,
-            video_duration: '',
-            video_url: t.videoUrl || '',
-          })),
-        };
-      }
-
-      const session = await api.createSession({ initial_state: initialState });
-      const now = Date.now();
-
-      const newSession: PipelineSession = {
-        id: `session-${session.session_id}`,
-        sessionId: session.session_id,
-        label: generateRunLabel(session.session_id, now, config.brand || undefined),
-        status: 'idle',
-        startedAt: now,
-        createdAt: new Date(now).toISOString(),
-        config: { ...config },
-        commercialDuration,
-        autopilot,
-        searchTrends: [...selectedSearchTrends],
-        ytTrends: [...selectedYtTrends],
-      };
-
-      addSession(newSession);
-      navigate(`/orchestration/${newSession.id}`);
-    } catch (err) {
-      console.error('Failed to create run:', err);
-    } finally {
-      setCreating(false);
-    }
-  }, [creating, config, commercialDuration, autopilot, selectedSearchTrends, selectedYtTrends, addSession, navigate]);
+  const handleNewRun = useCallback(() => {
+    navigate('/trends');
+  }, [navigate]);
 
   const handleOpenRun = useCallback((session: PipelineSession, index: number) => {
     setActiveSession(index);
@@ -374,14 +313,9 @@ export function RunListPage() {
           </div>
           <button
             onClick={handleNewRun}
-            disabled={creating}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
           >
-            {creating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Plus className="w-4 h-4" />
-            )}
+            <Plus className="w-4 h-4" />
             New Run
           </button>
         </div>
@@ -474,7 +408,6 @@ export function RunListPage() {
             </div>
             <button
               onClick={handleNewRun}
-              disabled={creating}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
