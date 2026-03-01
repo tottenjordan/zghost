@@ -3,10 +3,11 @@ import { api, gcsToProxyUrl } from '../../services/api';
 import type { SessionState } from '../../types/session';
 import type { Clip, Character, CommercialData, StudioData, VoiceSample, MusicSample, VoiceStyleId } from './types';
 
-const BUCKET = import.meta.env.VITE_GCS_BUCKET || 'zghost-bucket';
+const BUCKET = import.meta.env.VITE_GCS_BUCKET || 'zghost-media-center';
 
 function buildArtifactUrl(gcsFolder: string, artifactKey: string): string {
-  return gcsToProxyUrl(`gs://${BUCKET}/${gcsFolder}/av_studio/${artifactKey}`);
+  // Videos/images are stored at {gcs_folder}/{artifact_key} in GCS — no av_studio/ prefix
+  return gcsToProxyUrl(`gs://${BUCKET}/${gcsFolder}/${artifactKey}`);
 }
 
 function parseClipsFromState(
@@ -23,13 +24,12 @@ function parseClipsFromState(
     const nameMatch = filename.match(/^(.+?)_[a-f0-9]{8}\.mp4$/);
     const clipName = headline || (nameMatch ? nameMatch[1] : filename.replace('.mp4', ''));
 
-    // Build URL — key may be a full GCS path or just the artifact portion
-    const artifactPart = key.includes('/av_studio/')
-      ? key.replace(`${gcsFolder}/av_studio/`, '').replace(/^.*?\/av_studio\//, '')
-      : key;
+    // artifact_key is just a filename (e.g. clip_1_hook_14d4825b_0.mp4)
+    // GCS path is {gcs_folder}/{artifact_key}
     const url = key.startsWith('gs://')
       ? gcsToProxyUrl(key)
-      : buildArtifactUrl(gcsFolder, artifactPart);
+      : buildArtifactUrl(gcsFolder, key);
+    const gcsUri = key.startsWith('gs://') ? key : `gs://${BUCKET}/${gcsFolder}/${key}`;
 
     return {
       id: key || `clip-${index}`,
@@ -37,7 +37,7 @@ function parseClipsFromState(
       sceneDescription: concept || `Scene ${index + 1}`,
       duration: 8,
       order: index,
-      gcsUri: key.startsWith('gs://') ? key : `gs://${BUCKET}/${key}`,
+      gcsUri,
       url,
       status: 'ready' as const,
     };
@@ -48,36 +48,32 @@ function parseCharactersFromState(
   imgArtifactKeys: any[],
   gcsFolder: string
 ): Character[] {
-  return imgArtifactKeys
-    .filter((item) => {
-      const key = typeof item === 'string' ? item : (item?.artifact_key || '');
-      return key.includes('/av_studio/subjects/');
-    })
-    .map((item) => {
-      const key = typeof item === 'string' ? item : (item?.artifact_key || item?.name || '');
-      const headline = typeof item === 'object' ? item?.headline : undefined;
+  // All images are potential characters — artifact_key is a flat filename
+  return imgArtifactKeys.map((item) => {
+    const key = typeof item === 'string' ? item : (item?.artifact_key || item?.name || '');
+    const headline = typeof item === 'object' ? item?.headline : undefined;
+    const concept = typeof item === 'object' ? item?.concept : undefined;
 
-      const filename = key.split('/').pop() || key;
-      const nameMatch = filename.match(/^(.+?)_[a-f0-9]{8}\./);
-      const characterName = headline || (nameMatch
-        ? nameMatch[1].replace(/_/g, ' ')
-        : filename);
+    const filename = key.split('/').pop() || key;
+    const nameMatch = filename.match(/^(.+?)_[a-f0-9]{8}\./);
+    const characterName = headline || (nameMatch
+      ? nameMatch[1].replace(/_/g, ' ')
+      : filename);
 
-      const artifactPart = key.includes('/av_studio/')
-        ? key.replace(`${gcsFolder}/av_studio/`, '').replace(/^.*?\/av_studio\//, '')
-        : key;
-      const imageUrl = key.startsWith('gs://')
-        ? gcsToProxyUrl(key)
-        : buildArtifactUrl(gcsFolder, artifactPart);
+    const imageUrl = key.startsWith('gs://')
+      ? gcsToProxyUrl(key)
+      : buildArtifactUrl(gcsFolder, key);
+    const gcsUri = key.startsWith('gs://') ? key : `gs://${BUCKET}/${gcsFolder}/${key}`;
 
-      return {
-        id: key,
-        name: characterName,
-        imageUrl,
-        gcsUri: key.startsWith('gs://') ? key : `gs://${BUCKET}/${key}`,
-        usageCount: 1,
-      };
-    });
+    return {
+      id: key,
+      name: characterName,
+      description: concept,
+      imageUrl,
+      gcsUri,
+      usageCount: 1,
+    };
+  });
 }
 
 function parseCommercialFromState(
@@ -96,12 +92,12 @@ function parseCommercialFromState(
   return {
     url:
       typeof commercialArtifact === 'object' && commercialArtifact.gcs_uri
-        ? buildArtifactUrl(gcsFolder, commercialArtifact.gcs_uri.split('/').pop())
+        ? gcsToProxyUrl(commercialArtifact.gcs_uri)
         : buildArtifactUrl(gcsFolder, artifactKey),
     gcsUri:
       typeof commercialArtifact === 'object' && commercialArtifact.gcs_uri
         ? commercialArtifact.gcs_uri
-        : `gs://${BUCKET}/${gcsFolder}/av_studio/${artifactKey}`,
+        : `gs://${BUCKET}/${gcsFolder}/${artifactKey}`,
     duration: metadata?.duration_seconds || 30,
     title: metadata?.title || 'Commercial',
     narrativeArc: metadata?.narrative_arc,
@@ -148,12 +144,13 @@ export function useStudio(sessionId: string | null) {
         const characters = parseCharactersFromState(imgKeys, gcsFolder);
         const commercialData = parseCommercialFromState(commercial, gcsFolder);
 
-        setStudioData({
+        setStudioData((prev) => ({
+          ...prev,
           clips,
           characters,
           commercial: commercialData,
           isLoading: false,
-        });
+        }));
       } catch (error) {
         console.error('Failed to fetch studio data:', error);
         setStudioData((prev) => ({ ...prev, isLoading: false }));

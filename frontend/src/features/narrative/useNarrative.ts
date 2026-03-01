@@ -3,6 +3,8 @@ import { api, gcsToProxyUrl } from '../../services/api';
 import type { SessionState } from '../../types/session';
 import type { Message, Scene, NarrativeArc, NarrativeData } from './types';
 
+const GCS_BUCKET = import.meta.env.VITE_GCS_BUCKET || 'zghost-media-center';
+
 export function useNarrative(sessionId: string | null) {
   const [narrativeData, setNarrativeData] = useState<NarrativeData>({
     messages: [],
@@ -78,13 +80,13 @@ export function useNarrative(sessionId: string | null) {
           // Parse image artifacts
           (Array.isArray(imgKeys) ? imgKeys : []).forEach((item: any) => {
             if (typeof item === 'string') {
-              const url = item.startsWith('gs://') ? item : `gs://zghost-media-center/${gcsFolder}/${item}`;
+              const url = item.startsWith('gs://') ? item : `gs://${GCS_BUCKET}/${gcsFolder}/${item}`;
               mediaItems.push({ url, type: 'image' });
             } else if (item && typeof item === 'object') {
               const artifactKey = item.artifact_key || item.name || item.filename || '';
               const url = artifactKey.startsWith('gs://')
                 ? artifactKey
-                : `gs://zghost-media-center/${gcsFolder}/${artifactKey}`;
+                : `gs://${GCS_BUCKET}/${gcsFolder}/${artifactKey}`;
               mediaItems.push({
                 url,
                 type: 'image',
@@ -99,13 +101,13 @@ export function useNarrative(sessionId: string | null) {
           // Parse video artifacts
           (Array.isArray(vidKeys) ? vidKeys : []).forEach((item: any) => {
             if (typeof item === 'string') {
-              const url = item.startsWith('gs://') ? item : `gs://zghost-media-center/${gcsFolder}/${item}`;
+              const url = item.startsWith('gs://') ? item : `gs://${GCS_BUCKET}/${gcsFolder}/${item}`;
               mediaItems.push({ url, type: 'video' });
             } else if (item && typeof item === 'object') {
               const artifactKey = item.artifact_key || item.name || item.filename || '';
               const url = artifactKey.startsWith('gs://')
                 ? artifactKey
-                : `gs://zghost-media-center/${gcsFolder}/${artifactKey}`;
+                : `gs://${GCS_BUCKET}/${gcsFolder}/${artifactKey}`;
               mediaItems.push({
                 url,
                 type: 'video',

@@ -75,8 +75,10 @@ export function ClipViewer({ clip, onRemove }: ClipViewerProps) {
                     ? 'Failed to load video'
                     : clip.sceneDescription}
                 </p>
-                {(clip.status === 'error' || videoError) && clip.error && (
-                  <p className="text-xs text-red-400">{clip.error}</p>
+                {(clip.status === 'error' || videoError) && (
+                  <p className="mt-1 text-[10px] text-zinc-600 truncate max-w-full" title={clip.url}>
+                    {clip.url}
+                  </p>
                 )}
               </div>
             </div>

@@ -20,6 +20,8 @@ import { Markdown } from '../../components/ui/Markdown';
 import { cn } from '../../lib/utils';
 import { gcsToProxyUrl } from '../../services/api';
 
+const GCS_BUCKET = import.meta.env.VITE_GCS_BUCKET || 'zghost-media-center';
+
 interface ResultsGalleryProps {
   sessionState: Record<string, any>;
   sessionId: string;
@@ -68,13 +70,13 @@ function parseMediaItems(state: Record<string, any>): MediaItem[] {
 
   imgKeys.forEach((item: any) => {
     if (typeof item === 'string') {
-      const url = item.startsWith('gs://') ? item : `gs://zghost-media-center/${gcsFolder}/${item}`;
+      const url = item.startsWith('gs://') ? item : `gs://${GCS_BUCKET}/${gcsFolder}/${item}`;
       mediaItems.push({ url, type: 'image' });
     } else if (item && typeof item === 'object') {
       const artifactKey = item.artifact_key || item.name || item.filename || '';
       const url = artifactKey.startsWith('gs://')
         ? artifactKey
-        : `gs://zghost-media-center/${gcsFolder}/${artifactKey}`;
+        : `gs://${GCS_BUCKET}/${gcsFolder}/${artifactKey}`;
       mediaItems.push({
         url,
         type: 'image',
@@ -89,13 +91,13 @@ function parseMediaItems(state: Record<string, any>): MediaItem[] {
 
   vidKeys.forEach((item: any) => {
     if (typeof item === 'string') {
-      const url = item.startsWith('gs://') ? item : `gs://zghost-media-center/${gcsFolder}/${item}`;
+      const url = item.startsWith('gs://') ? item : `gs://${GCS_BUCKET}/${gcsFolder}/${item}`;
       mediaItems.push({ url, type: 'video' });
     } else if (item && typeof item === 'object') {
       const artifactKey = item.artifact_key || item.name || item.filename || '';
       const url = artifactKey.startsWith('gs://')
         ? artifactKey
-        : `gs://zghost-media-center/${gcsFolder}/${artifactKey}`;
+        : `gs://${GCS_BUCKET}/${gcsFolder}/${artifactKey}`;
       mediaItems.push({
         url,
         type: 'video',
@@ -202,7 +204,7 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
   const hasReport = !!sessionState.combined_final_cited_report;
   const draftPdfUrl = sessionState.draft_pdf_url;
   const finalPdfUrl = sessionState.final_pdf_url;
-  const pdfUrl = finalPdfUrl || draftPdfUrl || (gcsFolder ? `gs://zghost-media-center/${gcsFolder}/draft_research_report_with_citations.pdf` : '');
+  const pdfUrl = finalPdfUrl || draftPdfUrl || (gcsFolder ? `gs://${GCS_BUCKET}/${gcsFolder}/draft_research_report_with_citations.pdf` : '');
 
   // Media
   const mediaItems = parseMediaItems(sessionState);
@@ -605,7 +607,7 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
       {/* GCS Folder */}
       {gcsFolder && (
         <div className="text-xs text-zinc-600 pt-2 border-t border-zinc-800">
-          GCS: gs://zghost-media-center/{gcsFolder}/
+          GCS: gs://{GCS_BUCKET}/{gcsFolder}/
         </div>
       )}
     </div>
