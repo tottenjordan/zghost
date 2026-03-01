@@ -125,13 +125,19 @@ trends_and_insights_agent/
 │       ├── SKILL.md
 │       ├── agents.py, tools.py, prompts.py
 │       └── references/
+├── api_server.py               # FastAPI extended API (sessions, streaming, export)
+├── api_models.py               # Pydantic models for API requests/responses
 ├── shared_libraries/           # Shared across all skills
 │   ├── config.py               # Model and rate limit configuration
-│   ├── callbacks.py            # Session state, rate limiting, citations
+│   ├── callbacks.py            # Session state, rate limiting, citations, PDF extraction
 │   ├── schema_types.py         # Pydantic models
 │   ├── utils.py                # GCS upload/download utilities
 │   ├── secrets.py              # Secret Manager access
 │   └── profiles/               # Example session state JSON configs
+frontend/                       # React + Vite frontend (port 5173)
+├── src/services/api.ts         # API client (sessions, streaming, export)
+├── src/features/orchestration/ # Pipeline run management UI
+└── src/features/studio/        # AV Studio editing workspace
 tests/                          # Test suite (unit, E2E, eval datasets)
 installation_scripts/           # ffmpeg and opencv install scripts
 .github/workflows/              # CI/CD pipeline
@@ -186,6 +192,24 @@ Optional:
 8. **Pipeline Pattern**: Complex tasks use Sequential/Parallel agent compositions with `AgentTool`
 9. **Critique Pattern**: Ad copy uses draft→critique; visual concepts use draft→critique→finalize
 10. **Rate Limiting**: `rate_limit_callback` throttles LLM API calls based on configurable RPM quota
+11. **Audio Retry**: `voice_tools.py` and `music_tools.py` use `_retry_with_backoff` (3 attempts, exponential 5/10/20s) for TTS and Lyria calls
+12. **Audio Validation**: `save_commercial_artifact` runs ffprobe to detect audio streams and sets `has_audio` metadata
+13. **PDF Extraction**: `before_agent_get_user_file` callback extracts text from uploaded PDFs via PyPDF2, stores in `campaign_guide_content` state key (50K char limit)
+14. **Campaign Export**: `GET /api/v1/sessions/{id}/export` returns zip bundle of all session artifacts (config, report, ad copies, images, videos, commercial, evaluation)
+
+## API Endpoints
+
+Key endpoints in `api_server.py`:
+
+- `POST /api/v1/sessions` — Create session (optional preset_config or initial_state)
+- `GET /api/v1/sessions/{id}/state` — Get session state
+- `PATCH /api/v1/sessions/{id}/state` — Update session state keys
+- `GET /api/v1/run/{id}/stream` — SSE stream for agent execution
+- `GET /api/v1/sessions/{id}/export` — Download all artifacts as zip
+- `GET /api/v1/orchestration/{id}/events` — Get stored SSE events
+- `POST /api/v1/trends/safety-check` — Brand safety check via Gemini
+- `POST /api/v1/narrative/refine` — Refine report text
+- `POST /api/v1/narrative/pdf` — Generate PDF from report
 
 ## Deployment Notes
 
@@ -194,3 +218,4 @@ Optional:
 - Agentspace publishing via `publish_to_agentspace_v2.sh`
 - Always export requirements.txt before deployment
 - Check port 8000 availability for local development
+- Local dev: `./run_local.sh` starts all services (API :8000, voice :8081, memory :8082, frontend :5173)
