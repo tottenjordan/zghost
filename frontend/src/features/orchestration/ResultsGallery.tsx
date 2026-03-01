@@ -552,21 +552,23 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
                   />
                 )}
 
-                {isExpanded && (
+                {/* Narrative Caption - Always Visible */}
+                {media.caption && (
+                  <div className="mt-2 p-2 rounded bg-zinc-800/50 border border-zinc-700/50">
+                    <p className="text-xs italic text-zinc-300 leading-relaxed">
+                      "{media.caption}"
+                    </p>
+                  </div>
+                )}
+
+                {/* Expanded Metadata - Concept, Trend, Prompt */}
+                {isExpanded && (media.concept || media.trend || media.prompt) && (
                   <div className="mt-3 space-y-2 border-t border-zinc-800 pt-3">
                     {media.concept && (
                       <div>
                         <span className="text-xs font-medium text-zinc-500">Concept:</span>
                         <div className="mt-0.5">
                           <Markdown content={media.concept} className="text-xs text-zinc-400" />
-                        </div>
-                      </div>
-                    )}
-                    {media.caption && (
-                      <div>
-                        <span className="text-xs font-medium text-zinc-500">Caption:</span>
-                        <div className="mt-0.5">
-                          <Markdown content={media.caption} className="text-xs text-zinc-400" />
                         </div>
                       </div>
                     )}

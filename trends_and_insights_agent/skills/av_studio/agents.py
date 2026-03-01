@@ -69,8 +69,6 @@ av_editing_studio_agent = Agent(
         _skill_toolset,
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="MEDIUM", include_thoughts=True)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     before_model_callback=callbacks.rate_limit_callback,
 )

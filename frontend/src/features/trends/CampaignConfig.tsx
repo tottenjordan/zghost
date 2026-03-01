@@ -284,32 +284,30 @@ export function CampaignConfig({ sessionState, onSave }: CampaignConfigProps) {
             </div>
           </div>
 
-          {/* PDF upload - full width below the grid */}
+          {/* PDF upload - compact inline */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-300">
+            <label className="mb-1 block text-sm font-medium text-zinc-300">
               Campaign Guide (PDF)
             </label>
             {pdfFile ? (
-              <div className="rounded-lg border-2 border-green-500 bg-zinc-900/50 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-green-500">✓</span>
-                    <span className="text-sm text-zinc-300">{pdfFile.name}</span>
-                  </div>
-                  <Button
-                    onClick={handleRemovePdf}
-                    className="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1"
-                  >
-                    Remove
-                  </Button>
+              <div className="rounded-md border border-green-600 bg-zinc-900/50 px-3 py-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-green-500 text-sm">✓</span>
+                  <span className="text-sm text-zinc-300 truncate">{pdfFile.name}</span>
                 </div>
+                <Button
+                  onClick={handleRemovePdf}
+                  className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-0.5 h-6"
+                >
+                  Remove
+                </Button>
               </div>
             ) : (
               <div
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                className={`relative rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
+                className={`relative rounded-md border border-dashed px-3 py-2 transition-colors ${
                   isDragging
                     ? 'border-blue-500 bg-blue-950/20'
                     : 'border-zinc-700 bg-zinc-900/50'
@@ -321,9 +319,9 @@ export function CampaignConfig({ sessionState, onSave }: CampaignConfigProps) {
                   onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
                   className="absolute inset-0 cursor-pointer opacity-0"
                 />
-                <div className="pointer-events-none">
+                <div className="pointer-events-none flex items-center gap-2">
                   <svg
-                    className="mx-auto h-12 w-12 text-zinc-500"
+                    className="h-5 w-5 text-zinc-500 flex-shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -335,9 +333,9 @@ export function CampaignConfig({ sessionState, onSave }: CampaignConfigProps) {
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                     />
                   </svg>
-                  <p className="mt-2 text-sm text-zinc-400">
-                    Drag and drop a PDF file, or click to browse
-                  </p>
+                  <span className="text-sm text-zinc-400">
+                    Drop a PDF or click to browse
+                  </span>
                 </div>
               </div>
             )}

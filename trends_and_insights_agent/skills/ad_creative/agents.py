@@ -35,12 +35,7 @@ ad_copy_drafter = Agent(
     model=config.worker_model,
     name="ad_copy_drafter",
     description="Generate initial ad copy ideas based on campaign guidelines and trends",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            thinking_level="LOW",
-            include_thoughts=True,
-        )
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a creative copywriter generating initial ad copy ideas.
 
     Your goal is to review the research and trends provided in the **Input Data** to generate 10-12 culturally relevant ad copy ideas.
@@ -98,12 +93,7 @@ ad_copy_critic = Agent(
     model=config.critic_model,
     name="ad_copy_critic",
     description="Critique and narrow down ad copies based on product, audience, and trends",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            thinking_level="MEDIUM",
-            include_thoughts=True,
-        )
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a strategic marketing critic evaluating ad copy ideas.
 
     Your goal is to review the proposed candidates in the 'ad_copy_draft' state key and select the 6-8 BEST ad copies based on:
@@ -148,12 +138,7 @@ visual_concept_drafter = Agent(
     model=config.worker_model,
     name="visual_concept_drafter",
     description="Generate initial visual concepts for selected ad copies",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            thinking_level="LOW",
-            include_thoughts=True,
-        )
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
 
     Based on the user-selected ad copies in the 'final_select_ad_copies' state key, generate visual concepts that:
@@ -195,12 +180,7 @@ visual_concept_critic = Agent(
     model=config.critic_model,
     name="visual_concept_critic",
     description="Critique and narrow down visual concepts",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            thinking_level="MEDIUM",
-            include_thoughts=True,
-        )
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction=f"""You are a creative director evaluating visual concepts and high quality prompts that result in high impact.
 
     Review the concepts in the 'visual_draft' state key and critique the draft prompts on:
@@ -262,9 +242,7 @@ visual_concept_finalizer = Agent(
     """,
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
     output_key="final_visual_concepts",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="LOW", include_thoughts=True)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
 )
 
 
@@ -322,9 +300,7 @@ visual_generator = Agent(
         generate_video,
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="MEDIUM", include_thoughts=True)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     before_model_callback=callbacks.rate_limit_callback,
 )
 
@@ -347,7 +323,5 @@ ad_content_generator_agent = Agent(
         _skill_toolset,
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="LOW", include_thoughts=True)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
 )

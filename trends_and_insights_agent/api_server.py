@@ -445,44 +445,48 @@ async def list_sessions(user_id: str = Query(default="default-user")):
 
         summaries: list[SessionSummary] = []
         for session in result.sessions:
-            state = session.state or {}
+            try:
+                state = session.state or {}
 
-            # Determine pipeline status from state
-            status = None
-            if state.get("commercial_artifact"):
-                status = "completed"
-            elif state.get("final_select_ad_copies"):
-                status = "ad_creative_done"
-            elif state.get("combined_final_cited_report"):
-                status = "research_done"
-            elif state.get("target_search_trends") or state.get("target_yt_trends"):
-                status = "trends_selected"
+                # Determine pipeline status from state
+                status = None
+                if state.get("commercial_artifact"):
+                    status = "completed"
+                elif state.get("final_select_ad_copies"):
+                    status = "ad_creative_done"
+                elif state.get("combined_final_cited_report"):
+                    status = "research_done"
+                elif state.get("target_search_trends") or state.get("target_yt_trends"):
+                    status = "trends_selected"
 
-            # Count media artifacts
-            img_keys = state.get("img_artifact_keys", {})
-            vid_keys = state.get("vid_artifact_keys", {})
-            img_list = img_keys.get("img_artifact_keys", []) if isinstance(img_keys, dict) else []
-            vid_list = vid_keys.get("vid_artifact_keys", []) if isinstance(vid_keys, dict) else []
+                # Count media artifacts
+                img_keys = state.get("img_artifact_keys", {})
+                vid_keys = state.get("vid_artifact_keys", {})
+                img_list = img_keys.get("img_artifact_keys", []) if isinstance(img_keys, dict) else []
+                vid_list = vid_keys.get("vid_artifact_keys", []) if isinstance(vid_keys, dict) else []
 
-            summaries.append(
-                SessionSummary(
-                    session_id=session.id,
-                    user_id=session.user_id,
-                    last_update_time=session.last_update_time,
-                    brand=state.get("brand"),
-                    target_product=state.get("target_product"),
-                    target_audience=state.get("target_audience"),
-                    commercial_duration=state.get("commercial_duration"),
-                    autopilot_mode=state.get("autopilot_mode"),
-                    status=status,
-                    has_report=bool(state.get("combined_final_cited_report")),
-                    has_commercial=bool(state.get("commercial_artifact")),
-                    has_images=len(img_list) > 0,
-                    has_videos=len(vid_list) > 0,
-                    image_count=len(img_list),
-                    video_count=len(vid_list),
+                summaries.append(
+                    SessionSummary(
+                        session_id=session.id,
+                        user_id=session.user_id,
+                        last_update_time=session.last_update_time,
+                        brand=state.get("brand"),
+                        target_product=state.get("target_product"),
+                        target_audience=state.get("target_audience"),
+                        commercial_duration=state.get("commercial_duration"),
+                        autopilot_mode=state.get("autopilot_mode"),
+                        status=status,
+                        has_report=bool(state.get("combined_final_cited_report")),
+                        has_commercial=bool(state.get("commercial_artifact")),
+                        has_images=len(img_list) > 0,
+                        has_videos=len(vid_list) > 0,
+                        image_count=len(img_list),
+                        video_count=len(vid_list),
+                    )
                 )
-            )
+            except Exception as e:
+                logger.warning(f"Skipping malformed session {getattr(session, 'id', 'unknown')}: {e}")
+                continue
 
         # Sort by last_update_time descending (most recent first)
         summaries.sort(key=lambda s: s.last_update_time, reverse=True)
@@ -511,15 +515,26 @@ async def create_session(request: SessionCreateRequest):
         default_state = setup_config.empty_session_state.get("state", {})
         merged_state = {**default_state, **initial_state}
 
-        # Create session with state included (InMemorySessionService returns
-        # a deep copy, so we must pass state at creation time)
-        session_id = str(uuid.uuid4())
-        await app_state.session_service.create_session(
-            session_id=session_id,
-            user_id=user_id,
-            app_name=SESSION_APP_NAME,
-            state=merged_state,
-        )
+        # Create session with state included
+        # Note: VertexAiSessionService generates its own session IDs and will
+        # reject user-provided session_id. InMemorySessionService requires it.
+        if isinstance(app_state.session_service, VertexAiSessionService):
+            # Let VertexAI generate the session ID
+            session = await app_state.session_service.create_session(
+                user_id=user_id,
+                app_name=SESSION_APP_NAME,
+                state=merged_state,
+            )
+            session_id = session.id
+        else:
+            # InMemorySessionService requires session_id parameter
+            session_id = str(uuid.uuid4())
+            await app_state.session_service.create_session(
+                session_id=session_id,
+                user_id=user_id,
+                app_name=SESSION_APP_NAME,
+                state=merged_state,
+            )
 
         # Best-effort: pre-load relevant memories from past campaigns
         if merged_state.get("brand") or merged_state.get("target_product"):
@@ -1226,7 +1241,7 @@ For "strict" safety: flag controversial AND potentially divisive topics as "unsa
 """
 
         response = client.models.generate_content(
-            model="gemini-3.0-flash",
+            model="gemini-2.5-flash",
             contents=prompt,
         )
 

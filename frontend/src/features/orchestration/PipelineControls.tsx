@@ -88,22 +88,24 @@ export function PipelineControls({
         </div>
 
         {/* Autopilot toggle — always clickable */}
-        <div className="flex items-center gap-2 pl-2 border-l border-zinc-700">
+        <div
+          className="flex items-center gap-2 pl-2 border-l border-zinc-700 cursor-pointer"
+          onClick={() => onAutopilotChange(!autopilot)}
+        >
           <button
-            onClick={() => onAutopilotChange(!autopilot)}
             className={cn(
-              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors pointer-events-none',
               autopilot ? 'bg-blue-600' : 'bg-zinc-700'
             )}
             title={autopilot ? 'Autopilot ON — auto-approves all agent outputs' : 'Autopilot OFF — manual approval required'}
           >
             <span className={cn(
-              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform pointer-events-none',
+              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
               autopilot ? 'translate-x-6' : 'translate-x-1'
             )} />
           </button>
           <span className={cn(
-            'text-xs font-medium pointer-events-none',
+            'text-xs font-medium',
             autopilot ? 'text-blue-400' : 'text-zinc-500'
           )}>
             {autopilot ? 'Autopilot' : 'Manual'}

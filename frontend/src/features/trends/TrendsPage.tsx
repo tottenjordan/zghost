@@ -259,13 +259,7 @@ export function TrendsPage() {
 
   const getStepStatus = (step: WizardStep): 'pending' | 'active' | 'completed' => {
     if (step === activeStep) return 'active';
-    switch (step) {
-      case 'campaign': return isCampaignComplete ? 'completed' : 'pending';
-      case 'trends': return isTrendsComplete ? 'completed' : 'pending';
-      case 'evaluation': return isEvaluationComplete ? 'completed' : 'pending';
-      case 'review': return 'pending';
-      default: return 'pending';
-    }
+    return 'pending';
   };
 
   const currentStepIndex = STEPS.findIndex(s => s.key === activeStep);

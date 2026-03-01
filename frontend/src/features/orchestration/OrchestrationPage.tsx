@@ -280,8 +280,7 @@ export function OrchestrationPage() {
         setSessionId(null);
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [sessionId, isRunning, streamUrl, setPipelineStatus, setSessionId]);
 
   // Listen for voice-action events to switch tabs
   useEffect(() => {

@@ -50,9 +50,7 @@ campaign_web_planner = Agent(
     **CRITICAL RULE: Your output should just include a numbered list of queries. Nothing else.**
     """,
     output_key="initial_campaign_queries",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="MINIMAL", include_thoughts=True)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
 )
 
 
@@ -60,12 +58,7 @@ campaign_web_searcher = Agent(
     model=config.worker_model,
     name="campaign_web_searcher",
     description="Performs the crucial first pass of web research about the campaign guide.",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            thinking_level="LOW",
-            include_thoughts=True,
-        )
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""
     You are a diligent and exhaustive researcher. Your task is to conduct initial web research for concepts described in the campaign guide.
     You will be provided with a list of web queries in the 'initial_campaign_queries' state key.

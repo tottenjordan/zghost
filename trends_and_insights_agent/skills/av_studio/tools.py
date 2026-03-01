@@ -240,9 +240,12 @@ async def generate_clip_with_frames(
             )
 
         # Build reference images for character consistency
+        # NOTE: Veo API does not allow both `image` (first frame) and
+        # `reference_images` to be set simultaneously. When a first_frame
+        # is provided, skip reference_images to avoid 400 errors.
         if reference_image_gcs_uris is None:
             reference_image_gcs_uris = []
-        if reference_image_gcs_uris:
+        if reference_image_gcs_uris and not first_frame_gcs_uri:
             reference_images = []
             for ref_uri in reference_image_gcs_uris:
                 ref_image = types.Image(gcs_uri=ref_uri, mime_type="image/png")
@@ -254,16 +257,22 @@ async def generate_clip_with_frames(
                 )
             gen_config.reference_images = reference_images
 
-        first_frame_image = types.Image(
-            gcs_uri=first_frame_gcs_uri, mime_type="image/png"
-        )
-
-        operation = client.models.generate_videos(
-            model=config.video_gen_model,
-            prompt=prompt,
-            image=first_frame_image,
-            config=gen_config,
-        )
+        if first_frame_gcs_uri:
+            first_frame_image = types.Image(
+                gcs_uri=first_frame_gcs_uri, mime_type="image/png"
+            )
+            operation = client.models.generate_videos(
+                model=config.video_gen_model,
+                prompt=prompt,
+                image=first_frame_image,
+                config=gen_config,
+            )
+        else:
+            operation = client.models.generate_videos(
+                model=config.video_gen_model,
+                prompt=prompt,
+                config=gen_config,
+            )
 
         for attempt in range(2):
             start_time = time.time()

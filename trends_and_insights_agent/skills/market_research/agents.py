@@ -59,9 +59,7 @@ merge_planners = Agent(
     Output *only* the structured report following this format. Do not include introductory or concluding phrases outside this structure, and strictly adhere to using only the provided input summary content.
     """,
     output_key="combined_web_search_insights",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="LOW", include_thoughts=True)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
 )
 
 merge_parallel_insights = SequentialAgent(
@@ -94,9 +92,7 @@ combined_web_evaluator = Agent(
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
     output_key="combined_research_evaluation",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="MEDIUM", include_thoughts=True)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     before_model_callback=callbacks.rate_limit_callback,
 )
 
@@ -105,12 +101,7 @@ enhanced_combined_searcher = Agent(
     model=config.worker_model,
     name="enhanced_combined_searcher",
     description="Executes follow-up searches and integrates new findings.",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            thinking_level="LOW",
-            include_thoughts=True,
-        )
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""
     You are a specialist researcher executing a refinement pass.
     You are tasked to conduct a second round of web research and gather insights related to the trending YouTube video, the trending Search terms, the target audience, and the target product.
@@ -180,9 +171,7 @@ combined_report_composer = Agent(
     Do not include a "References" or "Sources" section; all citations must be in-line.
     """,
     output_key="combined_final_cited_report",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(thinking_level="LOW", include_thoughts=True)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     after_agent_callback=callbacks.citation_replacement_callback,
     before_model_callback=callbacks.rate_limit_callback,
 )
@@ -222,11 +211,6 @@ research_orchestrator = Agent(
         AgentTool(agent=combined_research_pipeline),
         _skill_toolset,
     ],
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_level="LOW",
-        )
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )

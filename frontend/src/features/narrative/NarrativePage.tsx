@@ -6,7 +6,8 @@ import { NarrativeArc } from './NarrativeArc';
 import { useNarrative } from './useNarrative';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { Button } from '../../components/ui/Button';
-import { CheckCircle, SkipForward, ChevronDown } from 'lucide-react';
+import { Markdown } from '../../components/ui/Markdown';
+import { CheckCircle, SkipForward, ChevronDown, AlertCircle } from 'lucide-react';
 import { useCampaignStore } from '../../stores/campaignStore';
 import { cn } from '../../lib/utils';
 
@@ -18,6 +19,8 @@ export function NarrativePage() {
   const [sessionId, setSessionId] = useState<string | null>(() => {
     return searchParams.get('session') || null;
   });
+
+  const [pdfError, setPdfError] = useState(false);
 
   const handleSelectSession = (newSessionId: string) => {
     setSessionId(newSessionId);
@@ -39,6 +42,11 @@ export function NarrativePage() {
 
   const hasReport = messages.length > 0 && messages[0].id === 'report-initial';
   const hasPdf = !!pdfUrl;
+
+  // Reset PDF error when URL changes
+  useEffect(() => {
+    setPdfError(false);
+  }, [pdfUrl]);
 
   const handleAcceptReport = () => {
     sendMessage('I accept this research report. Let\'s proceed to creative development.');
@@ -158,12 +166,34 @@ export function NarrativePage() {
                 </span>
               </div>
               <div className="flex-1 overflow-hidden">
-                <iframe
-                  src={pdfUrl}
-                  className="w-full h-full"
-                  title="Research Report PDF"
-                  style={{ border: 'none' }}
-                />
+                {pdfError ? (
+                  <div className="h-full overflow-y-auto p-4">
+                    <div className="flex items-center gap-2 p-3 mb-4 bg-amber-950/30 border border-amber-800/50 rounded-lg">
+                      <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                      <p className="text-sm text-amber-300">
+                        PDF failed to load. Showing markdown report instead.
+                      </p>
+                    </div>
+                    <div className="prose prose-invert max-w-none">
+                      <Markdown
+                        content={
+                          sessionState?.final_report_with_citations ||
+                          sessionState?.combined_final_cited_report ||
+                          'Report content not available.'
+                        }
+                        sources={sessionState?.sources}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <iframe
+                    src={pdfUrl}
+                    className="w-full h-full"
+                    title="Research Report PDF"
+                    style={{ border: 'none' }}
+                    onError={() => setPdfError(true)}
+                  />
+                )}
               </div>
             </div>
           ) : (

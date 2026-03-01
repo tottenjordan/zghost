@@ -31,12 +31,7 @@ root_agent = Agent(
     name="root_agent",
     description="A trend and insight assistant using the services of multiple sub-agents.",
     instruction=ROOT_AGENT_INSTR,
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_level="LOW",
-        )
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     global_instruction=GLOBAL_INSTR,
     sub_agents=[
         research_orchestrator,

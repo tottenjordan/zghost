@@ -61,6 +61,92 @@ export function useNarrative(sessionId: string | null) {
             setPdfUrl(toHttp(draftPdf));
           }
 
+          // Auto-populate storyboard scenes from pipeline artifacts
+          const imgKeys = result.state?.img_artifact_keys?.img_artifact_keys || result.state?.img_artifact_keys || [];
+          const vidKeys = result.state?.vid_artifact_keys?.vid_artifact_keys || result.state?.vid_artifact_keys || [];
+          const gcsFolder = result.state?.gcs_folder || '';
+          const commercialDuration = result.state?.commercial_duration || 30;
+
+          const mediaItems: Array<{
+            url: string;
+            headline?: string;
+            concept?: string;
+            caption?: string;
+            prompt?: string;
+            type: 'image' | 'video';
+          }> = [];
+
+          // Parse image artifacts
+          (Array.isArray(imgKeys) ? imgKeys : []).forEach((item: any) => {
+            if (typeof item === 'string') {
+              const url = item.startsWith('gs://') ? item : `gs://zghost-media-center/${gcsFolder}/${item}`;
+              mediaItems.push({ url, type: 'image' });
+            } else if (item && typeof item === 'object') {
+              const artifactKey = item.artifact_key || item.name || item.filename || '';
+              const url = artifactKey.startsWith('gs://')
+                ? artifactKey
+                : `gs://zghost-media-center/${gcsFolder}/${artifactKey}`;
+              mediaItems.push({
+                url,
+                type: 'image',
+                headline: item.headline,
+                concept: item.concept,
+                caption: item.caption,
+                prompt: item.img_prompt || item.prompt,
+              });
+            }
+          });
+
+          // Parse video artifacts
+          (Array.isArray(vidKeys) ? vidKeys : []).forEach((item: any) => {
+            if (typeof item === 'string') {
+              const url = item.startsWith('gs://') ? item : `gs://zghost-media-center/${gcsFolder}/${item}`;
+              mediaItems.push({ url, type: 'video' });
+            } else if (item && typeof item === 'object') {
+              const artifactKey = item.artifact_key || item.name || item.filename || '';
+              const url = artifactKey.startsWith('gs://')
+                ? artifactKey
+                : `gs://zghost-media-center/${gcsFolder}/${artifactKey}`;
+              mediaItems.push({
+                url,
+                type: 'video',
+                headline: item.headline,
+                concept: item.concept,
+                caption: item.caption,
+                prompt: item.vid_prompt || item.prompt,
+              });
+            }
+          });
+
+          // Create scenes from media items
+          if (mediaItems.length > 0) {
+            const narrativeBeats: Scene['narrativeBeat'][] = ['setup', 'rising_action', 'climax', 'resolution'];
+            const sceneDuration = commercialDuration / mediaItems.length;
+
+            const newScenes: Scene[] = mediaItems.map((media, index) => {
+              const beatIndex = Math.floor((index / mediaItems.length) * narrativeBeats.length);
+              const beat = narrativeBeats[Math.min(beatIndex, narrativeBeats.length - 1)];
+
+              return {
+                id: `scene-${index}`,
+                order: index,
+                sceneNumber: index + 1,
+                frameUrl: toHttp(media.url),
+                description: [media.headline, media.caption, media.concept]
+                  .filter(Boolean)
+                  .join(' — ') || `Scene ${index + 1}`,
+                duration: Math.round(sceneDuration * 10) / 10,
+                narrativeBeat: beat,
+                prompt: media.prompt,
+              };
+            });
+
+            setNarrativeData((prev) => ({
+              ...prev,
+              scenes: newScenes,
+            }));
+          }
+
           // Prefer the citation-processed version over the raw report
           const report = result.state?.final_report_with_citations || result.state?.combined_final_cited_report;
           if (report) {

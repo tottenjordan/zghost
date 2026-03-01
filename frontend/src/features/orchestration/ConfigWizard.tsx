@@ -437,7 +437,13 @@ export function ConfigWizard({
 
               {/* Autopilot Mode */}
               <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
-                <div className="flex items-center justify-between">
+                <div
+                  className={cn(
+                    "flex items-center justify-between",
+                    !isRunning && "cursor-pointer"
+                  )}
+                  onClick={() => !isRunning && onAutopilotChange(!autopilot)}
+                >
                   <div className="flex-1">
                     <label className="text-sm font-medium text-zinc-300 block">
                       AI Autopilot Mode
@@ -448,17 +454,16 @@ export function ConfigWizard({
                     </p>
                   </div>
                   <button
-                    onClick={() => onAutopilotChange(!autopilot)}
                     disabled={isRunning}
                     className={cn(
-                      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors ml-4 flex-shrink-0',
+                      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors ml-4 flex-shrink-0 pointer-events-none',
                       'disabled:opacity-50 disabled:cursor-not-allowed',
                       autopilot ? 'bg-blue-600' : 'bg-zinc-700'
                     )}
                   >
                     <span
                       className={cn(
-                        'inline-block h-4 w-4 transform rounded-full bg-white transition-transform pointer-events-none',
+                        'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
                         autopilot ? 'translate-x-6' : 'translate-x-1'
                       )}
                     />
@@ -617,8 +622,8 @@ export function ConfigWizard({
         </div>
       </div>
 
-      {/* Navigation Footer */}
-      <div className="px-6 py-4 border-t border-zinc-800 bg-zinc-900/50">
+      {/* Navigation Footer — sticky so it's always visible */}
+      <div className="sticky bottom-0 px-6 py-3 border-t border-zinc-800 bg-zinc-900 z-10">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <button
             onClick={handleBack}

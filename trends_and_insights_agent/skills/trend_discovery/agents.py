@@ -39,12 +39,7 @@ trends_and_insights_agent = Agent(
         _skill_toolset,
     ],
     before_agent_callback=callbacks._load_session_state,
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_level="LOW",
-        )
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     generate_content_config=types.GenerateContentConfig(
         temperature=1.0,
     ),

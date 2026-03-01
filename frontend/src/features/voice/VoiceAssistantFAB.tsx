@@ -240,7 +240,7 @@ export function VoiceAssistantFAB() {
     <>
       {/* Expanded panel */}
       {isExpanded && (
-        <div className="fixed bottom-16 right-6 z-50 w-[400px] h-[550px] shadow-2xl rounded-xl overflow-hidden border border-zinc-700">
+        <div className="fixed bottom-16 right-6 z-50 w-[360px] h-[380px] shadow-2xl rounded-xl overflow-hidden border border-zinc-700">
           <div className="absolute top-2 right-2 z-10">
             <button
               onClick={() => setIsExpanded(false)}
