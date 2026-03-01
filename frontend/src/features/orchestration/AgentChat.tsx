@@ -198,7 +198,12 @@ export function AgentChat({ sessionId, events, autopilot, onWaitingForInput, onS
 
   const messages = extractChatMessages(events);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Scroll to bottom on mount and when new messages arrive
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (autoScroll && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -362,7 +367,7 @@ export function AgentChat({ sessionId, events, autopilot, onWaitingForInput, onS
                     {msg.agent}
                   </div>
                 )}
-                <div className="whitespace-pre-wrap text-xs leading-relaxed">
+                <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere text-xs leading-relaxed">
                   <RichText
                     text={msg.text.length > 500 ? msg.text.slice(0, 500) + '...' : msg.text}
                     sessionId={sessionId}

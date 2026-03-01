@@ -641,10 +641,10 @@ export function OrchestrationPage() {
           </Tabs>
         </div>
 
-        {/* Right: Detail panel (1 col) */}
+        {/* Right: Detail panel (1 col) — constrained to grid cell height */}
         <div className="border border-zinc-800 rounded-lg overflow-hidden flex flex-col min-h-0">
-          <Tabs value={detailTab} onValueChange={setDetailTab}>
-            <TabsList className="w-full flex flex-wrap gap-1">
+          <Tabs value={detailTab} onValueChange={setDetailTab} className="flex flex-col h-full overflow-hidden">
+            <TabsList className="w-full flex flex-wrap gap-1 flex-shrink-0">
               <TabsTrigger value="chat">Chat</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
               <TabsTrigger value="evaluation">Eval</TabsTrigger>

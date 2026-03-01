@@ -58,22 +58,47 @@ function formatTimestamp(timestamp: number): string {
   });
 }
 
-function formatEventData(event: AgentEvent): string {
+function formatEventSummary(event: AgentEvent): string {
   if (event.type === 'tool_call' && event.data?.tool) {
     return `Tool: ${event.data.tool}`;
   }
   if (event.type === 'tool_response' && event.data?.result) {
     const result = JSON.stringify(event.data.result);
-    return result.length > 100 ? `${result.slice(0, 100)}...` : result;
+    return result.length > 120 ? `${result.slice(0, 120)}...` : result;
   }
   if (event.type === 'error' && event.data?.message) {
     return event.data.message;
   }
   if (event.type === 'agent_step' && event.data?.content) {
     const content = event.data.content;
-    return content.length > 100 ? `${content.slice(0, 100)}...` : content;
+    return content.length > 120 ? `${content.slice(0, 120)}...` : content;
   }
-  return JSON.stringify(event.data).slice(0, 100);
+  const raw = JSON.stringify(event.data);
+  return raw.length > 120 ? `${raw.slice(0, 120)}...` : raw;
+}
+
+function formatEventFull(event: AgentEvent): string {
+  if (event.type === 'tool_call' && event.data?.tool) {
+    const args = event.data.args ? JSON.stringify(event.data.args, null, 2) : '';
+    return `Tool: ${event.data.tool}${args ? `\n\nArguments:\n${args}` : ''}`;
+  }
+  if (event.type === 'tool_response' && event.data?.result) {
+    return typeof event.data.result === 'string'
+      ? event.data.result
+      : JSON.stringify(event.data.result, null, 2);
+  }
+  if (event.type === 'error' && event.data?.message) {
+    return event.data.message;
+  }
+  if (event.type === 'agent_step' && event.data?.content) {
+    return event.data.content;
+  }
+  return JSON.stringify(event.data, null, 2);
+}
+
+function hasMoreContent(event: AgentEvent): boolean {
+  const summary = formatEventSummary(event);
+  return summary.endsWith('...');
 }
 
 export function EventStream({
@@ -88,6 +113,19 @@ export function EventStream({
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
+
+  const toggleExpanded = (index: number) => {
+    setExpandedEvents((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
 
   // Auto-scroll to bottom when new events arrive (if not paused)
   useEffect(() => {
@@ -183,40 +221,73 @@ export function EventStream({
           events.map((event, index) => {
             const Icon = eventTypeIcons[event.type];
             const color = eventTypeColors[event.type];
+            const isExpanded = expandedEvents.has(index);
+            const expandable = hasMoreContent(event);
 
             return (
               <div
                 key={index}
-                className="flex items-start gap-2 p-2 rounded bg-zinc-950/50 hover:bg-zinc-800/50 transition-colors"
+                className={cn(
+                  'rounded bg-zinc-950/50 hover:bg-zinc-800/50 transition-colors',
+                  expandable && 'cursor-pointer',
+                )}
+                onClick={() => expandable && toggleExpanded(index)}
               >
-                {/* Timestamp */}
-                <span className="text-zinc-600 flex-shrink-0">
-                  {formatTimestamp(event.timestamp)}
-                </span>
+                <div className="flex items-start gap-2 p-2">
+                  {/* Timestamp */}
+                  <span className="text-zinc-600 flex-shrink-0">
+                    {formatTimestamp(event.timestamp)}
+                  </span>
 
-                {/* Agent badge */}
-                <button
-                  onClick={() => onFilterAgent(event.agentName)}
-                  className="flex-shrink-0"
-                >
-                  <Badge variant="default" className="text-xs cursor-pointer hover:bg-zinc-600">
-                    {event.agentName}
-                  </Badge>
-                </button>
+                  {/* Agent badge */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onFilterAgent(event.agentName); }}
+                    className="flex-shrink-0"
+                  >
+                    <Badge variant="default" className="text-xs cursor-pointer hover:bg-zinc-600">
+                      {event.agentName}
+                    </Badge>
+                  </button>
 
-                {/* Event type icon and badge */}
-                <button
-                  onClick={() => onFilterEventType(event.type)}
-                  className="flex items-center gap-1 flex-shrink-0 cursor-pointer"
-                >
-                  <Icon className={cn('w-3 h-3', color)} />
-                  <span className={cn('text-xs', color)}>{event.type}</span>
-                </button>
+                  {/* Event type icon and badge */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onFilterEventType(event.type); }}
+                    className="flex items-center gap-1 flex-shrink-0 cursor-pointer"
+                  >
+                    <Icon className={cn('w-3 h-3', color)} />
+                    <span className={cn('text-xs', color)}>{event.type}</span>
+                  </button>
 
-                {/* Event data preview */}
-                <span className="text-zinc-400 flex-1 truncate">
-                  {formatEventData(event)}
-                </span>
+                  {/* Event data preview */}
+                  {!isExpanded && (
+                    <span className="text-zinc-400 flex-1 truncate">
+                      {formatEventSummary(event)}
+                    </span>
+                  )}
+
+                  {/* Expand indicator */}
+                  {expandable && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleExpanded(index); }}
+                      className="flex-shrink-0 p-0.5 rounded hover:bg-zinc-700 transition-colors"
+                    >
+                      {isExpanded ? (
+                        <ChevronUp className="w-3 h-3 text-zinc-500" />
+                      ) : (
+                        <ChevronDown className="w-3 h-3 text-zinc-500" />
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Expanded content */}
+                {isExpanded && (
+                  <div className="px-2 pb-2 pt-0">
+                    <pre className="text-zinc-300 text-[11px] leading-relaxed whitespace-pre-wrap break-words bg-zinc-900/80 rounded p-2 border border-zinc-800 max-h-64 overflow-y-auto">
+                      {formatEventFull(event)}
+                    </pre>
+                  </div>
+                )}
               </div>
             );
           })

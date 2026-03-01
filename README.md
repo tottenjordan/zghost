@@ -217,6 +217,38 @@ tmux new -s zghost
 
 </details>
 
+## Architecture
+
+### Local Development
+
+The local development setup runs 4 services on your machine, with Vite proxying all API requests to the appropriate backend:
+
+<p align="center">
+  <img src='docs/diagrams/local_architecture.png' width="800"/>
+</p>
+
+The frontend (`:5173`) proxies requests via `vite.config.ts`:
+- `/api/*` → API Server (`:8000`)
+- `/api/memories/*` → Memory Bank API (`:8082`)
+- `/ws/*` → Voice Server (`:8081`)
+
+### Cloud Run Deployment
+
+In production, all services run inside a single Cloud Run container managed by supervisord, with nginx as the reverse proxy on port 8080:
+
+<p align="center">
+  <img src='docs/diagrams/deployed_architecture.png' width="800"/>
+</p>
+
+The Cloud Run service includes:
+- **nginx** (`:8080`) — reverse proxy, static file serving, SSE support
+- **API Server** (`:8000`) — FastAPI with ADK runner, session management, media proxy
+- **ADK Web Server** (`:8001`) — ADK developer playground
+- **Voice Server** (`:8081`) — WebSocket server for Gemini Live voice assistant
+- **Memory Bank API** (`:8082`) — Vertex AI Memory Bank integration
+
+Deploy with `./deploy/deploy_custom.sh` (see [Deployment](#deployment) section below).
+
 ## How it works
 
 <details>
@@ -396,28 +428,39 @@ uv run pytest tests/*.py
 
 ## Deployment
 
-The agent can be deployed in a couple of different ways
+### Option 1: Full-Stack Cloud Run (Frontend + Backend)
 
-1. Agent Engine
-   - Be sure to first run the `setup_ae_sm_access.sh` script to give Agent Engine access to Secret Manager
-   - Run `python deploy_to_ae.py` to deploy the agent
-2. Cloud Run
-   - Run `deploy_to_cloud_run.sh`
-   - Note this runs unit tests prior to deploying
-
-Script for Cloud Run:
+Deploys the React frontend, API server, ADK server, voice server, and Memory Bank API as a single Cloud Run service with nginx routing:
 
 ```bash
-#!/bin/bash
+./deploy/deploy_custom.sh
+```
+
+This builds a multi-stage Docker image (see `deploy/Dockerfile`), uses supervisord to manage all 5 processes, and serves everything behind nginx on port 8080. Key flags:
+- `--min-instances=1` — avoids cold start delays (~10 min for root_agent import)
+- `--no-cpu-throttling` — keeps CPU available during startup
+- `--cpu=4 --memory=8Gi` — sufficient for concurrent model calls
+
+### Option 2: Agent Engine
+
+For managed deployment with Vertex AI Agent Engine:
+
+```bash
+# Grant Agent Engine access to Secret Manager
+./setup_ae_sm_access.sh
+
+# Deploy
+python deploy_to_ae.py
+```
+
+### Option 3: ADK Cloud Run (agent-only, no frontend)
+
+For deploying just the agent with the ADK built-in UI:
+
+```bash
 source trends_and_insights_agent/.env
-
-# run unit tests before deploying
 uv run pytest tests/*.py
-
-# write requirements.txt to the agent folder
 uv export --format requirements-txt --no-hashes > trends_and_insights_agent/requirements.txt
-
-#deploy to cloud run
 adk deploy cloud_run \
   --project=$GOOGLE_CLOUD_PROJECT \
   --region=$GOOGLE_CLOUD_LOCATION \
