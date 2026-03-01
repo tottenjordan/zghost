@@ -399,3 +399,10 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
+
+/** Convert a gs:// URI to a proxied HTTP URL via the backend media endpoint. */
+export function gcsToProxyUrl(gcsUri: string): string {
+  if (!gcsUri.startsWith('gs://')) return gcsUri;
+  const base = import.meta.env.VITE_API_BASE || '';
+  return `${base}/api/v1/media?uri=${encodeURIComponent(gcsUri)}`;
+}

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { api } from '../../services/api';
+import { api, gcsToProxyUrl } from '../../services/api';
 import type { SessionState } from '../../types/session';
 import type { Clip, Character, CommercialData, StudioData, VoiceSample, MusicSample, VoiceStyleId } from './types';
 
 const BUCKET = import.meta.env.VITE_GCS_BUCKET || 'zghost-bucket';
 
 function buildArtifactUrl(gcsFolder: string, artifactKey: string): string {
-  return `https://storage.googleapis.com/${BUCKET}/${gcsFolder}/av_studio/${artifactKey}`;
+  return gcsToProxyUrl(`gs://${BUCKET}/${gcsFolder}/av_studio/${artifactKey}`);
 }
 
 function parseClipsFromState(

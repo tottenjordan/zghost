@@ -4,7 +4,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { PipelineGraph } from './PipelineGraph';
 import { DAGTimeline } from './DAGTimeline';
 import { EventStream } from './EventStream';
-import { TaskDrillDown } from './TaskDrillDown';
+
 import { SessionStatePanel } from './SessionStatePanel';
 import { AgentChat } from './AgentChat';
 import { ResultsGallery } from './ResultsGallery';
@@ -71,7 +71,6 @@ export function OrchestrationPage() {
     status,
     refetch,
     events,
-    getAgentEvents,
     addEvent,
     sessionState,
     changedKeys,
@@ -390,8 +389,6 @@ export function OrchestrationPage() {
     (Array.isArray(sessionState.vid_artifact_keys) && sessionState.vid_artifact_keys.length > 0)
   );
 
-  const selectedAgentState = selectedAgent ? status?.agents[selectedAgent] : undefined;
-  const selectedAgentEvents = selectedAgent ? getAgentEvents(selectedAgent) : [];
   const { ready: storeReady, missing } = isReadyToLaunch();
 
   // Derive display config from active session (for backend sessions) or global store
@@ -635,13 +632,12 @@ export function OrchestrationPage() {
         </div>
 
         {/* Right: Detail panel (1 col) */}
-        <div className="border border-zinc-800 rounded-lg overflow-hidden flex flex-col">
+        <div className="border border-zinc-800 rounded-lg overflow-hidden flex flex-col min-h-0">
           <Tabs value={detailTab} onValueChange={setDetailTab}>
             <TabsList className="w-full flex flex-wrap gap-1">
               <TabsTrigger value="chat">Chat</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
               <TabsTrigger value="evaluation">Eval</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="config">Config</TabsTrigger>
               <TabsTrigger value="state">State</TabsTrigger>
             </TabsList>
@@ -662,21 +658,6 @@ export function OrchestrationPage() {
 
             <TabsContent value="evaluation" className="flex-1 overflow-auto">
               <EvaluationPanel sessionState={sessionState} rubrics={activeRubrics} scores={evalScores} onScoresChange={setEvalScores} />
-            </TabsContent>
-
-            <TabsContent value="details" className="flex-1 overflow-auto">
-              {selectedAgent ? (
-                <TaskDrillDown
-                  agentName={selectedAgent}
-                  agentState={selectedAgentState}
-                  events={selectedAgentEvents}
-                  onClose={() => setSelectedAgent(null)}
-                />
-              ) : (
-                <div className="flex items-center justify-center p-8 text-zinc-500 text-sm">
-                  Click an agent to view details
-                </div>
-              )}
             </TabsContent>
 
             <TabsContent value="config" className="flex-1 overflow-hidden">

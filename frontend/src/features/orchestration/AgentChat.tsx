@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, CheckCircle, XCircle, ChevronDown, Loader2, FileText, ArrowRight, Film } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { api } from '../../services/api';
+import { api, gcsToProxyUrl } from '../../services/api';
 import { cn } from '../../lib/utils';
 import type { AgentEvent } from '../../types/agents';
 
@@ -45,7 +45,7 @@ function RichText({ text, sessionId }: { text: string; sessionId?: string | null
         </Link>
       );
     } else {
-      const httpUrl = url.replace('gs://', 'https://storage.googleapis.com/');
+      const httpUrl = gcsToProxyUrl(url);
       parts.push(
         <a
           key={match.index}

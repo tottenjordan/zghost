@@ -19,6 +19,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from google.adk.artifacts import GcsArtifactService
 from google.adk.runners import InMemoryRunner
 from google.adk.sessions import InMemorySessionService, VertexAiSessionService
 from google.genai import types
@@ -218,6 +219,10 @@ async def lifespan(app: FastAPI):
     app_state.runner = InMemoryRunner(
         agent=root_agent, app_name=SESSION_APP_NAME
     )
+    # Override default InMemoryArtifactService with GCS for persistent media storage
+    artifact_bucket = os.environ.get("BUCKET", "zghost-media-center").replace("gs://", "")
+    app_state.runner.artifact_service = GcsArtifactService(bucket_name=artifact_bucket)
+    logger.info(f"GcsArtifactService configured with bucket: {artifact_bucket}")
     # Override with custom session service if VertexAI sessions are enabled
     custom_session_service = _create_session_service()
     if not isinstance(custom_session_service, InMemorySessionService):
@@ -769,6 +774,56 @@ async def get_session_artifacts(
         raise HTTPException(
             status_code=500, detail=f"Failed to get session artifacts: {str(e)}"
         )
+
+
+@app.get("/api/v1/media")
+async def proxy_gcs_media(uri: str = Query(..., description="GCS URI (gs://bucket/path)")):
+    """Proxy GCS media to the browser. Avoids public bucket requirement."""
+    if not uri.startswith("gs://"):
+        raise HTTPException(status_code=400, detail="URI must start with gs://")
+
+    try:
+        from google.cloud import storage as gcs_storage
+
+        # Parse gs://bucket/blob_path
+        without_prefix = uri[5:]  # remove "gs://"
+        slash_idx = without_prefix.index("/")
+        bucket_name = without_prefix[:slash_idx]
+        blob_path = without_prefix[slash_idx + 1:]
+
+        def _download():
+            client = gcs_storage.Client()
+            bucket = client.bucket(bucket_name)
+            blob = bucket.blob(blob_path)
+            if not blob.exists():
+                return None, None
+            return blob.download_as_bytes(), blob.content_type
+
+        data, blob_content_type = await asyncio.to_thread(_download)
+
+        if data is None:
+            raise HTTPException(status_code=404, detail=f"Blob not found: {blob_path}")
+
+        # Infer content type from extension
+        ext = os.path.splitext(blob_path)[1].lower()
+        content_types = {
+            ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+            ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml",
+            ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
+            ".mp3": "audio/mpeg", ".wav": "audio/wav", ".pdf": "application/pdf",
+        }
+        content_type = blob_content_type or content_types.get(ext, "application/octet-stream")
+
+        return StreamingResponse(
+            io.BytesIO(data),
+            media_type=content_type,
+            headers={"Cache-Control": "public, max-age=3600"},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Media proxy error for {uri}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch media: {str(e)}")
 
 
 @app.get("/api/v1/sessions/{session_id}/export")

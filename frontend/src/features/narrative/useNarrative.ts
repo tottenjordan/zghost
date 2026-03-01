@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { api } from '../../services/api';
+import { api, gcsToProxyUrl } from '../../services/api';
 import type { SessionState } from '../../types/session';
 import type { Message, Scene, NarrativeArc, NarrativeData } from './types';
 
@@ -50,9 +50,8 @@ export function useNarrative(sessionId: string | null) {
         .then((result) => {
           setSessionState(result.state);
 
-          // Check for PDF URLs — convert gs:// to HTTP
-          const toHttp = (url: string) =>
-            url.startsWith('gs://') ? url.replace('gs://', 'https://storage.googleapis.com/') : url;
+          // Check for PDF URLs — proxy through backend
+          const toHttp = gcsToProxyUrl;
           const draftPdf = result.state?.draft_pdf_url;
           const finalPdf = result.state?.final_pdf_url;
           if (finalPdf) {

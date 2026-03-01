@@ -18,6 +18,7 @@ import {
 import { Badge } from '../../components/ui/Badge';
 import { Markdown } from '../../components/ui/Markdown';
 import { cn } from '../../lib/utils';
+import { gcsToProxyUrl } from '../../services/api';
 
 interface ResultsGalleryProps {
   sessionState: Record<string, any>;
@@ -39,10 +40,6 @@ interface MediaItem {
   prompt?: string;
   trend?: string;
   type: 'image' | 'video';
-}
-
-function gcsToHttpUrl(gcsPath: string): string {
-  return gcsPath.replace('gs://', 'https://storage.googleapis.com/');
 }
 
 function parseAdCopies(raw: any): AdCopy[] {
@@ -264,10 +261,19 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
             <FileText className="w-4 h-4 text-blue-400" />
             <span className="text-sm font-medium text-zinc-300">Research Report</span>
           </div>
+          {typeof sessionState.combined_final_cited_report === 'string' && (
+            <div className="mb-2 text-xs text-zinc-400 leading-relaxed max-h-40 overflow-y-auto">
+              <Markdown
+                content={sessionState.combined_final_cited_report.slice(0, 800) +
+                  (sessionState.combined_final_cited_report.length > 800 ? '\n\n*...truncated — open in Narrative for full report*' : '')}
+                className="text-xs text-zinc-400"
+              />
+            </div>
+          )}
           <div className="flex items-center gap-2">
             {pdfUrl && (
               <a
-                href={gcsToHttpUrl(pdfUrl)}
+                href={gcsToProxyUrl(pdfUrl)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300"
@@ -512,7 +518,7 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
                     </Link>
                   )}
                   <a
-                    href={gcsToHttpUrl(media.url)}
+                    href={gcsToProxyUrl(media.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-zinc-500 hover:text-zinc-300"
@@ -536,7 +542,7 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
                   <MediaFallback type={media.type} />
                 ) : media.type === 'video' ? (
                   <video
-                    src={gcsToHttpUrl(media.url)}
+                    src={gcsToProxyUrl(media.url)}
                     controls
                     className="w-full rounded border border-zinc-700"
                     preload="metadata"
@@ -544,7 +550,7 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
                   />
                 ) : (
                   <img
-                    src={gcsToHttpUrl(media.url)}
+                    src={gcsToProxyUrl(media.url)}
                     alt={media.headline || `Generated ad ${i + 1}`}
                     className="w-full rounded border border-zinc-700"
                     loading="lazy"
