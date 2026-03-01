@@ -211,7 +211,6 @@ export function useNarrative(sessionId: string | null) {
       }));
 
       if (!sessionId) {
-        // No backend session — show a local placeholder response
         const assistantMessage: Message = {
           id: `msg_${Date.now()}_assistant`,
           role: 'assistant',
@@ -228,18 +227,13 @@ export function useNarrative(sessionId: string | null) {
       }
 
       try {
-        // Set a 2-minute timeout — the full pipeline takes much longer,
-        // so if it hasn't responded quickly this is likely a queued request
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 120_000);
-
-        const responseText = await api.sendMessage(sessionId, content, 'default-user');
-        clearTimeout(timeout);
+        // Use the lightweight narrative refinement endpoint (not the full pipeline)
+        const result = await api.refineNarrative(sessionId, content);
 
         const assistantMessage: Message = {
           id: `msg_${Date.now()}_assistant`,
           role: 'assistant',
-          content: responseText || 'No response received. The agent may still be processing — check the Orchestration tab for pipeline status.',
+          content: result.refined_text,
           timestamp: Date.now(),
         };
 
@@ -249,14 +243,11 @@ export function useNarrative(sessionId: string | null) {
           isStreaming: false,
         }));
       } catch (error) {
-        console.error('Failed to send message:', error);
-        const errorMsg = error instanceof DOMException && error.name === 'AbortError'
-          ? 'Request timed out. The pipeline may still be running — check the Orchestration tab.'
-          : 'Failed to get a response. The agent may be busy with the current pipeline run.';
+        console.error('Failed to refine narrative:', error);
         const assistantMessage: Message = {
           id: `msg_${Date.now()}_error`,
           role: 'assistant',
-          content: errorMsg,
+          content: 'Failed to refine the narrative. Please try again.',
           timestamp: Date.now(),
         };
         setNarrativeData((prev) => ({
@@ -264,6 +255,22 @@ export function useNarrative(sessionId: string | null) {
           messages: [...prev.messages, assistantMessage],
           isStreaming: false,
         }));
+      }
+    },
+    [sessionId]
+  );
+
+  const generatePdf = useCallback(
+    async (content?: string, title?: string) => {
+      if (!sessionId) return null;
+      try {
+        const result = await api.generatePdf(sessionId, content, title);
+        // Don't set pdfUrl here — keep the storyboard view visible.
+        // The caller opens the PDF in a new tab via the backend proxy.
+        return result;
+      } catch (error) {
+        console.error('Failed to generate PDF:', error);
+        return null;
       }
     },
     [sessionId]
@@ -312,6 +319,7 @@ export function useNarrative(sessionId: string | null) {
     sessionState,
     pdfUrl,
     sendMessage,
+    generatePdf,
     reorderScenes,
     updateScene,
     updateNarrativeArc,

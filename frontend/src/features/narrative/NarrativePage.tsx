@@ -7,7 +7,7 @@ import { useNarrative } from './useNarrative';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { Button } from '../../components/ui/Button';
 import { Markdown } from '../../components/ui/Markdown';
-import { CheckCircle, SkipForward, ChevronDown, AlertCircle } from 'lucide-react';
+import { CheckCircle, SkipForward, ChevronDown, AlertCircle, FileText, Loader2 } from 'lucide-react';
 import { useCampaignStore } from '../../stores/campaignStore';
 import { cn } from '../../lib/utils';
 
@@ -27,6 +27,8 @@ export function NarrativePage() {
     setSearchParams({ session: newSessionId });
   };
 
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
   const {
     messages,
     scenes,
@@ -35,6 +37,7 @@ export function NarrativePage() {
     sessionState,
     pdfUrl,
     sendMessage,
+    generatePdf,
     reorderScenes,
     updateScene,
     updateNarrativeArc,
@@ -70,7 +73,7 @@ export function NarrativePage() {
   }, [sendMessage]);
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-full gap-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -120,6 +123,30 @@ export function NarrativePage() {
           </div>
           <div className="flex gap-2">
             <Button
+              onClick={async () => {
+                if (!sessionId) return;
+                setIsGeneratingPdf(true);
+                try {
+                  await generatePdf();
+                  // Open the PDF in a new tab via backend proxy
+                  window.open(`/api/v1/narrative/pdf/${sessionId}/download`, '_blank');
+                } finally {
+                  setIsGeneratingPdf(false);
+                }
+              }}
+              variant="secondary"
+              size="sm"
+              className="flex items-center gap-1.5"
+              disabled={isGeneratingPdf}
+            >
+              {isGeneratingPdf ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              {isGeneratingPdf ? 'Generating...' : 'Generate PDF'}
+            </Button>
+            <Button
               onClick={handleAcceptReport}
               variant="primary"
               size="sm"
@@ -142,9 +169,9 @@ export function NarrativePage() {
       )}
 
       {/* Two-Panel Layout */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 flex-1 min-h-0">
         {/* Left Panel: Chat */}
-        <div className="flex h-[calc(100vh-16rem)] flex-col">
+        <div className="flex flex-col min-h-[300px] lg:h-auto">
           <NarrativeChat
             messages={messages}
             isStreaming={isStreaming}
@@ -154,7 +181,7 @@ export function NarrativePage() {
         </div>
 
         {/* Right Panel: PDF Viewer or Storyboard & Arc */}
-        <div className="flex h-[calc(100vh-16rem)] flex-col overflow-hidden">
+        <div className="flex flex-col min-h-[300px] lg:h-auto overflow-hidden">
           {hasPdf ? (
             <div className="flex flex-col h-full border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/50">
               <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-900">
@@ -197,7 +224,7 @@ export function NarrativePage() {
               </div>
             </div>
           ) : (
-            <div className="overflow-y-auto">
+            <div className="overflow-y-auto overflow-x-auto">
               <Tabs defaultValue="storyboard">
                 <TabsList className="mb-4">
                   <TabsTrigger value="storyboard">

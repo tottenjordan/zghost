@@ -32,22 +32,22 @@ export function ArchitectureDiagram({ highlightedSkill, onSelectSkill }: Archite
     { id: 'root', label: 'root_agent', x: 400, y: 50, width: 140, height: 50, color: 'root' },
 
     // Main skills
-    { id: 'trend-discovery', label: 'trends_and_insights', x: 100, y: 180, width: 150, height: 50, color: 'blue', skillId: 'trend-discovery' },
-    { id: 'market-research', label: 'research_orchestrator', x: 280, y: 180, width: 160, height: 50, color: 'green', skillId: 'market-research' },
-    { id: 'ad-creative', label: 'ad_content_generator', x: 470, y: 180, width: 160, height: 50, color: 'purple', skillId: 'ad-creative' },
-    { id: 'av-studio', label: 'av_editing_studio', x: 660, y: 180, width: 150, height: 50, color: 'orange', skillId: 'av-studio' },
-    { id: 'focus-group', label: 'focus_group_evaluator', x: 840, y: 180, width: 160, height: 50, color: 'red', skillId: 'focus-group' },
+    { id: 'trend-discovery', label: 'trends_and_insights', x: 80, y: 180, width: 150, height: 50, color: 'blue', skillId: 'trend-discovery' },
+    { id: 'market-research', label: 'research_orchestrator', x: 260, y: 180, width: 160, height: 50, color: 'green', skillId: 'market-research' },
+    { id: 'ad-creative', label: 'ad_content_generator', x: 500, y: 180, width: 160, height: 50, color: 'purple', skillId: 'ad-creative' },
+    { id: 'av-studio', label: 'av_editing_studio', x: 720, y: 180, width: 150, height: 50, color: 'orange', skillId: 'av-studio' },
+    { id: 'focus-group', label: 'focus_group_evaluator', x: 900, y: 180, width: 160, height: 50, color: 'red', skillId: 'focus-group' },
 
     // Market research sub-agents
-    { id: 'mr-pipeline', label: 'combined_research_pipeline', x: 280, y: 280, width: 160, height: 40, color: 'green', isSubAgent: true },
-    { id: 'mr-yt', label: 'yt_sequential_planner', x: 150, y: 370, width: 140, height: 35, color: 'green', isSubAgent: true },
-    { id: 'mr-gs', label: 'gs_sequential_planner', x: 310, y: 370, width: 140, height: 35, color: 'green', isSubAgent: true },
-    { id: 'mr-ca', label: 'ca_sequential_planner', x: 470, y: 370, width: 140, height: 35, color: 'green', isSubAgent: true },
+    { id: 'mr-pipeline', label: 'combined_research_pipeline', x: 260, y: 280, width: 160, height: 40, color: 'green', isSubAgent: true },
+    { id: 'mr-yt', label: 'yt_sequential_planner', x: 100, y: 370, width: 140, height: 35, color: 'green', isSubAgent: true },
+    { id: 'mr-gs', label: 'gs_sequential_planner', x: 260, y: 370, width: 140, height: 35, color: 'green', isSubAgent: true },
+    { id: 'mr-ca', label: 'ca_sequential_planner', x: 420, y: 370, width: 140, height: 35, color: 'green', isSubAgent: true },
 
     // Ad creative sub-agents
-    { id: 'ac-copy', label: 'ad_creative_pipeline', x: 400, y: 280, width: 140, height: 35, color: 'purple', isSubAgent: true },
-    { id: 'ac-visual', label: 'visual_generation_pipeline', x: 560, y: 280, width: 170, height: 35, color: 'purple', isSubAgent: true },
-    { id: 'ac-gen', label: 'visual_generator', x: 560, y: 330, width: 120, height: 35, color: 'purple', isSubAgent: true },
+    { id: 'ac-copy', label: 'ad_creative_pipeline', x: 440, y: 280, width: 140, height: 35, color: 'purple', isSubAgent: true },
+    { id: 'ac-visual', label: 'visual_generation_pipeline', x: 620, y: 280, width: 170, height: 35, color: 'purple', isSubAgent: true },
+    { id: 'ac-gen', label: 'visual_generator', x: 640, y: 330, width: 120, height: 35, color: 'purple', isSubAgent: true },
   ];
 
   const edges = [
@@ -83,7 +83,7 @@ export function ArchitectureDiagram({ highlightedSkill, onSelectSkill }: Archite
         </p>
       </CardHeader>
       <CardContent>
-        <svg viewBox="0 0 1050 450" className="w-full h-auto" style={{ maxHeight: '600px' }}>
+        <svg viewBox="0 0 1150 450" className="w-full h-auto" style={{ maxHeight: '600px' }}>
           <defs>
             <marker
               id="arrowhead"

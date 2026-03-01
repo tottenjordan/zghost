@@ -5,11 +5,13 @@ import { RubricLibrary } from './RubricLibrary';
 import { RubricEditor } from './RubricEditor';
 import { RatingSummary } from './RatingSummary';
 import { FocusGroupResults } from './FocusGroupResults';
+import { EvalResultsView } from './EvalResultsView';
 import { useRating } from './useRating';
 import { useCampaignStore } from '../../stores/campaignStore';
 import { api } from '../../services/api';
 import { cn } from '../../lib/utils';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
 import type { ExtendedRubric } from './rubric-templates';
 
 type EditorMode = 'library' | 'create' | 'edit';
@@ -32,6 +34,21 @@ export function RatingPage() {
   const [editorMode, setEditorMode] = useState<EditorMode>('library');
   const [editingRubric, setEditingRubric] = useState<ExtendedRubric | undefined>();
 
+  // Eval state
+  const [evalSets, setEvalSets] = useState<Array<{name: string, path: string, num_cases: number}>>([]);
+  const [selectedEvalSet, setSelectedEvalSet] = useState<string>('');
+  const [selectedRubricId, setSelectedRubricId] = useState<string>('');
+  const [isRunningEval, setIsRunningEval] = useState(false);
+  const [evalId, setEvalId] = useState<string>('');
+  const [evalResults, setEvalResults] = useState<any>(null);
+
+  // Sync selectedSessionId with activeSessionId from store
+  useEffect(() => {
+    if (activeSessionId && activeSessionId !== selectedSessionId) {
+      setSelectedSessionId(activeSessionId);
+    }
+  }, [activeSessionId]);
+
   // Load session state when run is selected
   useEffect(() => {
     if (!selectedSessionId) return;
@@ -46,6 +63,61 @@ export function RatingPage() {
       toggleActiveRubric(rubrics[0]);
     }
   }, [rubrics, activeRubrics, toggleActiveRubric]);
+
+  // Load eval sets
+  useEffect(() => {
+    api.listEvalSets()
+      .then((result) => {
+        setEvalSets(result.eval_sets);
+        if (result.eval_sets.length > 0) {
+          setSelectedEvalSet(result.eval_sets[0].path);
+        }
+      })
+      .catch((err) => console.error('Failed to load eval sets:', err));
+  }, []);
+
+  // Auto-select first active rubric
+  useEffect(() => {
+    if (activeRubrics.length > 0 && !selectedRubricId) {
+      setSelectedRubricId(activeRubrics[0].id);
+    }
+  }, [activeRubrics, selectedRubricId]);
+
+  const handleRunEval = async () => {
+    if (!selectedEvalSet) return;
+    setIsRunningEval(true);
+    setEvalResults(null);
+    try {
+      const result = await api.runEval(selectedEvalSet, selectedRubricId || undefined);
+      setEvalId(result.eval_id);
+
+      // Poll for results
+      const pollInterval = setInterval(async () => {
+        try {
+          const resultsData = await api.getEvalResults(result.eval_id);
+          if (resultsData.status === 'completed') {
+            setEvalResults(resultsData.results);
+            setIsRunningEval(false);
+            clearInterval(pollInterval);
+          } else if (resultsData.status === 'failed') {
+            setIsRunningEval(false);
+            clearInterval(pollInterval);
+          }
+        } catch (err) {
+          console.error('Failed to get eval results:', err);
+        }
+      }, 2000);
+
+      // Stop polling after 5 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        setIsRunningEval(false);
+      }, 300000);
+    } catch (err) {
+      console.error('Failed to run eval:', err);
+      setIsRunningEval(false);
+    }
+  };
 
   const handleCreateRubric = (rubric: Omit<ExtendedRubric, 'id'>) => {
     const created = createRubric(rubric);
@@ -178,6 +250,7 @@ export function RatingPage() {
         <TabsList>
           <TabsTrigger value="rate">Rate Content</TabsTrigger>
           <TabsTrigger value="rubrics">Manage Rubrics</TabsTrigger>
+          <TabsTrigger value="eval">AI Evaluation</TabsTrigger>
           <TabsTrigger value="results">Results</TabsTrigger>
         </TabsList>
 
@@ -213,6 +286,83 @@ export function RatingPage() {
                 rubric={editingRubric}
                 onSave={editorMode === 'edit' ? handleUpdateRubric : handleCreateRubric}
                 onCancel={handleCancel}
+              />
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="eval">
+          <div className="mt-4 space-y-6">
+            {/* Eval Configuration */}
+            <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-6">
+              <h3 className="mb-4 text-lg font-semibold text-zinc-100">
+                Run AI Evaluation
+              </h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {/* Eval Set Selector */}
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-zinc-300">
+                    Evaluation Set
+                  </label>
+                  <select
+                    value={selectedEvalSet}
+                    onChange={(e) => setSelectedEvalSet(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="" disabled>Select an eval set...</option>
+                    {evalSets.map((set) => (
+                      <option key={set.path} value={set.path}>
+                        {set.name} ({set.num_cases} cases)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Rubric Selector */}
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-zinc-300">
+                    Rubric (Optional)
+                  </label>
+                  <select
+                    value={selectedRubricId}
+                    onChange={(e) => setSelectedRubricId(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">No rubric (default criteria)</option>
+                    {activeRubrics.map((rubric) => (
+                      <option key={rubric.id} value={rubric.id}>
+                        {rubric.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <Button
+                  onClick={handleRunEval}
+                  disabled={!selectedEvalSet || isRunningEval}
+                  variant="primary"
+                  className="flex items-center gap-2"
+                >
+                  {isRunningEval ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Running Evaluation...
+                    </>
+                  ) : (
+                    'Run Evaluation'
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Eval Results */}
+            {evalResults && (
+              <EvalResultsView
+                evalId={evalId}
+                results={evalResults}
+                activeRubric={activeRubrics.find(r => r.id === selectedRubricId)}
               />
             )}
           </div>

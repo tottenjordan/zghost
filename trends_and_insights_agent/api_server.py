@@ -22,6 +22,7 @@ from google.adk.sessions import InMemorySessionService, VertexAiSessionService
 from google.genai import types
 
 from .agent import root_agent
+from . import eval_service
 from .api_models import (
     AgentHierarchyResponse,
     AgentMetadata,
@@ -29,9 +30,19 @@ from .api_models import (
     AgentRunResponse,
     ArtifactInfo,
     AvailableTrendsResponse,
+    ConcurrencyConfigRequest,
+    ConcurrencyStatusResponse,
     DispatchConfig,
     DispatchResponse,
+    EvalRunRequest,
+    EvalRunResponse,
+    EvalSetInfo,
+    EvalSetListResponse,
     ExecutionTraceResponse,
+    NarrativePdfRequest,
+    NarrativePdfResponse,
+    NarrativeRefineRequest,
+    NarrativeRefineResponse,
     OrchestrationStatusResponse,
     PipelineStatus,
     RatingListResponse,
@@ -90,6 +101,12 @@ class AppState:
         self.ratings: Dict[str, RatingResponse] = {}
         # Rubrics storage: rubric_id -> RubricResponse
         self.rubrics: Dict[str, RubricResponse] = {}
+        # Concurrency control
+        self.max_concurrent_runs: int = 2
+        self.run_semaphore: asyncio.Semaphore = asyncio.Semaphore(2)
+        self.active_runs: Dict[str, str] = {}  # session_id -> user_id
+        # Evaluation results storage: eval_id -> dict
+        self.eval_results: Dict[str, dict] = {}
 
 
 app_state = AppState()
@@ -563,8 +580,16 @@ async def create_session(request: SessionCreateRequest):
             except Exception as e:
                 logger.warning(f"Failed to pre-load memories: {e}")
 
+        # Get Agent Engine ID from environment if available
+        agent_engine_id = os.getenv("MEMORY_BANK_AGENT_ENGINE_ID")
+        is_vertex_session = isinstance(app_state.session_service, VertexAiSessionService)
+
         return SessionCreateResponse(
-            session_id=session_id, user_id=user_id, created_at=datetime.utcnow()
+            session_id=session_id,
+            user_id=user_id,
+            created_at=datetime.utcnow(),
+            agent_engine_id=agent_engine_id,
+            is_vertex_session=is_vertex_session,
         )
 
     except Exception as e:
@@ -728,13 +753,50 @@ async def run_agent(request: AgentRunRequest):
         raise HTTPException(status_code=500, detail=f"Failed to run agent: {str(e)}")
 
 
+async def stream_with_concurrency_control(
+    runner: InMemoryRunner, session_id: str, user_id: str, message: str
+) -> AsyncIterator[str]:
+    """Wrapper generator that enforces concurrency control via semaphore."""
+    # Check if we need to queue
+    if app_state.run_semaphore.locked():
+        queued_event = {
+            "type": "queued",
+            "timestamp": int(time.time() * 1000),
+            "session_id": session_id,
+            "message": "Pipeline queued, waiting for available slot...",
+        }
+        logger.info(f"Session {session_id} queued (waiting for semaphore)")
+        yield f"data: {json.dumps(queued_event)}\n\n"
+
+    # Acquire semaphore (blocks if at capacity)
+    async with app_state.run_semaphore:
+        # Track this run
+        app_state.active_runs[session_id] = user_id
+        logger.info(
+            f"Session {session_id} acquired semaphore "
+            f"({len(app_state.active_runs)}/{app_state.max_concurrent_runs} active)"
+        )
+
+        try:
+            # Stream all events from the wrapped generator
+            async for event_data in stream_agent_events(runner, session_id, user_id, message):
+                yield event_data
+        finally:
+            # Release tracking
+            app_state.active_runs.pop(session_id, None)
+            logger.info(
+                f"Session {session_id} released semaphore "
+                f"({len(app_state.active_runs)}/{app_state.max_concurrent_runs} active)"
+            )
+
+
 @app.get("/api/v1/run/{session_id}/stream")
 async def stream_agent_run(
     session_id: str, user_id: str = Query(default="default-user"), message: str = Query(...)
 ):
     """SSE stream for agent execution."""
     return StreamingResponse(
-        stream_agent_events(app_state.runner, session_id, user_id, message),
+        stream_with_concurrency_control(app_state.runner, session_id, user_id, message),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -742,6 +804,210 @@ async def stream_agent_run(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# =====================================
+# Concurrency Control Endpoints
+# =====================================
+
+
+@app.get("/api/v1/concurrency/status", response_model=ConcurrencyStatusResponse)
+async def get_concurrency_status():
+    """Get current concurrency status."""
+    try:
+        active_count = len(app_state.active_runs)
+        # Calculate queued count: this is approximate, as we can't directly query semaphore waiters
+        # We use the semaphore's locked state as a proxy
+        queued_count = 0
+        if app_state.run_semaphore.locked():
+            # If semaphore is locked, there might be queued requests
+            # This is a conservative estimate
+            queued_count = max(0, active_count - app_state.max_concurrent_runs)
+
+        return ConcurrencyStatusResponse(
+            active_count=active_count,
+            max_concurrent=app_state.max_concurrent_runs,
+            queued_count=queued_count,
+        )
+    except Exception as e:
+        logger.error(f"Error getting concurrency status: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get concurrency status: {str(e)}"
+        )
+
+
+@app.patch("/api/v1/concurrency/config")
+async def update_concurrency_config(request: ConcurrencyConfigRequest):
+    """Update concurrency configuration."""
+    try:
+        old_max = app_state.max_concurrent_runs
+        new_max = request.max_concurrent
+
+        # Update max concurrent
+        app_state.max_concurrent_runs = new_max
+
+        # Recreate semaphore with new limit
+        # Note: This recreates the semaphore, which means any current waiters
+        # will continue waiting on the old semaphore. New requests will use the new one.
+        # For a production system, you might want a more sophisticated migration strategy.
+        app_state.run_semaphore = asyncio.Semaphore(new_max)
+
+        logger.info(f"Updated concurrency limit: {old_max} -> {new_max}")
+
+        return {
+            "status": "updated",
+            "old_max_concurrent": old_max,
+            "new_max_concurrent": new_max,
+            "active_count": len(app_state.active_runs),
+        }
+    except Exception as e:
+        logger.error(f"Error updating concurrency config: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to update concurrency config: {str(e)}"
+        )
+
+
+# =====================================
+# Evaluation Endpoints
+# =====================================
+
+
+@app.post("/api/v1/eval/run", response_model=EvalRunResponse)
+async def run_evaluation(request: EvalRunRequest):
+    """Run an ADK evaluation with optional custom rubric criteria."""
+    try:
+        # Generate eval ID
+        eval_id = str(uuid.uuid4())
+        started_at = datetime.utcnow()
+
+        # Convert Pydantic models to dicts for eval_service
+        rubric_criteria = None
+        if request.rubric_criteria:
+            rubric_criteria = [
+                {
+                    "name": criterion.name,
+                    "description": criterion.description,
+                    "weight": criterion.weight,
+                }
+                for criterion in request.rubric_criteria
+            ]
+
+        # Initialize result entry
+        app_state.eval_results[eval_id] = {
+            "eval_id": eval_id,
+            "status": "running",
+            "results": None,
+            "started_at": started_at,
+            "completed_at": None,
+            "eval_set_path": request.eval_set_path,
+            "agent_module": request.agent_module,
+            "rubric_criteria": rubric_criteria,
+        }
+
+        # Run evaluation asynchronously in background
+        async def run_eval_async():
+            try:
+                results = eval_service.run_evaluation(
+                    eval_dataset_path=request.eval_set_path,
+                    agent_module=request.agent_module,
+                    rubric_criteria=rubric_criteria,
+                )
+                app_state.eval_results[eval_id]["status"] = "completed"
+                app_state.eval_results[eval_id]["results"] = results
+                app_state.eval_results[eval_id]["completed_at"] = datetime.utcnow()
+                logger.info(f"Evaluation {eval_id} completed successfully")
+            except Exception as e:
+                logger.error(f"Evaluation {eval_id} failed: {str(e)}", exc_info=True)
+                app_state.eval_results[eval_id]["status"] = "failed"
+                app_state.eval_results[eval_id]["error"] = str(e)
+                app_state.eval_results[eval_id]["completed_at"] = datetime.utcnow()
+
+        # Start background task
+        asyncio.create_task(run_eval_async())
+
+        return EvalRunResponse(
+            eval_id=eval_id,
+            status="running",
+            results=None,
+            started_at=started_at,
+            completed_at=None,
+        )
+
+    except Exception as e:
+        logger.error(f"Error starting evaluation: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to start evaluation: {str(e)}"
+        )
+
+
+@app.get("/api/v1/eval/sets", response_model=EvalSetListResponse)
+async def list_eval_sets(eval_dir: str = Query(default="tests")):
+    """List available evaluation datasets."""
+    try:
+        eval_sets = eval_service.list_eval_sets(eval_dir=eval_dir)
+        eval_set_infos = [
+            EvalSetInfo(
+                name=es["name"],
+                path=es["path"],
+                num_cases=es["num_cases"],
+            )
+            for es in eval_sets
+        ]
+        return EvalSetListResponse(eval_sets=eval_set_infos)
+    except Exception as e:
+        logger.error(f"Error listing eval sets: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to list eval sets: {str(e)}"
+        )
+
+
+@app.get("/api/v1/eval/sets/{eval_set_name}")
+async def get_eval_set(eval_set_name: str, eval_dir: str = Query(default="tests")):
+    """Get the content of a specific evaluation dataset."""
+    try:
+        # Construct path from name (add .test.json if not present)
+        if not eval_set_name.endswith(".test.json"):
+            eval_set_name = f"{eval_set_name}.test.json"
+
+        eval_path = f"{eval_dir}/{eval_set_name}"
+        content = eval_service.load_eval_set(eval_path)
+
+        return {
+            "name": eval_set_name,
+            "path": eval_path,
+            "content": content,
+        }
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error loading eval set: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to load eval set: {str(e)}"
+        )
+
+
+@app.get("/api/v1/eval/results/{eval_id}", response_model=EvalRunResponse)
+async def get_eval_results(eval_id: str):
+    """Get the results of a specific evaluation run."""
+    try:
+        if eval_id not in app_state.eval_results:
+            raise HTTPException(status_code=404, detail=f"Evaluation {eval_id} not found")
+
+        eval_data = app_state.eval_results[eval_id]
+        return EvalRunResponse(
+            eval_id=eval_data["eval_id"],
+            status=eval_data["status"],
+            results=eval_data.get("results"),
+            started_at=eval_data["started_at"],
+            completed_at=eval_data.get("completed_at"),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching eval results: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to fetch eval results: {str(e)}"
+        )
 
 
 # =====================================
@@ -1451,6 +1717,313 @@ async def get_ratings(
     except Exception as e:
         logger.error(f"Error getting ratings: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to get ratings: {str(e)}")
+
+
+# =====================================
+# Narrative Refinement & PDF Generation
+# =====================================
+
+
+@app.post("/api/v1/narrative/refine", response_model=NarrativeRefineResponse)
+async def refine_narrative(request: NarrativeRefineRequest):
+    """Refine narrative text using a lightweight Gemini call.
+
+    This does NOT go through the full pipeline agent. It uses a direct
+    Gemini API call to rewrite the given text based on the user's direction.
+    """
+    try:
+        from google import genai
+
+        # Load report text from session if not provided
+        text_to_refine = request.current_text
+        brand = ""
+        product = ""
+
+        if not text_to_refine and app_state.session_service:
+            try:
+                session = await app_state.session_service.get_session(
+                    app_name=SESSION_APP_NAME,
+                    user_id="default-user",
+                    session_id=request.session_id,
+                )
+                if session and session.state:
+                    text_to_refine = (
+                        session.state.get("final_report_with_citations")
+                        or session.state.get("combined_final_cited_report")
+                        or ""
+                    )
+                    brand = session.state.get("brand", "")
+                    product = session.state.get("target_product", "")
+            except Exception as e:
+                logger.warning("Could not load session for narrative: %s", e)
+
+        if not text_to_refine:
+            raise HTTPException(
+                status_code=400,
+                detail="No text to refine. Provide current_text or ensure session has a report.",
+            )
+
+        # Truncate to avoid hitting token limits (keep first ~30K chars)
+        if len(text_to_refine) > 30000:
+            text_to_refine = text_to_refine[:30000] + "\n\n[... truncated for refinement ...]"
+
+        brand_ctx = f"Brand: {brand}, Product: {product}" if brand else ""
+
+        prompt = f"""You are a creative narrative director for advertising campaigns.
+{brand_ctx}
+
+The user wants you to refine the following marketing narrative/report.
+
+USER DIRECTION: {request.direction}
+
+CURRENT TEXT:
+{text_to_refine}
+
+INSTRUCTIONS:
+- Apply the user's direction to rewrite the text
+- Maintain the same structure and sections
+- Keep factual data, statistics, and citations intact
+- Make the changes feel natural, not forced
+- Return ONLY the refined text, no preamble or meta-commentary
+"""
+
+        client = genai.Client(vertexai=True)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.7,
+                response_modalities=["TEXT"],
+            ),
+        )
+
+        refined = response.text.strip() if response.text else text_to_refine
+        return NarrativeRefineResponse(
+            refined_text=refined,
+            direction_applied=request.direction,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Narrative refinement failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Refinement failed: {str(e)}")
+
+
+@app.post("/api/v1/narrative/pdf", response_model=NarrativePdfResponse)
+async def generate_narrative_pdf(request: NarrativePdfRequest):
+    """Generate a PDF from narrative/report content and upload to GCS."""
+    try:
+        import re
+        import tempfile
+        from fpdf import FPDF
+        from google.cloud import storage as gcs_storage
+
+        # Load content from session if not provided
+        content = request.content
+        brand = ""
+        product = ""
+        title = request.title or "Marketing Research Report"
+
+        if not content and app_state.session_service:
+            try:
+                session = await app_state.session_service.get_session(
+                    app_name=SESSION_APP_NAME,
+                    user_id="default-user",
+                    session_id=request.session_id,
+                )
+                if session and session.state:
+                    content = (
+                        session.state.get("final_report_with_citations")
+                        or session.state.get("combined_final_cited_report")
+                        or ""
+                    )
+                    brand = session.state.get("brand", "")
+                    product = session.state.get("target_product", "")
+                    if brand:
+                        title = f"{brand} — {product or 'Campaign'} Research Report"
+            except Exception as e:
+                logger.warning("Could not load session for PDF: %s", e)
+
+        if not content:
+            raise HTTPException(
+                status_code=400,
+                detail="No content for PDF. Provide content or ensure session has a report.",
+            )
+
+        # Helper to sanitize text for fpdf2 Helvetica (latin-1 only)
+        def _sanitize(text: str) -> str:
+            replacements = {
+                "\u2014": "--", "\u2013": "-", "\u2018": "'", "\u2019": "'",
+                "\u201c": '"', "\u201d": '"', "\u2026": "...", "\u2022": "-",
+                "\u00a0": " ", "\u200b": "", "\u2010": "-", "\u2011": "-",
+                "\u2012": "-", "\u2015": "--", "\u00b7": "-",
+            }
+            for orig, repl in replacements.items():
+                text = text.replace(orig, repl)
+            return text.encode("latin-1", errors="replace").decode("latin-1")
+
+        # Sanitize entire content upfront
+        content = _sanitize(content)
+
+        # Build PDF using fpdf2
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=20)
+        pdf.set_left_margin(15)
+        pdf.set_right_margin(15)
+
+        # --- Cover page ---
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 28)
+        pdf.ln(60)
+        pdf.cell(0, 15, _sanitize(title), align="C", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(10)
+        pdf.set_font("Helvetica", "", 14)
+        date_str = datetime.utcnow().strftime("%B %d, %Y")
+        pdf.cell(0, 10, date_str, align="C", new_x="LMARGIN", new_y="NEXT")
+        if brand:
+            pdf.ln(5)
+            pdf.set_font("Helvetica", "I", 12)
+            pdf.cell(0, 10, _sanitize(f"Prepared for {brand}"), align="C", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(20)
+        pdf.set_font("Helvetica", "", 10)
+        pdf.cell(
+            0, 8,
+            _sanitize("Generated by Marketing Intelligence Platform -- Powered by Gemini + Vertex AI"),
+            align="C", new_x="LMARGIN", new_y="NEXT",
+        )
+
+        # --- Content pages ---
+        pdf.add_page()
+
+        # Simple markdown-to-pdf rendering
+        lines = content.split("\n")
+        for line in lines:
+            stripped = line.strip()
+
+            if not stripped:
+                pdf.ln(4)
+                continue
+
+            try:
+                # Strip markdown formatting
+                clean = re.sub(r"[#*_`\[\]]", "", stripped).strip()
+                if not clean:
+                    continue
+
+                if stripped.startswith("# "):
+                    pdf.ln(6)
+                    pdf.set_font("Helvetica", "B", 18)
+                    pdf.multi_cell(0, 9, clean)
+                    pdf.ln(3)
+                elif stripped.startswith("## "):
+                    pdf.ln(4)
+                    pdf.set_font("Helvetica", "B", 15)
+                    pdf.multi_cell(0, 8, clean)
+                    pdf.ln(2)
+                elif stripped.startswith("### "):
+                    pdf.ln(3)
+                    pdf.set_font("Helvetica", "B", 12)
+                    pdf.multi_cell(0, 7, clean)
+                    pdf.ln(2)
+                elif stripped.startswith("- ") or stripped.startswith("* "):
+                    pdf.set_font("Helvetica", "", 10)
+                    bullet_text = re.sub(r"^[-*]\s+", "", stripped).strip()
+                    bullet_text = re.sub(r"[*_`\[\]]", "", bullet_text)
+                    pdf.multi_cell(0, 6, f"  - {bullet_text}")
+                elif re.match(r"^\d+\.\s", stripped):
+                    pdf.set_font("Helvetica", "", 10)
+                    pdf.multi_cell(0, 6, clean)
+                else:
+                    pdf.set_font("Helvetica", "", 10)
+                    pdf.multi_cell(0, 6, clean)
+            except Exception:
+                # Skip lines that can't be rendered
+                continue
+
+        # Write to temp file
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+            pdf.output(tmp.name)
+            tmp_path = tmp.name
+
+        # Upload to GCS
+        bucket_name = os.environ.get("BUCKET", "zghost-media-center").replace("gs://", "")
+        blob_name = f"reports/{request.session_id}/report_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.pdf"
+
+        storage_client = gcs_storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+        blob.upload_from_filename(tmp_path, content_type="application/pdf")
+
+        # Make publicly readable
+        try:
+            blob.make_public()
+        except Exception:
+            pass  # Bucket may use uniform access
+
+        # Clean up temp file
+        os.unlink(tmp_path)
+
+        gcs_uri = f"gs://{bucket_name}/{blob_name}"
+        https_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+
+        # Update session state with PDF URL if possible
+        if app_state.session_service:
+            try:
+                session = await app_state.session_service.get_session(
+                    app_name=SESSION_APP_NAME,
+                    user_id="default-user",
+                    session_id=request.session_id,
+                )
+                if session:
+                    session.state["final_pdf_url"] = gcs_uri
+            except Exception as e:
+                logger.warning("Could not update session with PDF URL: %s", e)
+
+        return NarrativePdfResponse(pdf_url=https_url, gcs_uri=gcs_uri)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("PDF generation failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+
+@app.get("/api/v1/narrative/pdf/{session_id}/download")
+async def download_narrative_pdf(session_id: str):
+    """Serve the generated PDF for a session by proxying from GCS."""
+    try:
+        from google.cloud import storage as gcs_storage
+        from fastapi.responses import Response
+
+        # Find the most recent PDF for this session
+        bucket_name = os.environ.get("BUCKET", "zghost-media-center").replace("gs://", "")
+        prefix = f"reports/{session_id}/"
+
+        storage_client = gcs_storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+        blobs = list(bucket.list_blobs(prefix=prefix))
+
+        pdf_blobs = [b for b in blobs if b.name.endswith(".pdf")]
+        if not pdf_blobs:
+            raise HTTPException(status_code=404, detail="No PDF found for this session")
+
+        # Get the most recent one
+        latest = sorted(pdf_blobs, key=lambda b: b.time_created, reverse=True)[0]
+        pdf_bytes = latest.download_as_bytes()
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="report_{session_id}.pdf"',
+            },
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("PDF download failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"PDF download failed: {str(e)}")
 
 
 # =====================================

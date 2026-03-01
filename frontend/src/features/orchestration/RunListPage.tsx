@@ -116,6 +116,7 @@ export function RunListPage() {
   const [sortField, setSortField] = useState<SortField>('time');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [statusFilter, setStatusFilter] = useState<RunStatus | 'all'>('all');
+  const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
 
   // Fetch sessions from backend on mount
   useEffect(() => {
@@ -303,6 +304,12 @@ export function RunListPage() {
       removeSession(session.sessionId);
     }
   }, [removeSession]);
+
+  const handleCopySessionId = useCallback((sessionId: string) => {
+    navigator.clipboard.writeText(sessionId);
+    setCopiedSessionId(sessionId);
+    setTimeout(() => setCopiedSessionId(null), 2000);
+  }, []);
 
   const runningCount = sessions.filter(s => s.status === 'running').length;
   const completedCount = sessions.filter(s => s.status === 'completed').length;
@@ -587,9 +594,21 @@ export function RunListPage() {
 
                   {/* Session ID + timestamp row */}
                   <div className="flex items-center gap-3 mt-0.5 text-[10px] text-zinc-600 font-mono">
-                    <span title={session.sessionId}>
-                      {session.sessionId.slice(0, 12)}...
-                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopySessionId(session.sessionId);
+                      }}
+                      className="flex items-center gap-1 hover:text-zinc-400 transition-colors group"
+                      title={`${session.sessionId}${(session.config as any)?.agent_engine_id ? `\nAgent Engine ID: ${(session.config as any).agent_engine_id}` : ''}`}
+                    >
+                      <span>{session.sessionId.slice(0, 12)}...</span>
+                      {copiedSessionId === session.sessionId ? (
+                        <span className="text-green-500 text-[9px]">Copied!</span>
+                      ) : (
+                        <Copy className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </button>
                     <span>
                       {session.createdAt
                         ? new Date(session.createdAt).toLocaleString('en-US', {

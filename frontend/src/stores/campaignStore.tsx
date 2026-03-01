@@ -218,6 +218,10 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
 
   const addSession = useCallback((session: PipelineSession) => {
     setState((prev) => {
+      // Dedup guard: skip if session already exists
+      if (prev.sessions.some(s => s.sessionId === session.sessionId)) {
+        return prev;
+      }
       const sessions = [...prev.sessions, session];
       const activeSessionIndex = sessions.length - 1;
       return {

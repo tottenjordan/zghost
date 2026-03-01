@@ -299,7 +299,7 @@ export function TrendsPage() {
 
       {/* Tabs with step indicators */}
       <Tabs defaultValue="campaign">
-        <TabsList>
+        <TabsList className="gap-2">
           {STEPS.map((step) => {
             const status = getStepStatus(step.key);
             return (
@@ -309,7 +309,7 @@ export function TrendsPage() {
                   className="flex items-center gap-1.5"
                 >
                   <span className={cn(
-                    'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold transition-all',
+                    'flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all',
                     status === 'completed' && 'bg-green-600 text-white',
                     status === 'active' && 'ring-2 ring-blue-500 bg-blue-600/20 text-blue-400',
                     status === 'pending' && 'bg-zinc-700 text-zinc-400',
@@ -320,7 +320,7 @@ export function TrendsPage() {
                       step.number
                     )}
                   </span>
-                  {step.tabLabel}
+                  <span className="hidden sm:inline">{step.tabLabel}</span>
                 </span>
               </TabsTrigger>
             );

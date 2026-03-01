@@ -32,6 +32,14 @@ class SessionCreateResponse(BaseModel):
     session_id: str = Field(description="Unique session identifier")
     user_id: str = Field(description="User ID associated with the session")
     created_at: datetime = Field(description="Timestamp when session was created")
+    agent_engine_id: Optional[str] = Field(
+        default=None,
+        description="Agent Engine ID if using Vertex AI session service",
+    )
+    is_vertex_session: bool = Field(
+        default=False,
+        description="Whether VertexAiSessionService is being used",
+    )
 
 
 class SessionStateResponse(BaseModel):
@@ -476,3 +484,120 @@ class RatingListResponse(BaseModel):
     average_score: Optional[float] = Field(
         default=None, description="Average overall score across all ratings"
     )
+
+
+# =====================================
+# Narrative Models
+# =====================================
+
+
+class NarrativeRefineRequest(BaseModel):
+    """Request to refine a narrative using Gemini."""
+
+    session_id: str = Field(description="Session ID to load context from")
+    direction: str = Field(description="User's refinement direction, e.g. 'add humor'")
+    current_text: Optional[str] = Field(
+        default=None, description="Optional: override text to refine (otherwise loads from session)"
+    )
+
+
+class NarrativeRefineResponse(BaseModel):
+    """Response with refined narrative text."""
+
+    refined_text: str = Field(description="The refined narrative text")
+    direction_applied: str = Field(description="The direction that was applied")
+
+
+class NarrativePdfRequest(BaseModel):
+    """Request to generate a PDF from narrative content."""
+
+    session_id: str = Field(description="Session ID for context")
+    content: Optional[str] = Field(
+        default=None, description="Optional: text content to render as PDF (otherwise loads report from session)"
+    )
+    title: Optional[str] = Field(
+        default="Marketing Research Report", description="PDF title"
+    )
+
+
+class NarrativePdfResponse(BaseModel):
+    """Response with the generated PDF URL."""
+
+    pdf_url: str = Field(description="Public HTTPS URL to the generated PDF")
+    gcs_uri: str = Field(description="GCS URI of the uploaded PDF")
+
+
+# =====================================
+# Concurrency Control Models
+# =====================================
+
+
+class ConcurrencyStatusResponse(BaseModel):
+    """Response containing current concurrency status."""
+
+    active_count: int = Field(description="Number of currently running pipelines")
+    max_concurrent: int = Field(description="Maximum allowed concurrent pipelines")
+    queued_count: int = Field(default=0, description="Number of pipelines waiting in queue")
+
+
+class ConcurrencyConfigRequest(BaseModel):
+    """Request to update concurrency configuration."""
+
+    max_concurrent: int = Field(
+        description="New maximum concurrent pipelines", ge=1, le=20
+    )
+
+
+# =====================================
+# Evaluation Models
+# =====================================
+
+
+class EvalCriterion(BaseModel):
+    """A criterion for AI evaluation (mirrors frontend rubric)."""
+
+    name: str = Field(description="Criterion name")
+    description: str = Field(description="What this criterion evaluates")
+    weight: float = Field(default=1.0, description="Weight of this criterion")
+
+
+class EvalRunRequest(BaseModel):
+    """Request to run an evaluation."""
+
+    eval_set_path: str = Field(description="Path to eval dataset JSON file")
+    agent_module: str = Field(
+        default="trends_and_insights_agent",
+        description="Python module path to agent",
+    )
+    rubric_criteria: Optional[List[EvalCriterion]] = Field(
+        default=None,
+        description="Optional custom rubric criteria for AI evaluation",
+    )
+
+
+class EvalRunResponse(BaseModel):
+    """Response from starting an evaluation."""
+
+    eval_id: str = Field(description="Unique identifier for this evaluation run")
+    status: str = Field(description="Status: 'pending', 'running', 'completed', 'failed'")
+    results: Optional[Dict[str, Any]] = Field(
+        default=None, description="Evaluation results (available when completed)"
+    )
+    started_at: datetime = Field(description="When evaluation was started")
+    completed_at: Optional[datetime] = Field(
+        default=None, description="When evaluation completed"
+    )
+
+
+class EvalSetInfo(BaseModel):
+    """Information about an evaluation dataset."""
+
+    name: str = Field(description="Eval set name (filename without .test.json)")
+    path: str = Field(description="Full path to eval set file")
+    num_cases: int = Field(description="Number of test cases in this eval set")
+
+
+class EvalSetListResponse(BaseModel):
+    """Response listing available evaluation datasets."""
+
+    eval_sets: List[EvalSetInfo]

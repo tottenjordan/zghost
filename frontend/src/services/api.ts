@@ -56,6 +56,16 @@ export interface TrendSafetyCheckResponse {
   model_used: string;
 }
 
+export interface NarrativeRefineResult {
+  refined_text: string;
+  direction_applied: string;
+}
+
+export interface NarrativePdfResult {
+  pdf_url: string;
+  gcs_uri: string;
+}
+
 class ApiClient {
   /**
    * List all sessions from the Vertex session service.
@@ -214,6 +224,58 @@ class ApiClient {
   }
 
   /**
+   * Refine narrative text using a lightweight Gemini call (not the full pipeline).
+   */
+  async refineNarrative(
+    sessionId: string,
+    direction: string,
+    currentText?: string
+  ): Promise<NarrativeRefineResult> {
+    const url = `${API_BASE}/api/v1/narrative/refine`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sessionId,
+        direction,
+        current_text: currentText,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(
+        `Refinement failed (${response.status}): ${response.statusText || 'Unknown error'}`
+      );
+    }
+    return response.json();
+  }
+
+  /**
+   * Generate a PDF from narrative/report content.
+   */
+  async generatePdf(
+    sessionId: string,
+    content?: string,
+    title?: string
+  ): Promise<NarrativePdfResult> {
+    const url = `${API_BASE}/api/v1/narrative/pdf`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sessionId,
+        content,
+        title,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(
+        `PDF generation failed (${response.status}): ${response.statusText || 'Unknown error'}`
+      );
+    }
+    return response.json();
+  }
+
+  /**
    * Check trends for brand safety using Gemini 3 Flash.
    */
   async checkTrendSafety(
@@ -236,6 +298,55 @@ class ApiClient {
     if (!response.ok) {
       throw new Error(
         `Safety check failed (${response.status}): ${response.statusText || 'Unknown error'}`
+      );
+    }
+    return response.json();
+  }
+
+  /**
+   * List available evaluation sets.
+   */
+  async listEvalSets(): Promise<{eval_sets: Array<{name: string, path: string, num_cases: number}>}> {
+    const url = `${API_BASE}/api/v1/eval/sets`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(
+        `List eval sets failed (${response.status}): ${response.statusText || 'Unknown error'}`
+      );
+    }
+    return response.json();
+  }
+
+  /**
+   * Run an evaluation with an optional rubric.
+   */
+  async runEval(evalSetPath: string, rubricId?: string): Promise<{eval_id: string, status: string}> {
+    const url = `${API_BASE}/api/v1/eval/run`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eval_set_path: evalSetPath,
+        rubric_id: rubricId,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(
+        `Run eval failed (${response.status}): ${response.statusText || 'Unknown error'}`
+      );
+    }
+    return response.json();
+  }
+
+  /**
+   * Get evaluation results by eval ID.
+   */
+  async getEvalResults(evalId: string): Promise<{eval_id: string, status: string, results: any}> {
+    const url = `${API_BASE}/api/v1/eval/results/${evalId}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(
+        `Get eval results failed (${response.status}): ${response.statusText || 'Unknown error'}`
       );
     }
     return response.json();
