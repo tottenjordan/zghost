@@ -12,7 +12,7 @@ interface PipelineControlsProps {
   autopilot: boolean;
   onDurationChange: (duration: 10 | 15 | 30) => void;
   onAutopilotChange: (autopilot: boolean) => void;
-  onStart: (parallelCount: number) => void;
+  onStart: () => void;
   onStop: () => void;
   onRefresh: () => void;
 }
@@ -30,9 +30,7 @@ export function PipelineControls({
   onStop,
   onRefresh,
 }: PipelineControlsProps) {
-  const [parallelCount, setParallelCount] = useState(1);
   const [durationChanged, setDurationChanged] = useState(false);
-  const [parallelChanged, setParallelChanged] = useState(false);
 
   // Clear duration change indicator after 2 seconds
   useEffect(() => {
@@ -42,22 +40,9 @@ export function PipelineControls({
     }
   }, [durationChanged]);
 
-  // Clear parallel change indicator after 2 seconds
-  useEffect(() => {
-    if (parallelChanged) {
-      const timer = setTimeout(() => setParallelChanged(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [parallelChanged]);
-
   const handleDurationChange = (duration: 10 | 15 | 30) => {
     onDurationChange(duration);
     setDurationChanged(true);
-  };
-
-  const handleParallelChange = (count: number) => {
-    setParallelCount(count);
-    setParallelChanged(true);
   };
 
   return (
@@ -102,32 +87,6 @@ export function PipelineControls({
           )}
         </div>
 
-        {/* Parallel stream count selector */}
-        <div className="flex items-center gap-2">
-          <label htmlFor="parallel-count" className="text-sm text-zinc-400">
-            Parallel streams:
-          </label>
-          <select
-            id="parallel-count"
-            value={parallelCount}
-            onChange={(e) => handleParallelChange(Number(e.target.value))}
-            disabled={isRunning}
-            className={cn(
-              "px-3 py-1 text-sm bg-zinc-800 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
-              parallelChanged ? "border-green-500" : "border-zinc-700"
-            )}
-          >
-            {[1, 2, 3, 4, 5].map((count) => (
-              <option key={count} value={count}>
-                {count}
-              </option>
-            ))}
-          </select>
-          {parallelChanged && (
-            <Check className="w-4 h-4 text-green-400 animate-in fade-in" />
-          )}
-        </div>
-
         {/* Autopilot toggle — always clickable */}
         <div className="flex items-center gap-2 pl-2 border-l border-zinc-700">
           <button
@@ -139,12 +98,12 @@ export function PipelineControls({
             title={autopilot ? 'Autopilot ON — auto-approves all agent outputs' : 'Autopilot OFF — manual approval required'}
           >
             <span className={cn(
-              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+              'inline-block h-4 w-4 transform rounded-full bg-white transition-transform pointer-events-none',
               autopilot ? 'translate-x-6' : 'translate-x-1'
             )} />
           </button>
           <span className={cn(
-            'text-xs font-medium',
+            'text-xs font-medium pointer-events-none',
             autopilot ? 'text-blue-400' : 'text-zinc-500'
           )}>
             {autopilot ? 'Autopilot' : 'Manual'}
@@ -155,7 +114,7 @@ export function PipelineControls({
         <div className="flex items-center gap-2">
           {!isRunning ? (
             <button
-              onClick={() => onStart(parallelCount)}
+              onClick={onStart}
               disabled={isRunning || !readyToLaunch}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
               title={!readyToLaunch ? `Missing: ${missingItems.join(', ')}` : 'Start the pipeline'}

@@ -48,6 +48,9 @@ from .api_models import (
     SessionStateUpdateRequest,
     SessionSummary,
     StreamEvent,
+    TrendSafetyCheckRequest,
+    TrendSafetyCheckResponse,
+    TrendSafetyResult,
     StreamInfo,
     TraceEvent,
     TrendAutoSelectRequest,
@@ -121,10 +124,10 @@ def _create_session_service():
                 svc = VertexAiSessionService(
                     project=project,
                     location=location,
-                    app_name=engine_id,
+                    agent_engine_id=engine_id,
                 )
                 logger.info(
-                    f"Using VertexAiSessionService (project={project}, location={location}, app_name={engine_id})"
+                    f"Using VertexAiSessionService (project={project}, location={location}, agent_engine_id={engine_id})"
                 )
                 return svc
             except Exception as e:
@@ -1154,6 +1157,117 @@ async def get_available_trends(force_refresh: bool = Query(default=False)):
         logger.error(f"Error getting available trends: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to get available trends: {str(e)}"
+        )
+
+
+# =====================================
+# Trend Safety Endpoints
+# =====================================
+
+
+@app.post("/api/v1/trends/safety-check", response_model=TrendSafetyCheckResponse)
+async def check_trend_safety(request: TrendSafetyCheckRequest):
+    """Evaluate trends for brand safety using Gemini 3 Flash."""
+    try:
+        from google import genai
+
+        client = genai.Client(vertexai=True)
+        today = datetime.utcnow().strftime("%B %d, %Y")
+
+        trend_list = "\n".join(
+            f"- {t.get('title', t.get('trend_title', 'Unknown'))}"
+            + (f" (Source: {t.get('source', 'unknown')})" if t.get("source") else "")
+            + (f" — {t.get('description', '')}" if t.get("description") else "")
+            for t in request.trends
+        )
+
+        brand_context = f"Brand: {request.brand}" if request.brand else "Brand: not specified"
+        audience_context = (
+            f"Target audience: {request.target_audience}"
+            if request.target_audience
+            else ""
+        )
+
+        prompt = f"""You are a brand safety analyst. Evaluate each trend below for appropriateness as a marketing campaign topic.
+
+Today's date: {today}
+{brand_context}
+{audience_context}
+Safety level: {request.safety_level}
+
+TRENDS TO EVALUATE:
+{trend_list}
+
+For EACH trend, assess:
+1. Is it brand-safe for advertising? (no violence, controversy, adult content, hate speech, political divisiveness, active tragedies/disasters, or culturally insensitive topics)
+2. Is it contextually appropriate given today's date? (consider current events, seasonal sensitivity)
+3. Would associating a brand with this trend pose reputational risk?
+
+Respond in JSON format (no markdown fencing):
+{{
+  "results": [
+    {{
+      "trend_title": "exact trend title",
+      "safe": true/false,
+      "risk_level": "safe" | "caution" | "unsafe",
+      "reason": "brief explanation",
+      "categories": ["list of flagged categories if any, e.g. violence, controversy, adult, tragedy, political"]
+    }}
+  ]
+}}
+
+IMPORTANT: Core safety rules that CANNOT be overridden:
+- Violence, hate speech, adult/sexual content → always "unsafe"
+- Active tragedies, mass casualty events → always "unsafe"
+- Extreme political polarization → always "unsafe"
+For "standard" safety: flag controversial topics as "caution"
+For "strict" safety: flag controversial AND potentially divisive topics as "unsafe"
+"""
+
+        response = client.models.generate_content(
+            model="gemini-3.0-flash",
+            contents=prompt,
+        )
+
+        import json as json_mod
+
+        raw_text = response.text.strip()
+        # Strip markdown fencing if present
+        if raw_text.startswith("```"):
+            raw_text = raw_text.split("\n", 1)[1]
+            if raw_text.endswith("```"):
+                raw_text = raw_text[: raw_text.rfind("```")]
+
+        parsed = json_mod.loads(raw_text)
+
+        results = [
+            TrendSafetyResult(
+                trend_title=r.get("trend_title", "Unknown"),
+                safe=r.get("safe", False),
+                risk_level=r.get("risk_level", "caution"),
+                reason=r.get("reason", "Unable to assess"),
+                categories=r.get("categories", []),
+            )
+            for r in parsed.get("results", [])
+        ]
+
+        return TrendSafetyCheckResponse(
+            results=results,
+            overall_safe=all(r.safe for r in results),
+            checked_at=datetime.utcnow(),
+            model_used="gemini-3.0-flash",
+        )
+
+    except json_mod.JSONDecodeError as e:
+        logger.error("Failed to parse safety check response: %s", e)
+        raise HTTPException(
+            status_code=502,
+            detail="Safety check model returned unparseable response",
+        )
+    except Exception as e:
+        logger.error("Error in trend safety check: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to run safety check: {str(e)}"
         )
 
 

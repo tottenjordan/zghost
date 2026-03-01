@@ -54,6 +54,8 @@ export interface CampaignStoreState {
   commercialDuration: 10 | 15 | 30;
   autoStart: boolean;
   autopilot: boolean;
+  maxConcurrentRuns: number;
+  queuedRuns: string[];
   // Backward compatibility - derived from active session
   sessionId: string | null;
   pipelineStatus: RunStatus;
@@ -74,6 +76,9 @@ interface CampaignStoreActions {
   updateSession: (sessionId: string, updates: Partial<PipelineSession>) => void;
   getSessionById: (id: string) => PipelineSession | undefined;
   setCommercialDuration: (duration: 10 | 15 | 30) => void;
+  setMaxConcurrentRuns: (n: number) => void;
+  enqueueRun: (sessionId: string) => void;
+  dequeueNextRun: () => string | null;
   reset: () => void;
   isReadyToLaunch: () => { ready: boolean; missing: string[] };
 }
@@ -90,6 +95,8 @@ const DEFAULT_STATE: CampaignStoreState = {
   commercialDuration: 30,
   autoStart: false,
   autopilot: false,
+  maxConcurrentRuns: 2,
+  queuedRuns: [],
   sessionId: null,
   pipelineStatus: 'idle',
 };
@@ -120,6 +127,8 @@ function loadFromStorage(): CampaignStoreState {
         sessions,
         activeSessionIndex,
         activeRubrics,
+        maxConcurrentRuns: parsed.maxConcurrentRuns ?? 2,
+        queuedRuns: parsed.queuedRuns || [],
         sessionId: activeSession?.sessionId || null,
         pipelineStatus: activeSession?.status || 'idle'
       };
@@ -307,6 +316,28 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, commercialDuration: duration }));
   }, []);
 
+  const setMaxConcurrentRuns = useCallback((n: number) => {
+    setState((prev) => ({ ...prev, maxConcurrentRuns: n }));
+  }, []);
+
+  const enqueueRun = useCallback((sessionId: string) => {
+    setState((prev) => ({
+      ...prev,
+      queuedRuns: [...prev.queuedRuns, sessionId],
+    }));
+  }, []);
+
+  const dequeueNextRun = useCallback(() => {
+    let dequeuedId: string | null = null;
+    setState((prev) => {
+      if (prev.queuedRuns.length === 0) return prev;
+      const [first, ...rest] = prev.queuedRuns;
+      dequeuedId = first;
+      return { ...prev, queuedRuns: rest };
+    });
+    return dequeuedId;
+  }, []);
+
   const reset = useCallback(() => {
     setState(DEFAULT_STATE);
     localStorage.removeItem(STORAGE_KEY);
@@ -339,6 +370,9 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     updateSession,
     getSessionById,
     setCommercialDuration,
+    setMaxConcurrentRuns,
+    enqueueRun,
+    dequeueNextRun,
     reset,
     isReadyToLaunch,
   };

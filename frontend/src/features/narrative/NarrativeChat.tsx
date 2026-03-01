@@ -8,6 +8,8 @@ interface NarrativeChatProps {
   messages: Message[];
   isStreaming: boolean;
   onSendMessage: (content: string) => void;
+  /** Optional sources map for resolving citation tags */
+  sources?: Record<string, { url?: string; title?: string; domain?: string }>;
 }
 
 const QUICK_ACTIONS = [
@@ -22,6 +24,7 @@ export function NarrativeChat({
   messages,
   isStreaming,
   onSendMessage,
+  sources,
 }: NarrativeChatProps) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -106,7 +109,7 @@ export function NarrativeChat({
                   }`}
                 >
                   {message.role === 'assistant' ? (
-                    <Markdown content={message.content} />
+                    <Markdown content={message.content} sources={sources} />
                   ) : (
                     <p className="whitespace-pre-wrap text-sm">{message.content}</p>
                   )}

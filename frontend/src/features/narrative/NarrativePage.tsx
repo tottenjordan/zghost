@@ -141,6 +141,7 @@ export function NarrativePage() {
             messages={messages}
             isStreaming={isStreaming}
             onSendMessage={sendMessage}
+            sources={sessionState?.sources}
           />
         </div>
 

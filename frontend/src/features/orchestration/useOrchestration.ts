@@ -37,7 +37,15 @@ export function useOrchestration(sessionId: string | null, streamUrl: string | n
   // Hydrate events from server when session exists but no live stream
   const hydratedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!sessionId || streamUrl || hydratedRef.current === sessionId) return;
+    // Reset hydration ref when sessionId becomes null (user navigates away)
+    if (!sessionId) {
+      hydratedRef.current = null;
+      return;
+    }
+
+    // Don't hydrate if we have a live stream or already hydrated this session
+    if (streamUrl || hydratedRef.current === sessionId) return;
+
     hydratedRef.current = sessionId;
     api.getSessionEvents(sessionId).then((result) => {
       if (result.events.length > 0) {

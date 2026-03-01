@@ -3,14 +3,18 @@ import { cn } from '../../lib/utils';
 interface MarkdownProps {
   content: string;
   className?: string;
+  /** Optional sources map for resolving <cite source="src-N"/> tags */
+  sources?: Record<string, { url?: string; title?: string; domain?: string }>;
 }
 
 /**
  * Lightweight markdown renderer for agent responses.
  * Handles: headers, bold, italic, links, lists, code blocks, inline code, hr.
  */
-export function Markdown({ content, className }: MarkdownProps) {
-  const lines = content.split('\n');
+export function Markdown({ content, className, sources }: MarkdownProps) {
+  // Pre-process: resolve <cite source="src-N"/> tags
+  const processedContent = preprocessCitations(content, sources);
+  const lines = processedContent.split('\n');
   const elements: JSX.Element[] = [];
   let key = 0;
   let i = 0;
@@ -128,6 +132,26 @@ export function Markdown({ content, className }: MarkdownProps) {
   }
 
   return <div className={cn('space-y-0', className)}>{elements}</div>;
+}
+
+/** Pre-process <cite source="src-N"/> tags into markdown links or superscript markers */
+function preprocessCitations(
+  text: string,
+  sources?: Record<string, { url?: string; title?: string; domain?: string }>
+): string {
+  return text.replace(
+    /<cite\s+source\s*=\s*["']?\s*(src-\d+)\s*["']?\s*\/?>/gi,
+    (_match, srcId: string) => {
+      if (sources && sources[srcId]) {
+        const source = sources[srcId];
+        const displayText = source.title || source.domain || srcId;
+        return source.url ? ` [${displayText}](${source.url})` : ` [${displayText}]`;
+      }
+      // No sources map — render as a numbered superscript reference
+      const num = srcId.replace('src-', '');
+      return `[^${num}]`;
+    }
+  );
 }
 
 /** Render inline markdown: bold, italic, code, links */

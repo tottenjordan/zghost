@@ -10,6 +10,8 @@ import { AgentChat } from './AgentChat';
 import { ResultsGallery } from './ResultsGallery';
 import { EvaluationPanel } from './EvaluationPanel';
 import { PipelineControls } from './PipelineControls';
+import { ConfigWizard } from './ConfigWizard';
+import { generateRunLabel } from './RunListPage';
 import { useOrchestration } from './useOrchestration';
 // SessionTabBar replaced by RunListPage
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
@@ -45,6 +47,9 @@ export function OrchestrationPage() {
     commercialDuration,
     autoStart,
     autopilot,
+    maxConcurrentRuns,
+    enqueueRun,
+    dequeueNextRun,
     addSession,
     removeSession,
     setActiveSession,
@@ -113,7 +118,7 @@ export function OrchestrationPage() {
     };
   }, [isWaitingForInput]);
 
-  const handleStart = useCallback(async (parallelCount: number) => {
+  const handleStart = useCallback(async () => {
     if (isStartingRef.current) return;
     isStartingRef.current = true;
     setStartError(null);
@@ -152,12 +157,17 @@ export function OrchestrationPage() {
       // Create session with all config preloaded
       const session = await api.createSession({ initial_state: initialState });
 
+      // Check concurrent limit
+      const runningCount = sessions.filter(s => s.status === 'running').length;
+      const shouldQueue = runningCount >= maxConcurrentRuns;
+
+      const now = Date.now();
       const newSession = {
-        id: `session-${Date.now()}`,
+        id: `session-${session.session_id}`,
         sessionId: session.session_id,
-        label: `Run ${sessions.length + 1}`,
-        status: 'running' as const,
-        startedAt: Date.now(),
+        label: generateRunLabel(session.session_id, now, config.brand || undefined),
+        status: shouldQueue ? ('queued' as const) : ('running' as const),
+        startedAt: now,
         config: { ...config },
         commercialDuration,
         searchTrends: [...selectedSearchTrends],
@@ -166,29 +176,34 @@ export function OrchestrationPage() {
 
       addSession(newSession);
       setSessionId(session.session_id);
-      setPipelineStatus('running');
+      setPipelineStatus(shouldQueue ? 'queued' : 'running');
 
-      // Build the pipeline start message with context
-      let rubricGuidance = '';
-      if (activeRubrics.length > 0) {
-        const allCriteria = activeRubrics.flatMap((r) =>
-          r.criteria.map((c) => `[${r.name}] ${c.name} (weight: ${c.weight})`)
-        );
-        rubricGuidance = ` Evaluate outputs against these criteria: ${allCriteria.join(', ')}.`;
+      if (shouldQueue) {
+        // Add to queue and don't start stream
+        enqueueRun(session.session_id);
+      } else {
+        // Build the pipeline start message with context
+        let rubricGuidance = '';
+        if (activeRubrics.length > 0) {
+          const allCriteria = activeRubrics.flatMap((r) =>
+            r.criteria.map((c) => `[${r.name}] ${c.name} (weight: ${c.weight})`)
+          );
+          rubricGuidance = ` Evaluate outputs against these criteria: ${allCriteria.join(', ')}.`;
+        }
+
+        const hasTrends = selectedSearchTrends.length > 0 && selectedYtTrends.length > 0;
+        const trendSkipNote = hasTrends
+          ? ' Campaign metadata and trends are already configured in session state — skip trend-discovery and proceed directly to market research.'
+          : '';
+        const autopilotNote = autopilot
+          ? ' Use auto-select mode for trends, approve all outputs automatically, and proceed through all steps without pausing for user confirmation.'
+          : '';
+        const pipelineMessage = `Start the full pipeline, producing a ${commercialDuration}-second commercial.${trendSkipNote}${autopilotNote}${rubricGuidance}`;
+
+        // Set stream URL for live event monitoring (useOrchestration will connect)
+        const url = api.getStreamUrl(session.session_id, pipelineMessage, USER_ID);
+        setStreamUrl(url);
       }
-
-      const hasTrends = selectedSearchTrends.length > 0 && selectedYtTrends.length > 0;
-      const trendSkipNote = hasTrends
-        ? ' Campaign metadata and trends are already configured in session state — skip trend-discovery and proceed directly to market research.'
-        : '';
-      const autopilotNote = autopilot
-        ? ' Use auto-select mode for trends, approve all outputs automatically, and proceed through all steps without pausing for user confirmation.'
-        : '';
-      const pipelineMessage = `Start the full pipeline with ${parallelCount} parallel stream(s), producing a ${commercialDuration}-second commercial.${trendSkipNote}${autopilotNote}${rubricGuidance}`;
-
-      // Set stream URL for live event monitoring (useOrchestration will connect)
-      const url = api.getStreamUrl(session.session_id, pipelineMessage, USER_ID);
-      setStreamUrl(url);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to start pipeline';
       setStartError(msg);
@@ -196,7 +211,7 @@ export function OrchestrationPage() {
     } finally {
       isStartingRef.current = false;
     }
-  }, [config, selectedSearchTrends, selectedYtTrends, activeRubrics, commercialDuration, sessions, addSession, setSessionId, setPipelineStatus]);
+  }, [config, selectedSearchTrends, selectedYtTrends, activeRubrics, commercialDuration, autopilot, sessions, maxConcurrentRuns, addSession, setSessionId, setPipelineStatus, enqueueRun]);
 
   // Sync autopilot state with backend session when toggled
   const handleAutopilotChange = useCallback((enabled: boolean) => {
@@ -300,12 +315,69 @@ export function OrchestrationPage() {
   useEffect(() => {
     if (autoStart && !isRunning) {
       setAutoStart(false);
-      handleStart(1);
+      handleStart();
     } else if (autoStart) {
       setAutoStart(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-dequeue when a run completes
+  useEffect(() => {
+    const checkAndDequeue = () => {
+      // Only check if current session just completed
+      if (!sessionId || (pipelineStatus !== 'completed' && pipelineStatus !== 'error')) return;
+
+      const runningCount = sessions.filter(s => s.status === 'running').length;
+      if (runningCount >= maxConcurrentRuns) return; // Still at capacity
+
+      // Try to dequeue next run
+      const nextSessionId = dequeueNextRun();
+      if (!nextSessionId) return; // No queued runs
+
+      // Find the session and start it
+      const nextSession = sessions.find(s => s.sessionId === nextSessionId);
+      if (!nextSession) return;
+
+      // Update session status to running
+      updateSession(nextSessionId, { status: 'running' });
+
+      // Start the pipeline for the dequeued session
+      const startDequeuedRun = async () => {
+        try {
+          // Build the pipeline start message
+          let rubricGuidance = '';
+          if (activeRubrics.length > 0) {
+            const allCriteria = activeRubrics.flatMap((r) =>
+              r.criteria.map((c) => `[${r.name}] ${c.name} (weight: ${c.weight})`)
+            );
+            rubricGuidance = ` Evaluate outputs against these criteria: ${allCriteria.join(', ')}.`;
+          }
+
+          const hasTrends = (nextSession.searchTrends?.length || 0) > 0 && (nextSession.ytTrends?.length || 0) > 0;
+          const trendSkipNote = hasTrends
+            ? ' Campaign metadata and trends are already configured in session state — skip trend-discovery and proceed directly to market research.'
+            : '';
+          const autopilotNote = nextSession.autopilot
+            ? ' Use auto-select mode for trends, approve all outputs automatically, and proceed through all steps without pausing for user confirmation.'
+            : '';
+          const pipelineMessage = `Start the full pipeline, producing a ${nextSession.commercialDuration || 30}-second commercial.${trendSkipNote}${autopilotNote}${rubricGuidance}`;
+
+          // Note: We don't set streamUrl here because this dequeued run might not be the active session
+          // The stream will connect when the user navigates to that session
+          await fetch(api.getStreamUrl(nextSessionId, pipelineMessage, USER_ID));
+        } catch (err) {
+          console.error('Failed to start dequeued run:', err);
+          updateSession(nextSessionId, { status: 'error' });
+        }
+      };
+
+      startDequeuedRun();
+    };
+
+    checkAndDequeue();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pipelineStatus]);
 
   const dismissBanner = (key: string) => {
     setDismissedBanners(prev => new Set(prev).add(key));
@@ -590,152 +662,20 @@ export function OrchestrationPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="config" className="flex-1 overflow-auto p-4">
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Brand */}
-                  <div>
-                    <label className="mb-2 block text-xs font-medium text-zinc-400">
-                      Brand <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={config.brand}
-                        onChange={(e) => setCampaignConfig({ ...config, brand: e.target.value })}
-                        disabled={isRunning}
-                        placeholder="e.g., Google Pixel"
-                        className={cn(
-                          'flex h-9 w-full rounded-md border px-3 py-2 text-sm',
-                          'text-zinc-50 placeholder:text-zinc-500 bg-zinc-900',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-                          'disabled:opacity-50 disabled:cursor-not-allowed',
-                          config.brand.trim() !== ''
-                            ? 'border-zinc-700 border-l-4 border-l-green-500'
-                            : 'border-zinc-700'
-                        )}
-                      />
-                      {config.brand.trim() !== '' && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-xs">
-                          ✓
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Product */}
-                  <div>
-                    <label className="mb-2 block text-xs font-medium text-zinc-400">
-                      Product <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={config.target_product}
-                        onChange={(e) => setCampaignConfig({ ...config, target_product: e.target.value })}
-                        disabled={isRunning}
-                        placeholder="e.g., Pixel 9 Pro"
-                        className={cn(
-                          'flex h-9 w-full rounded-md border px-3 py-2 text-sm',
-                          'text-zinc-50 placeholder:text-zinc-500 bg-zinc-900',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-                          'disabled:opacity-50 disabled:cursor-not-allowed',
-                          config.target_product.trim() !== ''
-                            ? 'border-zinc-700 border-l-4 border-l-green-500'
-                            : 'border-zinc-700'
-                        )}
-                      />
-                      {config.target_product.trim() !== '' && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-xs">
-                          ✓
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Audience */}
-                  <div>
-                    <label className="mb-2 block text-xs font-medium text-zinc-400">
-                      Target Audience
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={config.target_audience}
-                        onChange={(e) => setCampaignConfig({ ...config, target_audience: e.target.value })}
-                        disabled={isRunning}
-                        placeholder="e.g., Tech-savvy millennials"
-                        className={cn(
-                          'flex h-9 w-full rounded-md border px-3 py-2 text-sm',
-                          'text-zinc-50 placeholder:text-zinc-500 bg-zinc-900',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-                          'disabled:opacity-50 disabled:cursor-not-allowed',
-                          config.target_audience.trim() !== ''
-                            ? 'border-zinc-700 border-l-4 border-l-green-500'
-                            : 'border-zinc-700'
-                        )}
-                      />
-                      {config.target_audience.trim() !== '' && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-xs">
-                          ✓
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Selling Points */}
-                  <div>
-                    <label className="mb-2 block text-xs font-medium text-zinc-400">
-                      Key Selling Points
-                    </label>
-                    <div className="relative">
-                      <textarea
-                        value={config.key_selling_points}
-                        onChange={(e) => setCampaignConfig({ ...config, key_selling_points: e.target.value })}
-                        disabled={isRunning}
-                        placeholder="e.g., AI camera, long battery"
-                        rows={3}
-                        className={cn(
-                          'flex w-full rounded-md border px-3 py-2 text-sm',
-                          'text-zinc-50 placeholder:text-zinc-500 bg-zinc-900',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 resize-none',
-                          'disabled:opacity-50 disabled:cursor-not-allowed',
-                          config.key_selling_points.trim() !== ''
-                            ? 'border-zinc-700 border-l-4 border-l-green-500'
-                            : 'border-zinc-700'
-                        )}
-                      />
-                      {config.key_selling_points.trim() !== '' && (
-                        <span className="absolute right-3 top-2 text-green-500 text-xs">
-                          ✓
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Autopilot Toggle */}
-                <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
-                  <div>
-                    <label className="text-xs font-medium text-zinc-400">AI Autopilot Mode</label>
-                    <p className="text-xs text-zinc-600 mt-0.5">Auto-approve all agent outputs without pausing</p>
-                  </div>
-                  <button
-                    onClick={() => handleAutopilotChange(!autopilot)}
-                    disabled={isRunning}
-                    className={cn(
-                      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                      'disabled:opacity-50 disabled:cursor-not-allowed',
-                      autopilot ? 'bg-blue-600' : 'bg-zinc-700'
-                    )}
-                  >
-                    <span className={cn(
-                      'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                      autopilot ? 'translate-x-6' : 'translate-x-1'
-                    )} />
-                  </button>
-                </div>
-              </div>
+            <TabsContent value="config" className="flex-1 overflow-hidden">
+              <ConfigWizard
+                config={config}
+                onConfigChange={setCampaignConfig}
+                selectedSearchTrends={selectedSearchTrends}
+                selectedYtTrends={selectedYtTrends}
+                commercialDuration={commercialDuration}
+                onDurationChange={setCommercialDuration}
+                autopilot={autopilot}
+                onAutopilotChange={handleAutopilotChange}
+                isRunning={isRunning}
+                onLaunch={handleStart}
+                activeRubrics={activeRubrics}
+              />
             </TabsContent>
 
             <TabsContent value="state" className="flex-1 overflow-auto">

@@ -13,6 +13,34 @@ export function useNarrative(sessionId: string | null) {
   const [sessionState, setSessionState] = useState<SessionState>({});
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
+  // Load saved messages from localStorage on mount
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const storageKey = `narrative-chat-${sessionId}`;
+    const savedMessages = localStorage.getItem(storageKey);
+
+    if (savedMessages) {
+      try {
+        const parsedMessages = JSON.parse(savedMessages);
+        setNarrativeData((prev) => ({
+          ...prev,
+          messages: parsedMessages,
+        }));
+      } catch (err) {
+        console.error('Failed to parse saved messages:', err);
+      }
+    }
+  }, [sessionId]);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (!sessionId || narrativeData.messages.length === 0) return;
+
+    const storageKey = `narrative-chat-${sessionId}`;
+    localStorage.setItem(storageKey, JSON.stringify(narrativeData.messages));
+  }, [sessionId, narrativeData.messages]);
+
   // Auto-load research report and session state on mount
   useEffect(() => {
     if (!sessionId) return;
@@ -22,31 +50,51 @@ export function useNarrative(sessionId: string | null) {
         .then((result) => {
           setSessionState(result.state);
 
-          // Check for PDF URLs
+          // Check for PDF URLs — convert gs:// to HTTP
+          const toHttp = (url: string) =>
+            url.startsWith('gs://') ? url.replace('gs://', 'https://storage.googleapis.com/') : url;
           const draftPdf = result.state?.draft_pdf_url;
           const finalPdf = result.state?.final_pdf_url;
           if (finalPdf) {
-            setPdfUrl(finalPdf);
+            setPdfUrl(toHttp(finalPdf));
           } else if (draftPdf) {
-            setPdfUrl(draftPdf);
+            setPdfUrl(toHttp(draftPdf));
           }
 
-          const report = result.state?.combined_final_cited_report;
+          // Prefer the citation-processed version over the raw report
+          const report = result.state?.final_report_with_citations || result.state?.combined_final_cited_report;
           if (report) {
-            setNarrativeData((prev) => ({
-              ...prev,
-              messages: [
-                {
-                  id: 'report-initial',
-                  role: 'assistant',
-                  content:
-                    typeof report === 'string'
-                      ? report
-                      : 'Research report loaded. How would you like to refine it?',
-                  timestamp: Date.now(),
-                },
-              ],
-            }));
+            // If a PDF is available, show a brief message instead of dumping full markdown
+            const hasPdfAvailable = result.state?.final_pdf_url || result.state?.draft_pdf_url;
+            const chatContent = hasPdfAvailable
+              ? 'Research report is ready — view it in the PDF panel on the right. You can chat here to refine the narrative, ask questions about the report, or give creative direction.'
+              : typeof report === 'string'
+                ? report
+                : 'Research report loaded. How would you like to refine it?';
+
+            setNarrativeData((prev) => {
+              // Check if report-initial message already exists
+              const hasReportMessage = prev.messages.some((msg) => msg.id === 'report-initial');
+
+              // If we already have saved messages with the report, don't add it again
+              if (hasReportMessage) {
+                return prev;
+              }
+
+              // Otherwise, add the report message to any existing messages
+              return {
+                ...prev,
+                messages: [
+                  {
+                    id: 'report-initial',
+                    role: 'assistant',
+                    content: chatContent,
+                    timestamp: Date.now(),
+                  },
+                  ...prev.messages,
+                ],
+              };
+            });
           }
         })
         .catch((err) => console.error('Failed to load session data:', err));

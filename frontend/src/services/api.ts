@@ -41,6 +41,21 @@ export interface SessionListResult {
   total: number;
 }
 
+export interface TrendSafetyResult {
+  trend_title: string;
+  safe: boolean;
+  risk_level: 'safe' | 'caution' | 'unsafe';
+  reason: string;
+  categories: string[];
+}
+
+export interface TrendSafetyCheckResponse {
+  results: TrendSafetyResult[];
+  overall_safe: boolean;
+  checked_at: string;
+  model_used: string;
+}
+
 class ApiClient {
   /**
    * List all sessions from the Vertex session service.
@@ -196,6 +211,34 @@ class ApiClient {
   ): string {
     const params = new URLSearchParams({ user_id: userId, message });
     return `${API_BASE}/api/v1/run/${sessionId}/stream?${params}`;
+  }
+
+  /**
+   * Check trends for brand safety using Gemini 3 Flash.
+   */
+  async checkTrendSafety(
+    trends: Array<{ title: string; source?: string; description?: string }>,
+    brand = '',
+    targetAudience = '',
+    safetyLevel: 'standard' | 'strict' = 'standard'
+  ): Promise<TrendSafetyCheckResponse> {
+    const url = `${API_BASE}/api/v1/trends/safety-check`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        trends,
+        brand,
+        target_audience: targetAudience,
+        safety_level: safetyLevel,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(
+        `Safety check failed (${response.status}): ${response.statusText || 'Unknown error'}`
+      );
+    }
+    return response.json();
   }
 }
 

@@ -76,7 +76,7 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 /** Generate a label from session ID and timestamp */
-function generateRunLabel(sessionId: string, timestamp: number, brand?: string): string {
+export function generateRunLabel(sessionId: string, timestamp: number, brand?: string): string {
   const shortId = sessionId.slice(0, 8);
   const d = new Date(timestamp);
   const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -94,6 +94,10 @@ export function RunListPage() {
     selectedYtTrends,
     commercialDuration,
     autopilot,
+    maxConcurrentRuns,
+    queuedRuns,
+    setMaxConcurrentRuns,
+    enqueueRun,
     addSession,
     removeSession,
     setActiveSession,
@@ -268,7 +272,6 @@ export function RunListPage() {
         config: { ...config },
         commercialDuration,
         autopilot,
-        parallelStreams: 1,
         searchTrends: [...selectedSearchTrends],
         ytTrends: [...selectedYtTrends],
       };
@@ -347,6 +350,27 @@ export function RunListPage() {
           >
             <RefreshCw className={cn('w-4 h-4', loadingBackend && 'animate-spin')} />
           </button>
+          <div className="flex items-center gap-2 border-l border-zinc-700 pl-3">
+            <label htmlFor="max-concurrent" className="text-xs text-zinc-400">
+              Max concurrent:
+            </label>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setMaxConcurrentRuns(n)}
+                  className={cn(
+                    'px-2.5 py-1 text-xs font-medium rounded transition-colors',
+                    maxConcurrentRuns === n
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
           <button
             onClick={handleNewRun}
             disabled={creating}
@@ -547,6 +571,18 @@ export function RunListPage() {
                         <span className="text-blue-400">{session.currentPhase}</span>
                       </>
                     )}
+                    {session.status === 'queued' && (() => {
+                      const position = queuedRuns.indexOf(session.sessionId);
+                      if (position >= 0) {
+                        return (
+                          <>
+                            <span className="text-zinc-700">|</span>
+                            <span className="text-blue-400">Position #{position + 1} in queue</span>
+                          </>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
 
                   {/* Session ID + timestamp row */}

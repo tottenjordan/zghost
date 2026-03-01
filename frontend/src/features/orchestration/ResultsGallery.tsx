@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
+import { Markdown } from '../../components/ui/Markdown';
 import { cn } from '../../lib/utils';
 
 interface ResultsGalleryProps {
@@ -302,7 +303,7 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
               icon={PenLine}
               iconColor="text-purple-400"
               status="done"
-              defaultOpen={selectedCopies.length === 0}
+              defaultOpen={false}
             >
               <div className="space-y-1.5">
                 {draftCopies.map((copy, i) => {
@@ -327,10 +328,14 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
                           {copy.headline || `Option ${i + 1}`}
                         </p>
                         {copy.body && (
-                          <p className="text-zinc-500 mt-0.5 line-clamp-2">{copy.body}</p>
+                          <div className="mt-0.5 line-clamp-2">
+                            <Markdown content={copy.body} className="text-zinc-500" />
+                          </div>
                         )}
                         {copy.cta && (
-                          <p className="text-blue-400 mt-0.5">CTA: {copy.cta}</p>
+                          <div className="mt-0.5">
+                            <Markdown content={`CTA: ${copy.cta}`} className="text-blue-400" />
+                          </div>
                         )}
                       </div>
                       {copy.score && (
@@ -357,11 +362,14 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
             status={hasCritique ? 'done' : 'pending'}
           >
             {hasCritique ? (
-              <p className="text-xs text-zinc-400">
-                {typeof sessionState.ad_copy_critique === 'string'
-                  ? sessionState.ad_copy_critique.slice(0, 300) + '...'
-                  : 'Critique completed — scores applied to candidates above'}
-              </p>
+              <Markdown
+                content={
+                  typeof sessionState.ad_copy_critique === 'string'
+                    ? sessionState.ad_copy_critique
+                    : 'Critique completed — scores applied to candidates above'
+                }
+                className="text-xs text-zinc-400"
+              />
             ) : (
               <p className="text-xs text-zinc-500">Waiting for critique agent...</p>
             )}
@@ -374,15 +382,23 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
             icon={CheckCircle2}
             iconColor="text-green-400"
             status={selectedCopies.length > 0 ? 'done' : 'pending'}
-            defaultOpen={selectedCopies.length > 0}
+            defaultOpen={false}
           >
             {selectedCopies.length > 0 ? (
               <div className="space-y-1.5">
                 {selectedCopies.map((copy, i) => (
                   <div key={i} className="p-2 rounded border border-green-700/40 bg-green-950/15">
                     <p className="text-xs font-medium text-green-300">{copy.headline}</p>
-                    {copy.body && <p className="text-xs text-zinc-400 mt-0.5">{copy.body}</p>}
-                    {copy.cta && <p className="text-xs text-blue-400 mt-0.5">CTA: {copy.cta}</p>}
+                    {copy.body && (
+                      <div className="mt-0.5">
+                        <Markdown content={copy.body} className="text-xs text-zinc-400" />
+                      </div>
+                    )}
+                    {copy.cta && (
+                      <div className="mt-0.5">
+                        <Markdown content={`CTA: ${copy.cta}`} className="text-xs text-blue-400" />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -408,11 +424,14 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
             iconColor="text-amber-400"
             status={hasVisualDraft ? 'done' : 'pending'}
           >
-            <p className="text-xs text-zinc-400">
-              {typeof sessionState.visual_draft === 'string'
-                ? sessionState.visual_draft.slice(0, 300) + '...'
-                : 'Draft concepts generated'}
-            </p>
+            <Markdown
+              content={
+                typeof sessionState.visual_draft === 'string'
+                  ? sessionState.visual_draft
+                  : 'Draft concepts generated'
+              }
+              className="text-xs text-zinc-400"
+            />
           </PipelineStep>
 
           <PipelineStep
@@ -422,11 +441,14 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
             iconColor="text-amber-400"
             status={hasVisualCritique ? 'done' : 'pending'}
           >
-            <p className="text-xs text-zinc-400">
-              {typeof sessionState.visual_concept_critique === 'string'
-                ? sessionState.visual_concept_critique.slice(0, 300) + '...'
-                : hasVisualCritique ? 'Critique completed' : 'Waiting...'}
-            </p>
+            <Markdown
+              content={
+                typeof sessionState.visual_concept_critique === 'string'
+                  ? sessionState.visual_concept_critique
+                  : hasVisualCritique ? 'Critique completed' : 'Waiting...'
+              }
+              className="text-xs text-zinc-400"
+            />
           </PipelineStep>
 
           <PipelineStep
@@ -435,13 +457,16 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
             icon={Sparkles}
             iconColor="text-green-400"
             status={hasFinalVisuals ? 'done' : 'pending'}
-            defaultOpen={hasFinalVisuals && !hasVisualSelection}
+            defaultOpen={false}
           >
-            <p className="text-xs text-zinc-400">
-              {typeof sessionState.final_visual_concepts === 'string'
-                ? sessionState.final_visual_concepts.slice(0, 300) + '...'
-                : hasFinalVisuals ? 'Concepts finalized' : 'Waiting...'}
-            </p>
+            <Markdown
+              content={
+                typeof sessionState.final_visual_concepts === 'string'
+                  ? sessionState.final_visual_concepts
+                  : hasFinalVisuals ? 'Concepts finalized' : 'Waiting...'
+              }
+              className="text-xs text-zinc-400"
+            />
           </PipelineStep>
         </div>
       )}
@@ -532,25 +557,33 @@ export function ResultsGallery({ sessionState, sessionId }: ResultsGalleryProps)
                     {media.concept && (
                       <div>
                         <span className="text-xs font-medium text-zinc-500">Concept:</span>
-                        <p className="text-xs text-zinc-400 mt-0.5">{media.concept}</p>
+                        <div className="mt-0.5">
+                          <Markdown content={media.concept} className="text-xs text-zinc-400" />
+                        </div>
                       </div>
                     )}
                     {media.caption && (
                       <div>
                         <span className="text-xs font-medium text-zinc-500">Caption:</span>
-                        <p className="text-xs text-zinc-400 mt-0.5">{media.caption}</p>
+                        <div className="mt-0.5">
+                          <Markdown content={media.caption} className="text-xs text-zinc-400" />
+                        </div>
                       </div>
                     )}
                     {media.trend && (
                       <div>
                         <span className="text-xs font-medium text-zinc-500">Trend:</span>
-                        <p className="text-xs text-zinc-400 mt-0.5">{media.trend}</p>
+                        <div className="mt-0.5">
+                          <Markdown content={media.trend} className="text-xs text-zinc-400" />
+                        </div>
                       </div>
                     )}
                     {media.prompt && (
                       <div>
                         <span className="text-xs font-medium text-zinc-500">Generation Prompt:</span>
-                        <p className="text-xs text-zinc-400 mt-0.5 font-mono">{media.prompt}</p>
+                        <div className="mt-0.5">
+                          <Markdown content={media.prompt} className="text-xs text-zinc-400 font-mono" />
+                        </div>
                       </div>
                     )}
                   </div>

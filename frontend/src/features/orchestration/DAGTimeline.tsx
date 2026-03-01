@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { PIPELINE_NODES, PIPELINE_EDGES } from './pipeline-config';
@@ -142,13 +142,28 @@ function buildTimelineTasks(events: AgentEvent[]): TimelineTask[] {
   // AgentTool creates an isolated runner — inner sub-agent events never reach
   // the outer SSE stream.  When we detect a parent as running/completed via
   // inference, cascade that status to all its DAG descendants.
+  //
+  // Instead of giving every descendant the exact same start/end (which makes
+  // them look like they all ran simultaneously), stagger them based on their
+  // position in the DAG ordering. This gives a visual approximation of the
+  // sequential flow within the parent's time window.
   for (const [parentName, info] of inferred) {
     const descendants = DESCENDANT_MAP.get(parentName);
     if (!descendants) continue;
-    for (const desc of descendants) {
+
+    const parentDuration = (info.end || Date.now()) - info.start;
+    const count = descendants.length;
+
+    for (let i = 0; i < descendants.length; i++) {
+      const desc = descendants[i];
       if (!inferred.has(desc)) {
-        // Inherit parent's start/end — descendants run within the parent's window
-        inferred.set(desc, { start: info.start, end: info.end });
+        // Stagger descendants across the parent's time window
+        // Each gets an equal slice, ordered by their position in the DAG
+        const sliceStart = info.start + (parentDuration * i) / count;
+        const sliceEnd = info.end
+          ? info.start + (parentDuration * (i + 1)) / count
+          : undefined;
+        inferred.set(desc, { start: sliceStart, end: sliceEnd });
       }
     }
   }
@@ -203,6 +218,7 @@ function buildTimelineTasks(events: AgentEvent[]): TimelineTask[] {
 
 export function DAGTimeline({ events, pipelineStartTime, onSelectAgent, selectedAgent }: DAGTimelineProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [manuallyToggledGroups, setManuallyToggledGroups] = useState<Set<string>>(new Set());
 
   const tasks = useMemo(() => buildTimelineTasks(events), [events]);
 
@@ -231,7 +247,37 @@ export function DAGTimeline({ events, pipelineStartTime, onSelectAgent, selected
       .filter((g) => g.tasks.length > 0);
   }, [tasks]);
 
+  // Auto-collapse/expand groups based on task status
+  // Groups with running tasks are expanded; groups with only completed/idle tasks are collapsed
+  useEffect(() => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+
+      for (const group of groups) {
+        // Skip if user manually toggled this group
+        if (manuallyToggledGroups.has(group.skill)) continue;
+
+        const hasRunningTask = group.tasks.some((t) => t.status === 'running');
+
+        if (hasRunningTask) {
+          // Auto-expand groups with running tasks
+          next.delete(group.skill);
+        } else if (group.tasks.every((t) => t.status === 'completed' || t.status === 'pending')) {
+          // Auto-collapse groups where all tasks are completed or pending
+          next.add(group.skill);
+        }
+      }
+
+      return next;
+    });
+  }, [groups, manuallyToggledGroups]);
+
   const toggleGroup = (skill: string) => {
+    setManuallyToggledGroups((prev) => {
+      const next = new Set(prev);
+      next.add(skill);
+      return next;
+    });
     setCollapsedGroups((prev) => {
       const next = new Set(prev);
       next.has(skill) ? next.delete(skill) : next.add(skill);

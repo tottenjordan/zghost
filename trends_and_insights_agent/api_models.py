@@ -332,6 +332,53 @@ class AvailableTrendsResponse(BaseModel):
 
 
 # =====================================
+# Trend Safety Models
+# =====================================
+
+
+class TrendSafetyCheckRequest(BaseModel):
+    """Request to validate trends for brand safety."""
+
+    trends: List[Dict[str, Any]] = Field(
+        description="List of trend objects to evaluate"
+    )
+    brand: str = Field(default="", description="Brand name for context")
+    target_audience: str = Field(
+        default="", description="Target audience for context"
+    )
+    safety_level: str = Field(
+        default="standard",
+        description="Safety strictness: 'standard' or 'strict'",
+    )
+
+
+class TrendSafetyResult(BaseModel):
+    """Safety evaluation result for a single trend."""
+
+    trend_title: str
+    safe: bool = Field(description="Whether the trend passes safety checks")
+    risk_level: str = Field(
+        description="Risk level: 'safe', 'caution', 'unsafe'"
+    )
+    reason: str = Field(description="Explanation of the safety assessment")
+    categories: List[str] = Field(
+        default_factory=list,
+        description="Flagged categories: e.g. 'violence', 'controversy', 'adult'",
+    )
+
+
+class TrendSafetyCheckResponse(BaseModel):
+    """Response from trend safety check."""
+
+    results: List[TrendSafetyResult]
+    overall_safe: bool = Field(
+        description="True if all trends passed safety checks"
+    )
+    checked_at: datetime
+    model_used: str = Field(default="gemini-3.0-flash")
+
+
+# =====================================
 # Rating Models
 # =====================================
 
