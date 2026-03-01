@@ -181,7 +181,7 @@ export class OrchestrationPage {
     const url = `/api/v1/run/${sessionId}/stream?user_id=default-user&message=${encodeURIComponent(message)}`;
     try {
       // Fire-and-forget: consume enough to confirm the request started
-      const resp = await this.page.request.get(url, { timeout: 600_000 });
+      const resp = await this.page.request.get(url, { timeout: 1_800_000 });
       // Response body is the full SSE stream — just dispose it
       await resp.dispose();
     } catch {
@@ -200,6 +200,7 @@ export class OrchestrationPage {
   async autoApproveLoop(
     stopSignal: { stopped: boolean },
     sessionId?: string,
+    initialMessage?: string,
   ) {
     if (!sessionId) {
       console.log('[auto-approve] No session ID, skipping');
@@ -208,12 +209,21 @@ export class OrchestrationPage {
 
     let knownEventCount = 0;
 
-    // Wait for the initial pipeline start stream to complete
-    console.log('[auto-approve] Waiting for initial stream to complete...');
-    knownEventCount = await this.waitForStreamComplete(
-      sessionId, 0, 300_000, stopSignal,
-    );
-    console.log(`[auto-approve] Initial stream completed (${knownEventCount} events)`);
+    // If we have an initial message (e.g., pipeline start), send it first
+    if (initialMessage) {
+      console.log('[auto-approve] Sending initial pipeline start message...');
+      await this.sendMessageDirect(sessionId, initialMessage);
+      const afterStart = await this.getEventStatus(sessionId);
+      knownEventCount = afterStart.count;
+      console.log(`[auto-approve] Initial message sent (${knownEventCount} events)`);
+    } else {
+      // Wait for the initial pipeline start stream to complete
+      console.log('[auto-approve] Waiting for initial stream to complete...');
+      knownEventCount = await this.waitForStreamComplete(
+        sessionId, 0, 300_000, stopSignal,
+      );
+      console.log(`[auto-approve] Initial stream completed (${knownEventCount} events)`);
+    }
 
     let lastApprovalTime = 0;
 
@@ -223,18 +233,40 @@ export class OrchestrationPage {
         const status = await this.getEventStatus(sessionId);
         if (!status.lastIsComplete && status.count === knownEventCount) {
           // Still processing or no change — wait
-          await this.page.waitForTimeout(5_000);
+          await this.page.waitForTimeout(10_000);
           continue;
         }
 
-        // Throttle: minimum 15s between approvals to avoid rapid-fire loops
-        const now = Date.now();
-        const sinceLast = now - lastApprovalTime;
-        if (sinceLast < 15_000) {
-          await this.page.waitForTimeout(15_000 - sinceLast);
+        // Stream completed — but wait for stability before sending approval.
+        // In autopilot mode the agent auto-continues; only send approval if
+        // the agent has been idle (no new events) for 30+ seconds.
+        let stableChecks = 0;
+        const stableCount = status.count;
+        while (stableChecks < 3 && !stopSignal.stopped) {
+          await this.page.waitForTimeout(10_000);
+          const recheck = await this.getEventStatus(sessionId);
+          if (recheck.count > stableCount) {
+            // Agent started a new turn on its own — no approval needed
+            knownEventCount = recheck.count;
+            console.log(`[auto-approve] Agent auto-continued (${recheck.count} events), skipping approval`);
+            break;
+          }
+          stableChecks++;
         }
 
-        // Stream is complete — send approval message directly via API
+        if (stableChecks < 3 || stopSignal.stopped) {
+          // Agent auto-continued or we stopped — loop back
+          continue;
+        }
+
+        // Agent has been idle for 30s — send approval
+        // Throttle: minimum 60s between approvals
+        const now = Date.now();
+        const sinceLast = now - lastApprovalTime;
+        if (sinceLast < 60_000) {
+          await this.page.waitForTimeout(60_000 - sinceLast);
+        }
+
         console.log(`[auto-approve] Sending approval at ${new Date().toISOString()} (events: ${status.count})`);
         lastApprovalTime = Date.now();
         await this.sendMessageDirect(sessionId, 'Looks good, proceed with all options.');
@@ -247,7 +279,7 @@ export class OrchestrationPage {
       } catch (err) {
         console.log(`[auto-approve] Error: ${err}`);
       }
-      await this.page.waitForTimeout(5_000);
+      await this.page.waitForTimeout(10_000);
     }
   }
 

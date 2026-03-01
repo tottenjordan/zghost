@@ -10,7 +10,7 @@ export class TrendsPage {
     this.page = page;
     this.presetSelect = page.locator('select').first();
     this.saveConfigButton = page.getByRole('button', { name: /save configuration/i });
-    this.launchButton = page.getByRole('button', { name: /add execution run/i });
+    this.launchButton = page.getByRole('button', { name: /launch pipeline/i });
   }
 
   async goto() {
