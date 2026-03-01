@@ -192,25 +192,35 @@ export function VoiceSelector({
                     {voiceSamples.map((sample) => (
                       <div
                         key={sample.id}
-                        className="flex items-center justify-between rounded bg-zinc-800 px-2 py-1 text-xs"
+                        className="rounded bg-zinc-800 px-2 py-1 text-xs"
                       >
-                        <span className="truncate text-zinc-300">
-                          {sample.label}
-                        </span>
-                        <Badge
-                          variant={
-                            sample.status === 'ready'
-                              ? 'success'
-                              : sample.status === 'generating'
-                              ? 'info'
-                              : sample.status === 'error'
-                              ? 'danger'
-                              : 'default'
-                          }
-                          className="text-xs"
-                        >
-                          {sample.status}
-                        </Badge>
+                        <div className="flex items-center justify-between">
+                          <span className="truncate text-zinc-300">
+                            {sample.label}
+                          </span>
+                          <Badge
+                            variant={
+                              sample.status === 'ready'
+                                ? 'success'
+                                : sample.status === 'generating'
+                                ? 'info'
+                                : sample.status === 'error'
+                                ? 'danger'
+                                : 'default'
+                            }
+                            className="text-xs"
+                          >
+                            {sample.status}
+                          </Badge>
+                        </div>
+                        {sample.status === 'ready' && sample.url && (
+                          <audio
+                            src={sample.url}
+                            controls
+                            className="mt-1 w-full h-7"
+                            preload="none"
+                          />
+                        )}
                       </div>
                     ))}
                   </div>

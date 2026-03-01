@@ -428,6 +428,94 @@ START
 
 ---
 
+## CUJ-8: A2A Deployment & Gemini Enterprise Integration
+
+### Overview
+
+The core marketing intelligence agent is deployed to Agent Engine with A2A protocol, then registered with Gemini Enterprise (Discovery Engine). This enables knowledge workers across the organization to access campaign creation as a shared capability — launching campaigns, viewing shared results, and building on prior team insights — all from the Gemini Enterprise conversational UI.
+
+### Architecture
+
+```
+Knowledge Workers (Gemini Enterprise UI)
+         │
+    ┌────┴──────────────────────────────────────┐
+    │  Gemini Enterprise (Discovery Engine)      │
+    │  ├── Data stores (SOPs, brand guides)      │
+    │  ├── Search (product knowledge)            │
+    │  └── External Agent (A2A registration)     │
+    └────┬──────────────────────────────────────┘
+         │  A2A protocol
+    ┌────┴──────────────────────────────────────┐
+    │  Agent Engine (Vertex AI)                  │
+    │  ├── root_agent (trends & insights)        │
+    │  ├── Session service (persistent state)    │
+    │  ├── Memory Bank (cross-campaign recall)   │
+    │  └── GCS Artifact Service (media)          │
+    └────┬──────────────────────────────────────┘
+         │
+    ┌────┴──────────────────────────────────────┐
+    │  External Services                         │
+    │  ├── Gemini 3 (Flash / Pro Image)          │
+    │  ├── Imagen 4.0 Ultra / Veo 3.1 Fast       │
+    │  ├── Google Cloud Storage                  │
+    │  └── YouTube / Google Trends APIs          │
+    └───────────────────────────────────────────┘
+```
+
+### Deployment Steps
+
+1. **Deploy agent to Agent Engine**:
+   - `deploy_to_ae.py` packages `root_agent` with all skills
+   - Agent Engine provides managed session service and GCS artifact service
+   - A2A wrapper (`to_a2a(root_agent)`) exposes `/.well-known/agent.json` endpoint
+
+2. **Register with Gemini Enterprise**:
+   - Create Discovery Engine app (`publish_to_agentspace_v2.sh`)
+   - Add data stores for brand guidelines, SOPs, product knowledge
+   - Register the A2A agent as an external agent with its Cloud Run or Agent Engine URL
+
+3. **Knowledge workers access via Gemini Enterprise UI**:
+   - Users ask natural language questions: "Create a 30s campaign for Pixel targeting Gen Z"
+   - Gemini Enterprise routes to the A2A agent for campaign orchestration
+   - Results (reports, media, commercials) stored in shared sessions viewable by the team
+
+### Shared Campaign Capabilities
+
+| Capability | Description |
+|------------|-------------|
+| Campaign creation | Any team member can launch campaigns from Gemini Enterprise |
+| Cross-campaign insights | Memory Bank recalls prior campaigns for the same brand/product |
+| Shared sessions | Team members view each other's completed campaigns |
+| Brand consistency | Discovery Engine data stores enforce brand guidelines |
+| Artifact access | Generated media (images, videos, commercials) available via GCS proxy |
+
+### State Keys
+
+| Key | Type | Set By | Read By |
+|-----|------|--------|---------|
+| `agent_engine_session_id` | string | Agent Engine | All services |
+| `prior_campaign_insights` | string | Memory Bank | Research, Creative |
+| `user_id` | string | Gemini Enterprise | Session service, Memory Bank |
+
+### Success Criteria
+
+- Agent deployed to Agent Engine with A2A endpoint accessible
+- `/.well-known/agent.json` returns valid agent card
+- Agent registered as external agent in Gemini Enterprise
+- Knowledge worker can launch a campaign from Gemini Enterprise UI
+- Campaign results are shared and accessible by other team members
+- Memory Bank recalls insights from prior campaigns across the organization
+
+### Error Cases
+
+- Agent Engine cold start timeout → min-instances=1 configured
+- A2A handshake failure → verify agent card URL and CORS
+- Session isolation failure → user_id scoping enforced
+- Memory Bank query returns no results → graceful fallback to fresh research
+
+---
+
 ## Session State Schema Reference
 
 ### Campaign Configuration Keys

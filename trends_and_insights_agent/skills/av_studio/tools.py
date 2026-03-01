@@ -325,15 +325,26 @@ async def generate_clip_with_frames(
                     gcs_folder = tool_context.state.get("gcs_folder", "default")
                     destination_blob = f"{gcs_folder}/av_studio/clips/{filename}"
 
-                    # Copy to organized GCS location
-                    bucket_obj = storage_client.get_bucket(bucket_name)
-                    src_blob_obj = bucket_obj.blob(source_blob)
-                    bucket_obj.copy_blob(
-                        src_blob_obj, bucket_obj, new_name=destination_blob
+                    # Upload the local file to organized GCS location
+                    # (more reliable than copy_blob which depends on Veo
+                    #  output blob still being accessible)
+                    upload_blob_to_gcs(
+                        source_file_name=local_path,
+                        destination_blob_name=destination_blob,
                     )
 
+                    # Verify the upload succeeded
+                    bucket_obj = storage_client.get_bucket(bucket_name)
+                    dest_blob_obj = bucket_obj.blob(destination_blob)
+                    if not dest_blob_obj.exists():
+                        logging.error(
+                            f"Clip upload verification failed — blob does not exist "
+                            f"at {destination_blob} in bucket {bucket_name}"
+                        )
+                        return {"status": "failed", "error": f"Upload verification failed for {destination_blob}"}
+
                     gcs_uri = f"gs://{bucket_name}/{destination_blob}"
-                    logging.info(f"Generated clip '{clip_name}' at {gcs_uri}")
+                    logging.info(f"Generated clip '{clip_name}' at {gcs_uri} (verified)")
 
                     return {
                         "status": "ok",
@@ -536,6 +547,21 @@ def concatenate_clips(
             local_clip_paths = []
             for idx, gcs_uri in enumerate(clip_gcs_uris):
                 source_blob = gcs_uri.replace(f"gs://{bucket_name}/", "")
+                logging.info(f"concatenate_clips: downloading clip {idx} — bucket={bucket_name}, blob={source_blob}")
+
+                # Verify blob exists before downloading
+                bucket_obj = storage_client.get_bucket(bucket_name)
+                blob_obj = bucket_obj.blob(source_blob)
+                if not blob_obj.exists():
+                    logging.error(
+                        f"concatenate_clips: clip {idx} NOT FOUND in GCS — "
+                        f"gs://{bucket_name}/{source_blob}"
+                    )
+                    return {
+                        "status": "failed",
+                        "error": f"Clip not found in GCS: gs://{bucket_name}/{source_blob}",
+                    }
+
                 local_path = os.path.join(temp_dir, f"clip_{idx}.mp4")
                 download_image_from_gcs(
                     source_blob_name=source_blob,
@@ -543,6 +569,7 @@ def concatenate_clips(
                     gcs_bucket=bucket_name,
                 )
                 local_clip_paths.append(local_path)
+                logging.info(f"concatenate_clips: clip {idx} downloaded ({os.path.getsize(local_path)} bytes)")
 
             # Create ffmpeg concat file list
             concat_list_path = os.path.join(temp_dir, "concat_list.txt")

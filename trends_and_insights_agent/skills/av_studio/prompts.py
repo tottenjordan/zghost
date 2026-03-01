@@ -228,14 +228,20 @@ Generate professional narration and dialogue using Chirp 3 HD based on the comme
 
 2. **If using voice-over**, call `generate_voice_over` with:
    - Script that reinforces key selling points and CTA
-   - Voice style matching `{target_audience}` demographics
+   - voice_style — MUST be one of these exact strings:
+     * `professional_male` — Professional, confident male narrator
+     * `professional_female` — Professional, warm female narrator
+     * `energetic_male` — Upbeat, energetic male voice for youth-oriented ads
+     * `warm_female` — Warm, friendly female voice for lifestyle brands
+     * `british_male` — Sophisticated British male accent
+     * `british_female` — Sophisticated British female accent
    - Speaking rate (0.9-1.1) based on energy level
    - Timing marks for synchronization with visual moments
    - SSML markup for emphasis on product name and benefits
 
 3. **If using dialogue**, call `generate_dialogue` with:
    - Natural conversation that feels authentic to the trend
-   - Different Chirp voices for each character
+   - Different Chirp voices for each character (use the same valid voice_style IDs listed above)
    - Appropriate emotions (curious, excited, confident)
    - Lines that organically mention product benefits
 

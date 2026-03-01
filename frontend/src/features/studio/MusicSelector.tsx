@@ -158,52 +158,62 @@ export function MusicSelector({
                 }`}
                 onClick={() => onSelectMusic(sample.id)}
               >
-                <CardContent className="flex items-center gap-3 p-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800">
-                    {sample.status === 'generating' ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-400 border-t-transparent" />
-                    ) : (
-                      <Music className="h-4 w-4 text-purple-400" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium text-zinc-100">
-                        {sample.name}
-                      </span>
-                      <Badge
-                        variant={
-                          sample.status === 'ready'
-                            ? 'success'
-                            : sample.status === 'generating'
-                            ? 'info'
-                            : sample.status === 'error'
-                            ? 'danger'
-                            : 'default'
-                        }
-                        className="text-xs"
-                      >
-                        {sample.status}
-                      </Badge>
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-800">
+                      {sample.status === 'generating' ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-400 border-t-transparent" />
+                      ) : (
+                        <Music className="h-4 w-4 text-purple-400" />
+                      )}
                     </div>
-                    <p className="truncate text-xs text-zinc-500">
-                      {sample.genre} · {sample.mood} · {sample.durationSeconds}s
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium text-zinc-100">
+                          {sample.name}
+                        </span>
+                        <Badge
+                          variant={
+                            sample.status === 'ready'
+                              ? 'success'
+                              : sample.status === 'generating'
+                              ? 'info'
+                              : sample.status === 'error'
+                              ? 'danger'
+                              : 'default'
+                          }
+                          className="text-xs"
+                        >
+                          {sample.status}
+                        </Badge>
+                      </div>
+                      <p className="truncate text-xs text-zinc-500">
+                        {sample.genre} · {sample.mood} · {sample.durationSeconds}s
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {isSelected && (
+                        <div className="h-3 w-3 rounded-full bg-purple-500" />
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveSample(sample.id);
+                        }}
+                        className="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {isSelected && (
-                      <div className="h-3 w-3 rounded-full bg-purple-500" />
-                    )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRemoveSample(sample.id);
-                      }}
-                      className="rounded p-1 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
+                  {sample.status === 'ready' && sample.url && (
+                    <audio
+                      src={sample.url}
+                      controls
+                      className="mt-2 w-full h-8"
+                      preload="none"
+                    />
+                  )}
                 </CardContent>
               </Card>
             );
