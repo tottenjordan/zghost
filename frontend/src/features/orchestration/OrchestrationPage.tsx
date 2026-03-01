@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, FileText, Film, AlertCircle, ArrowLeft } from 'lucide-react';
+import { ChevronDown, ChevronUp, Maximize2, Minimize2, FileText, Film, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { PipelineGraph } from './PipelineGraph';
 import { DAGTimeline } from './DAGTimeline';
@@ -28,6 +28,7 @@ export function OrchestrationPage() {
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
   const [eventStreamOpen, setEventStreamOpen] = useState(true);
+  const [eventStreamExpanded, setEventStreamExpanded] = useState(false);
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
   const [configExpanded, setConfigExpanded] = useState(false);
@@ -268,11 +269,20 @@ export function OrchestrationPage() {
   useEffect(() => {
     if (!sessionId || !isRunning) return;
     // If we have a sessionId + running status but no active stream,
-    // try to reconnect
+    // try to reconnect with a proper pipeline start message
     if (!streamUrl) {
-      api.getSessionState(sessionId).then(() => {
-        // Session still exists — reconnect SSE stream with a continue message
-        const url = api.getStreamUrl(sessionId, 'Continue where you left off.', USER_ID);
+      api.getSessionState(sessionId).then((state) => {
+        // Build a context-aware reconnect message (same as handleStart)
+        const hasTrends = (selectedSearchTrends.length > 0 && selectedYtTrends.length > 0)
+          || state?.target_search_trends || state?.target_yt_trends;
+        const trendSkipNote = hasTrends
+          ? ' Campaign metadata and trends are already configured in session state — skip trend-discovery and proceed directly to market research.'
+          : '';
+        const autopilotNote = autopilot
+          ? ' Use auto-select mode for trends, approve all outputs automatically, and proceed through all steps without pausing for user confirmation.'
+          : '';
+        const reconnectMessage = `Start the full pipeline, producing a ${commercialDuration}-second commercial.${trendSkipNote}${autopilotNote}`;
+        const url = api.getStreamUrl(sessionId, reconnectMessage, USER_ID);
         setStreamUrl(url);
       }).catch(() => {
         // Session doesn't exist on the server — reset to idle
@@ -280,7 +290,7 @@ export function OrchestrationPage() {
         setSessionId(null);
       });
     }
-  }, [sessionId, isRunning, streamUrl, setPipelineStatus, setSessionId]);
+  }, [sessionId, isRunning, streamUrl, selectedSearchTrends, selectedYtTrends, autopilot, commercialDuration, setPipelineStatus, setSessionId]);
 
   // Listen for voice-action events to switch tabs
   useEffect(() => {
@@ -683,17 +693,28 @@ export function OrchestrationPage() {
         </div>
       </div>
 
-      {/* Bottom: Collapsible Event Stream */}
+      {/* Bottom: Collapsible & Expandable Event Stream */}
       <div className="flex-shrink-0">
-        <button
-          onClick={() => setEventStreamOpen(!eventStreamOpen)}
-          className="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-300 border border-zinc-800 rounded-t-lg bg-zinc-900/50"
-        >
-          {eventStreamOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
-          Event Stream ({events.length} events)
-        </button>
+        <div className="flex w-full items-center border border-zinc-800 rounded-t-lg bg-zinc-900/50">
+          <button
+            onClick={() => setEventStreamOpen(!eventStreamOpen)}
+            className="flex flex-1 items-center gap-2 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-300"
+          >
+            {eventStreamOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+            Event Stream ({events.length} events)
+          </button>
+          {eventStreamOpen && (
+            <button
+              onClick={() => setEventStreamExpanded(!eventStreamExpanded)}
+              className="px-2 py-1.5 text-zinc-500 hover:text-zinc-300"
+              title={eventStreamExpanded ? 'Compact view' : 'Expand view'}
+            >
+              {eventStreamExpanded ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
+            </button>
+          )}
+        </div>
         {eventStreamOpen && (
-          <div className="h-48 border border-t-0 border-zinc-800 rounded-b-lg overflow-hidden">
+          <div className={`${eventStreamExpanded ? 'h-[28rem]' : 'h-48'} border border-t-0 border-zinc-800 rounded-b-lg overflow-hidden transition-all duration-200`}>
             <EventStream
               events={events}
               isPaused={isPaused}

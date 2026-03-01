@@ -147,6 +147,11 @@ function extractChatMessages(events: AgentEvent[]): ChatMessage[] {
     if (event.type === 'tool_call' && !text) continue;
     if (text.length < 10 && !text.includes('?')) continue;
 
+    // Filter out short sub-agent routing messages (e.g. "Starting ad copy...",
+    // "Ad Copy completed."). Only show substantial content from sub-agents.
+    const isRootOrUser = event.agentName === 'root_agent' || event.agentName === 'user';
+    if (!isRootOrUser && text.length < 120) continue;
+
     const isUser = event.agentName === 'user';
     messages.push({
       id: `${event.timestamp}-${event.agentName}`,
@@ -202,12 +207,18 @@ export function AgentChat({ sessionId, events, autopilot, onWaitingForInput, onS
 
   const lastAgentMessage = messages.filter(m => m.role === 'agent').slice(-1)[0];
 
-  // Clear isSending state when new agent message arrives
+  // Clear isSending state when new agent message arrives or events change
   useEffect(() => {
     if (lastAgentMessage) {
       setIsSending(false);
     }
   }, [lastAgentMessage?.timestamp]);
+  // Fallback: clear isSending when event count changes (covers filtered messages)
+  useEffect(() => {
+    if (isSending && events.length > 0) {
+      setIsSending(false);
+    }
+  }, [events.length]);
 
   const sendingRef = useRef(false);
 
@@ -270,17 +281,18 @@ export function AgentChat({ sessionId, events, autopilot, onWaitingForInput, onS
   }, [isWaitingForApproval, onWaitingForInput]);
 
   // Autopilot: auto-send approval after 3s delay
+  // Only guard with `sending` (not isSending) to avoid stuck states
   const autopilotTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (autopilot && isWaitingForApproval && !isSending && !sending) {
+    if (autopilot && isWaitingForApproval && !sending) {
       autopilotTimerRef.current = setTimeout(() => {
-        handleSend('Looks good, proceed with all options.', true);
+        handleSend('Approved. Continue to the next pipeline step without pausing for confirmation.', true);
       }, 3000);
     }
     return () => {
       if (autopilotTimerRef.current) clearTimeout(autopilotTimerRef.current);
     };
-  }, [autopilot, isWaitingForApproval, isSending, sending, handleSend]);
+  }, [autopilot, isWaitingForApproval, sending, handleSend]);
 
   return (
     <div className="flex flex-col h-full">
