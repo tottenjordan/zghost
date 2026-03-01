@@ -3,6 +3,7 @@
 import os
 import logging
 import uuid
+import time
 from typing import Optional, Dict, Any
 from google import genai
 from google.genai import types
@@ -11,6 +12,40 @@ from ...shared_libraries.config import config
 from ...shared_libraries.utils import upload_blob_to_gcs
 
 logging.basicConfig(level=logging.INFO)
+
+
+def _retry_with_backoff(fn, max_attempts=3, base_delay=5):
+    """Retry a function with exponential backoff.
+
+    Args:
+        fn: Callable to retry (should take no arguments)
+        max_attempts: Maximum number of attempts (default 3)
+        base_delay: Base delay in seconds (default 5)
+
+    Returns:
+        The result of fn() if successful
+
+    Raises:
+        The last exception if all attempts fail
+    """
+    last_exception = None
+    for attempt in range(max_attempts):
+        try:
+            return fn()
+        except Exception as e:
+            last_exception = e
+            if attempt < max_attempts - 1:
+                delay = base_delay * (2 ** attempt)
+                logging.warning(
+                    f"Attempt {attempt + 1}/{max_attempts} failed: {e}. "
+                    f"Retrying in {delay}s..."
+                )
+                time.sleep(delay)
+            else:
+                logging.error(
+                    f"All {max_attempts} attempts failed. Last error: {e}"
+                )
+    raise last_exception
 
 # Get GCS bucket at runtime (Agent Engine injects env vars after import)
 def get_gcs_bucket():
@@ -75,14 +110,20 @@ Technical Requirements:
 - Target audience: {tool_context.state.get('target_audience', 'general')}
 """
 
-        # Generate music using Lyria
-        response = client.models.generate_content(
-            model="models/music-lyria-1",  # Lyria music generation model
-            contents=full_prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=["AUDIO"],
+        # Generate music using Lyria with retry logic and timing
+        start_time = time.time()
+        response = _retry_with_backoff(
+            lambda: client.models.generate_content(
+                model="models/music-lyria-1",  # Lyria music generation model
+                contents=full_prompt,
+                config=types.GenerateContentConfig(
+                    response_modalities=["AUDIO"],
+                ),
             ),
+            max_attempts=3,
+            base_delay=5
         )
+        elapsed_time = time.time() - start_time
 
         if not response.candidates or not response.candidates[0].content.parts:
             return {"status": "failed", "error": "No music generated"}
@@ -97,6 +138,26 @@ Technical Requirements:
             return {"status": "failed", "error": "No audio data in response"}
 
         audio_bytes = audio_part.inline_data.data
+
+        # Validate audio data size (should be >1000 bytes for meaningful audio)
+        if len(audio_bytes) < 1000:
+            logging.warning(
+                f"Generated audio suspiciously small: {len(audio_bytes)} bytes. "
+                f"Expected >1000 bytes for {duration_seconds}s soundtrack."
+            )
+            return {
+                "status": "failed",
+                "error": f"Generated audio too small: {len(audio_bytes)} bytes"
+            }
+
+        # Log diagnostic information after successful generation
+        logging.info(
+            f"Music generation succeeded - Model: music-lyria-1, "
+            f"Prompt length: {len(full_prompt)} chars, "
+            f"Response size: {len(audio_bytes)} bytes, "
+            f"Duration: {duration_seconds}s, "
+            f"Elapsed: {elapsed_time:.2f}s"
+        )
 
         # Save locally
         filename = f"soundtrack_{genre.replace(' ', '_')}_{str(uuid.uuid4())[:8]}.mp3"

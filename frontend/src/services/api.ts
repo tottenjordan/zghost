@@ -374,6 +374,28 @@ class ApiClient {
     }
     return response.json();
   }
+  /**
+   * Export all campaign artifacts as a zip file download.
+   */
+  async exportSession(sessionId: string, userId = 'default-user'): Promise<void> {
+    const params = new URLSearchParams({ user_id: userId });
+    const url = `${API_BASE}/api/v1/sessions/${sessionId}/export?${params}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(
+        `Export failed (${response.status}): ${response.statusText || 'Unknown error'}`
+      );
+    }
+    const blob = await response.blob();
+    const downloadUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = `campaign_export_${sessionId.slice(0, 8)}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(downloadUrl);
+  }
 }
 
 export const api = new ApiClient();

@@ -45,4 +45,10 @@ Start by greeting the user and giving them a high-level overview of what you do.
     {target_audience}
     </target_audience>
 
+**Campaign Guide**: If `campaign_guide_content` is available in session state, reference it for brand messaging alignment, tone guidance, and product positioning. This content was extracted from a user-uploaded PDF campaign guide.
+
+<campaign_guide_content>
+{campaign_guide_content}
+</campaign_guide_content>
+
 """

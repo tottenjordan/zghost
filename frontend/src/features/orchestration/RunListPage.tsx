@@ -5,6 +5,7 @@ import {
   Pause,
   Trash2,
   Copy,
+  Download,
   Settings,
   Clock,
   CheckCircle2,
@@ -113,6 +114,7 @@ export function RunListPage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [statusFilter, setStatusFilter] = useState<RunStatus | 'all'>('all');
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
+  const [exportingSessionId, setExportingSessionId] = useState<string | null>(null);
 
   const fetchBackendSessions = useCallback(async () => {
     setLoadingBackend(true);
@@ -239,6 +241,18 @@ export function RunListPage() {
     navigator.clipboard.writeText(sessionId);
     setCopiedSessionId(sessionId);
     setTimeout(() => setCopiedSessionId(null), 2000);
+  }, []);
+
+  const handleExport = useCallback(async (session: PipelineSession) => {
+    try {
+      setExportingSessionId(session.sessionId);
+      await api.exportSession(session.sessionId);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Export failed. Please try again.');
+    } finally {
+      setExportingSessionId(null);
+    }
   }, []);
 
   const runningCount = sessions.filter(s => s.status === 'running' && !s.fromBackend).length;
@@ -594,6 +608,20 @@ export function RunListPage() {
                   >
                     <Copy className="w-3.5 h-3.5" />
                   </button>
+                  {session.status === 'completed' && session.hasCommercial && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleExport(session); }}
+                      className="p-1.5 rounded hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 transition-colors"
+                      title="Export campaign package"
+                      disabled={exportingSessionId === session.sessionId}
+                    >
+                      {exportingSessionId === session.sessionId ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  )}
                   {canDelete && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(session); }}

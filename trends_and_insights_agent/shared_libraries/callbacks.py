@@ -409,13 +409,40 @@ async def before_agent_get_user_file(
         version = await callback_context.save_artifact(
             filename=artifact_key, artifact=artifact
         )
+
+        # Extract text content from PDF for agent use
+        try:
+            import io
+            from PyPDF2 import PdfReader
+            pdf_reader = PdfReader(io.BytesIO(file_bytes))
+            extracted_text = ""
+            for page in pdf_reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    extracted_text += page_text + "\n"
+            # Truncate to 50K chars to avoid token limits
+            if len(extracted_text) > 50000:
+                extracted_text = extracted_text[:50000] + "\n\n[Content truncated at 50,000 characters]"
+            if extracted_text.strip():
+                callback_context.state["campaign_guide_content"] = extracted_text
+                logging.info(f"Extracted {len(extracted_text)} chars from PDF campaign guide")
+            else:
+                logging.warning("PDF uploaded but no text could be extracted")
+        except Exception as e:
+            logging.warning(f"Failed to extract text from PDF: {e}")
+
         callback_context.state["user_document_artifact_key"] = artifact_key
 
     # Formulate a confirmation message
+    guide_status = ""
+    if callback_context.state.get("campaign_guide_content"):
+        char_count = len(callback_context.state["campaign_guide_content"])
+        guide_status = f"\n\nI've also extracted the text content ({char_count:,} characters) from your PDF for brand alignment during creative generation."
+
     confirmation_message = (
         f"Thank you! I've successfully processed your uploaded file.\n\n"
         f"It's now stored as an artifact with key "
-        f"'{artifact_key}' (version: {version}, size: {len(file_bytes)} bytes).\n\n"
+        f"'{artifact_key}' (version: {version}, size: {len(file_bytes)} bytes).{guide_status}\n\n"
         f"What would you like to do with it?"
     )
 

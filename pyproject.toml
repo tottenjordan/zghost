@@ -28,6 +28,7 @@ dependencies = [
     "google-cloud-texttospeech>=2.34.0",
     "a2a-sdk>=0.3.24",
     "fpdf2>=2.8.7",
+    "PyPDF2>=3.0.0",
 ]
 
 [build-system]

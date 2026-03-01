@@ -214,6 +214,8 @@ Before generating any audio, get AI recommendations for the optimal voice and mu
    - Choose from the quick_options provided
    - Adjust based on your creative judgment
 
+**CRITICAL AUDIO REQUIREMENT**: You MUST attempt voice-over generation (Step 5) and soundtrack generation (Step 6) BEFORE proceeding to assembly (Step 7). A commercial without audio is a demo-breaking failure. If audio generation fails, retry up to 3 times before proceeding without audio. Always log whether audio was successfully generated.
+
 ### Step 5: Voice-Over and Dialogue Generation
 
 Generate professional narration and dialogue using Chirp 3 HD based on the commercial's messaging needs and the audio style recommendations:

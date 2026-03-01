@@ -745,6 +745,60 @@ async def save_commercial_artifact(
             ),
         )
 
+        # Check if the video has an audio stream using ffprobe
+        import tempfile
+        import subprocess
+        import json as json_module
+
+        has_audio = False
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp_file:
+            tmp_path = tmp_file.name
+            tmp_file.write(video_bytes)
+
+        try:
+            # Use ffprobe to check for audio streams
+            probe_cmd = [
+                "ffprobe",
+                "-v", "quiet",
+                "-print_format", "json",
+                "-show_streams",
+                tmp_path
+            ]
+            result = subprocess.run(
+                probe_cmd, capture_output=True, text=True, timeout=10
+            )
+
+            if result.returncode == 0:
+                probe_data = json_module.loads(result.stdout)
+                audio_streams = [
+                    s for s in probe_data.get("streams", [])
+                    if s.get("codec_type") == "audio"
+                ]
+                has_audio = len(audio_streams) > 0
+
+                if not has_audio:
+                    logging.warning(
+                        f"Commercial saved WITHOUT audio - voiceover/soundtrack "
+                        f"generation may have failed. GCS: {commercial_gcs_uri}"
+                    )
+                else:
+                    logging.info(
+                        f"Commercial has {len(audio_streams)} audio stream(s)"
+                    )
+            else:
+                logging.warning(
+                    f"ffprobe failed to check audio: {result.stderr}"
+                )
+        except Exception as e:
+            logging.warning(f"Failed to check audio stream: {e}")
+        finally:
+            # Clean up temp file
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+
+        # Update metadata to include audio status
+        commercial_metadata["has_audio"] = has_audio
+
         tool_context.state["commercial_artifact"] = {
             "artifact_key": artifact_key,
             "gcs_uri": commercial_gcs_uri,

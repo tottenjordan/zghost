@@ -76,6 +76,7 @@ class SetupConfiguration:
             "sources": {},
             "final_report_with_citations": "",
             "commercial_artifact": "",
+            "campaign_guide_content": "",
         }
     }
 

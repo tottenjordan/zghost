@@ -5,11 +5,13 @@ orchestration status, ratings, and enhanced streaming.
 """
 
 import asyncio
+import io
 import json
 import logging
 import os
 import time
 import uuid
+import zipfile
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any, AsyncIterator, Dict, List, Optional
@@ -69,6 +71,7 @@ from .api_models import (
     TrendInfo,
 )
 from .shared_libraries.config import setup_config
+from .shared_libraries.utils import download_blob
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -765,6 +768,123 @@ async def get_session_artifacts(
         logger.error(f"Error getting session artifacts: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to get session artifacts: {str(e)}"
+        )
+
+
+@app.get("/api/v1/sessions/{session_id}/export")
+async def export_session(
+    session_id: str,
+    user_id: str = Query(default="default-user"),
+):
+    """Export all campaign artifacts as a zip file download."""
+    try:
+        session = await app_state.session_service.get_session(
+            app_name=SESSION_APP_NAME,
+            user_id=user_id,
+            session_id=session_id,
+        )
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        state = dict(session.state)
+        bucket_name = os.environ.get("BUCKET", "").replace("gs://", "")
+
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            # config.json
+            config_data = {
+                "brand": state.get("brand", ""),
+                "target_product": state.get("target_product", ""),
+                "target_audience": state.get("target_audience", ""),
+                "key_selling_points": state.get("key_selling_points", ""),
+                "commercial_duration": state.get("commercial_duration", 30),
+            }
+            zf.writestr("config.json", json.dumps(config_data, indent=2))
+
+            # research_report.md
+            report = state.get(
+                "combined_final_cited_report",
+                state.get("final_report_with_citations", ""),
+            )
+            if report:
+                zf.writestr("research_report.md", report)
+
+            # ad_copies.json
+            ad_copies = state.get("final_select_ad_copies")
+            if ad_copies:
+                zf.writestr("ad_copies.json", json.dumps(ad_copies, indent=2))
+
+            # visual_concepts.json
+            vis_concepts = state.get("final_select_vis_concepts")
+            if vis_concepts:
+                zf.writestr("visual_concepts.json", json.dumps(vis_concepts, indent=2))
+
+            # evaluation.json
+            evaluation = state.get("focus_group_evaluation")
+            if evaluation:
+                zf.writestr("evaluation.json", json.dumps(evaluation, indent=2))
+
+            # images/
+            img_artifact_keys = state.get("img_artifact_keys", {})
+            if isinstance(img_artifact_keys, dict) and "img_artifact_keys" in img_artifact_keys:
+                img_artifact_keys = img_artifact_keys["img_artifact_keys"]
+            if isinstance(img_artifact_keys, list):
+                for i, item in enumerate(img_artifact_keys):
+                    artifact_key = item.get("artifact_key", "") if isinstance(item, dict) else ""
+                    if not artifact_key:
+                        continue
+                    blob_name = artifact_key.replace(f"gs://{bucket_name}/", "")
+                    try:
+                        data = download_blob(bucket_name, blob_name)
+                        ext = os.path.splitext(blob_name)[1] or ".png"
+                        zf.writestr(f"images/image_{i+1}{ext}", data)
+                    except Exception as e:
+                        logger.warning(f"Failed to download image {blob_name}: {e}")
+
+            # videos/
+            vid_artifact_keys = state.get("vid_artifact_keys", {})
+            if isinstance(vid_artifact_keys, dict) and "vid_artifact_keys" in vid_artifact_keys:
+                vid_artifact_keys = vid_artifact_keys["vid_artifact_keys"]
+            if isinstance(vid_artifact_keys, list):
+                for i, item in enumerate(vid_artifact_keys):
+                    artifact_key = item.get("artifact_key", "") if isinstance(item, dict) else ""
+                    if not artifact_key:
+                        continue
+                    blob_name = artifact_key.replace(f"gs://{bucket_name}/", "")
+                    try:
+                        data = download_blob(bucket_name, blob_name)
+                        ext = os.path.splitext(blob_name)[1] or ".mp4"
+                        zf.writestr(f"videos/video_{i+1}{ext}", data)
+                    except Exception as e:
+                        logger.warning(f"Failed to download video {blob_name}: {e}")
+
+            # commercial/
+            commercial = state.get("commercial_artifact", {})
+            if isinstance(commercial, dict):
+                gcs_uri = commercial.get("gcs_uri", "") or commercial.get("artifact_key", "")
+                if gcs_uri:
+                    blob_name = gcs_uri.replace(f"gs://{bucket_name}/", "")
+                    try:
+                        data = download_blob(bucket_name, blob_name)
+                        ext = os.path.splitext(blob_name)[1] or ".mp4"
+                        zf.writestr(f"commercial/commercial{ext}", data)
+                    except Exception as e:
+                        logger.warning(f"Failed to download commercial {blob_name}: {e}")
+
+        buf.seek(0)
+        filename = f"campaign_export_{session_id[:8]}.zip"
+        return StreamingResponse(
+            buf,
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting session: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to export session: {str(e)}"
         )
 
 

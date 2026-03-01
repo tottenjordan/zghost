@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Download } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/Tabs';
 import { TimelineEditor } from './TimelineEditor';
 import { ClipViewer } from './ClipViewer';
@@ -10,6 +11,7 @@ import { VoiceSelector } from './VoiceSelector';
 import { MusicSelector } from './MusicSelector';
 import { useStudio } from './useStudio';
 import { Spinner } from '../../components/ui/Spinner';
+import { api } from '../../services/api';
 import type { Clip } from './types';
 
 export function StudioPage() {
@@ -72,6 +74,21 @@ export function StudioPage() {
         </p>
         {sessionId && (
           <p className="mt-1 text-xs text-zinc-600">Session: {sessionId}</p>
+        )}
+        {sessionId && (
+          <button
+            onClick={async () => {
+              try {
+                await api.exportSession(sessionId);
+              } catch (err) {
+                console.error('Export failed:', err);
+              }
+            }}
+            className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Download Package
+          </button>
         )}
       </div>
 

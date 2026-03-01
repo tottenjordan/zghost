@@ -4,6 +4,7 @@ import os
 import logging
 import uuid
 import json
+import time
 from typing import Optional, Dict, List, Any
 from google.cloud import texttospeech_v1beta1 as texttospeech
 from google.adk.tools import ToolContext
@@ -15,6 +16,41 @@ except ImportError:
     DETAILED_VOICE_PRESETS = None
 
 logging.basicConfig(level=logging.INFO)
+
+
+def _retry_with_backoff(fn, max_attempts=3, base_delay=5):
+    """Retry a function with exponential backoff.
+
+    Args:
+        fn: Callable to retry (should take no arguments)
+        max_attempts: Maximum number of attempts (default 3)
+        base_delay: Base delay in seconds (default 5)
+
+    Returns:
+        The result of fn() if successful
+
+    Raises:
+        The last exception if all attempts fail
+    """
+    last_exception = None
+    for attempt in range(max_attempts):
+        try:
+            return fn()
+        except Exception as e:
+            last_exception = e
+            if attempt < max_attempts - 1:
+                delay = base_delay * (2 ** attempt)
+                logging.warning(
+                    f"Attempt {attempt + 1}/{max_attempts} failed: {e}. "
+                    f"Retrying in {delay}s..."
+                )
+                time.sleep(delay)
+            else:
+                logging.error(
+                    f"All {max_attempts} attempts failed. Last error: {e}"
+                )
+    raise last_exception
+
 
 # Get GCS bucket at runtime (Agent Engine injects env vars after import)
 def get_gcs_bucket():
@@ -135,7 +171,22 @@ def generate_voice_over(
             ] if timing_marks else [],
         )
 
-        response = tts_client.synthesize_speech(request=request)
+        # Wrap TTS call in retry logic with timing
+        start_time = time.time()
+        response = _retry_with_backoff(
+            lambda: tts_client.synthesize_speech(request=request),
+            max_attempts=3,
+            base_delay=5
+        )
+        elapsed_time = time.time() - start_time
+
+        # Log diagnostic information after successful generation
+        logging.info(
+            f"TTS generation succeeded - Voice: {voice_config['name']}, "
+            f"Script length: {len(script)} chars, "
+            f"Response size: {len(response.audio_content)} bytes, "
+            f"Elapsed: {elapsed_time:.2f}s"
+        )
 
         # Extract audio content
         audio_content = response.audio_content

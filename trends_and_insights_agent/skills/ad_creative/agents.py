@@ -52,6 +52,12 @@ ad_copy_drafter = Agent(
     IMPORTANT: All ad copy MUST prominently feature and be relevant to the product above.
     If the trend topic seems unrelated to the product, creatively bridge the trend to the product.
 
+    ## Campaign Guide (if available)
+    If a campaign guide has been uploaded, use it for brand voice, messaging pillars, and creative direction:
+    <campaign_guide_content>
+    {campaign_guide_content}
+    </campaign_guide_content>
+
     ---
     ### Input Data
 
@@ -159,6 +165,12 @@ visual_concept_drafter = Agent(
 
     CRITICAL: Every visual concept you create MUST be for the brand and product listed above. Do NOT invent a different product.
     If the brand is "McDonald's" and the product is "McRib Sandwich", every concept must feature and promote the McRib Sandwich.
+
+    ## Campaign Guide (if available)
+    If a campaign guide has been uploaded, use it for brand voice, messaging pillars, and creative direction:
+    <campaign_guide_content>
+    {{campaign_guide_content}}
+    </campaign_guide_content>
 
     Based on the user-selected ad copies in the 'final_select_ad_copies' state key, generate visual concepts that:
     - Incorporate trending visual styles and themes.
