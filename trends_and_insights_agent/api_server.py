@@ -112,7 +112,8 @@ def _create_session_service():
     use_vertex = os.environ.get("USE_VERTEX_SESSIONS", "").lower() == "true"
     if use_vertex:
         project = os.environ.get("GOOGLE_CLOUD_PROJECT")
-        location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+        # Agent Engine sessions require us-central1 regardless of GOOGLE_CLOUD_LOCATION
+        location = "us-central1"
         # Unified Agent Engine ID with backward compatibility
         engine_id = (
             os.environ.get("AGENT_ENGINE_ID")
