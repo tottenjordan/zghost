@@ -37,10 +37,15 @@ export function TrendsPage() {
     selectedSearchTrends,
     selectedYtTrends,
     activeRubrics,
+    commercialDuration,
+    autopilot,
     setCampaignConfig: setStoreConfig,
     setSelectedTrends,
     toggleActiveRubric,
     setAutoStart,
+    addSession,
+    setSessionId,
+    setPipelineStatus,
     isReadyToLaunch,
   } = useCampaignStore();
 
@@ -92,6 +97,71 @@ export function TrendsPage() {
   const [aiReasoning, setAiReasoning] = useState<string>('');
   const [safetyResult, setSafetyResult] = useState<BrandSafetyResult | undefined>(undefined);
   const [autoSelectLoading, setAutoSelectLoading] = useState(false);
+
+  const [launching, setLaunching] = useState(false);
+
+  const handleLaunch = useCallback(async () => {
+    if (launching) return;
+    setLaunching(true);
+    try {
+      // Build initial state
+      const initialState: Record<string, any> = {
+        brand: storeConfig.brand || '',
+        target_product: storeConfig.target_product || '',
+        target_audience: storeConfig.target_audience || '',
+        key_selling_points: storeConfig.key_selling_points || '',
+        commercial_duration: commercialDuration,
+        autopilot_mode: autopilot,
+      };
+      if (selectedSearchTrends.length > 0) {
+        initialState.target_search_trends = {
+          target_search_trends: selectedSearchTrends.map((t) => ({
+            trend_title: t.title,
+            trend_rank: t.rank,
+            trend_refresh_date: '',
+          })),
+        };
+      }
+      if (selectedYtTrends.length > 0) {
+        initialState.target_yt_trends = {
+          target_yt_trends: selectedYtTrends.map((t) => ({
+            video_title: t.title,
+            video_duration: '',
+            video_url: t.videoUrl || '',
+          })),
+        };
+      }
+
+      // Create session
+      const session = await api.createSession({ initial_state: initialState });
+      const now = Date.now();
+      const label = `${storeConfig.brand || 'Run'} ${new Date(now).toLocaleTimeString()}`;
+      const newSession = {
+        id: `session-${session.session_id}`,
+        sessionId: session.session_id,
+        label,
+        status: 'running' as const,
+        startedAt: now,
+        config: { ...storeConfig },
+        commercialDuration,
+        searchTrends: [...selectedSearchTrends],
+        ytTrends: [...selectedYtTrends],
+      };
+
+      addSession(newSession);
+      setSessionId(session.session_id);
+      setPipelineStatus('running');
+      setAutoStart(true);
+
+      // Navigate directly to the run page
+      navigate(`/orchestration/${session.session_id}`);
+    } catch (err) {
+      console.error('Failed to launch:', err);
+      alert('Failed to create run. Check backend logs.');
+    } finally {
+      setLaunching(false);
+    }
+  }, [launching, storeConfig, selectedSearchTrends, selectedYtTrends, commercialDuration, autopilot, addSession, setSessionId, setPipelineStatus, setAutoStart, navigate]);
 
   const handleSaveConfig = useCallback((config: CampaignConfigData) => {
     setStoreConfig(config);
@@ -683,13 +753,22 @@ export function TrendsPage() {
 
             {/* Launch button */}
             <Button
-              onClick={() => { setAutoStart(true); navigate('/orchestration'); }}
-              disabled={!ready}
+              onClick={handleLaunch}
+              disabled={!ready || launching}
               variant="primary"
               className="w-full py-3 text-base font-semibold flex items-center justify-center gap-2"
             >
-              Add Execution Run to Orchestrator
-              <ArrowRight className="h-5 w-5" />
+              {launching ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Creating Run...
+                </>
+              ) : (
+                <>
+                  Launch Pipeline
+                  <ArrowRight className="h-5 w-5" />
+                </>
+              )}
             </Button>
           </div>
         </TabsContent>

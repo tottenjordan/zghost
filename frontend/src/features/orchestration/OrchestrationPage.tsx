@@ -320,7 +320,7 @@ export function OrchestrationPage() {
       setAutoStart(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [autoStart]);
 
   // Auto-dequeue when a run completes
   useEffect(() => {
