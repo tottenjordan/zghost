@@ -522,26 +522,28 @@ export function TrendsPage() {
                 }}
               />
             ) : (
-              <RubricLibrary
-                rubrics={availableRubrics}
-                onEdit={handleEditRubric}
-                onClone={handleCloneRubric}
-                onDelete={handleDeleteRubric}
-                onCreate={handleCreateRubric}
-                onCreateFromTemplate={handleCreateFromTemplate}
-                activeRubricIds={activeRubrics.map(r => r.id)}
-                onToggleActive={toggleActiveRubric}
-              />
-              <div className="flex justify-end pt-2">
-                <Button
-                  variant="primary"
-                  onClick={() => setActiveStep('review')}
-                  className="flex items-center gap-2"
-                >
-                  {activeRubrics.length > 0 ? 'Confirm Rubric' : 'Skip Rubric'}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
+              <>
+                <RubricLibrary
+                  rubrics={availableRubrics}
+                  onEdit={handleEditRubric}
+                  onClone={handleCloneRubric}
+                  onDelete={handleDeleteRubric}
+                  onCreate={handleCreateRubric}
+                  onCreateFromTemplate={handleCreateFromTemplate}
+                  activeRubricIds={activeRubrics.map(r => r.id)}
+                  onToggleActive={toggleActiveRubric}
+                />
+                <div className="flex justify-end pt-2">
+                  <Button
+                    variant="primary"
+                    onClick={() => setActiveStep('review')}
+                    className="flex items-center gap-2"
+                  >
+                    {activeRubrics.length > 0 ? 'Confirm Rubric' : 'Skip Rubric'}
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </>
             )}
           </div>
         </TabsContent>
