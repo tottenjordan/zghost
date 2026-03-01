@@ -68,6 +68,8 @@ async function _doFetch(forceRefresh = false): Promise<CachedTrends> {
       title: t.title,
       formattedTraffic: 'N/A',
       relatedQueries: '',
+      safetyStatus: t.safety_status || undefined,
+      safetyReason: t.safety_reason || undefined,
     })
   );
 
@@ -82,6 +84,8 @@ async function _doFetch(forceRefresh = false): Promise<CachedTrends> {
       description: '',
       viewCount: 'N/A',
       publishedTime: 'N/A',
+      safetyStatus: t.safety_status || undefined,
+      safetyReason: t.safety_reason || undefined,
     })
   );
 

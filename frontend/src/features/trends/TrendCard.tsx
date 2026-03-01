@@ -16,6 +16,14 @@ interface SearchTrendCardProps {
 export function SearchTrendCard({ trend, selected, onToggle, safetyScore }: SearchTrendCardProps) {
   const [expanded, setExpanded] = useState(false);
 
+  // Derive safety badge from server-side status or explicit prop
+  const effectiveSafety: BrandSafetyScore | undefined = safetyScore || (trend.safetyStatus ? {
+    trendTitle: trend.title,
+    score: trend.safetyStatus === 'safe' ? 10 : trend.safetyStatus === 'caution' ? 6 : 2,
+    level: trend.safetyStatus,
+    reasoning: trend.safetyReason || '',
+  } : undefined);
+
   return (
     <Card
       className={cn(
@@ -41,7 +49,7 @@ export function SearchTrendCard({ trend, selected, onToggle, safetyScore }: Sear
             <CardTitle className="text-base leading-tight">{trend.title}</CardTitle>
           </div>
           <div className="flex items-center gap-2">
-            {safetyScore && <SafetyBadge score={safetyScore} />}
+            {effectiveSafety && <SafetyBadge score={effectiveSafety} />}
             <Badge variant="info">{trend.formattedTraffic}</Badge>
           </div>
         </div>
@@ -103,6 +111,14 @@ interface YTTrendCardProps {
 export function YTTrendCard({ trend, selected, onToggle, safetyScore }: YTTrendCardProps) {
   const [expanded, setExpanded] = useState(false);
 
+  // Derive safety badge from server-side status or explicit prop
+  const effectiveSafety: BrandSafetyScore | undefined = safetyScore || (trend.safetyStatus ? {
+    trendTitle: trend.title,
+    score: trend.safetyStatus === 'safe' ? 10 : trend.safetyStatus === 'caution' ? 6 : 2,
+    level: trend.safetyStatus,
+    reasoning: trend.safetyReason || '',
+  } : undefined);
+
   return (
     <Card
       className={cn(
@@ -128,7 +144,7 @@ export function YTTrendCard({ trend, selected, onToggle, safetyScore }: YTTrendC
             <CardTitle className="text-base leading-tight">{trend.title}</CardTitle>
           </div>
           <div className="flex items-center gap-2">
-            {safetyScore && <SafetyBadge score={safetyScore} />}
+            {effectiveSafety && <SafetyBadge score={effectiveSafety} />}
             <Badge variant="success">#{trend.rank}</Badge>
           </div>
         </div>

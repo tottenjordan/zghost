@@ -97,6 +97,8 @@ export function TrendsPage() {
     setStoreConfig(config);
     setConfigSaved(true);
     setTimeout(() => setConfigSaved(false), 3000);
+    // Auto-advance to Trends step after saving config
+    setActiveStep('trends');
   }, [setStoreConfig]);
 
   // Core trend fetch logic
@@ -487,13 +489,21 @@ export function TrendsPage() {
             )}
 
             {totalSelected > 0 && (
-              <div className="flex justify-center">
+              <div className="flex items-center justify-center gap-4">
                 <button
                   onClick={clearSelections}
                   className="text-sm text-zinc-500 hover:text-zinc-400"
                 >
                   Clear all selections
                 </button>
+                <Button
+                  variant="primary"
+                  onClick={() => setActiveStep('evaluation')}
+                  className="flex items-center gap-2"
+                >
+                  Confirm Trends
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
               </div>
             )}
           </div>
@@ -522,6 +532,16 @@ export function TrendsPage() {
                 activeRubricIds={activeRubrics.map(r => r.id)}
                 onToggleActive={toggleActiveRubric}
               />
+              <div className="flex justify-end pt-2">
+                <Button
+                  variant="primary"
+                  onClick={() => setActiveStep('review')}
+                  className="flex items-center gap-2"
+                >
+                  {activeRubrics.length > 0 ? 'Confirm Rubric' : 'Skip Rubric'}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
             )}
           </div>
         </TabsContent>

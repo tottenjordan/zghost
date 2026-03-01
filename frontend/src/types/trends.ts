@@ -18,6 +18,8 @@ export interface SearchTrend {
     url: string;
   }>;
   shareUrl?: string;
+  safetyStatus?: 'safe' | 'caution' | 'unsafe';
+  safetyReason?: string;
 }
 
 export interface YTTrend {
@@ -31,6 +33,8 @@ export interface YTTrend {
   viewCount: string;
   publishedTime: string;
   thumbnail?: string;
+  safetyStatus?: 'safe' | 'caution' | 'unsafe';
+  safetyReason?: string;
 }
 
 export interface TrendSelection {

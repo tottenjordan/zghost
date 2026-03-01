@@ -320,6 +320,14 @@ class TrendInfo(BaseModel):
     relevance_score: Optional[float] = Field(
         default=None, description="Relevance score 0-1"
     )
+    safety_status: Optional[str] = Field(
+        default=None,
+        description="Brand safety status: 'safe', 'caution', or 'unsafe'",
+    )
+    safety_reason: Optional[str] = Field(
+        default=None,
+        description="Reason for safety classification",
+    )
     metadata: Dict[str, Any] = Field(
         default_factory=dict, description="Additional trend metadata"
     )

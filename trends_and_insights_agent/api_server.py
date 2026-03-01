@@ -1992,6 +1992,106 @@ async def get_available_trends(force_refresh: bool = Query(default=False)):
                 detail="Both trend sources returned empty. Check BigQuery and YouTube API access.",
             )
 
+        # --- Run Gemini safety check on all trends before returning ---
+        all_trends = search_trends + yt_trends
+        if all_trends:
+            try:
+                from google import genai
+                from google.genai import types as genai_types
+                import json as json_mod
+
+                safety_client = genai.Client(vertexai=True)
+                today = datetime.utcnow().strftime("%B %d, %Y")
+                trend_list_str = "\n".join(
+                    f"- {t.title} (Source: {t.source})" for t in all_trends
+                )
+
+                safety_prompt = f"""You are a brand safety analyst. Evaluate EACH trend below for appropriateness as a marketing campaign topic.
+
+Use Google Search to look up each trend's current context before evaluating. Consider what the trend actually refers to RIGHT NOW, not just the title.
+
+Today's date: {today}
+
+TRENDS TO EVALUATE:
+{trend_list_str}
+
+For EACH trend, assess:
+1. Is it brand-safe for advertising? (no violence, controversy, adult content, hate speech, political divisiveness, active tragedies/disasters, war, armed conflict, death of political/military figures, or culturally insensitive topics)
+2. Is it contextually appropriate given today's date and current events?
+3. Would associating ANY brand with this trend pose reputational risk?
+
+Respond in JSON format (no markdown fencing):
+{{
+  "results": [
+    {{
+      "trend_title": "exact trend title",
+      "safe": true/false,
+      "risk_level": "safe" | "caution" | "unsafe",
+      "reason": "brief explanation"
+    }}
+  ]
+}}
+
+STRICT SAFETY RULES (CANNOT be overridden):
+- Violence, war, armed conflict, military operations → always "unsafe"
+- Death or killing of any person (political leaders, civilians, military) → always "unsafe"
+- Hate speech, adult/sexual content → always "unsafe"
+- Active tragedies, mass casualty events → always "unsafe"
+- Extreme political polarization, regime change, coups → always "unsafe"
+- Geopolitical crises, sanctions, diplomatic conflicts → "caution" at minimum
+"""
+
+                safety_response = safety_client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=safety_prompt,
+                    config=genai_types.GenerateContentConfig(
+                        tools=[genai_types.Tool(google_search=genai_types.GoogleSearch())],
+                    ),
+                )
+
+                raw_safety = safety_response.text.strip()
+                if raw_safety.startswith("```"):
+                    raw_safety = raw_safety.split("\n", 1)[1]
+                    if raw_safety.endswith("```"):
+                        raw_safety = raw_safety[: raw_safety.rfind("```")]
+
+                safety_parsed = json_mod.loads(raw_safety)
+                safety_by_title = {
+                    r.get("trend_title", ""): r
+                    for r in safety_parsed.get("results", [])
+                }
+
+                # Tag each trend with its safety status
+                for trend in search_trends + yt_trends:
+                    result = safety_by_title.get(trend.title)
+                    if result:
+                        trend.safety_status = result.get("risk_level", "caution")
+                        trend.safety_reason = result.get("reason", "")
+                    else:
+                        trend.safety_status = "caution"
+                        trend.safety_reason = "Could not verify safety"
+
+                # Remove unsafe trends entirely
+                safe_search = [t for t in search_trends if t.safety_status != "unsafe"]
+                safe_yt = [t for t in yt_trends if t.safety_status != "unsafe"]
+
+                unsafe_count = len(search_trends) + len(yt_trends) - len(safe_search) - len(safe_yt)
+                if unsafe_count > 0:
+                    logger.info(
+                        "Safety filter removed %d unsafe trends (%d search, %d yt remain)",
+                        unsafe_count, len(safe_search), len(safe_yt),
+                    )
+
+                search_trends = safe_search
+                yt_trends = safe_yt
+
+            except Exception as e:
+                logger.warning("Safety check failed, returning unfiltered trends: %s", e)
+                # Tag all trends as unchecked so frontend knows
+                for trend in search_trends + yt_trends:
+                    trend.safety_status = "caution"
+                    trend.safety_reason = "Safety check unavailable"
+
         response = AvailableTrendsResponse(
             youtube_trends=yt_trends,
             search_trends=search_trends,
