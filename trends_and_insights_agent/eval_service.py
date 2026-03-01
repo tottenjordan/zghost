@@ -1,17 +1,35 @@
 """
 Evaluation service for running ADK agent evaluations.
 Wraps google.adk.evaluation.agent_evaluator.AgentEvaluator with additional
-support for custom rubric criteria.
+support for custom rubric criteria, and optionally Vertex AI Evaluation Service
+for PointwiseMetric-based evaluations.
 """
 
 import json
 import logging
+import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from google.adk.evaluation.agent_evaluator import AgentEvaluator
 
 logger = logging.getLogger(__name__)
+
+# Lazy availability flag for Vertex AI evaluation
+_VERTEX_EVAL_AVAILABLE: Optional[bool] = None
+
+
+def _check_vertex_eval_available() -> bool:
+    """Check if vertexai.evaluation is importable."""
+    global _VERTEX_EVAL_AVAILABLE
+    if _VERTEX_EVAL_AVAILABLE is None:
+        try:
+            from vertexai.evaluation import EvalTask  # noqa: F401
+            _VERTEX_EVAL_AVAILABLE = True
+        except ImportError:
+            _VERTEX_EVAL_AVAILABLE = False
+            logger.info("vertexai.evaluation not available; Vertex AI eval disabled")
+    return _VERTEX_EVAL_AVAILABLE
 
 
 def run_evaluation(
@@ -141,4 +159,154 @@ def load_eval_set(path: str) -> Dict:
 
     except Exception as e:
         logger.error(f"Error loading eval set: {str(e)}", exc_info=True)
+        raise
+
+
+def run_vertex_evaluation(
+    rubric_criteria: List[Dict[str, Any]],
+    session_state: Optional[Dict[str, Any]] = None,
+    session_id: Optional[str] = None,
+    brand: Optional[str] = None,
+    target_product: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Run evaluation using Vertex AI Evaluation Service with PointwiseMetric.
+
+    Uses vertexai.evaluation.EvalTask with custom PointwiseMetric definitions
+    derived from the provided rubric criteria. When session_state is provided,
+    pipeline outputs (report, ad copies) are extracted and evaluated.
+
+    Args:
+        rubric_criteria: List of dicts with keys: name, description, weight.
+        session_state: Optional session state dict to pull pipeline outputs from.
+        session_id: Optional session ID for traceability.
+        brand: Optional brand name for evaluation context.
+        target_product: Optional product name for evaluation context.
+
+    Returns:
+        Dict with evaluation metrics and per-criterion scores.
+
+    Raises:
+        ImportError: If vertexai.evaluation is not available.
+    """
+    if not _check_vertex_eval_available():
+        raise ImportError(
+            "vertexai.evaluation is not installed. "
+            "Install with: pip install google-cloud-aiplatform[evaluation]"
+        )
+
+    import vertexai
+    from vertexai.evaluation import EvalTask, PointwiseMetric
+
+    logger.info(
+        f"Starting Vertex AI evaluation: session_id={session_id}, "
+        f"brand={brand}, criteria_count={len(rubric_criteria)}"
+    )
+
+    # Initialize Vertex AI
+    project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+    location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+    if project:
+        vertexai.init(project=project, location=location)
+
+    # Build PointwiseMetric definitions from rubric criteria
+    metrics = []
+    for criterion in rubric_criteria:
+        metric_name = criterion["name"].lower().replace(" ", "_")
+        metric = PointwiseMetric(
+            metric=metric_name,
+            metric_prompt_template=(
+                f"Evaluate the following response on the criterion: {criterion['name']}.\n"
+                f"Description: {criterion['description']}\n"
+                f"Rate on a scale of 1-5 where 1 is poor and 5 is excellent.\n\n"
+                f"Response: {{response}}\n\n"
+                f"Score (1-5):"
+            ),
+        )
+        metrics.append(metric)
+
+    # Extract evaluation data from session state
+    eval_data = []
+    if session_state:
+        # Extract report text
+        report = (
+            session_state.get("combined_final_cited_report")
+            or session_state.get("final_report_with_citations")
+            or ""
+        )
+        if report:
+            context = f"Brand: {brand or 'N/A'}, Product: {target_product or 'N/A'}"
+            eval_data.append({
+                "response": str(report)[:10000],  # Truncate for API limits
+                "context": context,
+                "source": "research_report",
+            })
+
+        # Extract ad copies
+        raw_copies = session_state.get("final_select_ad_copies", [])
+        if isinstance(raw_copies, dict):
+            raw_copies = raw_copies.get("final_select_ad_copies", [])
+        if isinstance(raw_copies, list):
+            for i, copy in enumerate(raw_copies[:3]):
+                text = ""
+                if isinstance(copy, dict):
+                    text = copy.get("headline", "") + "\n" + copy.get("body", "")
+                elif isinstance(copy, str):
+                    text = copy
+                if text.strip():
+                    eval_data.append({
+                        "response": text,
+                        "context": f"Ad copy {i+1} for {brand or 'unknown brand'}",
+                        "source": f"ad_copy_{i+1}",
+                    })
+
+    # If no session data, create a placeholder for the eval to still run
+    if not eval_data:
+        eval_data.append({
+            "response": "No pipeline output available for evaluation.",
+            "context": f"Brand: {brand or 'N/A'}, Product: {target_product or 'N/A'}",
+            "source": "placeholder",
+        })
+
+    # Build pandas DataFrame for EvalTask
+    import pandas as pd
+    eval_df = pd.DataFrame(eval_data)
+
+    # Run evaluation
+    try:
+        eval_task = EvalTask(
+            dataset=eval_df,
+            metrics=metrics,
+        )
+        eval_result = eval_task.evaluate()
+
+        # Format results
+        results: Dict[str, Any] = {
+            "vertex_eval": True,
+            "session_id": session_id,
+            "brand": brand,
+            "target_product": target_product,
+            "num_samples": len(eval_data),
+            "metrics_summary": {},
+            "per_sample": [],
+        }
+
+        # Extract summary metrics
+        if hasattr(eval_result, "summary_metrics") and eval_result.summary_metrics:
+            results["metrics_summary"] = dict(eval_result.summary_metrics)
+
+        # Extract per-row metrics
+        if hasattr(eval_result, "metrics_table") and eval_result.metrics_table is not None:
+            try:
+                results["per_sample"] = eval_result.metrics_table.to_dict(orient="records")
+            except Exception:
+                results["per_sample"] = []
+
+        logger.info(
+            f"Vertex AI evaluation completed: {len(metrics)} metrics, "
+            f"{len(eval_data)} samples"
+        )
+        return results
+
+    except Exception as e:
+        logger.error(f"Vertex AI evaluation failed: {e}", exc_info=True)
         raise

@@ -8,9 +8,9 @@ interface PipelineControlsProps {
   sessionId: string | null;
   readyToLaunch: boolean;
   missingItems: string[];
-  commercialDuration: 10 | 15 | 30;
+  commercialDuration: 10 | 15 | 20 | 30;
   autopilot: boolean;
-  onDurationChange: (duration: 10 | 15 | 30) => void;
+  onDurationChange: (duration: 10 | 15 | 20 | 30) => void;
   onAutopilotChange: (autopilot: boolean) => void;
   onStart: () => void;
   onStop: () => void;
@@ -40,7 +40,7 @@ export function PipelineControls({
     }
   }, [durationChanged]);
 
-  const handleDurationChange = (duration: 10 | 15 | 30) => {
+  const handleDurationChange = (duration: 10 | 15 | 20 | 30) => {
     onDurationChange(duration);
     setDurationChanged(true);
   };
@@ -71,7 +71,7 @@ export function PipelineControls({
           <select
             id="duration"
             value={commercialDuration}
-            onChange={(e) => handleDurationChange(Number(e.target.value) as 10 | 15 | 30)}
+            onChange={(e) => handleDurationChange(Number(e.target.value) as 10 | 15 | 20 | 30)}
             disabled={isRunning}
             className={cn(
               "px-3 py-1 text-sm bg-zinc-800 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
@@ -80,6 +80,7 @@ export function PipelineControls({
           >
             <option value={10}>10s</option>
             <option value={15}>15s</option>
+            <option value={20}>20s</option>
             <option value={30}>30s</option>
           </select>
           {durationChanged && (

@@ -10,6 +10,8 @@ from google.adk.tools import ToolContext
 from ...shared_libraries.config import config
 from ...shared_libraries.secrets import access_secret_version
 
+MIN_RELEVANCE_SCORE = 0.1  # Minimum keyword-match score for auto-selected trends
+
 
 # ========================
 # clients — lazily initialized (Agent Engine injects env vars after import)
@@ -374,9 +376,20 @@ IMPORTANT: Core safety rules that CANNOT be overridden:
     safe_search.sort(key=relevance_score, reverse=True)
     safe_yt.sort(key=relevance_score, reverse=True)
 
+    # 4b. Filter out trends below minimum relevance threshold
+    relevant_search = [t for t in safe_search if relevance_score(t) >= MIN_RELEVANCE_SCORE]
+    relevant_yt = [t for t in safe_yt if relevance_score(t) >= MIN_RELEVANCE_SCORE]
+
+    if not relevant_search and safe_search:
+        logging.warning("No search trends met minimum relevance threshold (%.2f); falling back to top-ranked safe trends", MIN_RELEVANCE_SCORE)
+        relevant_search = safe_search
+    if not relevant_yt and safe_yt:
+        logging.warning("No YouTube trends met minimum relevance threshold (%.2f); falling back to top-ranked safe trends", MIN_RELEVANCE_SCORE)
+        relevant_yt = safe_yt
+
     # 5. Select requested count
-    selected_search = safe_search[:num_search_trends]
-    selected_yt = safe_yt[:num_yt_trends]
+    selected_search = relevant_search[:num_search_trends]
+    selected_yt = relevant_yt[:num_yt_trends]
 
     # 6. Save to session state
     for trend in selected_search:

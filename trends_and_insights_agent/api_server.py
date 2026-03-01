@@ -79,6 +79,50 @@ logger = logging.getLogger(__name__)
 # =====================================
 
 
+class DynamicConcurrencyLimiter:
+    """Concurrency limiter that supports dynamic max_concurrent changes
+    without orphaning waiters (unlike recreating asyncio.Semaphore)."""
+
+    def __init__(self, max_concurrent: int = 3):
+        self._max = max_concurrent
+        self._current = 0
+        self._condition = asyncio.Condition()
+
+    async def acquire(self):
+        async with self._condition:
+            while self._current >= self._max:
+                await self._condition.wait()
+            self._current += 1
+
+    async def release(self):
+        async with self._condition:
+            self._current -= 1
+            self._condition.notify_all()
+
+    def set_max(self, new_max: int):
+        self._max = new_max
+        # Wake up waiters to check new limit
+        try:
+            loop = asyncio.get_running_loop()
+            loop.call_soon_threadsafe(
+                lambda: asyncio.ensure_future(self._notify())
+            )
+        except RuntimeError:
+            pass  # No running loop; waiters will check on next acquire
+
+    async def _notify(self):
+        async with self._condition:
+            self._condition.notify_all()
+
+    @property
+    def current(self):
+        return self._current
+
+    @property
+    def max_concurrent(self):
+        return self._max
+
+
 class AppState:
     """Global application state."""
 
@@ -103,7 +147,7 @@ class AppState:
         self.rubrics: Dict[str, RubricResponse] = {}
         # Concurrency control
         self.max_concurrent_runs: int = 2
-        self.run_semaphore: asyncio.Semaphore = asyncio.Semaphore(2)
+        self.concurrency_limiter: DynamicConcurrencyLimiter = DynamicConcurrencyLimiter(2)
         self.active_runs: Dict[str, str] = {}  # session_id -> user_id
         # Evaluation results storage: eval_id -> dict
         self.eval_results: Dict[str, dict] = {}
@@ -499,6 +543,7 @@ async def list_sessions(user_id: str = Query(default="default-user")):
                         has_videos=len(vid_list) > 0,
                         image_count=len(img_list),
                         video_count=len(vid_list),
+                        agent_engine_id=state.get("_agent_engine_id"),
                     )
                 )
             except Exception as e:
@@ -531,6 +576,11 @@ async def create_session(request: SessionCreateRequest):
         # Merge with default state structure
         default_state = setup_config.empty_session_state.get("state", {})
         merged_state = {**default_state, **initial_state}
+
+        # Store Agent Engine ID in session state for later retrieval
+        agent_engine_id_env = os.getenv("MEMORY_BANK_AGENT_ENGINE_ID")
+        if agent_engine_id_env:
+            merged_state["_agent_engine_id"] = agent_engine_id_env
 
         # Create session with state included
         # Note: VertexAiSessionService generates its own session IDs and will
@@ -756,38 +806,41 @@ async def run_agent(request: AgentRunRequest):
 async def stream_with_concurrency_control(
     runner: InMemoryRunner, session_id: str, user_id: str, message: str
 ) -> AsyncIterator[str]:
-    """Wrapper generator that enforces concurrency control via semaphore."""
+    """Wrapper generator that enforces concurrency control via DynamicConcurrencyLimiter."""
+    limiter = app_state.concurrency_limiter
+
     # Check if we need to queue
-    if app_state.run_semaphore.locked():
+    if limiter.current >= limiter.max_concurrent:
         queued_event = {
             "type": "queued",
             "timestamp": int(time.time() * 1000),
             "session_id": session_id,
             "message": "Pipeline queued, waiting for available slot...",
         }
-        logger.info(f"Session {session_id} queued (waiting for semaphore)")
+        logger.info(f"Session {session_id} queued (waiting for concurrency slot)")
         yield f"data: {json.dumps(queued_event)}\n\n"
 
-    # Acquire semaphore (blocks if at capacity)
-    async with app_state.run_semaphore:
-        # Track this run
-        app_state.active_runs[session_id] = user_id
+    # Acquire slot (blocks if at capacity)
+    await limiter.acquire()
+    # Track this run
+    app_state.active_runs[session_id] = user_id
+    logger.info(
+        f"Session {session_id} acquired concurrency slot "
+        f"({len(app_state.active_runs)}/{app_state.max_concurrent_runs} active)"
+    )
+
+    try:
+        # Stream all events from the wrapped generator
+        async for event_data in stream_agent_events(runner, session_id, user_id, message):
+            yield event_data
+    finally:
+        # Release tracking and concurrency slot
+        app_state.active_runs.pop(session_id, None)
+        await limiter.release()
         logger.info(
-            f"Session {session_id} acquired semaphore "
+            f"Session {session_id} released concurrency slot "
             f"({len(app_state.active_runs)}/{app_state.max_concurrent_runs} active)"
         )
-
-        try:
-            # Stream all events from the wrapped generator
-            async for event_data in stream_agent_events(runner, session_id, user_id, message):
-                yield event_data
-        finally:
-            # Release tracking
-            app_state.active_runs.pop(session_id, None)
-            logger.info(
-                f"Session {session_id} released semaphore "
-                f"({len(app_state.active_runs)}/{app_state.max_concurrent_runs} active)"
-            )
 
 
 @app.get("/api/v1/run/{session_id}/stream")
@@ -815,14 +868,9 @@ async def stream_agent_run(
 async def get_concurrency_status():
     """Get current concurrency status."""
     try:
-        active_count = len(app_state.active_runs)
-        # Calculate queued count: this is approximate, as we can't directly query semaphore waiters
-        # We use the semaphore's locked state as a proxy
-        queued_count = 0
-        if app_state.run_semaphore.locked():
-            # If semaphore is locked, there might be queued requests
-            # This is a conservative estimate
-            queued_count = max(0, active_count - app_state.max_concurrent_runs)
+        limiter = app_state.concurrency_limiter
+        active_count = limiter.current
+        queued_count = max(0, len(app_state.active_runs) - limiter.max_concurrent)
 
         return ConcurrencyStatusResponse(
             active_count=active_count,
@@ -843,14 +891,10 @@ async def update_concurrency_config(request: ConcurrencyConfigRequest):
         old_max = app_state.max_concurrent_runs
         new_max = request.max_concurrent
 
-        # Update max concurrent
+        # Update max concurrent — DynamicConcurrencyLimiter wakes waiters
+        # so they can re-evaluate against the new limit (no orphaned waiters)
         app_state.max_concurrent_runs = new_max
-
-        # Recreate semaphore with new limit
-        # Note: This recreates the semaphore, which means any current waiters
-        # will continue waiting on the old semaphore. New requests will use the new one.
-        # For a production system, you might want a more sophisticated migration strategy.
-        app_state.run_semaphore = asyncio.Semaphore(new_max)
+        app_state.concurrency_limiter.set_max(new_max)
 
         logger.info(f"Updated concurrency limit: {old_max} -> {new_max}")
 
@@ -858,7 +902,7 @@ async def update_concurrency_config(request: ConcurrencyConfigRequest):
             "status": "updated",
             "old_max_concurrent": old_max,
             "new_max_concurrent": new_max,
-            "active_count": len(app_state.active_runs),
+            "active_count": app_state.concurrency_limiter.current,
         }
     except Exception as e:
         logger.error(f"Error updating concurrency config: {str(e)}", exc_info=True)
@@ -902,6 +946,9 @@ async def run_evaluation(request: EvalRunRequest):
             "eval_set_path": request.eval_set_path,
             "agent_module": request.agent_module,
             "rubric_criteria": rubric_criteria,
+            "session_id": request.session_id,
+            "brand": request.brand,
+            "target_product": request.target_product,
         }
 
         # Run evaluation asynchronously in background
@@ -912,6 +959,40 @@ async def run_evaluation(request: EvalRunRequest):
                     agent_module=request.agent_module,
                     rubric_criteria=rubric_criteria,
                 )
+
+                # If session_id provided and rubric criteria available,
+                # also run Vertex AI evaluation on pipeline outputs
+                if request.session_id and rubric_criteria:
+                    try:
+                        # Fetch session state for pipeline outputs
+                        session_state = None
+                        try:
+                            session_obj = await app_state.session_service.get_session(
+                                session_id=request.session_id,
+                                user_id="default-user",
+                                app_name=SESSION_APP_NAME,
+                            )
+                            if session_obj and session_obj.state:
+                                session_state = dict(session_obj.state)
+                        except Exception as e:
+                            logger.warning(f"Could not fetch session state for Vertex eval: {e}")
+
+                        vertex_results = eval_service.run_vertex_evaluation(
+                            rubric_criteria=rubric_criteria,
+                            session_state=session_state,
+                            session_id=request.session_id,
+                            brand=request.brand,
+                            target_product=request.target_product,
+                        )
+                        results["vertex_evaluation"] = vertex_results
+                        logger.info(f"Vertex AI evaluation completed for eval {eval_id}")
+                    except ImportError:
+                        logger.info("Vertex AI evaluation skipped (not available)")
+                        results["vertex_evaluation"] = None
+                    except Exception as ve:
+                        logger.warning(f"Vertex AI evaluation failed (non-fatal): {ve}")
+                        results["vertex_evaluation"] = {"error": str(ve)}
+
                 app_state.eval_results[eval_id]["status"] = "completed"
                 app_state.eval_results[eval_id]["results"] = results
                 app_state.eval_results[eval_id]["completed_at"] = datetime.utcnow()
@@ -931,6 +1012,9 @@ async def run_evaluation(request: EvalRunRequest):
             results=None,
             started_at=started_at,
             completed_at=None,
+            session_id=request.session_id,
+            brand=request.brand,
+            target_product=request.target_product,
         )
 
     except Exception as e:
@@ -1000,6 +1084,9 @@ async def get_eval_results(eval_id: str):
             results=eval_data.get("results"),
             started_at=eval_data["started_at"],
             completed_at=eval_data.get("completed_at"),
+            session_id=eval_data.get("session_id"),
+            brand=eval_data.get("brand"),
+            target_product=eval_data.get("target_product"),
         )
     except HTTPException:
         raise

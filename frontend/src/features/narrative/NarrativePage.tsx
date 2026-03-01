@@ -171,7 +171,7 @@ export function NarrativePage() {
       {/* Two-Panel Layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 flex-1 min-h-0">
         {/* Left Panel: Chat */}
-        <div className="flex flex-col min-h-[300px] lg:h-auto">
+        <div className="flex flex-col min-h-0 lg:min-h-[300px] lg:h-auto">
           <NarrativeChat
             messages={messages}
             isStreaming={isStreaming}
@@ -181,7 +181,7 @@ export function NarrativePage() {
         </div>
 
         {/* Right Panel: PDF Viewer or Storyboard & Arc */}
-        <div className="flex flex-col min-h-[300px] lg:h-auto overflow-hidden">
+        <div className="flex flex-col min-h-0 lg:min-h-[300px] lg:h-auto overflow-hidden">
           {hasPdf ? (
             <div className="flex flex-col h-full border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/50">
               <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-900">

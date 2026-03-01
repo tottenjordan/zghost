@@ -6,10 +6,13 @@ import { cn } from '../../lib/utils';
 interface EvaluationPanelProps {
   sessionState: Record<string, any>;
   rubrics: ExtendedRubric[];
+  scores?: Record<string, number>;
+  onScoresChange?: (scores: Record<string, number>) => void;
 }
 
-export function EvaluationPanel({ sessionState, rubrics }: EvaluationPanelProps) {
-  const [scores, setScores] = useState<Record<string, number>>({});
+export function EvaluationPanel({ sessionState, rubrics, scores: externalScores, onScoresChange }: EvaluationPanelProps) {
+  const [localScores, setLocalScores] = useState<Record<string, number>>({});
+  const scores = externalScores ?? localScores;
   const [activeTab, setActiveTab] = useState(0);
 
   const hasReport = !!sessionState.combined_final_cited_report;
@@ -42,7 +45,12 @@ export function EvaluationPanel({ sessionState, rubrics }: EvaluationPanelProps)
   }
 
   const handleScoreChange = (criterionId: string, score: number) => {
-    setScores(prev => ({ ...prev, [criterionId]: score }));
+    const updated = { ...scores, [criterionId]: score };
+    if (onScoresChange) {
+      onScoresChange(updated);
+    } else {
+      setLocalScores(updated);
+    }
   };
 
   const rubric = rubrics[activeTab] || rubrics[0];

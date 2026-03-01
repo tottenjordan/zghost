@@ -32,6 +32,7 @@ export function OrchestrationPage() {
   const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
   const [configExpanded, setConfigExpanded] = useState(false);
   const [detailTab, setDetailTab] = useState('chat');
+  const [evalScores, setEvalScores] = useState<Record<string, number>>({});
   const originalTitleRef = useRef(document.title);
   const isStartingRef = useRef(false);
 
@@ -636,7 +637,7 @@ export function OrchestrationPage() {
         {/* Right: Detail panel (1 col) */}
         <div className="border border-zinc-800 rounded-lg overflow-hidden flex flex-col">
           <Tabs value={detailTab} onValueChange={setDetailTab}>
-            <TabsList className="w-full grid grid-cols-6">
+            <TabsList className="w-full flex flex-wrap gap-1">
               <TabsTrigger value="chat">Chat</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
               <TabsTrigger value="evaluation">Eval</TabsTrigger>
@@ -660,7 +661,7 @@ export function OrchestrationPage() {
             </TabsContent>
 
             <TabsContent value="evaluation" className="flex-1 overflow-auto">
-              <EvaluationPanel sessionState={sessionState} rubrics={activeRubrics} />
+              <EvaluationPanel sessionState={sessionState} rubrics={activeRubrics} scores={evalScores} onScoresChange={setEvalScores} />
             </TabsContent>
 
             <TabsContent value="details" className="flex-1 overflow-auto">

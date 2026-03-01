@@ -21,6 +21,8 @@ interface EvalResultsViewProps {
   };
   activeRubric?: ExtendedRubric;
   onApplyToRating?: (scores: Record<string, number>) => void;
+  brand?: string;
+  targetProduct?: string;
 }
 
 export function EvalResultsView({
@@ -28,6 +30,8 @@ export function EvalResultsView({
   results,
   activeRubric,
   onApplyToRating,
+  brand,
+  targetProduct,
 }: EvalResultsViewProps) {
   const { cases, overall_pass, overall_score } = results;
 
@@ -76,6 +80,7 @@ export function EvalResultsView({
           </div>
           <p className="text-xs text-zinc-500">
             Eval ID: {evalId}
+            {brand && <span className="ml-2 text-zinc-400">| {brand}{targetProduct ? ` — ${targetProduct}` : ''}</span>}
           </p>
         </CardHeader>
         <CardContent>

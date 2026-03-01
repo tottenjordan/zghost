@@ -760,6 +760,73 @@ async def save_commercial_artifact(
         return {"status": "failed", "error": str(e)}
 
 
+def add_audio_to_clip(
+    clip_path: str,
+    audio_path: str,
+    output_path: str,
+    audio_volume: float = 1.0,
+    audio_offset: float = 0.0,
+) -> dict:
+    """Overlays an audio track onto a single video clip using ffmpeg.
+
+    Use this tool to add music, voice-over, or sound effects to an individual
+    video clip before concatenation or as a standalone operation.
+
+    Args:
+        clip_path (str): Local file path to the video clip (e.g., "session_media/av_studio/clips/clip_1.mp4").
+        audio_path (str): Local file path to the audio file (e.g., "session_media/av_studio/music/track.mp3").
+        output_path (str): Local file path for the output video with audio
+            (e.g., "session_media/av_studio/clips/clip_1_with_audio.mp4").
+        audio_volume (float): Audio volume multiplier (0.0 to 1.0, default 1.0).
+        audio_offset (float): Delay in seconds before audio starts playing (default 0.0).
+
+    Returns:
+        dict: Status and output path. Keys: "status", "output_path", "error" (on failure).
+    """
+    try:
+        if not os.path.isfile(clip_path):
+            return {"status": "failed", "error": f"Clip file not found: {clip_path}"}
+        if not os.path.isfile(audio_path):
+            return {"status": "failed", "error": f"Audio file not found: {audio_path}"}
+
+        # Clamp volume to safe range
+        audio_volume = max(0.0, min(audio_volume, 1.0))
+
+        # Ensure output directory exists
+        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+
+        # Build ffmpeg filter for volume and optional offset
+        audio_filter = f"volume={audio_volume}"
+        if audio_offset > 0:
+            delay_ms = int(audio_offset * 1000)
+            audio_filter = f"adelay={delay_ms}|{delay_ms},{audio_filter}"
+
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", clip_path,
+            "-i", audio_path,
+            "-filter_complex", f"[1:a]{audio_filter}[a]",
+            "-map", "0:v",
+            "-map", "[a]",
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-shortest",
+            output_path,
+        ]
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            logging.error(f"ffmpeg add_audio_to_clip error: {result.stderr}")
+            return {"status": "failed", "error": f"ffmpeg error: {result.stderr}"}
+
+        logging.info(f"Added audio to clip: {output_path}")
+        return {"status": "ok", "output_path": output_path}
+
+    except Exception as e:
+        logging.error(f"Error in add_audio_to_clip: {e}")
+        return {"status": "failed", "error": str(e)}
+
+
 def validate_character_consistency(
     reference_image_gcs_uri: str,
     clip_gcs_uri: str,

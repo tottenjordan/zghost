@@ -337,14 +337,20 @@ class ApiClient {
   /**
    * Run an evaluation with an optional rubric.
    */
-  async runEval(evalSetPath: string, rubricId?: string): Promise<{eval_id: string, status: string}> {
+  async runEval(
+    evalSetPath: string,
+    options?: { rubricCriteria?: any[]; sessionId?: string; brand?: string; targetProduct?: string }
+  ): Promise<{eval_id: string, status: string}> {
     const url = `${API_BASE}/api/v1/eval/run`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         eval_set_path: evalSetPath,
-        rubric_id: rubricId,
+        rubric_criteria: options?.rubricCriteria,
+        session_id: options?.sessionId,
+        brand: options?.brand,
+        target_product: options?.targetProduct,
       }),
     });
     if (!response.ok) {

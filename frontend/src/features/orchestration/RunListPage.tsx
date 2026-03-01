@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -39,13 +39,11 @@ const STATUS_CONFIG: Record<RunStatus, { label: string; color: string; bgColor: 
 
 /** Map backend status strings to RunStatus */
 function mapBackendStatus(status?: string | null): RunStatus {
-  if (!status) return 'idle';
-  if (status === 'completed') return 'completed';
-  // Intermediate *_done statuses are completed phases, not actively running
-  if (status.endsWith('_done')) return 'completed';
-  if (status === 'trends_selected') return 'configuring';
+  if (!status) return 'completed';
   if (status === 'running' || status === 'in_progress') return 'running';
-  return 'idle';
+  if (status === 'error' || status === 'failed') return 'error';
+  // All other states (completed, *_done, trends_selected, etc.) are completed
+  return 'completed';
 }
 
 function formatDuration(ms: number): string {
@@ -107,7 +105,7 @@ export function RunListPage() {
   } = useCampaignStore();
 
   const [loadingBackend, setLoadingBackend] = useState(false);
-  const [backendLoaded, setBackendLoaded] = useState(false);
+  const backendLoadedRef = useRef(false);
 
   type SortField = 'time' | 'name' | 'status' | 'duration';
   type SortDir = 'asc' | 'desc';
@@ -116,65 +114,64 @@ export function RunListPage() {
   const [statusFilter, setStatusFilter] = useState<RunStatus | 'all'>('all');
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
 
-  // Fetch sessions from backend on mount
-  useEffect(() => {
-    if (backendLoaded) return;
+  const fetchBackendSessions = useCallback(async () => {
+    setLoadingBackend(true);
+    try {
+      const result = await api.listSessions();
 
-    const fetchBackendSessions = async () => {
-      setLoadingBackend(true);
-      try {
-        const result = await api.listSessions();
+      // Build all new sessions in one pass, then merge atomically
+      const newSessions: PipelineSession[] = result.sessions.map((summary) => {
+        const backendStatus = mapBackendStatus(summary.status);
+        const startedAt = summary.last_update_time
+          ? summary.last_update_time * 1000
+          : Date.now();
 
-        // Build all new sessions in one pass, then merge atomically
-        const newSessions: PipelineSession[] = result.sessions.map((summary) => {
-          const backendStatus = mapBackendStatus(summary.status);
-          const startedAt = summary.last_update_time
-            ? summary.last_update_time * 1000
-            : Date.now();
-
-          return {
-            id: `backend-${summary.session_id}`,
-            sessionId: summary.session_id,
-            label: generateRunLabel(
-              summary.session_id,
-              startedAt,
-              summary.brand || undefined
-            ),
-            status: backendStatus,
+        return {
+          id: `backend-${summary.session_id}`,
+          sessionId: summary.session_id,
+          label: generateRunLabel(
+            summary.session_id,
             startedAt,
-            createdAt: new Date(startedAt).toISOString(),
-            config: {
-              brand: summary.brand || '',
-              target_product: summary.target_product || '',
-              target_audience: summary.target_audience || '',
-              key_selling_points: '',
-            },
-            commercialDuration: (summary.commercial_duration as 10 | 15 | 30) || 30,
-            autopilot: summary.autopilot_mode || false,
-            hasReport: summary.has_report,
-            hasCommercial: summary.has_commercial,
-            imageCount: summary.image_count,
-            videoCount: summary.video_count,
-            fromBackend: true,
-          };
-        });
+            summary.brand || undefined
+          ),
+          status: backendStatus,
+          startedAt,
+          createdAt: new Date(startedAt).toISOString(),
+          config: {
+            brand: summary.brand || '',
+            target_product: summary.target_product || '',
+            target_audience: summary.target_audience || '',
+            key_selling_points: '',
+          },
+          commercialDuration: (summary.commercial_duration as 10 | 15 | 20 | 30) || 30,
+          autopilot: summary.autopilot_mode || false,
+          hasReport: summary.has_report,
+          hasCommercial: summary.has_commercial,
+          imageCount: summary.image_count,
+          videoCount: summary.video_count,
+          fromBackend: true,
+        };
+      });
 
-        // Single atomic merge — dedup handled inside the store
-        mergeBackendSessions(newSessions);
-      } catch (err) {
-        console.error('Failed to fetch backend sessions:', err);
-      } finally {
-        setLoadingBackend(false);
-        setBackendLoaded(true);
-      }
-    };
+      // Single atomic merge — dedup handled inside the store
+      mergeBackendSessions(newSessions);
+    } catch (err) {
+      console.error('Failed to fetch backend sessions:', err);
+    } finally {
+      setLoadingBackend(false);
+    }
+  }, [mergeBackendSessions]);
 
+  // Fetch sessions from backend on mount (ref survives re-renders)
+  useEffect(() => {
+    if (backendLoadedRef.current) return;
+    backendLoadedRef.current = true;
     fetchBackendSessions();
-  }, [backendLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchBackendSessions]);
 
   const handleRefreshSessions = useCallback(() => {
-    setBackendLoaded(false); // triggers re-fetch
-  }, []);
+    fetchBackendSessions();
+  }, [fetchBackendSessions]);
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -216,7 +213,7 @@ export function RunListPage() {
   }, [sessions, sortField, sortDir, statusFilter]);
 
   const handleNewRun = useCallback(() => {
-    navigate('/trends');
+    navigate('/trends?returnTo=orchestration');
   }, [navigate]);
 
   const handleOpenRun = useCallback((session: PipelineSession, index: number) => {
@@ -244,7 +241,7 @@ export function RunListPage() {
     setTimeout(() => setCopiedSessionId(null), 2000);
   }, []);
 
-  const runningCount = sessions.filter(s => s.status === 'running').length;
+  const runningCount = sessions.filter(s => s.status === 'running' && !s.fromBackend).length;
   const completedCount = sessions.filter(s => s.status === 'completed').length;
   const errorCount = sessions.filter(s => s.status === 'error').length;
 

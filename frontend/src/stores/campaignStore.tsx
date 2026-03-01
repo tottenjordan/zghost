@@ -23,7 +23,7 @@ export interface PipelineSession {
   /** ISO timestamp from the session service */
   createdAt?: string;
   config?: CampaignConfig;
-  commercialDuration?: 10 | 15 | 30;
+  commercialDuration?: 10 | 15 | 20 | 30;
   autopilot?: boolean;
   parallelStreams?: number;
   searchTrends?: SearchTrend[];
@@ -51,7 +51,7 @@ export interface CampaignStoreState {
   activeRubrics: ExtendedRubric[];
   sessions: PipelineSession[];
   activeSessionIndex: number;
-  commercialDuration: 10 | 15 | 30;
+  commercialDuration: 10 | 15 | 20 | 30;
   autoStart: boolean;
   autopilot: boolean;
   maxConcurrentRuns: number;
@@ -76,7 +76,7 @@ interface CampaignStoreActions {
   updateSessionStatus: (sessionId: string, status: PipelineSession['status']) => void;
   updateSession: (sessionId: string, updates: Partial<PipelineSession>) => void;
   getSessionById: (id: string) => PipelineSession | undefined;
-  setCommercialDuration: (duration: 10 | 15 | 30) => void;
+  setCommercialDuration: (duration: 10 | 15 | 20 | 30) => void;
   setMaxConcurrentRuns: (n: number) => void;
   enqueueRun: (sessionId: string) => void;
   dequeueNextRun: () => string | null;
@@ -238,17 +238,40 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
   const mergeBackendSessions = useCallback((backendSessions: PipelineSession[]) => {
     setState((prev) => {
       const existingIds = new Set(prev.sessions.map(s => s.sessionId));
+
+      // Update existing sessions' metadata from backend (preserve local status if running)
+      const updatedSessions = prev.sessions.map(s => {
+        const backend = backendSessions.find(b => b.sessionId === s.sessionId);
+        if (backend) {
+          return {
+            ...s,
+            hasReport: backend.hasReport ?? s.hasReport,
+            hasCommercial: backend.hasCommercial ?? s.hasCommercial,
+            imageCount: backend.imageCount ?? s.imageCount,
+            videoCount: backend.videoCount ?? s.videoCount,
+            status: s.status === 'running' ? s.status : backend.status,
+          };
+        }
+        return s;
+      });
+
       const newSessions = backendSessions.filter(s => !existingIds.has(s.sessionId));
-      if (newSessions.length === 0) return prev;
-      const sessions = [...prev.sessions, ...newSessions];
-      const activeSessionIndex = sessions.length - 1;
-      const lastSession = sessions[activeSessionIndex];
+      if (newSessions.length === 0 && updatedSessions.every((s, i) => s === prev.sessions[i])) return prev;
+
+      const sessions = [...updatedSessions, ...newSessions];
+
+      // Only change activeSessionIndex if none is currently selected
+      const activeSessionIndex = prev.activeSessionIndex >= 0 && prev.activeSessionIndex < sessions.length
+        ? prev.activeSessionIndex
+        : sessions.length > 0 ? sessions.length - 1 : -1;
+      const activeSession = activeSessionIndex >= 0 ? sessions[activeSessionIndex] : null;
+
       return {
         ...prev,
         sessions,
         activeSessionIndex,
-        sessionId: lastSession.sessionId,
-        pipelineStatus: lastSession.status,
+        sessionId: activeSession?.sessionId || prev.sessionId,
+        pipelineStatus: activeSession?.status || prev.pipelineStatus,
       };
     });
   }, []);
@@ -335,7 +358,7 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     return state.sessions.find((s) => s.id === id || s.sessionId === id);
   }, [state.sessions]);
 
-  const setCommercialDuration = useCallback((duration: 10 | 15 | 30) => {
+  const setCommercialDuration = useCallback((duration: 10 | 15 | 20 | 30) => {
     setState((prev) => ({ ...prev, commercialDuration: duration }));
   }, []);
 

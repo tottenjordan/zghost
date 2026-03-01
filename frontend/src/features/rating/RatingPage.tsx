@@ -83,12 +83,20 @@ export function RatingPage() {
     }
   }, [activeRubrics, selectedRubricId]);
 
+  const selectedSession = sessions.find(s => s.sessionId === selectedSessionId);
+
   const handleRunEval = async () => {
     if (!selectedEvalSet) return;
     setIsRunningEval(true);
     setEvalResults(null);
     try {
-      const result = await api.runEval(selectedEvalSet, selectedRubricId || undefined);
+      const selectedRubric = activeRubrics.find(r => r.id === selectedRubricId);
+      const result = await api.runEval(selectedEvalSet, {
+        rubricCriteria: selectedRubric?.criteria,
+        sessionId: selectedSessionId || undefined,
+        brand: selectedSession?.config?.brand,
+        targetProduct: selectedSession?.config?.target_product,
+      });
       setEvalId(result.eval_id);
 
       // Poll for results
@@ -363,6 +371,8 @@ export function RatingPage() {
                 evalId={evalId}
                 results={evalResults}
                 activeRubric={activeRubrics.find(r => r.id === selectedRubricId)}
+                brand={selectedSession?.config?.brand}
+                targetProduct={selectedSession?.config?.target_product}
               />
             )}
           </div>

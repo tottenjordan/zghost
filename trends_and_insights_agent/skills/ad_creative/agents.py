@@ -43,6 +43,16 @@ ad_copy_drafter = Agent(
     If the session state `autopilot_mode` is set to true, generate 6 ad copy ideas instead of 10-12 to optimize for speed.
 
     ---
+    ## Product Context
+    Brand: {brand}
+    Product: {target_product}
+    Target Audience: {target_audience}
+    Key Selling Points: {key_selling_points}
+
+    IMPORTANT: All ad copy MUST prominently feature and be relevant to the product above.
+    If the trend topic seems unrelated to the product, creatively bridge the trend to the product.
+
+    ---
     ### Input Data
 
     <target_yt_trends>
@@ -141,8 +151,13 @@ visual_concept_drafter = Agent(
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
 
-    CRITICAL: You MUST read the session state keys 'brand', 'target_product', 'target_audience', and 'key_selling_points' FIRST.
-    Every visual concept you create MUST be for that specific brand and product. Do NOT invent a different product.
+    ## Product Context
+    Brand: {{brand}}
+    Product: {{target_product}}
+    Target Audience: {{target_audience}}
+    Key Selling Points: {{key_selling_points}}
+
+    CRITICAL: Every visual concept you create MUST be for the brand and product listed above. Do NOT invent a different product.
     If the brand is "McDonald's" and the product is "McRib Sandwich", every concept must feature and promote the McRib Sandwich.
 
     Based on the user-selected ad copies in the 'final_select_ad_copies' state key, generate visual concepts that:
@@ -186,6 +201,13 @@ visual_concept_critic = Agent(
     description="Critique and narrow down visual concepts",
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction=f"""You are a creative director evaluating visual concepts and high quality prompts that result in high impact.
+
+    ## Product Context
+    Brand: {{brand}}
+    Product: {{target_product}}
+    Target Audience: {{target_audience}}
+
+    IMPORTANT: All visual concepts MUST feature and market the product above. Reject any concepts that drift from the product.
 
     Review the concepts in the 'visual_draft' state key and critique the draft prompts on:
     1. Visual appeal and stopping power for social media

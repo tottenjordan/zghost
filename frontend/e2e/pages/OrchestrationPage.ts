@@ -263,12 +263,13 @@ export class OrchestrationPage {
           if (!raw) return null;
           const store = JSON.parse(raw);
           const state = store?.state ?? store;
+          // Prefer the explicitly-set sessionId (from handleStart/autoStart)
+          // over sessions[activeIndex] which may point to a stale backend session
+          if (state?.sessionId) return state.sessionId;
           const sessions = state?.sessions ?? [];
           const activeIndex = state?.activeSessionIndex ?? 0;
           const fromSessions = sessions[activeIndex]?.sessionId;
           if (fromSessions) return fromSessions;
-          // Also check top-level sessionId
-          if (state?.sessionId) return state.sessionId;
           return null;
         } catch {
           return null;

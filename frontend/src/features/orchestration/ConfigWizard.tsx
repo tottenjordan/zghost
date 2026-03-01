@@ -11,8 +11,8 @@ interface ConfigWizardProps {
   onConfigChange: (config: CampaignConfig) => void;
   selectedSearchTrends: SearchTrend[];
   selectedYtTrends: YTTrend[];
-  commercialDuration: 10 | 15 | 30;
-  onDurationChange: (d: 10 | 15 | 30) => void;
+  commercialDuration: 10 | 15 | 20 | 30;
+  onDurationChange: (d: 10 | 15 | 20 | 30) => void;
   autopilot: boolean;
   onAutopilotChange: (v: boolean) => void;
   isRunning: boolean;
@@ -416,10 +416,10 @@ export function ConfigWizard({
                   Select the target length for the final video commercial.
                 </p>
                 <div className="flex gap-3">
-                  {[10, 15, 30].map((duration) => (
+                  {[10, 15, 20, 30].map((duration) => (
                     <button
                       key={duration}
-                      onClick={() => onDurationChange(duration as 10 | 15 | 30)}
+                      onClick={() => onDurationChange(duration as 10 | 15 | 20 | 30)}
                       disabled={isRunning}
                       className={cn(
                         'flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all',

@@ -45,9 +45,9 @@ export function ArchitectureDiagram({ highlightedSkill, onSelectSkill }: Archite
     { id: 'mr-ca', label: 'ca_sequential_planner', x: 420, y: 370, width: 140, height: 35, color: 'green', isSubAgent: true },
 
     // Ad creative sub-agents
-    { id: 'ac-copy', label: 'ad_creative_pipeline', x: 440, y: 280, width: 140, height: 35, color: 'purple', isSubAgent: true },
-    { id: 'ac-visual', label: 'visual_generation_pipeline', x: 620, y: 280, width: 170, height: 35, color: 'purple', isSubAgent: true },
-    { id: 'ac-gen', label: 'visual_generator', x: 640, y: 330, width: 120, height: 35, color: 'purple', isSubAgent: true },
+    { id: 'ac-copy', label: 'ad_creative_pipeline', x: 450, y: 280, width: 140, height: 35, color: 'purple', isSubAgent: true },
+    { id: 'ac-visual', label: 'visual_generation_pipeline', x: 640, y: 280, width: 170, height: 35, color: 'purple', isSubAgent: true },
+    { id: 'ac-gen', label: 'visual_generator', x: 680, y: 345, width: 120, height: 35, color: 'purple', isSubAgent: true },
   ];
 
   const edges = [

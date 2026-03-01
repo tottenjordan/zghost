@@ -75,6 +75,10 @@ class SessionSummary(BaseModel):
     has_videos: bool = Field(default=False)
     image_count: int = Field(default=0)
     video_count: int = Field(default=0)
+    agent_engine_id: Optional[str] = Field(
+        default=None,
+        description="Agent Engine ID if available (from session state or environment)",
+    )
 
 
 class SessionListResponse(BaseModel):
@@ -573,6 +577,18 @@ class EvalRunRequest(BaseModel):
         default=None,
         description="Optional custom rubric criteria for AI evaluation",
     )
+    session_id: Optional[str] = Field(
+        default=None,
+        description="Optional session ID to pull pipeline outputs from for evaluation",
+    )
+    brand: Optional[str] = Field(
+        default=None,
+        description="Brand name for evaluation context",
+    )
+    target_product: Optional[str] = Field(
+        default=None,
+        description="Target product for evaluation context",
+    )
 
 
 class EvalRunResponse(BaseModel):
@@ -586,6 +602,15 @@ class EvalRunResponse(BaseModel):
     started_at: datetime = Field(description="When evaluation was started")
     completed_at: Optional[datetime] = Field(
         default=None, description="When evaluation completed"
+    )
+    session_id: Optional[str] = Field(
+        default=None, description="Session ID used for evaluation context"
+    )
+    brand: Optional[str] = Field(
+        default=None, description="Brand evaluated"
+    )
+    target_product: Optional[str] = Field(
+        default=None, description="Target product evaluated"
     )
 
 

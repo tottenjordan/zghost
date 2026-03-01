@@ -16,6 +16,7 @@ from .tools import (
     extract_frame_from_clip,
     concatenate_clips,
     trim_video,
+    add_audio_to_clip,
     save_commercial_artifact,
     validate_character_consistency,
 )
@@ -58,6 +59,7 @@ av_editing_studio_agent = Agent(
         generate_commercial_soundtrack,
         generate_sound_effects,
         combine_audio_with_video,
+        add_audio_to_clip,
         # Voice generation (Chirp)
         generate_voice_over,
         generate_dialogue,
