@@ -41,8 +41,10 @@ const STATUS_CONFIG: Record<RunStatus, { label: string; color: string; bgColor: 
 function mapBackendStatus(status?: string | null): RunStatus {
   if (!status) return 'idle';
   if (status === 'completed') return 'completed';
-  if (status === 'ad_creative_done' || status === 'research_done') return 'running';
+  // Intermediate *_done statuses are completed phases, not actively running
+  if (status.endsWith('_done')) return 'completed';
   if (status === 'trends_selected') return 'configuring';
+  if (status === 'running' || status === 'in_progress') return 'running';
   return 'idle';
 }
 
@@ -99,6 +101,7 @@ export function RunListPage() {
     setMaxConcurrentRuns,
     enqueueRun,
     addSession,
+    mergeBackendSessions,
     removeSession,
     setActiveSession,
     setCampaignConfig,
@@ -126,25 +129,15 @@ export function RunListPage() {
       setLoadingBackend(true);
       try {
         const result = await api.listSessions();
-        const existingIds = new Set(sessions.map((s) => s.sessionId));
 
-        for (const summary of result.sessions) {
-          // Skip sessions we already have locally
-          if (existingIds.has(summary.session_id)) {
-            // But update metadata on existing local sessions
-            const localSession = sessions.find((s) => s.sessionId === summary.session_id);
-            if (localSession) {
-              // Will be updated via updateSession in store
-            }
-            continue;
-          }
-
+        // Build all new sessions in one pass, then merge atomically
+        const newSessions: PipelineSession[] = result.sessions.map((summary) => {
           const backendStatus = mapBackendStatus(summary.status);
           const startedAt = summary.last_update_time
             ? summary.last_update_time * 1000
             : Date.now();
 
-          const newSession: PipelineSession = {
+          return {
             id: `backend-${summary.session_id}`,
             sessionId: summary.session_id,
             label: generateRunLabel(
@@ -169,9 +162,10 @@ export function RunListPage() {
             videoCount: summary.video_count,
             fromBackend: true,
           };
+        });
 
-          addSession(newSession);
-        }
+        // Single atomic merge — dedup handled inside the store
+        mergeBackendSessions(newSessions);
       } catch (err) {
         console.error('Failed to fetch backend sessions:', err);
       } finally {

@@ -70,6 +70,7 @@ interface CampaignStoreActions {
   setSessionId: (id: string | null) => void;
   setPipelineStatus: (status: CampaignStoreState['pipelineStatus']) => void;
   addSession: (session: PipelineSession) => void;
+  mergeBackendSessions: (backendSessions: PipelineSession[]) => void;
   removeSession: (sessionId: string) => void;
   setActiveSession: (index: number) => void;
   updateSessionStatus: (sessionId: string, status: PipelineSession['status']) => void;
@@ -234,6 +235,24 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const mergeBackendSessions = useCallback((backendSessions: PipelineSession[]) => {
+    setState((prev) => {
+      const existingIds = new Set(prev.sessions.map(s => s.sessionId));
+      const newSessions = backendSessions.filter(s => !existingIds.has(s.sessionId));
+      if (newSessions.length === 0) return prev;
+      const sessions = [...prev.sessions, ...newSessions];
+      const activeSessionIndex = sessions.length - 1;
+      const lastSession = sessions[activeSessionIndex];
+      return {
+        ...prev,
+        sessions,
+        activeSessionIndex,
+        sessionId: lastSession.sessionId,
+        pipelineStatus: lastSession.status,
+      };
+    });
+  }, []);
+
   const removeSession = useCallback((sessionId: string) => {
     setState((prev) => {
       const sessionIndex = prev.sessions.findIndex((s) => s.sessionId === sessionId);
@@ -368,6 +387,7 @@ export function CampaignStoreProvider({ children }: { children: ReactNode }) {
     setSessionId,
     setPipelineStatus,
     addSession,
+    mergeBackendSessions,
     removeSession,
     setActiveSession,
     updateSessionStatus,
