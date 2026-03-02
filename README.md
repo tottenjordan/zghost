@@ -288,7 +288,7 @@ root_agent (orchestrator)
 │   └── trends_and_insights_agent              # Campaign metadata + trend selection
 ├── [market-research skill]
 │   └── research_orchestrator                  # Coordinate research pipeline
-│       └── combined_research_pipeline         # Sequential research flow (AgentTool)
+│       └── combined_research_pipeline         # Sequential research flow (sub_agents)
 │           ├── merge_parallel_insights        # Parallel research coordination
 │           │   ├── parallel_planner_agent     # Runs 3 research types simultaneously
 │           │   │   ├── yt_sequential_planner  # YouTube trend analysis
@@ -384,6 +384,25 @@ Using `pytest`, users can test for tool coverage as well as Agent evaluations. M
 ```bash
 uv run pytest tests/*.py
 ```
+
+### End-to-End Testing
+
+The project includes comprehensive Playwright E2E tests that validate the full pipeline:
+
+```bash
+# Run parallel 15s commercial tests
+cd frontend && npx playwright test e2e/parallel-15s.spec.ts
+
+# Run single 30s commercial test
+cd frontend && npx playwright test e2e/full-pipeline.spec.ts
+```
+
+**Test Features**:
+- **Parallel execution**: Tests run multiple campaigns simultaneously (workers: 2)
+- **Direct API session creation**: Bypasses UI for faster, more reliable test setup
+- **Auto-approval loop**: Automatically approves agent requests during pipeline execution
+- **15s and 30s commercial generation**: Tests both commercial duration options
+- **Full UI verification**: Validates orchestration, narrative studio, and AV studio pages
 
 ---
 

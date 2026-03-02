@@ -19,7 +19,7 @@ follow-up searches, and composes a final cited report.
 
 ```
 research_orchestrator (LLM Agent)
-  └── combined_research_pipeline (SequentialAgent)
+  └── combined_research_pipeline (SequentialAgent - sub_agents)
         ├── merge_parallel_insights (SequentialAgent)
         │     ├── parallel_planner_agent (ParallelAgent)
         │     │     ├── yt_sequential_planner

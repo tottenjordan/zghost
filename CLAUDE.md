@@ -10,9 +10,11 @@ This is a multi-agent marketing intelligence system built with Google's Agent De
 
 - **Language**: Python 3.11+
 - **Framework**: Google ADK ^1.22.1
-- **AI Models**: Gemini 3 Flash Preview, Gemini 3 Pro Image Preview, Imagen 4.0 Ultra, Veo 3.1 Fast
+- **AI Models**: Gemini 3 Flash Preview, Gemini 3 Pro Image Preview, Gemini 3.1 Flash Image Preview, Imagen 4.0 Ultra, Veo 3.1 Fast
 - **Package Manager**: uv
 - **Cloud**: Google Cloud Platform (Vertex AI, GCS, Secret Manager, BigQuery)
+- **Voice**: Chirp3-HD (Charon, Aoede, Achird voices)
+- **Music**: Lyria for background music generation
 
 ## Development Commands
 
@@ -62,7 +64,7 @@ root_agent (orchestrator)
 │   └── trends_and_insights_agent          # Campaign metadata + trend selection
 ├── [market-research skill]
 │   └── research_orchestrator              # Coordinates research pipeline
-│       └── combined_research_pipeline     # Sequential research flow (AgentTool)
+│       └── combined_research_pipeline     # Sequential research flow (sub_agents)
 │           ├── merge_parallel_insights    # Parallel research coordination
 │           │   ├── parallel_planner_agent # Runs 3 research types simultaneously
 │           │   │   ├── yt_sequential_planner   # YouTube trend analysis
@@ -153,7 +155,7 @@ installation_scripts/           # ffmpeg and opencv install scripts
 
 ### Research Pipeline Architecture
 
-The `research_orchestrator` uses `combined_research_pipeline` (via AgentTool) to coordinate parallel research:
+The `research_orchestrator` uses `combined_research_pipeline` (via sub_agents) to coordinate parallel research:
 
 1. **Parallel Research Phase**: All three research types run simultaneously
    - YouTube: `yt_analysis_generator_agent` → `yt_web_planner` → `yt_web_searcher`
@@ -189,13 +191,16 @@ Optional:
 5. **Error Handling**: Use structured logging throughout
 6. **Citations**: Research agents track sources via `collect_research_sources_callback`
 7. **Parallel Processing**: Research runs concurrently via `ParallelAgent` compositions
-8. **Pipeline Pattern**: Complex tasks use Sequential/Parallel agent compositions with `AgentTool`
+8. **Pipeline Pattern**: Complex tasks use Sequential/Parallel agent compositions with `sub_agents` (research) or `AgentTool` (ad creative)
 9. **Critique Pattern**: Ad copy uses draft→critique; visual concepts use draft→critique→finalize
 10. **Rate Limiting**: `rate_limit_callback` throttles LLM API calls based on configurable RPM quota
-11. **Audio Retry**: `voice_tools.py` and `music_tools.py` use `_retry_with_backoff` (3 attempts, exponential 5/10/20s) for TTS and Lyria calls
-12. **Audio Validation**: `save_commercial_artifact` runs ffprobe to detect audio streams and sets `has_audio` metadata
-13. **PDF Extraction**: `before_agent_get_user_file` callback extracts text from uploaded PDFs via PyPDF2, stores in `campaign_guide_content` state key (50K char limit)
-14. **Campaign Export**: `GET /api/v1/sessions/{id}/export` returns zip bundle of all session artifacts (config, report, ad copies, images, videos, commercial, evaluation)
+11. **Concurrency Limiting**: API server uses `DynamicConcurrencyLimiter(4)` for max 4 concurrent pipeline runs
+12. **Audio Retry**: `voice_tools.py` and `music_tools.py` use `_retry_with_backoff` (3 attempts, exponential 5/10/20s) for TTS and Lyria calls
+13. **Audio Validation**: `save_commercial_artifact` runs ffprobe to detect audio streams and sets `has_audio` metadata
+14. **PDF Extraction**: `before_agent_get_user_file` callback extracts text from uploaded PDFs via PyPDF2, stores in `campaign_guide_content` state key (50K char limit)
+15. **Campaign Export**: `GET /api/v1/sessions/{id}/export` returns zip bundle of all session artifacts (config, report, ad copies, images, videos, commercial, evaluation)
+16. **YouTube Analysis Error Handling**: `analyze_youtube_videos` has try/except to gracefully handle video fetch failures
+17. **Autopilot Mode**: Root agent skips all user confirmations when `autopilot_mode=true` in session state
 
 ## API Endpoints
 

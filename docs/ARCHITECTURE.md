@@ -18,7 +18,7 @@
 
 ## System Overview
 
-This is a sophisticated multi-agent marketing intelligence system that automates the entire creative campaign development process, from trend discovery to commercial production and evaluation. Built with Google's Agent Development Kit (ADK) and deployed on Vertex AI Agent Engine, it leverages cutting-edge AI models including Gemini 3 Flash Preview, Gemini 3 Pro Image Preview, Imagen 4.0 Ultra, and Veo 3.1 Fast.
+This is a sophisticated multi-agent marketing intelligence system that automates the entire creative campaign development process, from trend discovery to commercial production and evaluation. Built with Google's Agent Development Kit (ADK) and deployed on Vertex AI Agent Engine, it leverages cutting-edge AI models including Gemini 3 Flash Preview, Gemini 3 Pro Image Preview, Gemini 3.1 Flash Image Preview, Imagen 4.0 Ultra, and Veo 3.1 Fast.
 
 ### Core Capabilities
 
@@ -76,7 +76,7 @@ Coordinates comprehensive web research with parallel execution:
 
 ```
 research_orchestrator
-└── combined_research_pipeline (AgentTool - Sequential)
+└── combined_research_pipeline (sub_agents - Sequential)
     ├── merge_parallel_insights (Sequential)
     │   ├── parallel_planner_agent (Parallel)
     │   │   ├── yt_sequential_planner (Sequential)
@@ -695,8 +695,11 @@ To add a new skill to the system:
 ### AI/ML Models
 - **Gemini 3 Flash Preview**: Worker and critic agent model (gemini-3-flash-preview)
 - **Gemini 3 Pro Image Preview**: Subject image generation (gemini-3-pro-image-preview)
+- **Gemini 3.1 Flash Image Preview**: Alternative image generation model (gemini-3-1-flash-image-preview)
 - **Imagen 4.0 Ultra**: High-quality image generation (imagen-4.0-ultra-generate-preview-06-06)
 - **Veo 3.1 Fast**: Video generation with frame conditioning (veo-3.1-fast-generate-001)
+- **Chirp3-HD**: Voice synthesis with Charon, Aoede, and Achird voice presets
+- **Lyria**: Background music generation for commercials
 
 ### GCP Services
 - **Vertex AI Agent Engine**: Serverless agent deployment
@@ -858,6 +861,27 @@ root_agent = Agent(
 )
 ```
 Each skill is independently developed, tested, and maintained with its own SKILL.md documentation.
+
+### 9. Concurrency Control
+API server uses DynamicConcurrencyLimiter for managing parallel pipeline runs:
+```python
+class DynamicConcurrencyLimiter:
+    """Supports dynamic max_concurrent changes without orphaning waiters."""
+
+app_state.concurrency_limiter = DynamicConcurrencyLimiter(4)  # Max 4 concurrent runs
+```
+
+### 10. Autopilot Mode
+Root agent can run completely autonomously when `autopilot_mode=true`:
+- Skips all user confirmations and approvals
+- Auto-selects best trends and creative options
+- Proceeds through entire pipeline without pausing
+- Used in E2E tests for reliable automation
+
+### 11. Error Resilience
+- **YouTube Analysis**: `analyze_youtube_videos` has try/except to handle video fetch failures gracefully
+- **Audio Retry**: Voice and music generation use `_retry_with_backoff` (3 attempts, exponential 5/10/20s delays)
+- **State Persistence**: All intermediate results saved to session state for recovery
 
 ---
 
