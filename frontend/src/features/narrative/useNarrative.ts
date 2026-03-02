@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { api, gcsToProxyUrl } from '../../services/api';
 import type { SessionState } from '../../types/session';
 import type { Message, NarrativeData } from './types';
@@ -30,9 +30,12 @@ export function useNarrative(sessionId: string | null) {
     setFinalPdfUrl(null);
   }, [sessionId]);
 
+  const draftGeneratedRef = useRef(false);
+
   // Auto-load session state
   useEffect(() => {
     if (!sessionId) return;
+    draftGeneratedRef.current = false;
 
     const loadSessionData = () => {
       api.getSessionState(sessionId)
@@ -44,6 +47,20 @@ export function useNarrative(sessionId: string | null) {
 
           const finalPdf = result.state?.final_pdf_url;
           if (finalPdf) setFinalPdfUrl(gcsToProxyUrl(finalPdf));
+
+          // Auto-generate draft PDF if report exists but no draft PDF URL
+          if (
+            !draftPdf &&
+            !draftGeneratedRef.current &&
+            (result.state?.final_report_with_citations || result.state?.combined_final_cited_report)
+          ) {
+            draftGeneratedRef.current = true;
+            api.generatePdf(sessionId, undefined, undefined, 'draft')
+              .then((pdfResult) => {
+                setDraftPdfUrl(gcsToProxyUrl(pdfResult.gcs_uri));
+              })
+              .catch((err) => console.error('Failed to auto-generate draft PDF:', err));
+          }
         })
         .catch((err) => console.error('Failed to load session data:', err));
     };
