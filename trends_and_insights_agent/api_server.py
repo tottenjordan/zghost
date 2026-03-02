@@ -42,6 +42,8 @@ from .api_models import (
     EvalSetInfo,
     EvalSetListResponse,
     ExecutionTraceResponse,
+    NarrativeCommitRequest,
+    NarrativeCommitResponse,
     NarrativePdfRequest,
     NarrativePdfResponse,
     NarrativeRefineRequest,
@@ -2776,6 +2778,144 @@ INSTRUCTIONS:
     except Exception as e:
         logger.error("Narrative refinement failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Refinement failed: {str(e)}")
+
+
+@app.post("/api/v1/narrative/commit-changes", response_model=NarrativeCommitResponse)
+async def commit_narrative_changes(request: NarrativeCommitRequest):
+    """Merge multiple user change directions into the original report via LLM, then generate a final PDF.
+
+    This applies all pending directions in a single coherent pass, preserving
+    the report's structure, citations, data, images, and links.
+    """
+    try:
+        import tempfile
+        from google import genai
+        from markdown_pdf import MarkdownPdf, Section
+        from google.cloud import storage as gcs_storage
+
+        # Load original report from session
+        text_to_refine = ""
+        brand = ""
+        product = ""
+
+        if app_state.session_service:
+            try:
+                session = await app_state.session_service.get_session(
+                    app_name=SESSION_APP_NAME,
+                    user_id="default-user",
+                    session_id=request.session_id,
+                )
+                if session and session.state:
+                    text_to_refine = (
+                        session.state.get("final_report_with_citations")
+                        or session.state.get("combined_final_cited_report")
+                        or ""
+                    )
+                    brand = session.state.get("brand", "")
+                    product = session.state.get("target_product", "")
+            except Exception as e:
+                logger.warning("Could not load session for commit: %s", e)
+
+        if not text_to_refine:
+            raise HTTPException(
+                status_code=400,
+                detail="No report found in session to apply changes to.",
+            )
+
+        if len(text_to_refine) > 30000:
+            text_to_refine = text_to_refine[:30000] + "\n\n[... truncated ...]"
+
+        brand_ctx = f"Brand: {brand}, Product: {product}" if brand else ""
+        directions_text = "\n".join(f"  {i+1}. {d}" for i, d in enumerate(request.directions))
+
+        prompt = f"""You are a creative narrative director for advertising campaigns.
+{brand_ctx}
+
+The user has requested the following changes to their marketing research report.
+Apply ALL of these changes in a single coherent pass.
+
+REQUESTED CHANGES:
+{directions_text}
+
+ORIGINAL REPORT:
+{text_to_refine}
+
+INSTRUCTIONS:
+- Apply every requested change listed above
+- Maintain the same overall structure, sections, and headings
+- Keep ALL factual data, statistics, citations, source references, and links intact
+- Keep ALL image references and markdown formatting intact
+- Make changes feel natural and cohesive, not bolted-on
+- If changes conflict, use your best judgment to reconcile them
+- Return ONLY the refined report text in full markdown, no preamble or meta-commentary
+"""
+
+        client = genai.Client(vertexai=True)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.7,
+                response_modalities=["TEXT"],
+            ),
+        )
+
+        refined = response.text.strip() if response.text else text_to_refine
+
+        # Generate PDF with MarkdownPdf
+        title = f"{brand} — {product or 'Campaign'} Research Report" if brand else "Marketing Research Report"
+        pdf = MarkdownPdf(toc_level=4)
+        pdf.add_section(Section(f" {refined}\n"))
+        pdf.meta["title"] = f"[Final] {title}"
+
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+            tmp_path = tmp.name
+        pdf.save(tmp_path)
+
+        # Upload to GCS
+        bucket_name = os.environ.get("BUCKET", "zghost-media-center").replace("gs://", "")
+        blob_name = f"reports/{request.session_id}/final_report_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.pdf"
+
+        storage_client = gcs_storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+        blob.upload_from_filename(tmp_path, content_type="application/pdf")
+
+        try:
+            blob.make_public()
+        except Exception:
+            pass
+
+        os.unlink(tmp_path)
+
+        gcs_uri = f"gs://{bucket_name}/{blob_name}"
+        https_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+
+        # Update session state
+        if app_state.session_service:
+            try:
+                session = await app_state.session_service.get_session(
+                    app_name=SESSION_APP_NAME,
+                    user_id="default-user",
+                    session_id=request.session_id,
+                )
+                if session:
+                    session.state["final_pdf_url"] = gcs_uri
+            except Exception as e:
+                logger.warning("Could not update session with final PDF URL: %s", e)
+
+        return NarrativeCommitResponse(
+            refined_text=refined,
+            pdf_url=https_url,
+            gcs_uri=gcs_uri,
+            directions_applied=request.directions,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Commit changes failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Commit changes failed: {str(e)}")
 
 
 @app.post("/api/v1/narrative/pdf", response_model=NarrativePdfResponse)

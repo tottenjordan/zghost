@@ -520,6 +520,22 @@ class NarrativeRefineResponse(BaseModel):
     direction_applied: str = Field(description="The direction that was applied")
 
 
+class NarrativeCommitRequest(BaseModel):
+    """Request to merge multiple change directions into a refined report and generate a PDF."""
+
+    session_id: str = Field(description="Session ID for context")
+    directions: list[str] = Field(description="List of user change directions to merge")
+
+
+class NarrativeCommitResponse(BaseModel):
+    """Response with the merged refined text and generated PDF."""
+
+    refined_text: str = Field(description="The merged refined report text")
+    pdf_url: str = Field(description="Public HTTPS URL to the generated PDF")
+    gcs_uri: str = Field(description="GCS URI of the uploaded PDF")
+    directions_applied: list[str] = Field(description="The directions that were applied")
+
+
 class NarrativePdfRequest(BaseModel):
     """Request to generate a PDF from narrative content."""
 

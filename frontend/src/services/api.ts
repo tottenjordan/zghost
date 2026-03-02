@@ -295,6 +295,31 @@ class ApiClient {
   }
 
   /**
+   * Commit multiple pending change directions into a new final PDF.
+   * Merges all directions via LLM in a single coherent pass.
+   */
+  async commitChanges(
+    sessionId: string,
+    directions: string[]
+  ): Promise<{ refined_text: string; pdf_url: string; gcs_uri: string; directions_applied: string[] }> {
+    const url = `${API_BASE}/api/v1/narrative/commit-changes`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sessionId,
+        directions,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(
+        `Commit changes failed (${response.status}): ${response.statusText || 'Unknown error'}`
+      );
+    }
+    return response.json();
+  }
+
+  /**
    * Check trends for brand safety using Gemini 3 Flash.
    */
   async checkTrendSafety(
