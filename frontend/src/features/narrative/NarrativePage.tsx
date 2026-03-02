@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { NarrativeChat } from './NarrativeChat';
 import { StoryboardView } from './StoryboardView';
@@ -9,18 +9,72 @@ import { Button } from '../../components/ui/Button';
 import { Markdown } from '../../components/ui/Markdown';
 import { CheckCircle, SkipForward, ChevronDown, AlertCircle, FileText, Loader2 } from 'lucide-react';
 import { useCampaignStore } from '../../stores/campaignStore';
+import type { PipelineSession } from '../../stores/campaignStore';
+import { api } from '../../services/api';
+import { generateRunLabel } from '../orchestration/RunListPage';
 import { cn } from '../../lib/utils';
 
 export function NarrativePage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { sessions } = useCampaignStore();
+  const { sessions, mergeBackendSessions } = useCampaignStore();
+  const backendLoadedRef = useRef(false);
 
   const [sessionId, setSessionId] = useState<string | null>(() => {
     return searchParams.get('session') || null;
   });
 
   const [pdfError, setPdfError] = useState(false);
+
+  // Fetch sessions from backend on mount (ensures runs are available
+  // even if the user navigates directly to Narrative)
+  useEffect(() => {
+    if (backendLoadedRef.current) return;
+    backendLoadedRef.current = true;
+
+    api.listSessions().then((result) => {
+      const newSessions: PipelineSession[] = result.sessions.map((s) => {
+        const startedAt = s.last_update_time ? s.last_update_time * 1000 : Date.now();
+        return {
+          id: `backend-${s.session_id}`,
+          sessionId: s.session_id,
+          label: generateRunLabel(s.session_id, startedAt, s.brand || undefined),
+          status: s.status === 'running' || s.status === 'in_progress' ? 'running' as const
+            : s.status === 'error' || s.status === 'failed' ? 'error' as const
+            : 'completed' as const,
+          startedAt,
+          createdAt: new Date(startedAt).toISOString(),
+          config: {
+            brand: s.brand || '',
+            target_product: s.target_product || '',
+            target_audience: s.target_audience || '',
+            key_selling_points: '',
+          },
+          commercialDuration: (s.commercial_duration as 10 | 15 | 20 | 30) || 30,
+          autopilot: s.autopilot_mode || false,
+          hasReport: s.has_report,
+          hasCommercial: s.has_commercial,
+          imageCount: s.image_count,
+          videoCount: s.video_count,
+          fromBackend: true,
+        };
+      });
+      mergeBackendSessions(newSessions);
+    }).catch((err) => console.error('Failed to fetch backend sessions:', err));
+  }, [mergeBackendSessions]);
+
+  // Auto-select the most recent session when sessions load and no session is selected
+  useEffect(() => {
+    if (sessionId || sessions.length === 0) return;
+
+    // Prefer the most recent session with a report, fall back to most recent overall
+    const sorted = [...sessions].sort((a, b) => b.startedAt - a.startedAt);
+    const withReport = sorted.find((s) => s.hasReport);
+    const best = withReport || sorted[0];
+    if (best) {
+      handleSelectSession(best.sessionId);
+    }
+  }, [sessions, sessionId]);
 
   const handleSelectSession = (newSessionId: string) => {
     setSessionId(newSessionId);
