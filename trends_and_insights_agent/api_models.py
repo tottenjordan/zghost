@@ -530,6 +530,9 @@ class NarrativePdfRequest(BaseModel):
     title: Optional[str] = Field(
         default="Marketing Research Report", description="PDF title"
     )
+    report_type: str = Field(
+        default="final", description="'draft' or 'final' — determines which session state key to update"
+    )
 
 
 class NarrativePdfResponse(BaseModel):

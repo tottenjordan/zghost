@@ -272,7 +272,8 @@ class ApiClient {
   async generatePdf(
     sessionId: string,
     content?: string,
-    title?: string
+    title?: string,
+    reportType: 'draft' | 'final' = 'final'
   ): Promise<NarrativePdfResult> {
     const url = `${API_BASE}/api/v1/narrative/pdf`;
     const response = await fetch(url, {
@@ -282,6 +283,7 @@ class ApiClient {
         session_id: sessionId,
         content,
         title,
+        report_type: reportType,
       }),
     });
     if (!response.ok) {
@@ -395,6 +397,52 @@ class ApiClient {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(downloadUrl);
+  }
+
+  async generateVoiceSample(config: {
+    script: string;
+    voice_style: string;
+    speaking_rate: number;
+    pitch: number;
+    session_id?: string;
+  }): Promise<{ status: string; gcs_uri: string; duration_seconds: number; voice_style: string }> {
+    const res = await fetch(`${API_BASE}/api/v1/studio/voice/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        script: config.script,
+        voice_style: config.voice_style,
+        speaking_rate: config.speaking_rate,
+        pitch: config.pitch,
+        session_id: config.session_id,
+      }),
+    });
+    if (!res.ok) throw new Error(`Voice generation failed: ${res.status}`);
+    return res.json();
+  }
+
+  async generateMusicSample(config: {
+    prompt: string;
+    duration_seconds: number;
+    genre: string;
+    mood: string;
+    instruments: string;
+    session_id?: string;
+  }): Promise<{ status: string; gcs_uri: string; duration_seconds: number; genre: string; mood: string }> {
+    const res = await fetch(`${API_BASE}/api/v1/studio/music/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: config.prompt,
+        duration_seconds: config.duration_seconds,
+        genre: config.genre,
+        mood: config.mood,
+        instruments: config.instruments,
+        session_id: config.session_id,
+      }),
+    });
+    if (!res.ok) throw new Error(`Music generation failed: ${res.status}`);
+    return res.json();
   }
 }
 

@@ -614,9 +614,9 @@ export function OrchestrationPage() {
       )}
 
       {/* Main: Timeline + Detail panel */}
-      <div className="flex-1 grid grid-cols-3 gap-3 min-h-0">
+      <div className="flex-1 grid grid-cols-3 gap-3 min-h-0 overflow-hidden">
         {/* Left: Timeline / Graph (2 cols) */}
-        <div className="col-span-2 border border-zinc-800 rounded-lg overflow-hidden flex flex-col min-h-[400px]">
+        <div className="col-span-2 border border-zinc-800 rounded-lg overflow-hidden flex flex-col">
           <Tabs defaultValue="timeline">
             <TabsList className="w-full grid grid-cols-2">
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
@@ -641,8 +641,8 @@ export function OrchestrationPage() {
           </Tabs>
         </div>
 
-        {/* Right: Detail panel (1 col) — constrained to grid cell height */}
-        <div className="border border-zinc-800 rounded-lg overflow-hidden flex flex-col min-h-0">
+        {/* Right: Detail panel (1 col) — fixed to grid cell, chat anchored to bottom */}
+        <div className="border border-zinc-800 rounded-lg overflow-hidden flex flex-col min-h-0 max-h-full">
           <Tabs value={detailTab} onValueChange={setDetailTab} className="flex flex-col h-full overflow-hidden">
             <TabsList className="w-full flex flex-wrap gap-1 flex-shrink-0">
               <TabsTrigger value="chat">Chat</TabsTrigger>

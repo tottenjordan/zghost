@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, CheckCircle, XCircle, ChevronDown, Loader2, FileText, ArrowRight, Film } from 'lucide-react';
+import { Send, CheckCircle, XCircle, ChevronDown, ChevronRight, Loader2, FileText, ArrowRight, Film } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api, gcsToProxyUrl } from '../../services/api';
 import { cn } from '../../lib/utils';
@@ -187,6 +187,85 @@ function deduplicateMessages(messages: ChatMessage[]): ChatMessage[] {
   return deduplicated;
 }
 
+/** Collapsible message bubble — long agent text is collapsed by default */
+function CollapsibleMessage({ msg, sessionId }: { msg: ChatMessage; sessionId: string | null }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = msg.role === 'agent' && msg.text.length > COLLAPSE_THRESHOLD;
+  const colorIdx = msg.agent ? getAgentColorIndex(msg.agent) : 0;
+
+  const displayText = isLong && !expanded
+    ? msg.text.slice(0, COLLAPSE_THRESHOLD) + '...'
+    : msg.text.length > 2000
+      ? msg.text.slice(0, 2000) + '...'
+      : msg.text;
+
+  return (
+    <div
+      className={cn(
+        'rounded-lg px-3 py-2 text-sm max-w-[95%]',
+        msg.role === 'user'
+          ? 'ml-auto bg-blue-600/20 text-blue-100 border border-blue-800/30'
+          : 'bg-zinc-800/50 text-zinc-200 border border-zinc-700/30'
+      )}
+    >
+      {msg.agent && (
+        <div className={cn('flex items-center gap-1.5 text-xs font-medium mb-1', AGENT_COLORS[colorIdx])}>
+          <span className={cn('w-1.5 h-1.5 rounded-full', AGENT_DOT_COLORS[colorIdx])} />
+          {msg.agent}
+        </div>
+      )}
+      <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere text-xs leading-relaxed">
+        <RichText text={displayText} sessionId={sessionId} />
+      </div>
+      {isLong && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-1 mt-1 text-[10px] text-zinc-500 hover:text-zinc-300"
+        >
+          {expanded ? (
+            <><ChevronDown className="w-3 h-3" /> Show less</>
+          ) : (
+            <><ChevronRight className="w-3 h-3" /> Show more ({msg.text.length} chars)</>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Color palette for agent names — deterministic by name */
+const AGENT_COLORS: string[] = [
+  'text-blue-400',
+  'text-emerald-400',
+  'text-violet-400',
+  'text-amber-400',
+  'text-rose-400',
+  'text-cyan-400',
+  'text-orange-400',
+  'text-pink-400',
+];
+const AGENT_DOT_COLORS: string[] = [
+  'bg-blue-400',
+  'bg-emerald-400',
+  'bg-violet-400',
+  'bg-amber-400',
+  'bg-rose-400',
+  'bg-cyan-400',
+  'bg-orange-400',
+  'bg-pink-400',
+];
+
+function getAgentColorIndex(name: string): number {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) % AGENT_COLORS.length;
+}
+
+/** Threshold for collapsing long messages */
+const COLLAPSE_THRESHOLD = 200;
+
 export function AgentChat({ sessionId, events, autopilot, onWaitingForInput, onSendMessage }: AgentChatProps) {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -349,31 +428,16 @@ export function AgentChat({ sessionId, events, autopilot, onWaitingForInput, onS
                 className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-500"
               >
                 <ArrowRight className="w-3 h-3 text-blue-500 flex-shrink-0" />
-                <span className="font-medium text-zinc-400">{msg.agent}</span>
+                {msg.agent && (
+                  <>
+                    <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', AGENT_DOT_COLORS[getAgentColorIndex(msg.agent)])} />
+                    <span className={cn('font-medium', AGENT_COLORS[getAgentColorIndex(msg.agent)])}>{msg.agent}</span>
+                  </>
+                )}
                 <span>{msg.text}</span>
               </div>
             ) : (
-              <div
-                key={msg.id}
-                className={cn(
-                  'rounded-lg px-3 py-2 text-sm max-w-[95%]',
-                  msg.role === 'user'
-                    ? 'ml-auto bg-blue-600/20 text-blue-100 border border-blue-800/30'
-                    : 'bg-zinc-800/50 text-zinc-200 border border-zinc-700/30'
-                )}
-              >
-                {msg.agent && (
-                  <div className="text-xs font-medium text-zinc-500 mb-1">
-                    {msg.agent}
-                  </div>
-                )}
-                <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere text-xs leading-relaxed">
-                  <RichText
-                    text={msg.text.length > 500 ? msg.text.slice(0, 500) + '...' : msg.text}
-                    sessionId={sessionId}
-                  />
-                </div>
-              </div>
+              <CollapsibleMessage key={msg.id} msg={msg} sessionId={sessionId} />
             )
           ))
         )}
