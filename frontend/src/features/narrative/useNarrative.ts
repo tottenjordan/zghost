@@ -9,6 +9,8 @@ export interface PendingChange {
   addedAt: number;
 }
 
+const GCS_BUCKET = import.meta.env.VITE_GCS_BUCKET || 'zghost-media-center';
+
 export function useNarrative(sessionId: string | null) {
   const [narrativeData, setNarrativeData] = useState<NarrativeData>({
     messages: [],
@@ -39,28 +41,51 @@ export function useNarrative(sessionId: string | null) {
 
     const loadSessionData = () => {
       api.getSessionState(sessionId)
-        .then((result) => {
+        .then(async (result) => {
           setSessionState(result.state);
 
           const draftPdf = result.state?.draft_pdf_url;
-          if (draftPdf) setDraftPdfUrl(gcsToProxyUrl(draftPdf));
+          if (draftPdf) {
+            setDraftPdfUrl(gcsToProxyUrl(draftPdf));
+          } else if (!draftGeneratedRef.current) {
+            // Probe well-known GCS path where the pipeline stores the draft PDF
+            const gcsFolder = result.state?.gcs_folder;
+            if (gcsFolder) {
+              const wellKnownUri = `gs://${GCS_BUCKET}/${gcsFolder}/draft_research_report_with_citations.pdf`;
+              const proxyUrl = gcsToProxyUrl(wellKnownUri);
+              try {
+                const probe = await fetch(proxyUrl);
+                if (probe.ok) {
+                  // PDF exists at well-known path — use it directly
+                  setDraftPdfUrl(proxyUrl);
+                  draftGeneratedRef.current = true;
+                } else {
+                  throw new Error('Not found');
+                }
+              } catch {
+                // Well-known path doesn't exist — fall back to auto-generation from markdown
+                if (result.state?.final_report_with_citations || result.state?.combined_final_cited_report) {
+                  draftGeneratedRef.current = true;
+                  api.generatePdf(sessionId, undefined, undefined, 'draft')
+                    .then((pdfResult) => {
+                      setDraftPdfUrl(gcsToProxyUrl(pdfResult.gcs_uri));
+                    })
+                    .catch((err) => console.error('Failed to auto-generate draft PDF:', err));
+                }
+              }
+            } else if (result.state?.final_report_with_citations || result.state?.combined_final_cited_report) {
+              // No gcs_folder — skip probe, go straight to auto-generation
+              draftGeneratedRef.current = true;
+              api.generatePdf(sessionId, undefined, undefined, 'draft')
+                .then((pdfResult) => {
+                  setDraftPdfUrl(gcsToProxyUrl(pdfResult.gcs_uri));
+                })
+                .catch((err) => console.error('Failed to auto-generate draft PDF:', err));
+            }
+          }
 
           const finalPdf = result.state?.final_pdf_url;
           if (finalPdf) setFinalPdfUrl(gcsToProxyUrl(finalPdf));
-
-          // Auto-generate draft PDF if report exists but no draft PDF URL
-          if (
-            !draftPdf &&
-            !draftGeneratedRef.current &&
-            (result.state?.final_report_with_citations || result.state?.combined_final_cited_report)
-          ) {
-            draftGeneratedRef.current = true;
-            api.generatePdf(sessionId, undefined, undefined, 'draft')
-              .then((pdfResult) => {
-                setDraftPdfUrl(gcsToProxyUrl(pdfResult.gcs_uri));
-              })
-              .catch((err) => console.error('Failed to auto-generate draft PDF:', err));
-          }
         })
         .catch((err) => console.error('Failed to load session data:', err));
     };
