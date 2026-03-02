@@ -101,12 +101,23 @@ export interface VoiceSample {
   error?: string;
 }
 
+export interface AudioTrack {
+  id: string;
+  musicSampleId: string;
+  name: string;
+  url?: string;
+  gcsUri?: string;
+  startTime: number;    // offset in seconds on the timeline
+  duration: number;     // duration in seconds
+}
+
 export interface StudioData {
   clips: Clip[];
   characters: Character[];
   commercial?: CommercialData;
   voiceSamples: VoiceSample[];
   musicSamples: MusicSample[];
+  audioTracks: AudioTrack[];
   selectedVoice: VoiceStyleId | null;
   selectedMusic: string | null;  // MusicSample id
   isLoading: boolean;

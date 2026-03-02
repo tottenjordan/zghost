@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, gcsToProxyUrl } from '../../services/api';
 import type { SessionState } from '../../types/session';
-import type { Clip, Character, CommercialData, StudioData, VoiceSample, MusicSample, VoiceStyleId } from './types';
+import type { Clip, Character, CommercialData, StudioData, VoiceSample, MusicSample, AudioTrack, VoiceStyleId } from './types';
 
 const BUCKET = import.meta.env.VITE_GCS_BUCKET || 'zghost-media-center';
 
@@ -120,6 +120,7 @@ export function useStudio(sessionId: string | null) {
     commercial: undefined,
     voiceSamples: [],
     musicSamples: [],
+    audioTracks: [],
     selectedVoice: null,
     selectedMusic: null,
     isLoading: false,
@@ -184,7 +185,7 @@ export function useStudio(sessionId: string | null) {
     setStudioData((prev) => ({ ...prev, selectedVoice: styleId }));
   };
 
-  const generateVoiceSample = (config: {
+  const generateVoiceSample = async (config: {
     style: VoiceStyleId;
     speakingRate: number;
     pitch: number;
@@ -206,15 +207,35 @@ export function useStudio(sessionId: string | null) {
       selectedVoice: config.style,
     }));
 
-    // Simulate generation (backend call would go here)
-    setTimeout(() => {
+    try {
+      const result = await api.generateVoiceSample({
+        script: config.script,
+        voice_style: config.style,
+        speaking_rate: config.speakingRate,
+        pitch: config.pitch,
+        session_id: sessionId || undefined,
+      });
+
+      const url = gcsToProxyUrl(result.gcs_uri);
       setStudioData((prev) => ({
         ...prev,
         voiceSamples: prev.voiceSamples.map((s) =>
-          s.id === sample.id ? { ...s, status: 'ready' as const } : s
+          s.id === sample.id
+            ? { ...s, status: 'ready' as const, url, gcsUri: result.gcs_uri }
+            : s
         ),
       }));
-    }, 2000);
+    } catch (error) {
+      console.error('Voice sample generation failed:', error);
+      setStudioData((prev) => ({
+        ...prev,
+        voiceSamples: prev.voiceSamples.map((s) =>
+          s.id === sample.id
+            ? { ...s, status: 'error' as const, error: String(error) }
+            : s
+        ),
+      }));
+    }
   };
 
   // Music management
@@ -222,7 +243,7 @@ export function useStudio(sessionId: string | null) {
     setStudioData((prev) => ({ ...prev, selectedMusic: sampleId }));
   };
 
-  const generateMusicSample = (config: {
+  const generateMusicSample = async (config: {
     prompt: string;
     durationSeconds: number;
     genre: string;
@@ -246,22 +267,72 @@ export function useStudio(sessionId: string | null) {
       selectedMusic: sample.id,
     }));
 
-    // Simulate generation (backend call would go here)
-    setTimeout(() => {
+    try {
+      const result = await api.generateMusicSample({
+        prompt: config.prompt,
+        duration_seconds: config.durationSeconds,
+        genre: config.genre,
+        mood: config.mood,
+        instruments: config.instruments,
+        session_id: sessionId || undefined,
+      });
+
+      const url = gcsToProxyUrl(result.gcs_uri);
       setStudioData((prev) => ({
         ...prev,
         musicSamples: prev.musicSamples.map((s) =>
-          s.id === sample.id ? { ...s, status: 'ready' as const } : s
+          s.id === sample.id
+            ? { ...s, status: 'ready' as const, url, gcsUri: result.gcs_uri }
+            : s
         ),
       }));
-    }, 3000);
+    } catch (error) {
+      console.error('Music sample generation failed:', error);
+      setStudioData((prev) => ({
+        ...prev,
+        musicSamples: prev.musicSamples.map((s) =>
+          s.id === sample.id
+            ? { ...s, status: 'error' as const, error: String(error) }
+            : s
+        ),
+      }));
+    }
   };
 
   const removeMusicSample = (sampleId: string) => {
     setStudioData((prev) => ({
       ...prev,
       musicSamples: prev.musicSamples.filter((s) => s.id !== sampleId),
+      audioTracks: prev.audioTracks.filter((t) => t.musicSampleId !== sampleId),
       selectedMusic: prev.selectedMusic === sampleId ? null : prev.selectedMusic,
+    }));
+  };
+
+  // Audio track management (drag-and-drop from MusicSelector to Timeline)
+  const addAudioTrack = (musicSampleId: string) => {
+    setStudioData((prev) => {
+      const sample = prev.musicSamples.find((s) => s.id === musicSampleId);
+      if (!sample || sample.status !== 'ready') return prev;
+      // Prevent duplicate drops of the same sample
+      if (prev.audioTracks.some((t) => t.musicSampleId === musicSampleId)) return prev;
+
+      const track: AudioTrack = {
+        id: `audio-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        musicSampleId: sample.id,
+        name: sample.name,
+        url: sample.url,
+        gcsUri: sample.gcsUri,
+        startTime: 0,
+        duration: sample.durationSeconds,
+      };
+      return { ...prev, audioTracks: [...prev.audioTracks, track] };
+    });
+  };
+
+  const removeAudioTrack = (trackId: string) => {
+    setStudioData((prev) => ({
+      ...prev,
+      audioTracks: prev.audioTracks.filter((t) => t.id !== trackId),
     }));
   };
 
@@ -274,5 +345,7 @@ export function useStudio(sessionId: string | null) {
     selectMusic,
     generateMusicSample,
     removeMusicSample,
+    addAudioTrack,
+    removeAudioTrack,
   };
 }

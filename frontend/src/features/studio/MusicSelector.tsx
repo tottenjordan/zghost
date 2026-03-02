@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/Button';
 import { Textarea } from '../../components/ui/Textarea';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
-import { Music, Play, Plus, Trash2 } from 'lucide-react';
+import { GripVertical, Music, Play, Plus, Trash2 } from 'lucide-react';
 import type { MusicSample } from './types';
 
 // Preset genres and moods matching the backend music_tools.py
@@ -151,15 +151,27 @@ export function MusicSelector({
             return (
               <Card
                 key={sample.id}
-                className={`cursor-pointer transition-colors ${
+                draggable={sample.status === 'ready'}
+                onDragStart={(e) => {
+                  if (sample.status !== 'ready') {
+                    e.preventDefault();
+                    return;
+                  }
+                  e.dataTransfer.setData('application/x-music-sample', sample.id);
+                  e.dataTransfer.effectAllowed = 'copy';
+                }}
+                className={`transition-colors ${
                   isSelected
                     ? 'border-purple-500 bg-purple-950/30'
                     : 'hover:border-zinc-600'
-                }`}
+                } ${sample.status === 'ready' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
                 onClick={() => onSelectMusic(sample.id)}
               >
                 <CardContent className="p-3">
                   <div className="flex items-center gap-3">
+                    {sample.status === 'ready' && (
+                      <GripVertical className="h-4 w-4 shrink-0 text-zinc-600" />
+                    )}
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-800">
                       {sample.status === 'generating' ? (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-400 border-t-transparent" />

@@ -34,6 +34,7 @@ export function StudioPage() {
     commercial,
     voiceSamples,
     musicSamples,
+    audioTracks,
     selectedVoice,
     selectedMusic,
     isLoading,
@@ -44,6 +45,8 @@ export function StudioPage() {
     selectMusic,
     generateMusicSample,
     removeMusicSample,
+    addAudioTrack,
+    removeAudioTrack,
   } = useStudio(sessionId);
 
   const handleSelectClip = (clip: Clip) => {
@@ -264,6 +267,10 @@ export function StudioPage() {
             onReorder={reorderClips}
             onSelectClip={handleSelectClip}
             selectedClipId={selectedClip?.id}
+            audioTracks={audioTracks}
+            musicSamples={musicSamples}
+            onAddAudioTrack={addAudioTrack}
+            onRemoveAudioTrack={removeAudioTrack}
           />
 
           {/* Main Content Tabs */}

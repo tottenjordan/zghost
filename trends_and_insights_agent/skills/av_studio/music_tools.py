@@ -1,14 +1,13 @@
-"""Music generation tools using Google's Lyria model for commercial soundtracks."""
+"""Music generation tools using Google's Lyria 2 model for commercial soundtracks."""
 
 import os
 import logging
 import uuid
 import time
-from typing import Optional, Dict, Any
-from google import genai
-from google.genai import types
+import base64
+from typing import Optional, Dict, Any, List
 from google.adk.tools import ToolContext
-from ...shared_libraries.config import config
+from ...shared_libraries.config import audio_config as config
 from ...shared_libraries.utils import upload_blob_to_gcs
 
 logging.basicConfig(level=logging.INFO)
@@ -56,7 +55,35 @@ def get_gcs_bucket():
 
 GCS_BUCKET = None  # Will be evaluated at runtime
 
-client = genai.Client()
+
+def _call_lyria_predict(prompt: str, negative_prompt: str = "", sample_count: int = 1, seed: int | None = None) -> List[bytes]:
+    """Call Lyria 2 via Vertex AI predict endpoint. Returns list of WAV bytes."""
+    import google.auth
+    import google.auth.transport.requests
+    import requests
+
+    credentials, _ = google.auth.default()
+    credentials.refresh(google.auth.transport.requests.Request())
+
+    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
+    location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+    endpoint = f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers/google/models/{config.lyria_model}:predict"
+
+    payload: Dict[str, Any] = {"instances": [{"prompt": prompt}], "parameters": {}}
+    if negative_prompt:
+        payload["parameters"]["negative_prompt"] = negative_prompt
+    if seed is not None:
+        payload["parameters"]["seed"] = seed
+    elif sample_count > 1:
+        payload["parameters"]["sample_count"] = sample_count
+    # Cannot set both seed and sample_count per Lyria docs
+
+    headers = {"Authorization": f"Bearer {credentials.token}", "Content-Type": "application/json"}
+    response = requests.post(endpoint, headers=headers, json=payload, timeout=120)
+    response.raise_for_status()
+
+    result = response.json()
+    return [base64.b64decode(pred["bytesBase64Encoded"]) for pred in result.get("predictions", [])]
 
 
 def generate_commercial_soundtrack(
@@ -67,16 +94,18 @@ def generate_commercial_soundtrack(
     instruments: str,
     tool_context: ToolContext,
 ) -> dict:
-    """Generates a commercial soundtrack using Google's Lyria music generation model.
+    """Generates a commercial soundtrack using Google's Lyria 2 music generation model.
 
     This tool creates background music for commercials that matches the brand,
     target audience, and emotional tone of the campaign. Music is generated
     separately from video to ensure full control over audio quality.
+    Lyria 2 produces 30-second WAV clips at 48kHz.
 
     Args:
         prompt (str): Detailed description of the desired music, including style,
             tempo, progression, and how it should support the commercial narrative.
         duration_seconds (int): Length of the soundtrack (typically 30 for commercials).
+            Note: Lyria 2 always generates ~30s clips.
         genre (str): Musical genre (e.g., "upbeat pop", "corporate ambient",
             "indie folk", "electronic", "orchestral").
         mood (str): Emotional tone (e.g., "inspirational", "energetic", "calm",
@@ -89,78 +118,49 @@ def generate_commercial_soundtrack(
         dict: Status and paths. Keys: "status", "gcs_uri", "local_path", "metadata".
     """
     try:
-        # Construct the full music generation prompt
-        full_prompt = f"""Generate a {duration_seconds}-second {genre} soundtrack.
+        brand = tool_context.state.get('brand', 'general')
+        target_audience = tool_context.state.get('target_audience', 'general')
 
-Musical Requirements:
-- Genre: {genre}
-- Mood: {mood}
-- Instruments: {instruments}
-- Duration: {duration_seconds} seconds
+        full_prompt = (
+            f"{genre} soundtrack, {mood} mood, featuring {instruments}. "
+            f"Brand: {brand}, audience: {target_audience}. "
+            f"{prompt}"
+        )
+        negative_prompt = "vocals, lyrics, singing, speech, voice"
 
-Creative Direction:
-{prompt}
-
-Technical Requirements:
-- High quality audio suitable for commercial use
-- Clear mix with good dynamic range
-- Appropriate pacing for a {duration_seconds}-second commercial
-- No vocals or lyrics (instrumental only)
-- Suitable for brand: {tool_context.state.get('brand', 'general')}
-- Target audience: {tool_context.state.get('target_audience', 'general')}
-"""
-
-        # Generate music using Lyria with retry logic and timing
         start_time = time.time()
-        response = _retry_with_backoff(
-            lambda: client.models.generate_content(
-                model="models/music-lyria-1",  # Lyria music generation model
-                contents=full_prompt,
-                config=types.GenerateContentConfig(
-                    response_modalities=["AUDIO"],
-                ),
+        wav_list = _retry_with_backoff(
+            lambda: _call_lyria_predict(
+                prompt=full_prompt,
+                negative_prompt=negative_prompt,
             ),
             max_attempts=3,
-            base_delay=5
+            base_delay=5,
         )
         elapsed_time = time.time() - start_time
 
-        if not response.candidates or not response.candidates[0].content.parts:
-            return {"status": "failed", "error": "No music generated"}
+        if not wav_list:
+            return {"status": "failed", "error": "No music generated from Lyria 2"}
 
-        audio_part = None
-        for part in response.candidates[0].content.parts:
-            if part.inline_data and part.inline_data.mime_type.startswith("audio/"):
-                audio_part = part
-                break
+        audio_bytes = wav_list[0]
 
-        if audio_part is None:
-            return {"status": "failed", "error": "No audio data in response"}
-
-        audio_bytes = audio_part.inline_data.data
-
-        # Validate audio data size (should be >1000 bytes for meaningful audio)
         if len(audio_bytes) < 1000:
             logging.warning(
-                f"Generated audio suspiciously small: {len(audio_bytes)} bytes. "
-                f"Expected >1000 bytes for {duration_seconds}s soundtrack."
+                f"Generated audio suspiciously small: {len(audio_bytes)} bytes."
             )
             return {
                 "status": "failed",
-                "error": f"Generated audio too small: {len(audio_bytes)} bytes"
+                "error": f"Generated audio too small: {len(audio_bytes)} bytes",
             }
 
-        # Log diagnostic information after successful generation
         logging.info(
-            f"Music generation succeeded - Model: music-lyria-1, "
+            f"Music generation succeeded - Model: {config.lyria_model}, "
             f"Prompt length: {len(full_prompt)} chars, "
             f"Response size: {len(audio_bytes)} bytes, "
-            f"Duration: {duration_seconds}s, "
             f"Elapsed: {elapsed_time:.2f}s"
         )
 
-        # Save locally
-        filename = f"soundtrack_{genre.replace(' ', '_')}_{str(uuid.uuid4())[:8]}.mp3"
+        filename = f"soundtrack_{genre.replace(' ', '_')}_{str(uuid.uuid4())[:8]}.wav"
         local_dir = "session_media/av_studio/music"
         os.makedirs(local_dir, exist_ok=True)
         local_path = os.path.join(local_dir, filename)
@@ -168,7 +168,6 @@ Technical Requirements:
         with open(local_path, "wb") as f:
             f.write(audio_bytes)
 
-        # Upload to GCS
         gcs_folder = tool_context.state.get("gcs_folder", "default")
         destination_blob = f"{gcs_folder}/av_studio/music/{filename}"
         upload_blob_to_gcs(
@@ -190,7 +189,7 @@ Technical Requirements:
                 "mood": mood,
                 "instruments": instruments,
                 "duration": duration_seconds,
-            }
+            },
         }
 
     except Exception as e:
@@ -203,7 +202,7 @@ def generate_sound_effects(
     timing_cues: str,
     tool_context: ToolContext,
 ) -> dict:
-    """Generates specific sound effects for the commercial using Lyria.
+    """Generates specific sound effects for the commercial using Lyria 2.
 
     Creates individual sound effects that can be layered over the video
     at specific moments (e.g., product reveal, transition swooshes, button clicks).
@@ -219,57 +218,53 @@ def generate_sound_effects(
     """
     try:
         generated_effects = []
+        brand = tool_context.state.get('brand', 'modern')
 
         for effect_name in effects_list:
-            prompt = f"""Generate a short sound effect:
-Effect: {effect_name}
-Style: Professional, commercial-quality
-Duration: 1-3 seconds as appropriate
-Context: {timing_cues}
-Brand tone: {tool_context.state.get('brand', 'modern')}"""
-
-            response = client.models.generate_content(
-                model="models/music-lyria-1",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_modalities=["AUDIO"],
-                ),
+            prompt = (
+                f"Short sound effect: {effect_name}. "
+                f"Professional, commercial-quality. Context: {timing_cues}. "
+                f"Brand tone: {brand}"
             )
 
-            if response.candidates and response.candidates[0].content.parts:
-                for part in response.candidates[0].content.parts:
-                    if part.inline_data and part.inline_data.mime_type.startswith("audio/"):
-                        audio_bytes = part.inline_data.data
+            try:
+                wav_list = _call_lyria_predict(
+                    prompt=prompt,
+                    negative_prompt="vocals, lyrics, singing, speech",
+                )
+            except Exception as e:
+                logging.warning(f"Failed to generate SFX '{effect_name}': {e}")
+                continue
 
-                        # Save effect
-                        safe_name = effect_name.replace(" ", "_").lower()
-                        filename = f"sfx_{safe_name}_{str(uuid.uuid4())[:8]}.wav"
-                        local_dir = "session_media/av_studio/sfx"
-                        os.makedirs(local_dir, exist_ok=True)
-                        local_path = os.path.join(local_dir, filename)
+            if wav_list:
+                audio_bytes = wav_list[0]
 
-                        with open(local_path, "wb") as f:
-                            f.write(audio_bytes)
+                safe_name = effect_name.replace(" ", "_").lower()
+                filename = f"sfx_{safe_name}_{str(uuid.uuid4())[:8]}.wav"
+                local_dir = "session_media/av_studio/sfx"
+                os.makedirs(local_dir, exist_ok=True)
+                local_path = os.path.join(local_dir, filename)
 
-                        # Upload to GCS
-                        gcs_folder = tool_context.state.get("gcs_folder", "default")
-                        destination_blob = f"{gcs_folder}/av_studio/sfx/{filename}"
-                        upload_blob_to_gcs(
-                            source_file_name=local_path,
-                            destination_blob_name=destination_blob,
-                        )
+                with open(local_path, "wb") as f:
+                    f.write(audio_bytes)
 
-                        bucket_name = get_gcs_bucket().replace("gs://", "")
-                        gcs_uri = f"gs://{bucket_name}/{destination_blob}"
+                gcs_folder = tool_context.state.get("gcs_folder", "default")
+                destination_blob = f"{gcs_folder}/av_studio/sfx/{filename}"
+                upload_blob_to_gcs(
+                    source_file_name=local_path,
+                    destination_blob_name=destination_blob,
+                )
 
-                        generated_effects.append({
-                            "effect_name": effect_name,
-                            "gcs_uri": gcs_uri,
-                            "local_path": local_path,
-                        })
+                bucket_name = get_gcs_bucket().replace("gs://", "")
+                gcs_uri = f"gs://{bucket_name}/{destination_blob}"
 
-                        logging.info(f"Generated sound effect '{effect_name}' at {gcs_uri}")
-                        break
+                generated_effects.append({
+                    "effect_name": effect_name,
+                    "gcs_uri": gcs_uri,
+                    "local_path": local_path,
+                })
+
+                logging.info(f"Generated sound effect '{effect_name}' at {gcs_uri}")
 
         return {
             "status": "ok",
@@ -323,7 +318,9 @@ def combine_audio_with_video(
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             video_path = os.path.join(tmp_dir, "video.mp4")
-            music_path = os.path.join(tmp_dir, "music.mp3")
+            # Detect audio extension from GCS URI (Lyria 2 outputs .wav)
+            music_ext = os.path.splitext(music_gcs_uri)[1] or ".wav"
+            music_path = os.path.join(tmp_dir, f"music{music_ext}")
             output_path = os.path.join(tmp_dir, f"{output_name}.mp4")
 
             with open(video_path, "wb") as f:

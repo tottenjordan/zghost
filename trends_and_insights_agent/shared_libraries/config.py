@@ -95,8 +95,8 @@ class AudioConfiguration:
     # Chirp voice model
     chirp_model: str = "models/chirp-3-hd"  # Latest Chirp 3 HD model
 
-    # Lyria music model
-    lyria_model: str = "models/music-lyria-1"
+    # Lyria music model (Lyria 2 via Vertex AI predict endpoint)
+    lyria_model: str = "lyria-002"
 
     # Quick access to popular voice/music combinations
     quick_styles: Dict[str, Dict[str, Any]] = None

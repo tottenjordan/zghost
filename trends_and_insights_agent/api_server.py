@@ -16,7 +16,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any, AsyncIterator, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from google.adk.artifacts import GcsArtifactService
@@ -825,6 +825,242 @@ async def proxy_gcs_media(uri: str = Query(..., description="GCS URI (gs://bucke
     except Exception as e:
         logger.error(f"Media proxy error for {uri}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch media: {str(e)}")
+
+
+# ── Studio: Voice & Music Generation ──────────────────────────────
+
+
+@app.post("/api/v1/studio/voice/generate")
+async def studio_generate_voice(request: Request):
+    """Generate a voice-over sample using Chirp TTS.
+
+    Body: {
+        "script": "...",
+        "voice_style": "warm_female",
+        "speaking_rate": 1.0,
+        "pitch": 0.0,
+        "session_id": "..." (optional — used for GCS folder)
+    }
+    """
+    body = await request.json()
+    script = body.get("script", "")
+    voice_style = body.get("voice_style", "professional_female")
+    speaking_rate = float(body.get("speaking_rate", 1.0))
+    pitch = float(body.get("pitch", 0.0))
+    session_id = body.get("session_id")
+
+    if not script:
+        raise HTTPException(status_code=400, detail="script is required")
+
+    try:
+        from google.cloud import texttospeech
+
+        CHIRP_VOICES = {
+            "professional_male": {"language_code": "en-US", "name": "en-US-Chirp3-HD-Charon"},
+            "professional_female": {"language_code": "en-US", "name": "en-US-Chirp3-HD-Aoede"},
+            "energetic_male": {"language_code": "en-US", "name": "en-US-Chirp3-HD-Puck"},
+            "warm_female": {"language_code": "en-US", "name": "en-US-Chirp3-HD-Kore"},
+            "british_male": {"language_code": "en-GB", "name": "en-GB-Chirp3-HD-Achird"},
+            "british_female": {"language_code": "en-GB", "name": "en-GB-Chirp3-HD-Aoede"},
+        }
+
+        if voice_style not in CHIRP_VOICES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown voice_style: {voice_style}. Valid: {list(CHIRP_VOICES.keys())}",
+            )
+
+        voice_config = CHIRP_VOICES[voice_style]
+
+        def _generate():
+            tts = texttospeech.TextToSpeechClient()
+            ssml = f'<speak><prosody rate="{speaking_rate}" pitch="{pitch:+.1f}st">{script}</prosody></speak>'
+            response = tts.synthesize_speech(
+                request=texttospeech.SynthesizeSpeechRequest(
+                    input=texttospeech.SynthesisInput(ssml=ssml),
+                    voice=texttospeech.VoiceSelectionParams(
+                        language_code=voice_config["language_code"],
+                        name=voice_config["name"],
+                    ),
+                    audio_config=texttospeech.AudioConfig(
+                        audio_encoding=texttospeech.AudioEncoding.MP3,
+                        sample_rate_hertz=48000,
+                    ),
+                )
+            )
+            return response.audio_content
+
+        audio_bytes = await asyncio.to_thread(_generate)
+
+        if not audio_bytes or len(audio_bytes) < 100:
+            raise HTTPException(status_code=500, detail="TTS returned empty audio")
+
+        # Save to GCS
+        import uuid as _uuid
+        from .shared_libraries.utils import upload_blob_to_gcs
+
+        safe_style = voice_style.replace(" ", "_")
+        filename = f"voiceover_{safe_style}_{str(_uuid.uuid4())[:8]}.mp3"
+
+        local_dir = "session_media/av_studio/voiceover"
+        os.makedirs(local_dir, exist_ok=True)
+        local_path = os.path.join(local_dir, filename)
+        with open(local_path, "wb") as f:
+            f.write(audio_bytes)
+
+        bucket_name = os.environ.get("BUCKET", "").replace("gs://", "")
+        gcs_folder = "studio_samples"
+        if session_id:
+            # Try to get gcs_folder from session state
+            try:
+                session = await asyncio.to_thread(
+                    lambda: app_state.runner.session_service.get_session(
+                        app_name=SESSION_APP_NAME, user_id="default-user", session_id=session_id,
+                    )
+                )
+                if session and session.state:
+                    gcs_folder = session.state.get("gcs_folder", gcs_folder)
+            except Exception:
+                pass
+
+        destination_blob = f"{gcs_folder}/av_studio/voiceover/{filename}"
+        await asyncio.to_thread(
+            lambda: upload_blob_to_gcs(source_file_name=local_path, destination_blob_name=destination_blob)
+        )
+
+        gcs_uri = f"gs://{bucket_name}/{destination_blob}"
+        duration_seconds = round((len(audio_bytes) * 8) / 128000, 1)
+
+        logger.info(f"Studio voice sample generated: {gcs_uri} ({len(audio_bytes)} bytes, ~{duration_seconds}s)")
+
+        return {
+            "status": "ok",
+            "gcs_uri": gcs_uri,
+            "duration_seconds": duration_seconds,
+            "voice_style": voice_style,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Studio voice generation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/studio/music/generate")
+async def studio_generate_music(request: Request):
+    """Generate a music sample using Lyria.
+
+    Body: {
+        "prompt": "...",
+        "duration_seconds": 30,
+        "genre": "indie folk",
+        "mood": "warm",
+        "instruments": "acoustic guitar and piano",
+        "session_id": "..." (optional)
+    }
+    """
+    body = await request.json()
+    prompt = body.get("prompt", "")
+    duration_seconds = int(body.get("duration_seconds", 30))
+    genre = body.get("genre", "upbeat pop")
+    mood = body.get("mood", "energetic")
+    instruments = body.get("instruments", "synth pads")
+    session_id = body.get("session_id")
+
+    if not prompt:
+        raise HTTPException(status_code=400, detail="prompt is required")
+
+    try:
+        import base64 as _b64
+        import uuid as _uuid
+        import google.auth
+        import google.auth.transport.requests
+        import requests as _requests
+        from .shared_libraries.utils import upload_blob_to_gcs
+        from .shared_libraries.config import audio_config as _config
+
+        full_prompt = (
+            f"{genre} soundtrack, {mood} mood, featuring {instruments}. "
+            f"{prompt}"
+        )
+        negative_prompt = "vocals, lyrics, singing, speech, voice"
+
+        def _generate():
+            credentials, _ = google.auth.default()
+            credentials.refresh(google.auth.transport.requests.Request())
+
+            project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
+            location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+            endpoint = (
+                f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}"
+                f"/locations/{location}/publishers/google/models/{_config.lyria_model}:predict"
+            )
+
+            payload = {
+                "instances": [{"prompt": full_prompt}],
+                "parameters": {"negative_prompt": negative_prompt},
+            }
+
+            headers = {"Authorization": f"Bearer {credentials.token}", "Content-Type": "application/json"}
+            resp = _requests.post(endpoint, headers=headers, json=payload, timeout=120)
+            resp.raise_for_status()
+
+            result = resp.json()
+            predictions = result.get("predictions", [])
+            if not predictions:
+                return None
+            return _b64.b64decode(predictions[0]["bytesBase64Encoded"])
+
+        audio_bytes = await asyncio.to_thread(_generate)
+
+        if not audio_bytes or len(audio_bytes) < 1000:
+            raise HTTPException(status_code=500, detail="Lyria 2 returned no audio or audio too small")
+
+        filename = f"soundtrack_{genre.replace(' ', '_')}_{str(_uuid.uuid4())[:8]}.wav"
+
+        local_dir = "session_media/av_studio/music"
+        os.makedirs(local_dir, exist_ok=True)
+        local_path = os.path.join(local_dir, filename)
+        with open(local_path, "wb") as f:
+            f.write(audio_bytes)
+
+        bucket_name = os.environ.get("BUCKET", "").replace("gs://", "")
+        gcs_folder = "studio_samples"
+        if session_id:
+            try:
+                session = await asyncio.to_thread(
+                    lambda: app_state.runner.session_service.get_session(
+                        app_name=SESSION_APP_NAME, user_id="default-user", session_id=session_id,
+                    )
+                )
+                if session and session.state:
+                    gcs_folder = session.state.get("gcs_folder", gcs_folder)
+            except Exception:
+                pass
+
+        destination_blob = f"{gcs_folder}/av_studio/music/{filename}"
+        await asyncio.to_thread(
+            lambda: upload_blob_to_gcs(source_file_name=local_path, destination_blob_name=destination_blob)
+        )
+
+        gcs_uri = f"gs://{bucket_name}/{destination_blob}"
+
+        logger.info(f"Studio music sample generated (Lyria 2): {gcs_uri} ({len(audio_bytes)} bytes)")
+
+        return {
+            "status": "ok",
+            "gcs_uri": gcs_uri,
+            "duration_seconds": duration_seconds,
+            "genre": genre,
+            "mood": mood,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Studio music generation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/v1/sessions/{session_id}/export")
