@@ -200,7 +200,7 @@ research_orchestrator = Agent(
     **Objective:** Your task is to facilitate several research tasks and produce a draft research report.
 
     **Workflow:**
-    1. First, use the `combined_research_pipeline` tool (agent tool) to conduct web research on the campaign metadata and selected trends.
+    1. First, transfer to the `combined_research_pipeline` sub-agent to conduct web research on the campaign metadata and selected trends. It will run all research steps automatically.
     2. Once all research tasks are complete, use the `save_draft_report_artifact` tool to save a PDF draft of the research.
     3. Finally, transfer back to the `root_agent`.
 
@@ -208,9 +208,9 @@ research_orchestrator = Agent(
     tools=[
         save_draft_report_artifact,
         recall_prior_insights,
-        AgentTool(agent=combined_research_pipeline),
         _skill_toolset,
     ],
+    sub_agents=[combined_research_pipeline],
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )

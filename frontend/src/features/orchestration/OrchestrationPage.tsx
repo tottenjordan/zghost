@@ -194,10 +194,10 @@ export function OrchestrationPage() {
 
         const hasTrends = selectedSearchTrends.length > 0 && selectedYtTrends.length > 0;
         const trendSkipNote = hasTrends
-          ? ' Campaign metadata and trends are already configured in session state — skip trend-discovery and proceed directly to market research.'
+          ? ' Trends are already configured in session state. Begin with market research — transfer to research_orchestrator immediately. Every step is mandatory.'
           : '';
         const autopilotNote = autopilot
-          ? ' Use auto-select mode for trends, approve all outputs automatically, and proceed through all steps without pausing for user confirmation.'
+          ? ' Approve all outputs automatically and proceed through all steps without pausing for user confirmation.'
           : '';
         const pipelineMessage = `Start the full pipeline, producing a ${commercialDuration}-second commercial.${trendSkipNote}${autopilotNote}${rubricGuidance}`;
 
@@ -266,31 +266,35 @@ export function OrchestrationPage() {
   }, [sessionId, addEvent]);
 
   // Reconnect to running session after page reload / frontend restart
+  // Skip for sessions loaded from Vertex backend — they should show historical events only
   useEffect(() => {
-    if (!sessionId || !isRunning) return;
-    // If we have a sessionId + running status but no active stream,
-    // try to reconnect with a proper pipeline start message
-    if (!streamUrl) {
-      api.getSessionState(sessionId).then((state) => {
-        // Build a context-aware reconnect message (same as handleStart)
-        const hasTrends = (selectedSearchTrends.length > 0 && selectedYtTrends.length > 0)
-          || state?.target_search_trends || state?.target_yt_trends;
-        const trendSkipNote = hasTrends
-          ? ' Campaign metadata and trends are already configured in session state — skip trend-discovery and proceed directly to market research.'
-          : '';
-        const autopilotNote = autopilot
-          ? ' Use auto-select mode for trends, approve all outputs automatically, and proceed through all steps without pausing for user confirmation.'
-          : '';
-        const reconnectMessage = `Start the full pipeline, producing a ${commercialDuration}-second commercial.${trendSkipNote}${autopilotNote}`;
-        const url = api.getStreamUrl(sessionId, reconnectMessage, USER_ID);
-        setStreamUrl(url);
-      }).catch(() => {
-        // Session doesn't exist on the server — reset to idle
-        setPipelineStatus('idle');
-        setSessionId(null);
-      });
+    if (!sessionId || !isRunning || streamUrl) return;
+    // Don't auto-reconnect sessions that came from backend (could restart a completed pipeline)
+    const currentSession = sessions.find(s => s.sessionId === sessionId);
+    if (currentSession?.fromBackend) {
+      // Session was loaded from Vertex — just show it as completed, don't restart
+      setPipelineStatus('completed');
+      return;
     }
-  }, [sessionId, isRunning, streamUrl, selectedSearchTrends, selectedYtTrends, autopilot, commercialDuration, setPipelineStatus, setSessionId]);
+    api.getSessionState(sessionId).then((state) => {
+      // Build a context-aware reconnect message (same as handleStart)
+      const hasTrends = (selectedSearchTrends.length > 0 && selectedYtTrends.length > 0)
+        || state?.target_search_trends || state?.target_yt_trends;
+      const trendSkipNote = hasTrends
+        ? ' Trends are already configured in session state. Begin with market research — transfer to research_orchestrator immediately. Every step is mandatory.'
+        : '';
+      const autopilotNote = autopilot
+        ? ' Approve all outputs automatically and proceed through all steps without pausing for user confirmation.'
+        : '';
+      const reconnectMessage = `Start the full pipeline, producing a ${commercialDuration}-second commercial.${trendSkipNote}${autopilotNote}`;
+      const url = api.getStreamUrl(sessionId, reconnectMessage, USER_ID);
+      setStreamUrl(url);
+    }).catch(() => {
+      // Session doesn't exist on the server — reset to idle
+      setPipelineStatus('idle');
+      setSessionId(null);
+    });
+  }, [sessionId, isRunning, streamUrl, sessions, selectedSearchTrends, selectedYtTrends, autopilot, commercialDuration, setPipelineStatus, setSessionId]);
 
   // Listen for voice-action events to switch tabs
   useEffect(() => {
@@ -365,10 +369,10 @@ export function OrchestrationPage() {
 
           const hasTrends = (nextSession.searchTrends?.length || 0) > 0 && (nextSession.ytTrends?.length || 0) > 0;
           const trendSkipNote = hasTrends
-            ? ' Campaign metadata and trends are already configured in session state — skip trend-discovery and proceed directly to market research.'
+            ? ' Trends are already configured in session state. Begin with market research — transfer to research_orchestrator immediately. Every step is mandatory.'
             : '';
           const autopilotNote = nextSession.autopilot
-            ? ' Use auto-select mode for trends, approve all outputs automatically, and proceed through all steps without pausing for user confirmation.'
+            ? ' Approve all outputs automatically and proceed through all steps without pausing for user confirmation.'
             : '';
           const pipelineMessage = `Start the full pipeline, producing a ${nextSession.commercialDuration || 30}-second commercial.${trendSkipNote}${autopilotNote}${rubricGuidance}`;
 

@@ -456,19 +456,25 @@ async def before_agent_get_user_file(
 async def save_session_to_memory_callback(callback_context: CallbackContext) -> None:
     """Save session data to memory bank after agent completes.
 
-    Checks for a memory_service on the invocation context and saves
-    the current session to memory if available.
+    Uses ADK memory_service when available (Agent Engine deployment),
+    otherwise falls back to the HTTP Memory Bank API (local dev).
     """
+    saved_native = False
     try:
         invocation_context = callback_context._invocation_context
         if hasattr(invocation_context, 'memory_service') and invocation_context.memory_service:
             session = invocation_context.session
             await invocation_context.memory_service.add_session_to_memory(session)
-            logging.info("Session saved to memory bank: %s", session.id)
+            logging.info("Session saved to memory bank (native): %s", session.id)
+            saved_native = True
         else:
-            logging.debug("No memory service available, skipping memory save")
+            logging.debug("No native memory service, falling back to HTTP Memory Bank API")
     except Exception as e:
-        logging.warning("Failed to save session to memory: %s", e)
+        logging.warning("Failed to save session to memory (native): %s", e)
+
+    # Always try the HTTP API for campaign insights (works in local dev + Cloud Run)
+    if not saved_native:
+        await save_campaign_insights_to_memory(callback_context)
 
 
 async def save_campaign_insights_to_memory(callback_context: CallbackContext) -> None:
@@ -507,15 +513,14 @@ async def save_campaign_insights_to_memory(callback_context: CallbackContext) ->
     if not facts:
         return
 
-    # Call Memory Bank API
+    # Call Memory Bank API — use /api/memories/populate for batch facts
     try:
         import aiohttp
-        scope = {"app_name": "trends_and_insights_agent", "user_id": "default-user"}
         async with aiohttp.ClientSession() as session:
             await session.post(
-                "http://localhost:8082/api/memories/create",
-                json={"scope": scope, "facts": facts},
-                timeout=aiohttp.ClientTimeout(total=10),
+                "http://localhost:8082/api/memories/populate",
+                json={"user_id": "default-user", "facts": facts},
+                timeout=aiohttp.ClientTimeout(total=30),
             )
         state["_insights_saved_to_memory"] = True
         logging.info(f"Saved {len(facts)} campaign insights to Memory Bank")

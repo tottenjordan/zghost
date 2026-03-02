@@ -130,21 +130,25 @@ def analyze_youtube_videos(
     if "youtube.com" not in youtube_url:
         return "Not a valid youtube URL"
     else:
-        video = types.Part.from_uri(
-            file_uri=youtube_url,
-            mime_type="video/*",
-        )
-        contents = types.Content(
-            role="user",
-            parts=[types.Part.from_text(text=prompt), video],
-        )
-        result = client.models.generate_content(
-            model=config.video_analysis_model,
-            contents=contents,
-            config=types.GenerateContentConfig(
-                temperature=0.1,
-            ),
-        )
-        if result and result.text is not None:
-
-            return result.text
+        try:
+            video = types.Part.from_uri(
+                file_uri=youtube_url,
+                mime_type="video/*",
+            )
+            contents = types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=prompt), video],
+            )
+            result = client.models.generate_content(
+                model=config.video_analysis_model,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    temperature=0.1,
+                ),
+            )
+            if result and result.text is not None:
+                return result.text
+            return "No analysis result returned for this video."
+        except Exception as e:
+            logging.warning(f"YouTube video analysis failed for {youtube_url}: {e}")
+            return f"Video analysis unavailable for this URL. Proceeding without video analysis."

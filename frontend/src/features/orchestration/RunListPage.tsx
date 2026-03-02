@@ -38,12 +38,21 @@ const STATUS_CONFIG: Record<RunStatus, { label: string; color: string; bgColor: 
   error: { label: 'Error', color: 'text-red-400', bgColor: 'bg-red-950/30', icon: XCircle },
 };
 
-/** Map backend status strings to RunStatus */
-function mapBackendStatus(status?: string | null): RunStatus {
+/** Map backend status strings to RunStatus.
+ *  Intermediate states (*_done, *_selected) are "running" only if the session
+ *  was updated within the last 30 minutes; otherwise treat as stale/completed.
+ */
+function mapBackendStatus(status?: string | null, lastUpdateEpochSec?: number): RunStatus {
   if (!status) return 'completed';
   if (status === 'running' || status === 'in_progress') return 'running';
   if (status === 'error' || status === 'failed') return 'error';
-  // All other states (completed, *_done, trends_selected, etc.) are completed
+  if (status === 'completed') return 'completed';
+  // Intermediate states — only treat as running if recently updated (< 30 min)
+  if (status.endsWith('_done') || status.endsWith('_selected')) {
+    const THIRTY_MIN_MS = 30 * 60 * 1000;
+    const updatedAt = lastUpdateEpochSec ? lastUpdateEpochSec * 1000 : 0;
+    return (Date.now() - updatedAt) < THIRTY_MIN_MS ? 'running' : 'completed';
+  }
   return 'completed';
 }
 
@@ -123,7 +132,7 @@ export function RunListPage() {
 
       // Build all new sessions in one pass, then merge atomically
       const newSessions: PipelineSession[] = result.sessions.map((summary) => {
-        const backendStatus = mapBackendStatus(summary.status);
+        const backendStatus = mapBackendStatus(summary.status, summary.last_update_time);
         const startedAt = summary.last_update_time
           ? summary.last_update_time * 1000
           : Date.now();
@@ -151,6 +160,9 @@ export function RunListPage() {
           hasCommercial: summary.has_commercial,
           imageCount: summary.image_count,
           videoCount: summary.video_count,
+          currentPhase: summary.status && summary.status !== 'completed'
+            ? summary.status.replace(/_/g, ' ')
+            : undefined,
           fromBackend: true,
         };
       });

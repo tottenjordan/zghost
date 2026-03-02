@@ -45,8 +45,10 @@ export function useOrchestration(sessionId: string | null, streamUrl: string | n
       return;
     }
 
-    // Don't hydrate if we have a live stream or already hydrated this session
-    if (streamUrl || hydratedRef.current === sessionId) return;
+    // Don't re-hydrate the same session
+    if (hydratedRef.current === sessionId) return;
+    // If we have a live stream that's already producing events, skip hydration
+    if (streamUrl && streamEvents.length > 0) return;
 
     hydratedRef.current = sessionId;
 

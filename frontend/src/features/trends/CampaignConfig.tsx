@@ -48,6 +48,24 @@ const PRESETS = [
       key_selling_points: 'Dynamic Air technology, bold colorways, all-day comfort, street-to-gym versatility',
     },
   },
+  {
+    label: 'Subaru Crossover',
+    config: {
+      brand: 'Subaru',
+      target_product: 'Crossover',
+      target_audience: 'Dog owners and dog lovers who treat their pets like family',
+      key_selling_points: 'Spacious cargo area for dogs, all-wheel drive for adventures, pet-friendly interior materials, safety features to protect your best friend',
+    },
+  },
+  {
+    label: 'Pepsi Sweaters',
+    config: {
+      brand: 'Pepsi',
+      target_product: 'Sweaters',
+      target_audience: 'Millennials who love cozy fashion and bold brand collaborations',
+      key_selling_points: 'Limited-edition Pepsi branded sweaters, bold retro design, ultra-soft premium knit, the really hot sweater of the season',
+    },
+  },
 ];
 
 export function CampaignConfig({ sessionState, onSave }: CampaignConfigProps) {

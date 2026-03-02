@@ -219,8 +219,8 @@ export function EventStream({
           </div>
         ) : (
           events.map((event, index) => {
-            const Icon = eventTypeIcons[event.type];
-            const color = eventTypeColors[event.type];
+            const Icon = eventTypeIcons[event.type] || MessageSquare;
+            const color = eventTypeColors[event.type] || 'text-zinc-400';
             const isExpanded = expandedEvents.has(index);
             const expandable = hasMoreContent(event);
 

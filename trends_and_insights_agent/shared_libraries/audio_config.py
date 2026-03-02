@@ -42,7 +42,7 @@ VOICE_PRESETS = {
     "tech_authority_male": VoicePreset(
         name="Tech Authority Male",
         description="Confident, knowledgeable tech narrator",
-        voice_id="en-US-Chirp-M",
+        voice_id="en-US-Chirp3-HD-Charon",
         language_code="en-US",
         speaking_rate=0.95,
         pitch=-1.0,
@@ -54,7 +54,7 @@ VOICE_PRESETS = {
     "lifestyle_warm_female": VoicePreset(
         name="Lifestyle Warm Female",
         description="Friendly, relatable lifestyle narrator",
-        voice_id="en-US-Chirp-F",
+        voice_id="en-US-Chirp3-HD-Aoede",
         language_code="en-US",
         speaking_rate=1.0,
         pitch=0.5,
@@ -66,7 +66,7 @@ VOICE_PRESETS = {
     "gen_z_energetic_male": VoicePreset(
         name="Gen Z Energetic Male",
         description="Young, dynamic voice for youth markets",
-        voice_id="en-US-Chirp-M",
+        voice_id="en-US-Chirp3-HD-Charon",
         language_code="en-US",
         speaking_rate=1.15,
         pitch=2.0,
@@ -78,7 +78,7 @@ VOICE_PRESETS = {
     "millennial_confident_female": VoicePreset(
         name="Millennial Confident Female",
         description="Modern, empowered female voice",
-        voice_id="en-US-Chirp-F",
+        voice_id="en-US-Chirp3-HD-Aoede",
         language_code="en-US",
         speaking_rate=1.05,
         pitch=1.0,
@@ -90,7 +90,7 @@ VOICE_PRESETS = {
     "luxury_british_male": VoicePreset(
         name="Luxury British Male",
         description="Sophisticated British accent for premium brands",
-        voice_id="en-GB-Chirp-M",
+        voice_id="en-GB-Chirp3-HD-Achird",
         language_code="en-GB",
         speaking_rate=0.9,
         pitch=-2.0,
@@ -102,7 +102,7 @@ VOICE_PRESETS = {
     "approachable_british_female": VoicePreset(
         name="Approachable British Female",
         description="Intelligent, trustworthy British female voice",
-        voice_id="en-GB-Chirp-F",
+        voice_id="en-GB-Chirp3-HD-Aoede",
         language_code="en-GB",
         speaking_rate=0.95,
         pitch=-0.5,
@@ -114,7 +114,7 @@ VOICE_PRESETS = {
     "family_friendly_female": VoicePreset(
         name="Family Friendly Female",
         description="Warm, maternal voice for family-oriented content",
-        voice_id="en-US-Chirp-F",
+        voice_id="en-US-Chirp3-HD-Aoede",
         language_code="en-US",
         speaking_rate=0.95,
         pitch=0,
@@ -126,7 +126,7 @@ VOICE_PRESETS = {
     "sports_enthusiast_male": VoicePreset(
         name="Sports Enthusiast Male",
         description="Dynamic, motivational sports narrator",
-        voice_id="en-US-Chirp-M",
+        voice_id="en-US-Chirp3-HD-Charon",
         language_code="en-US",
         speaking_rate=1.1,
         pitch=0.5,

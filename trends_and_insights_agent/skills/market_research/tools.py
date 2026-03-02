@@ -97,11 +97,10 @@ async def recall_prior_insights(tool_context: ToolContext, query: str) -> dict:
     """
     try:
         import aiohttp
-        scope = {"app_name": "trends_and_insights_agent", "user_id": "default-user"}
+        from urllib.parse import quote
         async with aiohttp.ClientSession() as session:
-            resp = await session.post(
-                "http://localhost:8082/api/memories/retrieve",
-                json={"scope": scope, "query": query},
+            resp = await session.get(
+                f"http://localhost:8082/api/memories?user_id=default-user&query={quote(query)}",
                 timeout=aiohttp.ClientTimeout(total=10),
             )
             if resp.status == 200:

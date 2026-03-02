@@ -152,8 +152,8 @@ class AppState:
         # Rubrics storage: rubric_id -> RubricResponse
         self.rubrics: Dict[str, RubricResponse] = {}
         # Concurrency control
-        self.max_concurrent_runs: int = 2
-        self.concurrency_limiter: DynamicConcurrencyLimiter = DynamicConcurrencyLimiter(2)
+        self.max_concurrent_runs: int = 4
+        self.concurrency_limiter: DynamicConcurrencyLimiter = DynamicConcurrencyLimiter(4)
         self.active_runs: Dict[str, str] = {}  # session_id -> user_id
         # Evaluation results storage: eval_id -> dict
         self.eval_results: Dict[str, dict] = {}
@@ -617,12 +617,10 @@ async def create_session(request: SessionCreateRequest):
         if merged_state.get("brand") or merged_state.get("target_product"):
             try:
                 import aiohttp
-                query = f"{merged_state.get('brand', '')} {merged_state.get('target_product', '')}"
-                scope = {"app_name": "trends_and_insights_agent", "user_id": user_id}
+                query = f"{merged_state.get('brand', '')} {merged_state.get('target_product', '')}".strip()
                 async with aiohttp.ClientSession() as http_session:
-                    resp = await http_session.post(
-                        "http://localhost:8082/api/memories/retrieve",
-                        json={"scope": scope, "query": query.strip()},
+                    resp = await http_session.get(
+                        f"http://localhost:8082/api/memories?user_id={user_id}&query={query}",
                         timeout=aiohttp.ClientTimeout(total=5),
                     )
                     if resp.status == 200:

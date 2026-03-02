@@ -242,7 +242,7 @@ export class OrchestrationPage {
         // the agent has been idle (no new events) for 30+ seconds.
         let stableChecks = 0;
         const stableCount = status.count;
-        while (stableChecks < 3 && !stopSignal.stopped) {
+        while (stableChecks < 5 && !stopSignal.stopped) {
           await this.page.waitForTimeout(10_000);
           const recheck = await this.getEventStatus(sessionId);
           if (recheck.count > stableCount) {
@@ -254,12 +254,12 @@ export class OrchestrationPage {
           stableChecks++;
         }
 
-        if (stableChecks < 3 || stopSignal.stopped) {
+        if (stableChecks < 5 || stopSignal.stopped) {
           // Agent auto-continued or we stopped — loop back
           continue;
         }
 
-        // Agent has been idle for 30s — send approval
+        // Agent has been idle for 30s — send state-aware approval
         // Throttle: minimum 60s between approvals
         const now = Date.now();
         const sinceLast = now - lastApprovalTime;
@@ -267,9 +267,46 @@ export class OrchestrationPage {
           await this.page.waitForTimeout(60_000 - sinceLast);
         }
 
-        console.log(`[auto-approve] Sending approval at ${new Date().toISOString()} (events: ${status.count})`);
+        // Check session state to determine which approval message to send
+        let approvalMsg = 'Continue with the current pipeline step. Do not skip any mandatory steps.';
+        try {
+          const stateUrl = `/api/v1/sessions/${sessionId}/state?user_id=default-user`;
+          const stateResp = await this.page.request.get(stateUrl);
+          if (stateResp.ok()) {
+            const stateBody = await stateResp.json();
+            const st = stateBody?.state ?? stateBody;
+            const hasReport = st?.combined_final_cited_report && String(st.combined_final_cited_report).trim().length > 0;
+            const imgKeys = st?.img_artifact_keys?.img_artifact_keys;
+            const hasImages = Array.isArray(imgKeys) && imgKeys.length > 0;
+            const vidKeys = st?.vid_artifact_keys?.vid_artifact_keys;
+            const hasVideos = Array.isArray(vidKeys) && vidKeys.length > 0;
+            const hasCommercial = st?.commercial_artifact && (
+              typeof st.commercial_artifact === 'string'
+                ? st.commercial_artifact.trim().length > 0
+                : !!st.commercial_artifact?.artifact_key
+            );
+
+            if (!hasReport) {
+              // Research is still running — DO NOT send any message.
+              // Sending a message starts a NEW run that interferes with the ongoing pipeline.
+              console.log(`[auto-approve] Research not complete yet — skipping approval to avoid interference`);
+              continue;
+            } else if (!hasImages) {
+              approvalMsg = 'Research is complete. Continue with ad creative — generate images and videos.';
+            } else if (!hasCommercial) {
+              approvalMsg = 'Continue with AV production — assemble the commercial.';
+            } else {
+              approvalMsg = 'Commercial is ready. Continue with any remaining steps.';
+            }
+            console.log(`[auto-approve] State check: report=${!!hasReport}, images=${!!hasImages}, videos=${!!hasVideos}, commercial=${!!hasCommercial}`);
+          }
+        } catch (err) {
+          console.log(`[auto-approve] State check failed, using generic message: ${err}`);
+        }
+
+        console.log(`[auto-approve] Sending approval at ${new Date().toISOString()} (events: ${status.count}): "${approvalMsg.substring(0, 60)}..."`);
         lastApprovalTime = Date.now();
-        await this.sendMessageDirect(sessionId, 'Looks good, proceed with all options.');
+        await this.sendMessageDirect(sessionId, approvalMsg);
 
         // Update known event count from what the stream produced
         const afterStatus = await this.getEventStatus(sessionId);

@@ -67,32 +67,32 @@ tts_client = texttospeech.TextToSpeechClient()
 CHIRP_VOICES = {
     "professional_male": {
         "language_code": "en-US",
-        "name": "en-US-Chirp-M",  # Male voice
+        "name": "en-US-Chirp3-HD-Charon",  # Male voice
         "description": "Professional, confident male narrator"
     },
     "professional_female": {
         "language_code": "en-US",
-        "name": "en-US-Chirp-F",  # Female voice
+        "name": "en-US-Chirp3-HD-Aoede",  # Female voice
         "description": "Professional, warm female narrator"
     },
     "energetic_male": {
         "language_code": "en-US",
-        "name": "en-US-Chirp-M",
+        "name": "en-US-Chirp3-HD-Charon",
         "description": "Upbeat, energetic male voice for youth-oriented ads"
     },
     "warm_female": {
         "language_code": "en-US",
-        "name": "en-US-Chirp-F",
+        "name": "en-US-Chirp3-HD-Aoede",
         "description": "Warm, friendly female voice for lifestyle brands"
     },
     "british_male": {
         "language_code": "en-GB",
-        "name": "en-GB-Chirp-M",
+        "name": "en-GB-Chirp3-HD-Achird",
         "description": "Sophisticated British male accent"
     },
     "british_female": {
         "language_code": "en-GB",
-        "name": "en-GB-Chirp-F",
+        "name": "en-GB-Chirp3-HD-Aoede",
         "description": "Sophisticated British female accent"
     },
 }
