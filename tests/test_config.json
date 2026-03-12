@@ -1,0 +1,42 @@
+{
+  "criteria": {
+    "tool_trajectory_avg_score": {
+      "threshold": 0.8,
+      "match_type": "IN_ORDER"
+    },
+    "response_match_score": 0.6,
+    "rubric_based_final_response_quality_v1": {
+      "threshold": 0.7,
+      "judge_model_options": {
+        "judge_model": "gemini-2.5-flash",
+        "num_samples": 3
+      },
+      "rubrics": [
+        {
+          "rubric_id": "greeting_completeness",
+          "rubric_content": {
+            "text_property": "The agent greets the user and provides a clear overview of its capabilities including trend analysis, research, and ad creative generation."
+          },
+          "description": "Measures whether the agent provides a comprehensive introduction that sets user expectations for the multi-agent pipeline.",
+          "type": "FINAL_RESPONSE_QUALITY"
+        },
+        {
+          "rubric_id": "delegation_awareness",
+          "rubric_content": {
+            "text_property": "The agent indicates it will delegate to specialized sub-agents rather than performing tasks directly."
+          },
+          "description": "Measures whether the agent correctly communicates its orchestrator role and delegation pattern.",
+          "type": "INSTRUCTION_ADHERENCE"
+        },
+        {
+          "rubric_id": "action_guidance",
+          "rubric_content": {
+            "text_property": "The agent provides clear next-step guidance, asking the user for campaign information or a marketing guide."
+          },
+          "description": "Measures whether the agent gives actionable guidance for the user to proceed with the pipeline.",
+          "type": "FINAL_RESPONSE_QUALITY"
+        }
+      ]
+    }
+  }
+}

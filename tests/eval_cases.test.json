@@ -1,0 +1,127 @@
+{
+  "eval_set_id": "zghost-marketing-agent-v1",
+  "name": "Marketing Agent Core Capabilities",
+  "description": "Evaluates the root orchestrator agent's ability to greet users, explain capabilities, delegate correctly, and handle trend-related queries.",
+  "eval_cases": [
+    {
+      "eval_id": "greeting_and_overview",
+      "conversation": [
+        {
+          "invocation_id": "inv_greeting_01",
+          "user_content": {
+            "role": "user",
+            "parts": [{"text": "What can you do?"}]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [{"text": "I'm your AI Marketing Research & Strategy Assistant. I can help you with trend analysis from Google Search and YouTube, conduct web research for your campaigns, and generate ad creatives including images and videos. To get started, please share your marketing campaign guide or tell me about your product and target audience."}]
+          },
+          "intermediate_data": {
+            "tool_uses": [],
+            "tool_responses": []
+          },
+          "rubrics": [
+            {
+              "rubric_id": "greeting_mentions_subagents",
+              "rubric_content": {
+                "text_property": "The agent mentions its sub-capabilities such as trend discovery, web research, or ad creative generation."
+              },
+              "description": "Case-specific: checks that the greeting references the multi-agent sub-capabilities.",
+              "type": "FINAL_RESPONSE_QUALITY"
+            }
+          ]
+        }
+      ],
+      "session_input": {
+        "app_name": "trends_and_insights_agent",
+        "user_id": "eval_user_01",
+        "state": {}
+      }
+    },
+    {
+      "eval_id": "trend_discovery_delegation",
+      "conversation": [
+        {
+          "invocation_id": "inv_trend_01",
+          "user_content": {
+            "role": "user",
+            "parts": [{"text": "I want to see what's trending on Google and YouTube for athletic shoes."}]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [{"text": "I'll help you discover trends related to athletic shoes. Let me transfer you to the trends and insights agent to find the latest Google Search trends and trending YouTube videos."}]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "transfer_to_agent",
+                "args": {"agent_name": "trends_and_insights_agent"}
+              }
+            ],
+            "tool_responses": []
+          },
+          "rubrics": [
+            {
+              "rubric_id": "trend_topic_acknowledged",
+              "rubric_content": {
+                "text_property": "The agent acknowledges the user's topic of interest (athletic shoes) in its response."
+              },
+              "description": "Case-specific: checks that the agent reflects the user's topic back.",
+              "type": "FINAL_RESPONSE_QUALITY"
+            }
+          ]
+        }
+      ],
+      "session_input": {
+        "app_name": "trends_and_insights_agent",
+        "user_id": "eval_user_02",
+        "state": {
+          "brand": "Nike",
+          "target_product": "Air Max 270",
+          "key_selling_points": ["lightweight cushioning", "breathable mesh", "iconic design"],
+          "target_audience": ["18-35 year old sneaker enthusiasts", "fitness-focused millennials"]
+        }
+      }
+    },
+    {
+      "eval_id": "campaign_context_handling",
+      "conversation": [
+        {
+          "invocation_id": "inv_campaign_01",
+          "user_content": {
+            "role": "user",
+            "parts": [{"text": "Hello, I need help creating a marketing campaign for the new Google Pixel 9 phone targeting tech-savvy millennials in the US."}]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [{"text": "Great! I'd be happy to help you create a marketing campaign for the Google Pixel 9 targeting tech-savvy millennials in the US. Let me start by finding some trending topics on Google and YouTube that might be relevant. I'll transfer you to our trend discovery agent to explore what's currently popular."}]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "transfer_to_agent",
+                "args": {"agent_name": "trends_and_insights_agent"}
+              }
+            ],
+            "tool_responses": []
+          },
+          "rubrics": [
+            {
+              "rubric_id": "campaign_details_reflected",
+              "rubric_content": {
+                "text_property": "The agent acknowledges specific campaign details provided by the user such as product name, target audience, or target region."
+              },
+              "description": "Case-specific: checks that the agent reflects back the campaign context (Pixel 9, millennials, US).",
+              "type": "FINAL_RESPONSE_QUALITY"
+            }
+          ]
+        }
+      ],
+      "session_input": {
+        "app_name": "trends_and_insights_agent",
+        "user_id": "eval_user_03",
+        "state": {}
+      }
+    }
+  ]
+}
