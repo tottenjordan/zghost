@@ -13,7 +13,7 @@ from trends_and_insights_agent import agent
 
 env_vars = {  "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY": "true",
   "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT": "true",
-  # "GOOGLE_CLOUD_LOCATION": "global" #for gemini 3 endpoints
+  "GOOGLE_CLOUD_LOCATION": "global" #for gemini 3 endpoints
   }
 
 env_vars["GOOGLE_GENAI_USE_VERTEXAI"] = os.getenv("GOOGLE_GENAI_USE_VERTEXAI")
@@ -27,6 +27,10 @@ print(env_vars)
 my_agent = agent_engines.AdkApp(
     agent=agent.root_agent,
     enable_tracing=True,
+    # Configure GCS artifact storage so save_artifact/load_artifacts persist to GCS
+    artifact_service_builder=lambda: __import__("google.adk.artifacts", fromlist=["GcsArtifactService"]).GcsArtifactService(
+        bucket_name=os.getenv("BUCKET", "gs://zghost-media-center").replace("gs://", "")
+    ),
     # Configure Memory Bank to use a specific Agent Engine ID if provided
     memory_service_builder=lambda: __import__("google.adk.memory.vertex_ai_memory_bank_service", fromlist=["VertexAiMemoryBankService"]).VertexAiMemoryBankService(
         project=os.getenv("GOOGLE_CLOUD_PROJECT"),
@@ -34,6 +38,20 @@ my_agent = agent_engines.AdkApp(
         agent_engine_id=os.getenv("MEMORY_BANK_AGENT_ENGINE_ID")
     ) if os.getenv("MEMORY_BANK_AGENT_ENGINE_ID") else None
 )
+
+# Patch AdkApp to filter out unsupported 'async' operations for this SDK version
+_original_register_operations = my_agent.register_operations
+def patched_register_operations():
+    ops = _original_register_operations()
+    # Explicitly filter out any key that contains 'async' or has 'async' in its api_mode
+    filtered_ops = {
+        k: v for k, v in ops.items() 
+        if k in ["", "stream", "query", "stream_query"] 
+        and v.get("api_mode") in ["", "stream"]
+    }
+    print(f"DEBUG: Registered operations: {list(filtered_ops.keys())}")
+    return filtered_ops
+my_agent.register_operations = patched_register_operations
 
 # deploy the app
 
@@ -48,7 +66,7 @@ client = vertexai.Client(
 
 remote_agent = client.agent_engines.create(
     agent=my_agent,
-    config=dict(display_name="trends-and-insights-2026-01-15",
+    config=dict(display_name="ralph-wiggum",
                 
     description="You are a helpful AI assistant, part of a multi-agent system designed for advanced web research and ad creative generation.",
     requirements=[
@@ -81,5 +99,5 @@ remote_agent = client.agent_engines.create(
     # },
 ))
 
-print(f"Deployed Agent Resource Name: {remote_agent.name}")
-print(f"Deployed Agent Resource Name (ID): {remote_agent.name.split('/')[-1]}")
+print(f"Deployed Agent Resource Name: {remote_agent.api_resource.name}")
+print(f"Deployed Agent Resource Name (ID): {remote_agent.api_resource.name.split('/')[-1]}")
