@@ -16,6 +16,12 @@ gs_web_planner = Agent(
     name="gs_web_planner",
     include_contents="none",
     description="Generates initial queries to understand why the 'target_search_trends' are trending.",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
+    ),
     instruction="""You are a research strategist. 
     Your job is to create high-level queries that will help marketers better understand the cultural significance of Google Search trends in the 'target_search_trends' state key.
 
@@ -40,6 +46,9 @@ gs_web_planner = Agent(
     **CRITICAL RULE: Your output should just include a numbered list of queries. Nothing else.**
     """,
     output_key="initial_gs_queries",
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -48,7 +57,10 @@ gs_web_searcher = Agent(
     name="gs_web_searcher",
     description="Performs the crucial first pass of web research about the trending Search terms.",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
     ),
     instruction="""
     You are a diligent and exhaustive researcher. 
@@ -59,6 +71,9 @@ gs_web_searcher = Agent(
     tools=[google_search],
     output_key="gs_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 

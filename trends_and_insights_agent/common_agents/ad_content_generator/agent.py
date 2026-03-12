@@ -28,7 +28,10 @@ ad_copy_drafter = Agent(
     name="ad_copy_drafter",
     description="Generate 10-12 initial ad copy ideas based on campaign guidelines and trends",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
     ),
     instruction="""You are a creative copywriter generating initial ad copy ideas.
 
@@ -78,6 +81,9 @@ ad_copy_drafter = Agent(
     ),
     tools=[google_search],
     output_key="ad_copy_draft",
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -86,7 +92,10 @@ ad_copy_critic = Agent(
     name="ad_copy_critic",
     description="Critique and narrow down ad copies based on product, audience, and trends",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
     ),
     instruction="""You are a strategic marketing critic evaluating ad copy ideas.
 
@@ -113,6 +122,9 @@ ad_copy_critic = Agent(
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     output_key="ad_copy_critique",
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -157,7 +169,10 @@ visual_concept_drafter = Agent(
     name="visual_concept_drafter",
     description="Generate initial visual concepts for selected ad copies",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
     ),
     instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
     
@@ -193,6 +208,9 @@ visual_concept_drafter = Agent(
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=1.5),
     output_key="visual_draft",
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -201,7 +219,10 @@ visual_concept_critic = Agent(
     name="visual_concept_critic",
     description="Critique and narrow down visual concepts",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
     ),
     instruction=f"""You are a creative director evaluating visual concepts and high quality prompts that result in high impact.
     
@@ -239,6 +260,9 @@ visual_concept_critic = Agent(
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     output_key="visual_concept_critique",
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -246,7 +270,12 @@ visual_concept_finalizer = Agent(
     model=config.worker_model,
     name="visual_concept_finalizer",
     description="Finalize visual concepts to proceed with.",
-    # planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
+    ),
     instruction="""You are a senior creative director finalizing visual concepts for ad creatives.
 
     1. Review the 'visual_concept_critique' state key to understand the refined visual concepts.
@@ -265,6 +294,9 @@ visual_concept_finalizer = Agent(
     """,
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
     output_key="final_visual_concepts",
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -284,31 +316,54 @@ visual_generator = Agent(
     model=config.critic_model,
     name="visual_generator",
     description="Generate final visuals using image and video generation tools",
-    instruction=f"""You are a visual content producer creating final assets.
-    
-    **Objective:** Generate visual content options (images and videos) based on the user-selected visual concepts.
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
+    ),
+    instruction=f"""You are a visual content producer creating final assets using the **Image-to-Video Reference Image** workflow.
+
+    **Objective:** For each visual concept, generate a keyframe image first, then use that image as a reference image to generate a video. This ensures visual consistency between the keyframe and the video.
+
+    **Creative Metadata Plumbing:**
+    For EVERY creative you generate (image or video), YOU MUST call the corresponding save tool (`save_img_artifact_key` or `save_vid_artifact_key`) with the mapping of the `artifact_key` to its full metadata (Headline, Caption, Rationale, etc.). This is CRITICAL for the final report.
+
+    **MANDATORY Image-to-Video Reference Image Workflow:**
+    For EVERY visual concept, you MUST follow this exact sequence:
+    1.  Call `generate_image` first to create a stunning, high-fidelity keyframe image.
+    2.  Call `save_img_artifact_key` with the image metadata.
+    3.  Use the returned `artifact_key` from step 1 as the `existing_image_filename` parameter in a subsequent `generate_video` call. This passes the keyframe as a **reference image** to guide video generation, ensuring the video maintains visual continuity with the keyframe.
+    4.  Call `save_vid_artifact_key` with the video metadata.
+
+    **IMPORTANT:** NEVER generate a video without first generating a keyframe image and passing it as `existing_image_filename`. The reference image workflow is REQUIRED for all video generation.
 
     **Available Tools:**
     - `generate_image`: Generate images using Google's Imagen model.
-    - `generate_video`: Generate videos using Google's Veo model.
+    - `generate_video`: Generate videos using Google's Veo model. Pass `existing_image_filename` to use a reference image.
+    - `save_img_artifact_key`: Save image artifact keys with metadata.
+    - `save_vid_artifact_key`: Save video artifact keys with metadata.
 
     **Instructions:**
-    1. For each user-selected visual concept in the 'final_select_vis_concepts' state key, generate the creative visual using the appropriate tool (`generate_image` or `generate_video`).
-        - For images, follow the instructions in the <IMAGE_GENERATION/> block, 
-        - For videos, follow the instructions in the <VIDEO_GENERATION/> block and consider prompting best practices in the <PROMPTING_BEST_PRACTICES/> block,
+    1. For each visual concept in the 'final_select_vis_concepts' state key:
+       a. Generate the keyframe image using `generate_image` with the Imagen prompt.
+       b. Save image metadata with `save_img_artifact_key`.
+       c. Generate the video using `generate_video`, passing the image's `artifact_key` as `existing_image_filename` and using the Veo prompt.
+       d. Save video metadata with `save_vid_artifact_key`.
+    2. Follow the image and video generation guidelines below.
 
     <IMAGE_GENERATION>
     - Create descriptive image prompts that visualize the ad copy concepts
     - Include subject, context/background, and style elements
     - Ensure prompts capture the essence of the trends and campaign highlights
-    - Generate diverse visual approaches (different styles, compositions, contexts)
+    - This image will serve as the keyframe reference for the video — make it high quality and representative of the final video's look
     </IMAGE_GENERATION>
 
     <VIDEO_GENERATION>
-    - Create dynamic video prompts that bring the ad copy to life
+    - Create dynamic video prompts that bring the keyframe image to life with motion
     - Include subject, context, action, style, and optional camera/composition elements
-    - Consider continuity with the image concepts when appropriate
-    - Vary the approaches (different actions, camera angles, moods)
+    - The video prompt should describe motion and action that naturally extends the keyframe image
+    - The `existing_image_filename` parameter ensures the video uses the keyframe as a reference image for visual consistency
     </VIDEO_GENERATION>
 
     <PROMPTING_BEST_PRACTICES>
@@ -318,15 +373,26 @@ visual_generator = Agent(
     tools=[
         generate_image,
         generate_video,
+        save_img_artifact_key,
+        save_vid_artifact_key,
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
     before_model_callback=callbacks.rate_limit_callback,
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 # Main orchestrator agent
 ad_content_generator_agent = Agent(
     model=config.lite_planner_model,
     name="ad_content_generator_agent",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
+    ),
     description="Help users with ad generation; brainstorm and refine ad copy and visual concept ideas with actor-critic workflows; iterate with the user to generate final ad creatives.",
     instruction=AD_CREATIVE_SUBAGENT_INSTR,
     tools=[
@@ -340,4 +406,7 @@ ad_content_generator_agent = Agent(
         load_artifacts,
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )

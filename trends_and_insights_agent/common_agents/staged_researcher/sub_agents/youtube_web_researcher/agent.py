@@ -16,6 +16,12 @@ yt_analysis_generator_agent = Agent(
     model=config.worker_model,
     name="yt_analysis_generator_agent",
     description="Process YouTube videos, extract key details, and provide an overall summary.",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
+    ),
     instruction="""
     Your goal is to **understand the content** of the trending YouTube video in the 'target_yt_trends' state key:
 
@@ -32,6 +38,9 @@ yt_analysis_generator_agent = Agent(
     """,
     tools=[analyze_youtube_videos],
     output_key="yt_video_analysis",
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -40,6 +49,12 @@ yt_web_planner = Agent(
     name="yt_web_planner",
     include_contents="none",
     description="Generates initial queries to understand why the 'target_yt_trends' are trending.",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
+    ),
     instruction="""You are a research strategist. 
     Your job is to create high-level queries that will help marketers better understand the cultural significance of the selected trending YouTube video(s) in the 'target_yt_trends' state key.
     
@@ -64,6 +79,9 @@ yt_web_planner = Agent(
     Your output should just include a numbered list of queries. Nothing else.
     """,
     output_key="initial_yt_queries",
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -72,7 +90,10 @@ yt_web_searcher = Agent(
     name="yt_web_searcher",
     description="Performs web research to better understand the context of the trending YouTube video.",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
     ),
     instruction="""
     You are a diligent and exhaustive researcher. 
@@ -83,6 +104,9 @@ yt_web_searcher = Agent(
     tools=[google_search],
     output_key="yt_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 

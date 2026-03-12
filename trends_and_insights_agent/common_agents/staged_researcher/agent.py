@@ -28,9 +28,12 @@ parallel_planner_agent = ParallelAgent(
 
 merge_planners = Agent(
     name="merge_planners",
-    model=config.worker_model,
-    # include_contents="none",
-    description="Combine results from state keys 'campaign_web_search_insights', 'gs_web_search_insights', and 'yt_web_search_insights'",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
+    ),
     instruction="""You are an AI Assistant responsible for combining initial research findings into a comprehensive summary.
     Your primary task is to organize the following research summaries, clearly attributing findings to their source areas. 
     Structure your response using headings for each topic. Ensure the report is coherent and integrates the key points smoothly.
@@ -52,6 +55,9 @@ merge_planners = Agent(
     Output *only* the structured report following this format. Do not include introductory or concluding phrases outside this structure, and strictly adhere to using only the provided input summary content.
     """,
     output_key="combined_web_search_insights",
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 merge_parallel_insights = SequentialAgent(
@@ -81,10 +87,19 @@ combined_web_evaluator = Agent(
     Your response must be a single, raw JSON object validating against the 'CampaignFeedback' schema.
     """,
     output_schema=schema_types.CampaignFeedback,
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
+    ),
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
     output_key="combined_research_evaluation",
     before_model_callback=callbacks.rate_limit_callback,
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -93,7 +108,10 @@ enhanced_combined_searcher = Agent(
     name="enhanced_combined_searcher",
     description="Executes follow-up searches and integrates new findings.",
     planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
     ),
     instruction="""
     You are a specialist researcher executing a refinement pass.
@@ -107,12 +125,21 @@ enhanced_combined_searcher = Agent(
     tools=[google_search],
     output_key="combined_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
 combined_report_composer = Agent(
     model=config.critic_model,
     name="combined_report_composer",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=1024,
+        )
+    ),
     include_contents="none",
     description="Transforms research data and a markdown outline into a final, cited report.",
     instruction="""
@@ -166,6 +193,9 @@ combined_report_composer = Agent(
     output_key="combined_final_cited_report",
     after_agent_callback=callbacks.citation_replacement_callback,
     before_model_callback=callbacks.rate_limit_callback,
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -204,8 +234,11 @@ research_orchestrator = Agent(
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             include_thoughts=True,
-            # thinking_budget=1024,
+            thinking_budget=1024,
         )
     ),
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )

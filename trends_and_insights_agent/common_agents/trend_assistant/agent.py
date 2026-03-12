@@ -31,10 +31,13 @@ trends_and_insights_agent = Agent(
         save_search_trends_to_session_state,
     ],
     before_agent_callback=callbacks._load_session_state,
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             include_thoughts=True,
-            # thinking_budget=1024,
+            thinking_budget=1024,
         )
     ),
     generate_content_config=types.GenerateContentConfig(

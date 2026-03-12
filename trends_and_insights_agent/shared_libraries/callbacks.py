@@ -8,12 +8,161 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
+from google import genai
 from google.genai import types
 from google.adk.sessions.state import State
 from google.adk.models.llm_request import LlmRequest
+from google.adk.models.llm_response import LlmResponse
 from google.adk.agents.callback_context import CallbackContext
+from google.adk.tools.base_tool import BaseTool
+from google.adk.tools import ToolContext
 
 from .config import config, setup_config
+
+ENABLE_LLM_STATUS = os.environ.get("ENABLE_LLM_STATUS", "true").lower() == "true"
+
+
+# ================================================================
+# ui:status_update callbacks for Gemini Enterprise status chips
+# ================================================================
+
+TOOL_STATUS_MESSAGES = {
+    "get_daily_gtrends": "Fetching today's Google Search trends...",
+    "get_youtube_trends": "Fetching trending YouTube videos...",
+    "google_search": "Searching the web for insights...",
+    "generate_image": "Generating image with Gemini...",
+    "generate_video": "Generating video with Veo (this may take a few minutes)...",
+    "save_draft_report_artifact": "Generating draft research report...",
+    "save_creatives_and_research_report": "Compiling final report...",
+    "combined_research_pipeline": "Starting research pipeline...",
+    "ad_creative_pipeline": "Starting ad copy generation...",
+    "visual_generation_pipeline": "Starting visual concept development...",
+    "visual_generator": "Generating images and videos...",
+    "transfer_to_agent": "Transferring to next agent...",
+    "load_artifacts": "Loading artifacts for display...",
+    "preload_memory": "Loading campaign memories...",
+}
+
+TOOL_DESCRIPTIONS = {
+    "get_daily_gtrends": "fetches today's trending Google Search topics",
+    "get_youtube_trends": "fetches currently trending YouTube videos",
+    "google_search": "searches the web for specific information",
+    "generate_image": "generates an image using AI",
+    "generate_video": "generates a video using AI",
+    "save_draft_report_artifact": "saves a draft research report as PDF",
+    "save_creatives_and_research_report": "compiles the final campaign report",
+    "analyze_youtube_videos": "analyzes YouTube video content",
+    "save_yt_trends_to_session_state": "saves selected YouTube trends",
+    "save_search_trends_to_session_state": "saves selected search trends",
+    "save_img_artifact_key": "saves image artifact metadata",
+    "save_vid_artifact_key": "saves video artifact metadata",
+    "save_select_ad_copy": "saves selected ad copy",
+    "save_select_visual_concept": "saves selected visual concept",
+    "memorize": "saves information to memory",
+    "load_artifacts": "loads saved artifacts for display",
+    "preload_memory": "loads campaign memories from memory bank",
+    "transfer_to_agent": "transfers control to another agent",
+    "combined_research_pipeline": "runs the full research pipeline",
+}
+
+
+def _sync_generate_contextual_status(tool_name: str, args: dict) -> str:
+    """Generate a contextual status message using a fast LLM call."""
+    try:
+        tool_desc = TOOL_DESCRIPTIONS.get(tool_name, f"runs {tool_name}")
+        context_hint = ""
+        for key in ("query", "prompt", "agent_name", "topic", "trend"):
+            if key in args:
+                context_hint = f" Context: {str(args[key])[:100]}"
+                break
+
+        client = genai.Client()
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-001",
+            contents=f"Tool '{tool_name}' {tool_desc}.{context_hint}",
+            config=types.GenerateContentConfig(
+                system_instruction="Generate a single short status message (under 15 words) describing what is happening. Be specific and contextual. Do not use quotes. Example: Searching for Nike summer campaign trends across social media",
+                temperature=0.3,
+                max_output_tokens=30,
+            ),
+        )
+        status = response.text.strip().rstrip(".")
+        if status and len(status) < 100:
+            return status
+    except Exception as e:
+        logging.warning(f"[STATUS] LLM status generation failed: {e}")
+    return TOOL_STATUS_MESSAGES.get(tool_name, f"Processing {tool_name}...")
+
+
+def before_tool_status_callback(
+    tool: BaseTool, args: dict, tool_context: ToolContext
+) -> Optional[dict]:
+    """Sets ui:status_update in session state so Gemini Enterprise renders a status chip."""
+    tool_name = tool.name
+
+    # Track tool start time for duration logging
+    tool_context.state["_tool_start_ts"] = time.time()
+    tool_context.state["_tool_name"] = tool_name
+
+    # Generate contextual status via LLM or fall back to static
+    if ENABLE_LLM_STATUS:
+        status_msg = _sync_generate_contextual_status(tool_name, args)
+    else:
+        status_msg = TOOL_STATUS_MESSAGES.get(tool_name, f"Processing {tool_name}...")
+
+    # Enrich transfer_to_agent with target agent name
+    if tool_name == "transfer_to_agent" and "agent_name" in args:
+        agent_display = args["agent_name"].replace("_", " ").title()
+        status_msg = f"Transferring to {agent_display}..."
+
+    logging.info(f"[STATUS] {tool_name}: {status_msg}")
+    tool_context.state["ui:status_update"] = status_msg
+    return None
+
+
+def after_tool_status_callback(
+    tool: BaseTool, args: dict, tool_context: ToolContext, tool_response: dict
+) -> Optional[dict]:
+    """Logs tool execution duration."""
+    start_ts = tool_context.state.get("_tool_start_ts")
+    tool_name = tool_context.state.get("_tool_name", tool.name)
+    if start_ts:
+        duration = time.time() - start_ts
+        logging.info(f"[TOOL_DURATION] {tool_name} completed in {duration:.1f}s")
+    return None
+
+
+def reorder_parts_text_first(
+    callback_context: CallbackContext, llm_response: LlmResponse
+) -> Optional[LlmResponse]:
+    """after_model_callback: reorders parts (text first) and strips inline_data.
+
+    - Reorders so text parts come before function_call parts (prevents GE blank bubbles)
+    - Strips inline_data parts (images/videos already saved as ADK artifacts via
+      tool_context.save_artifact(); GE renders those inline natively. If the model
+      ALSO emits inline_data parts, GE shows broken placeholder images.)
+    """
+    if (
+        llm_response
+        and llm_response.content
+        and llm_response.content.parts
+    ):
+        text_parts = []
+        func_parts = []
+        stripped_count = 0
+        for part in llm_response.content.parts:
+            if hasattr(part, "inline_data") and part.inline_data is not None:
+                stripped_count += 1
+                continue
+            if part.text is not None:
+                text_parts.append(part)
+            else:
+                func_parts.append(part)
+        if stripped_count:
+            logging.info(f"[CALLBACK] Stripped {stripped_count} inline_data part(s) from model response")
+        if text_parts or func_parts:
+            llm_response.content.parts = text_parts + func_parts
+    return llm_response
 
 
 # Get the cloud storage bucket from the environment variable

@@ -24,7 +24,7 @@ root_agent = Agent(
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(
             include_thoughts=True,
-            # thinking_budget=1024,
+            thinking_budget=1024,
         )
     ),
     global_instruction=GLOBAL_INSTR,
@@ -43,4 +43,7 @@ root_agent = Agent(
         callbacks.campaign_callback_function,
     ],
     before_model_callback=callbacks.rate_limit_callback,
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
 )
