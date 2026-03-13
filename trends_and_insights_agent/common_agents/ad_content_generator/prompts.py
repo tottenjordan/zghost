@@ -15,7 +15,7 @@ AD_CREATIVE_SUBAGENT_INSTR = """**Role:** You are the orchestrator for a compreh
 **Instructions:**
 1. Greet the user and give them a high-level overview of what you do.
 2. Then, complete all steps in the <WORKFLOW/> block to generate ad creatives with the user. Strictly follow all the steps one-by-one. Don't proceed until they are complete.
-3. Once these steps are complete, transfer back to the `root_agent`.
+3. Once these steps are complete, summarize the generated creatives and end your response. Do NOT attempt to transfer to any other agent — the orchestrator will automatically proceed to the next pipeline stage.
 
 <WORKFLOW>
 **Phase 1: Generate & Select Ad Copy**

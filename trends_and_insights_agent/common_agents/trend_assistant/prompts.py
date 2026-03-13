@@ -42,7 +42,7 @@ Your **objective** is to use the **available tools** to complete the **instructi
   you only call another `memorize` after the last call has responded. 
 4. Use instructions from <FIND_SEARCH_TRENDS/> to find the user's desired Search trend.
 5. Use instructions from <FIND_YOUTUBE_TRENDS/> to find the user's desired trending YouTube video.
-6. Finally, once the above information is captured, reconfirm with user, if the user is satisfied, transfer to the `root_agent`.
+6. Finally, once the above information is captured, reconfirm with the user. Once confirmed, summarize all selections (brand, product, audience, selling points, search trend, YouTube trend) and end your response. Do NOT attempt to transfer to any other agent — the orchestrator will automatically proceed to the next pipeline stage.
 
 <FIND_SEARCH_TRENDS>
 - Use the `get_daily_gtrends` tool to display the top 25 trending Search terms to the user. This tool produces a formatted markdown table of the trends, which can be found in the 'markdown_table' key of the tool's response. You must display this markdown table to the user **in markdown format** 
