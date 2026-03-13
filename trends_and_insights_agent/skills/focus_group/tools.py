@@ -150,17 +150,26 @@ async def generate_panelist_portrait(
         f"Style: modern consumer research panel participant photo."
     )
 
-    try:
-        response = client.models.generate_content(
-            model=config.image_gen_model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=["IMAGE"],
-            ),
-        )
-    except Exception as e:
-        logging.error(f"Panelist portrait generation failed: {e}")
-        return {"status": "failed", "error": str(e)}
+    response = None
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model=config.image_gen_model,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_modalities=["IMAGE"],
+                ),
+            )
+            break
+        except Exception as e:
+            err_str = str(e)
+            if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str) and attempt < 2:
+                wait = 15 * (attempt + 1)
+                logging.warning(f"Portrait gen rate limited, waiting {wait}s (attempt {attempt + 1}/3)")
+                time.sleep(wait)
+            else:
+                logging.error(f"Panelist portrait generation failed: {e}")
+                return {"status": "failed", "error": str(e)}
 
     if not response or not response.candidates or not response.candidates[0].content.parts:
         return {"status": "failed", "error": "No image data in response"}

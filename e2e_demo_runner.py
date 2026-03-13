@@ -165,16 +165,20 @@ def get_pipeline_status(ae, session_id):
     has_focus_group = bool(focus_group)
 
     # Determine stage — check COMPLETE first (creative exhaustion can skip stages)
+    creative_attempts = state.get("_creative_pipeline_attempts", 0)
+    creative_exhausted = creative_attempts >= 5
     if final_len > 0:
         stage = "COMPLETE"
     elif has_focus_group:
         stage = "SAVE_REPORT"
     elif report_len < 500:
         stage = "RESEARCH"
-    elif num_images < 2 or not has_commercial:
+    elif (num_images < 2 or not has_commercial) and not creative_exhausted:
         stage = "CREATIVE"
-    else:
+    elif not has_focus_group:
         stage = "FOCUS_GROUP"
+    else:
+        stage = "SAVE_REPORT"
 
     print(f"\n--- Pipeline Status: {stage} ---")
     print(f"  Research report: {report_len} chars")
