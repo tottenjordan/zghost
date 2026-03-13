@@ -33,11 +33,22 @@ Read the following session state to understand the creative intent behind the co
 - Target audience: `{target_audience}`
 - Key selling points: `{key_selling_points}`
 
-## Step 3: Focus Group Simulation
+## Step 3: Generate Panelist Personas with Portraits
 
-Simulate a panel of 5 diverse participants who match the target audience profile: `{target_audience}`.
+Create 5 diverse consumer personas matching the target audience: `{target_audience}`.
 
-Give each panelist a distinct name, age, and brief persona description that fits within the target demographic.
+For EACH panelist, call `generate_panelist_portrait` to create their headshot photo:
+1. Define a name, age, and brief persona description fitting the target demographic
+2. Call `generate_panelist_portrait(panelist_name, age, persona_description)` for each
+3. Aim for diversity in age, background, and lifestyle within the target audience
+
+Example panelists for Gen Z eco-consumers:
+- "Maya Chen", 22, "college student studying environmental science, thrift shopper, CleanTok enthusiast"
+- "Jordan Williams", 19, "community college freshman, skateboarder, follows sustainable fashion influencers"
+
+## Step 4: Focus Group Simulation
+
+Using the same 5 panelists whose portraits you generated, simulate their evaluation of the commercial.
 
 Each panelist provides scores (1-10) and written feedback on these six categories:
 
@@ -79,7 +90,16 @@ Format each panelist's feedback as:
 | Audience Appeal | X | [feedback] |
 ```
 
-## Step 4: Summary Report
+## Step 5: Panelist Testimonial Videos
+
+After scoring, generate a short video testimonial for the top 2-3 most impactful panelists using `generate_panelist_testimonial`:
+1. Write a 30-50 word spoken testimonial in the panelist's voice summarizing their key feedback
+2. Choose a matching voice_style from: "young_female", "young_male", "mature_female", "mature_male", "british_female"
+3. Call `generate_panelist_testimonial(panelist_name, testimonial_script, voice_style)`
+
+This creates a video of the panelist "speaking" their feedback with Chirp 3 HD voiceover.
+
+## Step 6: Summary Report
 
 After all panelists have provided feedback, compile the final evaluation:
 
@@ -114,4 +134,17 @@ State your recommendation as exactly one of these two formats:
 - "My recommendation is **NO-GO**." followed by reasoning and required changes.
 
 **Critical**: The recommendation MUST match the score. A score of 7.0+ always means **GO**. Do not give a NO-GO recommendation if the weighted score is 7.0 or above. Even if there are areas for improvement, a score at or above the threshold means the commercial is ready for deployment.
+
+## Step 7: Final Summary
+
+After completing the evaluation, write a comprehensive final summary that includes:
+- All panelist scores and feedback (formatted as tables)
+- Average scores per category
+- Overall weighted score
+- Top 3 strengths and top 3 areas for improvement
+- Predicted uplift potential
+- Go/No-Go recommendation
+
+This summary will be automatically included in the final campaign PDF report.
+Do NOT call any report generation tools — the orchestrator handles PDF generation as the final pipeline step.
 """

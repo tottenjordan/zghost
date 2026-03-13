@@ -102,6 +102,7 @@ except KeyError:
 async def save_draft_report_artifact(tool_context: ToolContext) -> dict:
     """
     Saves generated PDF report bytes as an artifact.
+    Legacy wrapper — delegates to draft_research_report_tool for backward compat.
 
     Args:
         tool_context (ToolContext): The tool context.
@@ -110,8 +111,32 @@ async def save_draft_report_artifact(tool_context: ToolContext) -> dict:
         dict: Status and the location of the generated PDF artifact.
     """
     processed_report = tool_context.state["final_report_with_citations"]
+    gcs_folder = tool_context.state.get("gcs_folder", "")
 
-    # create local dir to save PDF file
+    async def _save_artifact(filename, artifact):
+        return await tool_context.save_artifact(filename=filename, artifact=artifact)
+
+    return await draft_research_report_tool(processed_report, gcs_folder, _save_artifact)
+
+
+async def draft_research_report_tool(
+    processed_report: str,
+    gcs_folder: str,
+    save_artifact_fn=None,
+) -> dict:
+    """Generate a PDF from the research report, upload to GCS, and optionally save as ADK artifact.
+
+    This is a plain async function (not an LLM agent). It can be called directly
+    from a BaseAgent orchestrator or wrapped in a ToolContext for legacy use.
+
+    Args:
+        processed_report: The final report markdown text.
+        gcs_folder: GCS subfolder for the upload.
+        save_artifact_fn: Optional async callable(filename, artifact_part) -> version.
+
+    Returns:
+        dict with status and artifact_key.
+    """
     try:
         DIR = "files"
         SUBDIR = f"{DIR}/research"
@@ -126,32 +151,33 @@ async def save_draft_report_artifact(tool_context: ToolContext) -> dict:
         pdf.meta["title"] = "[Draft] Trend & Campaign Research Report"
         pdf.save(filepath)
 
-        # open pdf and read bytes for types.Part() object
         with open(filepath, "rb") as f:
             document_bytes = f.read()
 
         document_part = types.Part(
             inline_data=types.Blob(data=document_bytes, mime_type="application/pdf")
         )
-        version = await tool_context.save_artifact(
-            filename=artifact_key, artifact=document_part
-        )
-        gcs_folder = tool_context.state["gcs_folder"]
 
-        upload_blob_to_gcs(
-            source_file_name=filepath,
-            destination_blob_name=os.path.join(gcs_folder, artifact_key),
-        )
+        version = None
+        if save_artifact_fn:
+            version = await save_artifact_fn(artifact_key, document_part)
+
+        if gcs_folder:
+            upload_blob_to_gcs(
+                source_file_name=filepath,
+                destination_blob_name=os.path.join(gcs_folder, artifact_key),
+            )
+
         logging.info(
-            f"\n\nSaved artifact doc '{artifact_key}', version {version}, to folder '{gcs_folder}' \n\n"
+            f"\n\nSaved draft report '{artifact_key}', version {version}, to folder '{gcs_folder}'\n\n"
         )
 
         shutil.rmtree(DIR)
         return {
             "status": "ok",
             "artifact_key": artifact_key,
-            "message": "Report saved. Use load_artifacts to display it.",
+            "message": "Research report saved as PDF.",
         }
     except Exception as e:
-        logging.error(f"Error saving artifact: {e}")
+        logging.error(f"Error saving draft report artifact: {e}")
         return {"status": "failed", "error": str(e)}

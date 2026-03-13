@@ -2,19 +2,30 @@
 
 This module provides utilities to load skills that follow the standard
 directory convention with SKILL.md frontmatter.
+
+NovaStorm Integration: When NOVASTORM_ENABLED=true, skills can optionally
+load evolved instructions from Memory Bank instead of static SKILL.md files.
 """
 
 import yaml
+import os
+import logging
 from pathlib import Path
 from typing import Optional
 from google.adk.skills import Skill, Frontmatter, Resources, Script
 
+logging.basicConfig(level=logging.INFO)
 
-def load_skill_from_dir(skill_dir: Path | str) -> Skill:
+
+def load_skill_from_dir(skill_dir: Path | str, user_id: str = "default") -> Skill:
     """Load a skill from a directory containing SKILL.md.
+
+    NovaStorm Integration: If NOVASTORM_ENABLED=true, will check Memory Bank
+    for evolved instructions and use those if the score is > 6.0.
 
     Args:
         skill_dir: Path to the skill directory
+        user_id: User ID for Memory Bank scoping (default: "default")
 
     Returns:
         Skill: Loaded skill with frontmatter, instructions, and resources
@@ -44,6 +55,16 @@ def load_skill_from_dir(skill_dir: Path | str) -> Skill:
 
     # Parse frontmatter and instructions
     frontmatter, instructions = _parse_skill_md(content, skill_dir)
+
+    # NovaStorm: Check for evolved instructions
+    novastorm_enabled = os.environ.get("NOVASTORM_ENABLED", "").lower() == "true"
+    if novastorm_enabled:
+        evolved_instructions = _load_evolved_instructions(frontmatter.name, user_id)
+        if evolved_instructions:
+            logging.info(f"[NovaStorm] Using evolved instructions for {frontmatter.name}")
+            instructions = evolved_instructions
+        else:
+            logging.info(f"[NovaStorm] No evolved instructions found for {frontmatter.name}, using static SKILL.md")
 
     # Load resources (references, assets, scripts)
     resources = _load_resources(skill_dir)
@@ -294,3 +315,50 @@ Resources:
             summary += f"  - {script_name}\n"
 
     return summary
+
+
+def _load_evolved_instructions(skill_name: str, user_id: str = "default") -> Optional[str]:
+    """Load evolved instructions from Memory Bank if available.
+
+    Only uses evolved instructions if:
+    1. Memory Bank is configured
+    2. Skill DNA exists for this skill
+    3. Score is > 6.0 (indicating good performance)
+
+    Args:
+        skill_name: Name of the skill
+        user_id: User ID for scoping
+
+    Returns:
+        str: Evolved instructions if available and high-scoring, None otherwise
+    """
+    try:
+        # Import here to avoid circular dependency
+        from ..shared_libraries.skill_evolution import load_skill_dna
+
+        skill_dna = load_skill_dna(skill_name, user_id)
+
+        if not skill_dna:
+            return None
+
+        # Only use if score is good
+        if skill_dna.score <= 6.0:
+            logging.warning(
+                f"[NovaStorm] Skill {skill_name} has evolved instructions "
+                f"but score is too low ({skill_dna.score}/10) — using static instructions"
+            )
+            return None
+
+        # Use the evolved instructions
+        logging.info(
+            f"[NovaStorm] Loading evolved instructions for {skill_name} "
+            f"v{skill_dna.version} (score: {skill_dna.score}/10)"
+        )
+
+        # The instructions_summary contains the full evolved instructions
+        # (we just truncate it for display elsewhere)
+        return skill_dna.instructions_summary
+
+    except Exception as e:
+        logging.error(f"[NovaStorm] Failed to load evolved instructions: {e}")
+        return None

@@ -376,7 +376,9 @@ def evaluate_media_fidelity(
         dict with score, passing/failing verdicts, and pass/fail decision.
     """
     project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
-    location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+    # Gecko eval uses Vertex AI evaluation API which requires a regional endpoint,
+    # not the "global" endpoint used for Gemini 3 models.
+    location = "us-central1"
 
     try:
         result = gecko_evaluate(
@@ -442,8 +444,7 @@ def extract_single_frame(video_path, frame_number, output_image_path) -> str:
 
 
 async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
-    """
-    Saves generated PDF report bytes as an artifact.
+    """Legacy wrapper — delegates to save_final_report_tool for backward compat.
 
     Args:
         tool_context (ToolContext): The tool context.
@@ -451,128 +452,249 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
     Returns:
         dict: Status and the location of the PDF artifact file.
     """
-    processed_report = tool_context.state["final_report_with_citations"]
-    gcs_folder = tool_context.state["gcs_folder"]
+    state = tool_context.state
+    processed_report = state.get("combined_final_cited_report", "")
+    if not processed_report:
+        return {"status": "failed", "error": "No research report found in combined_final_cited_report"}
 
+    img_keys = state.get("img_artifact_keys", {})
+    img_artifact_list = img_keys.get("img_artifact_keys", []) if isinstance(img_keys, dict) else img_keys
+    vid_keys = state.get("vid_artifact_keys", {})
+    vid_artifact_list = vid_keys.get("vid_artifact_keys", []) if isinstance(vid_keys, dict) else vid_keys
+
+    async def _save_artifact(filename, artifact):
+        return await tool_context.save_artifact(filename=filename, artifact=artifact)
+
+    result = await save_final_report_tool(
+        processed_report=processed_report,
+        img_artifact_list=img_artifact_list or [],
+        vid_artifact_list=vid_artifact_list or [],
+        commercial_artifact=state.get("commercial_artifact", {}),
+        focus_group_evaluation=state.get("focus_group_evaluation", ""),
+        focus_group_panelists=state.get("focus_group_panelists", {}),
+        gcs_folder=state.get("gcs_folder", ""),
+        save_artifact_fn=_save_artifact,
+    )
+
+    if result.get("status") == "ok":
+        tool_context.state["final_report_with_citations"] = processed_report
+
+    return result
+
+
+async def save_final_report_tool(
+    processed_report: str,
+    img_artifact_list: list,
+    vid_artifact_list: list,
+    commercial_artifact: dict,
+    focus_group_evaluation: str,
+    focus_group_panelists: dict,
+    gcs_folder: str,
+    save_artifact_fn=None,
+) -> dict:
+    """Generate the final campaign report PDF with all sections.
+
+    Standalone async function (no ToolContext) for use from BaseAgent orchestrators.
+    Includes research report, image/video creatives, commercial info, and focus group results.
+
+    Args:
+        processed_report: The research report markdown text.
+        img_artifact_list: List of image artifact metadata dicts.
+        vid_artifact_list: List of video artifact metadata dicts.
+        commercial_artifact: Commercial metadata dict with gcs_uri, metadata, etc.
+        focus_group_evaluation: Focus group evaluation text from the LLM.
+        focus_group_panelists: Dict with panelist metadata (portraits, testimonials).
+        gcs_folder: GCS subfolder for uploads.
+        save_artifact_fn: Optional async callable(filename, artifact_part) -> version.
+
+    Returns:
+        dict with status and artifact_key.
+    """
     try:
-
-        DIR = f"report_creatives"
+        gcs_bucket = os.environ.get("BUCKET", "gs://zghost-media-center")
+        DIR = "report_creatives"
 
         # ==================== #
-        # get image creatives
+        # Image creatives section
         # ==================== #
         IMG_SUBDIR = f"{DIR}/imgs"
-        if not os.path.exists(IMG_SUBDIR):
-            os.makedirs(IMG_SUBDIR)
-
-        # get artifact details
-        img_artifact_state_dict = tool_context.state.get("img_artifact_keys")
-        img_artifact_list = img_artifact_state_dict["img_artifact_keys"]
+        os.makedirs(IMG_SUBDIR, exist_ok=True)
 
         IMG_CREATIVE_STRING = "# Image Creatives\n\n"
-        for entry in img_artifact_list:
+        for entry in (img_artifact_list or []):
             logging.info(entry)
-            LOCAL_FILE_PATH = os.path.join(IMG_SUBDIR, entry["artifact_key"])
-            download_image_from_gcs(
-                source_blob_name=os.path.join(gcs_folder, entry["artifact_key"]),
-                destination_file_name=LOCAL_FILE_PATH,
-            )
-            IMG_CREATIVE_STRING += f"## {entry['headline']}\n"
-            IMG_CREATIVE_STRING += f"*{os.path.join(GCS_BUCKET, gcs_folder, entry['artifact_key'])}*\n\n"
-            IMG_CREATIVE_STRING += f"![Generated Image]({LOCAL_FILE_PATH})\n\n"
-            IMG_CREATIVE_STRING += f"> **Caption:** {entry['caption']}\n\n"
-            IMG_CREATIVE_STRING += f"**Trend(s) Referenced:** `{entry['trend']}`\n\n"
+            artifact_key = entry.get("artifact_key", "unknown.png")
+            gcs_link = os.path.join(gcs_bucket, gcs_folder, artifact_key) if gcs_folder else artifact_key
+
+            LOCAL_FILE_PATH = os.path.join(IMG_SUBDIR, artifact_key)
+            try:
+                download_image_from_gcs(
+                    source_blob_name=os.path.join(gcs_folder, artifact_key),
+                    destination_file_name=LOCAL_FILE_PATH,
+                )
+            except Exception as e:
+                logging.warning(f"Could not download image {artifact_key}: {e}")
+
+            IMG_CREATIVE_STRING += f"## {entry.get('headline', 'Untitled')}\n"
+            IMG_CREATIVE_STRING += f"*{gcs_link}*\n\n"
+            if os.path.exists(LOCAL_FILE_PATH):
+                IMG_CREATIVE_STRING += f"![Generated Image]({LOCAL_FILE_PATH})\n\n"
+            IMG_CREATIVE_STRING += f"> **Caption:** {entry.get('caption', '')}\n\n"
+            IMG_CREATIVE_STRING += f"**Trend(s) Referenced:** `{entry.get('trend', '')}`\n\n"
             IMG_CREATIVE_STRING += f"### Strategic Rationale\n\n"
-            IMG_CREATIVE_STRING += f"- **Visual Concept:** {entry['concept']}\n"
-            IMG_CREATIVE_STRING += f"- **Product Strategy:** {entry['markets_product']}\n"
-            IMG_CREATIVE_STRING += f"- **Audience Appeal:** {entry['audience_appeal']}\n"
-            IMG_CREATIVE_STRING += f"- **Performance Logic:** {entry['rationale_perf']}\n\n"
+            IMG_CREATIVE_STRING += f"- **Visual Concept:** {entry.get('concept', '')}\n"
+            IMG_CREATIVE_STRING += f"- **Product Strategy:** {entry.get('markets_product', '')}\n"
+            IMG_CREATIVE_STRING += f"- **Audience Appeal:** {entry.get('audience_appeal', '')}\n"
+            IMG_CREATIVE_STRING += f"- **Performance Logic:** {entry.get('rationale_perf', '')}\n\n"
             if entry.get('fidelity_score') is not None:
-                IMG_CREATIVE_STRING += f"**Gecko Fidelity Score:** {entry['fidelity_score']:.2f} / 1.00\n\n"
-            IMG_CREATIVE_STRING += f"**AI Generation Prompt:**\n> {entry['img_prompt']}\n\n"
+                try:
+                    IMG_CREATIVE_STRING += f"**Gecko Fidelity Score:** {float(entry['fidelity_score']):.2f} / 1.00\n\n"
+                except (ValueError, TypeError):
+                    IMG_CREATIVE_STRING += f"**Gecko Fidelity Score:** {entry['fidelity_score']}\n\n"
+            IMG_CREATIVE_STRING += f"**AI Generation Prompt:**\n> {entry.get('img_prompt', '')}\n\n"
             IMG_CREATIVE_STRING += "---\n\n"
 
         # ==================== #
-        # get video creatives
+        # Video creatives section
         # ==================== #
         VID_SUBDIR = f"{DIR}/vids"
-        if not os.path.exists(VID_SUBDIR):
-            os.makedirs(VID_SUBDIR)
-
-        vid_artifact_state_dict = tool_context.state.get("vid_artifact_keys")
-        vid_artifact_list = vid_artifact_state_dict["vid_artifact_keys"]
+        os.makedirs(VID_SUBDIR, exist_ok=True)
 
         VID_CREATIVE_STRING = "# Video Creatives\n\n"
-        for entry in vid_artifact_list:
+        for entry in (vid_artifact_list or []):
             logging.info(entry)
-            LOCAL_VID_PATH = os.path.join(VID_SUBDIR, entry["artifact_key"])
-            ARTIFACT_KEY_NAME = entry["artifact_key"].replace(".mp4", "")
-            download_image_from_gcs(
-                source_blob_name=os.path.join(gcs_folder, entry["artifact_key"]),
-                destination_file_name=LOCAL_VID_PATH,
-            )
-            LOCAL_FRAME_PATH = os.path.join(VID_SUBDIR, f"{ARTIFACT_KEY_NAME}.png")
-            LOCAL_VID_FRAME = extract_single_frame(LOCAL_VID_PATH, 1, LOCAL_FRAME_PATH)
+            artifact_key = entry.get("artifact_key", "unknown.mp4")
+            gcs_link = os.path.join(gcs_bucket, gcs_folder, artifact_key) if gcs_folder else artifact_key
 
-            VID_CREATIVE_STRING += f"## {entry['headline']}\n"
-            VID_CREATIVE_STRING += f"*{os.path.join(GCS_BUCKET, gcs_folder, entry['artifact_key'])}*\n\n"
-            VID_CREATIVE_STRING += f"![Video Thumbnail]({LOCAL_VID_FRAME})\n\n"
-            VID_CREATIVE_STRING += f"> **Caption:** {entry['caption']}\n\n"
-            VID_CREATIVE_STRING += f"**Trend(s) Referenced:** `{entry['trend']}`\n\n"
+            LOCAL_VID_PATH = os.path.join(VID_SUBDIR, artifact_key)
+            ARTIFACT_KEY_NAME = artifact_key.replace(".mp4", "")
+
+            try:
+                download_image_from_gcs(
+                    source_blob_name=os.path.join(gcs_folder, artifact_key),
+                    destination_file_name=LOCAL_VID_PATH,
+                )
+                LOCAL_FRAME_PATH = os.path.join(VID_SUBDIR, f"{ARTIFACT_KEY_NAME}.png")
+                LOCAL_VID_FRAME = extract_single_frame(LOCAL_VID_PATH, 1, LOCAL_FRAME_PATH)
+            except Exception as e:
+                logging.warning(f"Could not download/extract video {artifact_key}: {e}")
+                LOCAL_VID_FRAME = None
+
+            VID_CREATIVE_STRING += f"## {entry.get('headline', 'Untitled')}\n"
+            VID_CREATIVE_STRING += f"*{gcs_link}*\n\n"
+            if LOCAL_VID_FRAME and os.path.exists(LOCAL_VID_FRAME):
+                VID_CREATIVE_STRING += f"![Video Thumbnail]({LOCAL_VID_FRAME})\n\n"
+            VID_CREATIVE_STRING += f"> **Caption:** {entry.get('caption', '')}\n\n"
+            VID_CREATIVE_STRING += f"**Trend(s) Referenced:** `{entry.get('trend', '')}`\n\n"
             VID_CREATIVE_STRING += f"### Strategic Rationale\n\n"
-            VID_CREATIVE_STRING += f"- **Visual Concept:** {entry['concept']}\n"
-            VID_CREATIVE_STRING += f"- **Product Strategy:** {entry['markets_product']}\n"
-            VID_CREATIVE_STRING += f"- **Audience Appeal:** {entry['audience_appeal']}\n"
-            VID_CREATIVE_STRING += f"- **Performance Logic:** {entry['rationale_perf']}\n\n"
-            VID_CREATIVE_STRING += f"**AI Generation Prompt:**\n> {entry['vid_prompt']}\n\n"
+            VID_CREATIVE_STRING += f"- **Visual Concept:** {entry.get('concept', '')}\n"
+            VID_CREATIVE_STRING += f"- **Product Strategy:** {entry.get('markets_product', '')}\n"
+            VID_CREATIVE_STRING += f"- **Audience Appeal:** {entry.get('audience_appeal', '')}\n"
+            VID_CREATIVE_STRING += f"- **Performance Logic:** {entry.get('rationale_perf', '')}\n\n"
+            VID_CREATIVE_STRING += f"**AI Generation Prompt:**\n> {entry.get('vid_prompt', '')}\n\n"
             VID_CREATIVE_STRING += "---\n\n"
 
         # ==================== #
-        # create local PDF file
+        # Commercial section
+        # ==================== #
+        COMMERCIAL_STRING = "# Commercial\n\n"
+        if commercial_artifact and isinstance(commercial_artifact, dict):
+            gcs_uri = commercial_artifact.get("gcs_uri", "")
+            metadata = commercial_artifact.get("metadata", {})
+            if isinstance(metadata, dict):
+                COMMERCIAL_STRING += f"## {metadata.get('title', 'Campaign Commercial')}\n\n"
+                COMMERCIAL_STRING += f"**Duration:** {metadata.get('duration_seconds', 'N/A')}s\n\n"
+                COMMERCIAL_STRING += f"**Total Clips:** {metadata.get('total_clips', 'N/A')}\n\n"
+                if gcs_uri:
+                    COMMERCIAL_STRING += f"**GCS Location:** `{gcs_uri}`\n\n"
+                if metadata.get("narrative_arc"):
+                    COMMERCIAL_STRING += f"**Narrative Arc:** {metadata['narrative_arc']}\n\n"
+                if metadata.get("trend_connections"):
+                    COMMERCIAL_STRING += f"**Trend Connections:** {metadata['trend_connections']}\n\n"
+                if metadata.get("target_audience_appeal"):
+                    COMMERCIAL_STRING += f"**Target Audience Appeal:** {metadata['target_audience_appeal']}\n\n"
+                scenes = metadata.get("scene_descriptions", [])
+                if scenes:
+                    COMMERCIAL_STRING += "### Scene Breakdown\n\n"
+                    for idx, scene in enumerate(scenes, 1):
+                        COMMERCIAL_STRING += f"{idx}. {scene}\n"
+                    COMMERCIAL_STRING += "\n"
+                COMMERCIAL_STRING += f"**Has Audio:** {'Yes' if metadata.get('has_audio') else 'No'}\n\n"
+            else:
+                COMMERCIAL_STRING += f"**GCS Location:** `{gcs_uri}`\n\n"
+        else:
+            COMMERCIAL_STRING += "*No commercial was produced.*\n\n"
+        COMMERCIAL_STRING += "---\n\n"
+
+        # ==================== #
+        # Focus group section
+        # ==================== #
+        FOCUS_GROUP_STRING = "# Focus Group Evaluation\n\n"
+        if focus_group_evaluation:
+            FOCUS_GROUP_STRING += focus_group_evaluation + "\n\n"
+        else:
+            FOCUS_GROUP_STRING += "*No focus group evaluation was conducted.*\n\n"
+
+        # Add panelist info with links to portraits and testimonials
+        panelists = focus_group_panelists.get("panelists", []) if isinstance(focus_group_panelists, dict) else []
+        if panelists:
+            FOCUS_GROUP_STRING += "## Panelist Profiles\n\n"
+            for p in panelists:
+                FOCUS_GROUP_STRING += f"### {p.get('name', 'Unknown')}, Age {p.get('age', 'N/A')}\n"
+                FOCUS_GROUP_STRING += f"**Persona:** {p.get('persona', '')}\n\n"
+                if p.get("portrait_gcs_uri"):
+                    FOCUS_GROUP_STRING += f"**Portrait:** `{p['portrait_gcs_uri']}`\n\n"
+                if p.get("testimonial_video_gcs_uri"):
+                    FOCUS_GROUP_STRING += f"**Testimonial Video:** `{p['testimonial_video_gcs_uri']}`\n\n"
+                if p.get("voiceover_gcs_uri"):
+                    FOCUS_GROUP_STRING += f"**Voiceover:** `{p['voiceover_gcs_uri']}`\n\n"
+                FOCUS_GROUP_STRING += "---\n\n"
+
+        # ==================== #
+        # Create PDF
         # ==================== #
         artifact_key = "final_trends_and_creatives_report.pdf"
         report_filepath = f"{DIR}/{artifact_key}"
 
-        # create PDF object
         pdf = MarkdownPdf(toc_level=4)
         pdf.add_section(Section(f" {processed_report}\n"))
         pdf.add_section(
             Section(f"# Ad Creatives\n\n{IMG_CREATIVE_STRING}\n\n{VID_CREATIVE_STRING}")
         )
-        pdf.meta["title"] = "[Final] trends-2-creatives Report"
+        pdf.add_section(Section(COMMERCIAL_STRING))
+        pdf.add_section(Section(FOCUS_GROUP_STRING))
+        pdf.meta["title"] = "[Final] Trends-to-Creatives Campaign Report"
         pdf.save(report_filepath)
 
-        # open pdf and read bytes for types.Part() object
         with open(report_filepath, "rb") as f:
             document_bytes = f.read()
 
-        # artifact build
         document_part = types.Part(
             inline_data=types.Blob(data=document_bytes, mime_type="application/pdf")
         )
-        version = await tool_context.save_artifact(
-            filename=artifact_key, artifact=document_part
-        )
+
+        version = None
+        if save_artifact_fn:
+            version = await save_artifact_fn(artifact_key, document_part)
+
+        if gcs_folder:
+            upload_blob_to_gcs(
+                source_file_name=report_filepath,
+                destination_blob_name=os.path.join(gcs_folder, artifact_key),
+            )
+
         logging.info(
-            f"\n\nSaved report artifact: '{artifact_key}' as version {version}\n\n"
+            f"\n\nSaved final report '{artifact_key}', version {version}, to folder '{gcs_folder}'\n\n"
         )
-        upload_blob_to_gcs(
-            source_file_name=report_filepath,
-            destination_blob_name=os.path.join(gcs_folder, artifact_key),
-        )
-        logging.info(
-            f"\n\nSaved artifact doc '{artifact_key}', version {version}, to folder '{gcs_folder}'\n\n"
-        )
-        # clean up
+
         shutil.rmtree(DIR)
-        logging.info(f"Directory '{DIR}' and its contents removed successfully")
         return {
             "status": "ok",
             "artifact_key": artifact_key,
-            "message": "Final report saved. Use load_artifacts to display it.",
+            "message": "Final campaign report saved as PDF with all sections.",
         }
     except Exception as e:
-        logging.error(f"Error saving artifact: {e}")
+        logging.error(f"Error saving final report: {e}")
         return {"status": "failed", "error": str(e)}
 
 

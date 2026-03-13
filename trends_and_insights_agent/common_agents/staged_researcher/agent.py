@@ -1,23 +1,50 @@
+"""Research pipeline — deterministic BaseAgent orchestrator.
+
+ResearchPipelineOrchestrator replaces the old SequentialAgent stack
+(combined_research_pipeline + report_saver_agent + research_orchestrator)
+with a single BaseAgent that:
+  1. Runs each research sub-agent in sequence
+  2. Emits rich status messages between stages for GE/frontend
+  3. Calls draft_research_report_tool directly (no LLM wrapper) to save the PDF
+  4. Supports AE resumability via agent state
+"""
+
+from __future__ import annotations
+
 import datetime
 import logging
 
 logging.basicConfig(level=logging.INFO)
 
+from typing import AsyncGenerator
+
 from google.genai import types
+from google.adk.agents.base_agent import BaseAgent, BaseAgentState
+from google.adk.agents.invocation_context import InvocationContext
+from google.adk.events.event import Event
+from google.adk.events.event_actions import EventActions
 from google.adk.tools import google_search
 from google.adk.planners import BuiltInPlanner
-from google.adk.agents import Agent, SequentialAgent, ParallelAgent
+from google.adk.agents import Agent, ParallelAgent
+from google.adk.utils.context_utils import Aclosing
+from google.adk.utils.feature_decorator import experimental
 
 from trends_and_insights_agent.shared_libraries.config import config
 from trends_and_insights_agent.shared_libraries import callbacks, schema_types
 
-from .tools import save_draft_report_artifact, recall_prior_insights
+from .tools import recall_prior_insights, draft_research_report_tool
 from .sub_agents.campaign_web_researcher.agent import ca_sequential_planner
 from .sub_agents.search_web_researcher.agent import gs_sequential_planner
 from .sub_agents.youtube_web_researcher.agent import yt_sequential_planner
 
 
-# Agent that retrieves prior campaign insights from Memory Bank before enhanced search
+logger = logging.getLogger("google_adk." + __name__)
+
+
+# ============================================================
+# Sub-agents (unchanged — these are the LLM workers)
+# ============================================================
+
 memory_recall_agent = Agent(
     model=config.worker_model,
     name="memory_recall_agent",
@@ -33,8 +60,6 @@ memory_recall_agent = Agent(
     after_model_callback=callbacks.reorder_parts_text_first,
 )
 
-
-# --- PARALLEL RESEARCH SUBAGENTS --- #
 parallel_planner_agent = ParallelAgent(
     name="parallel_planner_agent",
     sub_agents=[yt_sequential_planner, gs_sequential_planner, ca_sequential_planner],
@@ -50,7 +75,7 @@ merge_planners = Agent(
         )
     ),
     instruction="""You are an AI Assistant responsible for combining initial research findings into a comprehensive summary.
-    Your primary task is to organize the following research summaries, clearly attributing findings to their source areas. 
+    Your primary task is to organize the following research summaries, clearly attributing findings to their source areas.
     Structure your response using headings for each topic. Ensure the report is coherent and integrates the key points smoothly.
 
     ---
@@ -76,26 +101,18 @@ merge_planners = Agent(
     after_model_callback=callbacks.reorder_parts_text_first,
 )
 
-merge_parallel_insights = SequentialAgent(
-    name="merge_parallel_insights",
-    sub_agents=[parallel_planner_agent, merge_planners],
-    description="Coordinates parallel research and synthesizes the results.",
-)
-
-
-# --- COMBINED RESEARCH SUBAGENTS --- #
 combined_web_evaluator = Agent(
     model=config.critic_model,
     name="combined_web_evaluator",
     description="Critically evaluates research about the campaign guide and generates follow-up queries.",
     instruction=f"""
     You are a meticulous quality assurance analyst evaluating the research findings in 'combined_web_search_insights'.
-    
+
     Be critical of the completeness of the research.
-    Consider the bigger picture and the intersection of the `target_product` and `target_audience`. 
+    Consider the bigger picture and the intersection of the `target_product` and `target_audience`.
     Consider the trends in each of the 'target_search_trends' and 'target_yt_trends' state keys.
-    
-    Look for any gaps in depth or coverage, as well as any areas that need more clarification. 
+
+    Look for any gaps in depth or coverage, as well as any areas that need more clarification.
         - If you find significant gaps in depth or coverage, write a detailed comment about what's missing, and generate 5-7 specific follow-up queries to fill those gaps.
         - If you don't find any significant gaps, write a detailed comment about any aspect of the campaign guide or trends to research further. Provide 5-7 related queries.
 
@@ -117,7 +134,6 @@ combined_web_evaluator = Agent(
     after_tool_callback=callbacks.after_tool_status_callback,
     after_model_callback=callbacks.reorder_parts_text_first,
 )
-
 
 enhanced_combined_searcher = Agent(
     model=config.worker_model,
@@ -150,7 +166,6 @@ enhanced_combined_searcher = Agent(
     after_model_callback=callbacks.reorder_parts_text_first,
 )
 
-
 combined_report_composer = Agent(
     model=config.critic_model,
     name="combined_report_composer",
@@ -176,10 +191,10 @@ combined_report_composer = Agent(
 
     *   **YouTube Video Analysis:**
         {yt_video_analysis}
-    
+
     *   **Final Research:**
         {combined_web_search_insights}
-    
+
     *   **Citation Sources:**
         `{sources}`
 
@@ -222,39 +237,163 @@ combined_report_composer = Agent(
 )
 
 
-# --- COMPLETE RESEARCH PIPELINE SUBAGENT --- #
-combined_research_pipeline = SequentialAgent(
-    name="combined_research_pipeline",
-    description="Executes a pipeline of web research. It performs iterative research, evaluation, and insight generation.",
+# ============================================================
+# ResearchPipelineOrchestrator — deterministic BaseAgent
+# ============================================================
+
+# Pipeline stages in order. Each maps to a sub-agent name except SAVE_REPORT.
+RESEARCH_STAGES = [
+    ("PARALLEL_RESEARCH", "parallel_planner_agent", "Running parallel research (YouTube, Search, Campaign)..."),
+    ("MERGE_INSIGHTS", "merge_planners", "Merging research findings into unified summary..."),
+    ("EVALUATE", "combined_web_evaluator", "Evaluating research quality and identifying gaps..."),
+    ("MEMORY_RECALL", "memory_recall_agent", "Retrieving prior campaign insights from Memory Bank..."),
+    ("ENHANCED_SEARCH", "enhanced_combined_searcher", "Conducting follow-up research to fill gaps..."),
+    ("COMPOSE_REPORT", "combined_report_composer", "Composing final cited research report..."),
+    ("SAVE_REPORT", None, "Saving research report as PDF..."),
+]
+
+
+@experimental
+class ResearchPipelineState(BaseAgentState):
+    """Persisted state for AE resumability."""
+    current_stage_index: int = 0
+
+
+class ResearchPipelineOrchestrator(BaseAgent):
+    """Deterministic orchestrator for the research pipeline.
+
+    Runs each research sub-agent in sequence with status messages between stages.
+    After the report is composed, calls draft_research_report_tool directly
+    (no LLM wrapper needed). Supports AE resumability.
+    """
+
+    async def _run_async_impl(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        if not self.sub_agents:
+            return
+
+        # Load persisted state for resumability
+        agent_state = self._load_agent_state(ctx, ResearchPipelineState)
+        start_index = agent_state.current_stage_index if agent_state else 0
+
+        pause_invocation = False
+        resuming = agent_state is not None
+
+        for i in range(start_index, len(RESEARCH_STAGES)):
+            stage_name, agent_name, status_msg = RESEARCH_STAGES[i]
+
+            if not resuming:
+                # Persist current stage for AE resume
+                if ctx.is_resumable:
+                    state = ResearchPipelineState(current_stage_index=i)
+                    ctx.set_agent_state(self.name, agent_state=state)
+                    yield self._create_agent_state_event(ctx)
+
+                # Emit status message
+                yield self._status_event(ctx, status_msg)
+
+            if stage_name == "SAVE_REPORT":
+                # Direct tool call — no LLM agent needed
+                async for event in self._save_report(ctx):
+                    yield event
+            else:
+                # Run the sub-agent
+                target = self._get_sub_agent(agent_name)
+                if target:
+                    async with Aclosing(target.run_async(ctx)) as agen:
+                        async for event in agen:
+                            yield event
+                            if ctx.should_pause_invocation(event):
+                                pause_invocation = True
+
+                    if pause_invocation:
+                        return
+
+            resuming = False
+
+        # Mark complete
+        if ctx.is_resumable:
+            ctx.set_agent_state(self.name, end_of_agent=True)
+            yield self._create_agent_state_event(ctx)
+
+    async def _save_report(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """Call draft_research_report_tool directly — no LLM needed."""
+        state = ctx.session.state
+        processed_report = state.get("final_report_with_citations", "")
+        gcs_folder = state.get("gcs_folder", "")
+
+        if not processed_report:
+            yield self._status_event(ctx, "No report to save — skipping PDF generation.")
+            return
+
+        # Build save_artifact_fn if artifact_service is available
+        save_artifact_fn = None
+        if ctx.artifact_service:
+            async def _save(filename, artifact_part):
+                return await ctx.artifact_service.save_artifact(
+                    app_name=ctx.app_name,
+                    user_id=ctx.user_id,
+                    session_id=ctx.session.id,
+                    filename=filename,
+                    artifact=artifact_part,
+                )
+            save_artifact_fn = _save
+
+        result = await draft_research_report_tool(
+            processed_report=processed_report,
+            gcs_folder=gcs_folder,
+            save_artifact_fn=save_artifact_fn,
+        )
+
+        status = result.get("status", "failed")
+        artifact_key = result.get("artifact_key", "")
+        if status == "ok":
+            msg = f"Research report saved as PDF: {artifact_key}"
+        else:
+            msg = f"Failed to save research report: {result.get('error', 'unknown')}"
+
+        yield self._status_event(ctx, msg)
+
+    def _get_sub_agent(self, name: str):
+        for agent in self.sub_agents:
+            if agent.name == name:
+                return agent
+        return None
+
+    def _status_event(self, ctx: InvocationContext, message: str) -> Event:
+        """Create an event with a status message and ui:status_update."""
+        logger.info(f"[ResearchPipeline] {message}")
+        event = Event(
+            invocation_id=ctx.invocation_id,
+            author=self.name,
+            branch=ctx.branch,
+            content=types.Content(
+                role="model",
+                parts=[types.Part(text=message)],
+            ),
+        )
+        # Set ui:status_update for GE status chips
+        event.actions.state_delta["ui:status_update"] = message
+        return event
+
+
+# ============================================================
+# Exported orchestrator
+# ============================================================
+
+research_orchestrator = ResearchPipelineOrchestrator(
+    name="research_orchestrator",
+    description="Orchestrate comprehensive research for the campaign metadata and trending topics.",
     sub_agents=[
-        merge_parallel_insights,
+        parallel_planner_agent,
+        merge_planners,
         combined_web_evaluator,
         memory_recall_agent,
         enhanced_combined_searcher,
         combined_report_composer,
     ],
-)
-
-
-# Agent that saves the research report as a PDF artifact after the pipeline completes
-report_saver_agent = Agent(
-    model=config.worker_model,
-    name="report_saver_agent",
-    description="Saves research report as PDF artifact.",
-    instruction="Use save_draft_report_artifact to save the combined_final_cited_report as PDF. Then stop.",
-    tools=[save_draft_report_artifact],
-    before_model_callback=callbacks.before_model_status_callback,
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
-)
-
-# Main orchestrator — SequentialAgent so all intermediate events (including
-# ui:status_update state deltas) flow to GE in real-time instead of being
-# buffered inside an AgentTool's isolated runner.
-research_orchestrator = SequentialAgent(
-    name="research_orchestrator",
-    description="Orchestrate comprehensive research for the campaign metadata and trending topics.",
-    sub_agents=[combined_research_pipeline, report_saver_agent],
     after_agent_callback=callbacks.save_research_to_memory,
 )

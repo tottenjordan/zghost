@@ -85,7 +85,7 @@ AGENT_STATUS_MESSAGES = {
     "visual_concept_critic": "Critiquing visual concepts...",
     "visual_concept_finalizer": "Finalizing visual concepts...",
     "visual_generator": "Preparing to generate visuals...",
-    "report_saver_agent": "Saving research report...",
+    "report_saver_agent": "Saving research report...",  # legacy, now handled by ResearchPipelineOrchestrator
     "fidelity_evaluator": "Evaluating media fidelity with Gecko...",
 }
 
@@ -274,7 +274,12 @@ def _set_initial_states(source: Dict[str, Any], target: State | dict[str, Any]):
         target[setup_config.state_init] = True
         target["gcs_folder"] = pd.Timestamp.utcnow().strftime("%Y_%m_%d_%H_%M")
 
-        target.update(source)
+        # Per-key check: only set defaults for keys that aren't already populated.
+        # This preserves values pre-loaded via create_session(state=...) from the
+        # E2E runner or Gemini Enterprise, while filling in any missing keys.
+        for key, value in source.items():
+            if key not in target or target.get(key) is None:
+                target[key] = value
 
     # Always ensure required template variables have defaults to prevent
     # KeyError in ADK's inject_session_state when processing {var} patterns
@@ -820,3 +825,145 @@ async def before_agent_get_user_file(
     )
 
     return response
+
+
+async def after_agent_skill_reflection(callback_context: CallbackContext):
+    """After-agent callback that triggers skill self-reflection when NovaStorm is enabled.
+
+    This is the orchestrator for NovaStorm skill evolution. After key pipeline stages
+    complete, it triggers self-reflection to analyze what worked, what didn't, and
+    how the skill could improve.
+
+    The reflection is stored in Memory Bank for future skill evolution.
+
+    Workflow:
+    1. Check if NovaStorm is enabled
+    2. Identify which skill just completed
+    3. Gather execution data (tools called, outputs, critiques)
+    4. Trigger reflection via skill_evolution.reflect_on_execution()
+    5. Save results to Memory Bank
+    """
+    # Check if NovaStorm is enabled
+    enabled = os.environ.get("NOVASTORM_ENABLED", "").lower() == "true"
+    if not enabled:
+        enabled = callback_context.state.get("novastorm_enabled", False)
+
+    if not enabled:
+        return
+
+    agent_name = callback_context.agent_name
+
+    # Map agent names to skill names for reflection
+    SKILL_MAP = {
+        "research_orchestrator": "research",
+        "combined_report_composer": "research",
+        "report_saver_agent": "research",
+        "ad_content_generator_agent": "ad_creative",
+        "ad_creative_pipeline": "ad_creative",
+        "visual_generator": "ad_creative",
+        "av_studio_agent": "av_studio",
+        "focus_group_agent": "focus_group",
+    }
+
+    skill_name = SKILL_MAP.get(agent_name)
+    if not skill_name:
+        return  # Not a skill we track
+
+    # Import skill evolution here to avoid circular imports
+    from .skill_evolution import reflect_on_execution, save_skill_dna
+
+    logging.info(f"[NovaStorm] Triggering reflection for skill '{skill_name}' after {agent_name} completed")
+
+    try:
+        # Gather execution data based on skill type
+        tool_trajectory = ""
+        output = ""
+        critique = ""
+
+        if skill_name == "research":
+            # Research skill: track report generation
+            report = callback_context.state.get("combined_final_cited_report", "")
+            eval_data = callback_context.state.get("combined_research_evaluation", "")
+
+            output = report[:1000] if report else "No report generated"
+            tool_trajectory = f"Research pipeline completed. Report length: {len(report)} chars. Evaluation: {str(eval_data)[:300]}"
+
+            # Get sources/citations as quality signal
+            sources = callback_context.state.get("sources", {})
+            critique = f"Generated {len(sources)} sources. Report has {report.count('cite')} citations."
+
+        elif skill_name == "ad_creative":
+            # Ad creative skill: track images/videos generated
+            imgs = callback_context.state.get("img_artifact_keys", {})
+            vids = callback_context.state.get("vid_artifact_keys", {})
+
+            if isinstance(imgs, dict):
+                imgs = imgs.get("img_artifact_keys", [])
+            if isinstance(vids, dict):
+                vids = vids.get("vid_artifact_keys", [])
+
+            output = f"Generated {len(imgs or [])} images and {len(vids or [])} videos"
+            tool_trajectory = f"Ad creative pipeline: {len(imgs or [])} images, {len(vids or [])} videos"
+
+            # Get fidelity scores as quality signal
+            fidelity = callback_context.state.get("fidelity_scores", {})
+            if fidelity:
+                critique = f"Fidelity scores: {str(fidelity)[:200]}"
+            else:
+                critique = "No fidelity evaluation available"
+
+        elif skill_name == "av_studio":
+            # AV studio skill: track commercial generation
+            commercial = callback_context.state.get("commercial_artifact", "")
+            duration = callback_context.state.get("commercial_duration", 30)
+
+            output = f"Generated {duration}s commercial: {commercial}"
+            tool_trajectory = f"AV studio pipeline: {duration}s commercial with narration and music"
+            critique = "Commercial generation completed"
+
+        elif skill_name == "focus_group":
+            # Focus group skill: track feedback quality
+            feedback = callback_context.state.get("focus_group_feedback", "")
+            output = feedback[:1000] if feedback else "No feedback generated"
+            tool_trajectory = "Focus group pipeline: diverse panel feedback"
+            critique = f"Feedback length: {len(feedback)} chars"
+
+        # Skip reflection if no meaningful output
+        if not output or output.startswith("No "):
+            logging.info(f"[NovaStorm] Skipping reflection for {skill_name} — no output generated")
+            return
+
+        # Get current instructions from state or use empty string
+        instructions = callback_context.state.get(f"{skill_name}_instructions", "")
+
+        # Perform reflection
+        skill_dna = reflect_on_execution(
+            skill_name=skill_name,
+            instructions=instructions,
+            tool_trajectory=tool_trajectory,
+            output=output,
+            critique=critique,
+        )
+
+        # Save to Memory Bank
+        user_id = getattr(callback_context, "user_id", "default") or "default"
+        saved = save_skill_dna(skill_dna, user_id)
+
+        if saved:
+            logging.info(
+                f"[NovaStorm] Reflection complete for {skill_name}: "
+                f"score={skill_dna.score}/10, saved to Memory Bank"
+            )
+        else:
+            logging.warning(f"[NovaStorm] Reflection complete for {skill_name} but Memory Bank save failed")
+
+        # Store in state for visibility
+        callback_context.state[f"{skill_name}_reflection"] = {
+            "score": skill_dna.score,
+            "improvements": skill_dna.suggested_improvements,
+            "version": skill_dna.version,
+        }
+
+    except Exception as e:
+        logging.error(f"[NovaStorm] Skill reflection failed for {skill_name}: {e}")
+        # Non-fatal — don't block agent execution

@@ -1,12 +1,14 @@
 """
-E2E Demo Runner for Agent Engine + Gemini Enterprise.
-Drives the full pipeline: trends -> research -> ad creatives (Gemini image gen + Veo 3) -> final report.
-Saves screenshots and artifacts for demo evidence.
+E2E Demo Runner for Agent Engine + CampaignOrchestrator.
+
+The CampaignOrchestrator is a deterministic BaseAgent that checks session state
+keys to decide which stage to run next. On AE, stream_query returns after each
+"wave" of events. This runner simply re-invokes with "continue" and the
+orchestrator automatically resumes from the correct stage.
 """
 import os
 import json
 import time
-import base64
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -20,6 +22,9 @@ ENGINE_ID = "4886457272743493632"
 RESOURCE_NAME = f"projects/679926387543/locations/{LOCATION}/reasoningEngines/{ENGINE_ID}"
 USER_ID = "e2e_demo_user"
 SCREENSHOT_DIR = "demo_screenshots"
+
+# Max re-invocations before giving up
+MAX_WAVES = 15
 
 # Pre-populated state to skip trend selection - Tide Fabric Softener campaign
 INITIAL_STATE = {
@@ -54,7 +59,6 @@ INITIAL_STATE = {
 
 
 def save_screenshot(name, content):
-    """Save text content as a screenshot/evidence file."""
     os.makedirs(SCREENSHOT_DIR, exist_ok=True)
     filepath = os.path.join(SCREENSHOT_DIR, f"{name}.txt")
     with open(filepath, "w") as f:
@@ -64,13 +68,13 @@ def save_screenshot(name, content):
 
 
 def stream_and_collect(ae, message, session_id):
-    """Send a message via stream_query and collect all events."""
     print(f"\n{'='*60}")
     print(f"SENDING: {message[:120]}...")
     print(f"{'='*60}")
 
     events = []
     agent_texts = []
+    thought_count = 0
     try:
         for event in ae.stream_query(
             message=message,
@@ -82,7 +86,11 @@ def stream_and_collect(ae, message, session_id):
                 author = event.get("author", "")
                 parts = event.get("content", {}).get("parts", [])
                 for part in parts:
-                    if isinstance(part, dict) and part.get("text"):
+                    if isinstance(part, dict) and part.get("thought"):
+                        thought_count += 1
+                        thought_text = part.get("text", "")[:100]
+                        print(f"  [{author}] THOUGHT: {thought_text}...")
+                    elif isinstance(part, dict) and part.get("text"):
                         text_preview = part["text"][:300]
                         print(f"  [{author}]: {text_preview}")
                         agent_texts.append(f"[{author}]: {part['text']}")
@@ -98,12 +106,12 @@ def stream_and_collect(ae, message, session_id):
     except Exception as e:
         print(f"  ERROR during stream: {e}")
 
-    print(f"  Total events: {len(events)}")
-    return events, "\n".join(agent_texts)
+    print(f"  Total events: {len(events)}, Thoughts: {thought_count}")
+    return events, "\n".join(agent_texts), thought_count
 
 
-def check_session_state(ae, session_id):
-    """Get session and check key state fields."""
+def get_pipeline_status(ae, session_id):
+    """Check session state and determine current pipeline status."""
     session = ae.get_session(user_id=USER_ID, session_id=session_id)
     state = session.get("state", {}) if isinstance(session, dict) else {}
 
@@ -111,6 +119,8 @@ def check_session_state(ae, session_id):
     imgs = state.get("img_artifact_keys", {})
     vids = state.get("vid_artifact_keys", {})
     final = state.get("final_report_with_citations", "")
+    commercial = state.get("commercial_artifact", "")
+    focus_group = state.get("focus_group_evaluation", "")
 
     if isinstance(imgs, dict):
         imgs = imgs.get("img_artifact_keys", [])
@@ -119,23 +129,46 @@ def check_session_state(ae, session_id):
 
     report_len = len(report) if isinstance(report, str) else 0
     final_len = len(final) if isinstance(final, str) else 0
+    num_images = len(imgs) if isinstance(imgs, list) else 0
+    num_videos = len(vids) if isinstance(vids, list) else 0
+    has_commercial = bool(commercial)
+    has_focus_group = bool(focus_group)
 
-    print(f"\n--- Session State Check ---")
+    # Determine stage based on same logic as CampaignOrchestrator
+    if report_len < 500:
+        stage = "RESEARCH"
+    elif num_images < 2 or not has_commercial:
+        stage = "CREATIVE"
+    elif not has_focus_group:
+        stage = "FOCUS_GROUP"
+    elif final_len == 0:
+        stage = "SAVE_REPORT"
+    else:
+        stage = "COMPLETE"
+
+    print(f"\n--- Pipeline Status: {stage} ---")
     print(f"  Research report: {report_len} chars")
-    print(f"  Images: {len(imgs) if isinstance(imgs, list) else 0}")
-    print(f"  Videos: {len(vids) if isinstance(vids, list) else 0}")
+    print(f"  Images: {num_images}")
+    print(f"  Videos: {num_videos}")
+    print(f"  Commercial: {'YES' if has_commercial else 'no'}")
+    print(f"  Focus group: {'YES' if has_focus_group else 'no'}")
     print(f"  Final report: {final_len} chars")
 
     return {
+        "stage": stage,
         "report_len": report_len,
-        "num_images": len(imgs) if isinstance(imgs, list) else 0,
-        "num_videos": len(vids) if isinstance(vids, list) else 0,
+        "num_images": num_images,
+        "num_videos": num_videos,
+        "has_commercial": has_commercial,
+        "has_focus_group": has_focus_group,
         "final_report_len": final_len,
         "state": state,
-        "imgs": imgs,
-        "vids": vids,
         "report": report,
         "final_report": final,
+        "commercial": commercial,
+        "focus_group": focus_group,
+        "imgs": imgs,
+        "vids": vids,
     }
 
 
@@ -143,7 +176,7 @@ def run_e2e():
     start_time = time.time()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     print(f"\n{'#'*60}")
-    print(f"E2E DEMO RUNNER - {timestamp}")
+    print(f"E2E DEMO RUNNER (CampaignOrchestrator) - {timestamp}")
     print(f"Engine: {ENGINE_ID}")
     print(f"Project: {PROJECT}")
     print(f"{'#'*60}")
@@ -151,154 +184,68 @@ def run_e2e():
     client = vertexai.Client(project=PROJECT, location=LOCATION)
     ae = client.agent_engines.get(name=RESOURCE_NAME)
 
-    # === STEP 1: Create Session ===
-    print("\n=== STEP 1: Create Session ===")
+    # Create session with pre-populated state (trends already selected)
+    print("\n=== Creating Session ===")
     session = ae.create_session(user_id=USER_ID, state=INITIAL_STATE)
     session_id = session.get("id") if isinstance(session, dict) else str(session)
     print(f"Session created: {session_id}")
     save_screenshot(f"01_session_created_{timestamp}",
                     f"Session ID: {session_id}\nEngine ID: {ENGINE_ID}\nInitial State Keys: {list(INITIAL_STATE.keys())}")
 
-    # === STEP 2: Research ===
-    print("\n=== STEP 2: Start Research ===")
-    research_msg = (
-        "Campaign metadata is already loaded in state. Trends have been selected. "
-        "Skip the trends_and_insights_agent step - trends are already captured. "
-        "Transfer directly to the research_orchestrator to begin market research now. "
-        "Do not ask for confirmation, just start the research."
+    # Initial kickoff — orchestrator determines stage from state
+    events, texts, thoughts = stream_and_collect(
+        ae,
+        "Run the full campaign pipeline for Tide Fabric Softener with Hibiscus Scent.",
+        session_id,
     )
-    events, texts = stream_and_collect(ae, research_msg, session_id)
-    status = check_session_state(ae, session_id)
-    save_screenshot(f"02_research_started_{timestamp}", texts)
+    save_screenshot(f"02_initial_{timestamp}", texts)
+    status = get_pipeline_status(ae, session_id)
 
-    if status["report_len"] == 0:
-        print("\nResearch report empty. Sending follow-up...")
-        followup = "Please continue with the research. The research_orchestrator should complete all steps and produce the combined_final_cited_report."
-        events, texts = stream_and_collect(ae, followup, session_id)
-        status = check_session_state(ae, session_id)
-        save_screenshot(f"02b_research_followup_{timestamp}", texts)
+    # Loop: re-invoke until COMPLETE or max waves reached
+    for wave in range(MAX_WAVES):
+        if status["stage"] == "COMPLETE":
+            print(f"\n  Pipeline COMPLETE after {wave + 1} wave(s)!")
+            break
 
-    # Save research report screenshot
-    if status["report_len"] > 0:
-        save_screenshot(f"03_research_report_{timestamp}",
-                        f"RESEARCH REPORT ({status['report_len']} chars):\n\n{status['report'][:5000]}")
+        print(f"\n=== Wave {wave + 2}/{MAX_WAVES + 1} (stage: {status['stage']}) ===")
+        events, texts, thoughts = stream_and_collect(ae, "continue", session_id)
+        save_screenshot(f"{wave + 3:02d}_wave_{status['stage'].lower()}_{timestamp}", texts)
+        status = get_pipeline_status(ae, session_id)
 
-    # === STEP 3: Ad Creative Generation ===
-    print("\n=== STEP 3: Ad Creative Generation ===")
-    creative_msg = (
-        "The research report is complete. Now transfer to the ad_content_generator_agent "
-        "to generate ad creatives. Create compelling visual concepts and generate images using "
-        "Gemini native image generation and videos using Veo 3. "
-        "For each visual concept, generate the keyframe image first, then use it as a reference "
-        "for video generation. Proceed without asking for confirmation - select the first/best options automatically."
-    )
-    events, texts = stream_and_collect(ae, creative_msg, session_id)
-    status = check_session_state(ae, session_id)
-    save_screenshot(f"04_ad_creative_generation_{timestamp}", texts)
-
-    # Follow up if needed
-    if status["num_images"] == 0:
-        print("\nNo images yet. Sending follow-up...")
-        followup = "Please continue generating ad creatives - generate images with the generate_image tool and videos with generate_video. Use the first visual concepts available."
-        events, texts = stream_and_collect(ae, followup, session_id)
-        status = check_session_state(ae, session_id)
-        save_screenshot(f"04b_creative_followup_{timestamp}", texts)
-
-    # Save creative artifacts screenshot
-    if status["num_images"] > 0 or status["num_videos"] > 0:
-        artifact_info = "GENERATED ARTIFACTS:\n\n"
-        artifact_info += f"Images ({status['num_images']}):\n"
-        for img in (status.get("imgs") or []):
-            artifact_info += f"  - {img.get('artifact_key', '?')}: {img.get('headline', '?')}\n"
-            artifact_info += f"    Concept: {img.get('concept', '?')}\n"
-            artifact_info += f"    Prompt: {img.get('img_prompt', '?')[:200]}\n\n"
-        artifact_info += f"\nVideos ({status['num_videos']}):\n"
-        for vid in (status.get("vids") or []):
-            artifact_info += f"  - {vid.get('artifact_key', '?')}: {vid.get('headline', '?')}\n"
-            artifact_info += f"    Concept: {vid.get('concept', '?')}\n"
-            artifact_info += f"    Prompt: {vid.get('vid_prompt', '?')[:200]}\n\n"
-        save_screenshot(f"05_generated_artifacts_{timestamp}", artifact_info)
-
-    # === STEP 4: AV Studio - 15s Commercial ===
-    print("\n=== STEP 4: AV Studio - 15s Commercial ===")
-    av_msg = (
-        "Now transfer to the av_editing_studio_agent to produce a 15-second commercial. "
-        "The commercial_duration is set to 15 seconds. Use the generated images and videos as reference. "
-        "Generate clips in parallel, add soundtrack and voice-over, then concatenate into the final commercial. "
-        "Save the commercial artifact when complete. Proceed without asking for confirmation."
-    )
-    events, texts = stream_and_collect(ae, av_msg, session_id)
-    status = check_session_state(ae, session_id)
-    save_screenshot(f"06_av_studio_{timestamp}", texts)
-
-    commercial = status["state"].get("commercial_artifact", "")
-    if not commercial:
-        print("\nNo commercial artifact yet. Sending follow-up...")
-        followup = (
-            "Please continue with the AV studio. Generate the clips, add audio, concatenate them, "
-            "and save the final commercial artifact using save_commercial_artifact."
-        )
-        events, texts = stream_and_collect(ae, followup, session_id)
-        status = check_session_state(ae, session_id)
-        commercial = status["state"].get("commercial_artifact", "")
-        save_screenshot(f"06b_av_followup_{timestamp}", texts)
-
-    if commercial:
-        save_screenshot(f"07_commercial_artifact_{timestamp}",
-                        f"COMMERCIAL ARTIFACT: {commercial}")
-
-    # === STEP 5: Final Report ===
-    print("\n=== STEP 5: Final Report ===")
-    report_msg = (
-        "All creatives and the commercial look great. Now use the save_creatives_and_research_report tool "
-        "to build the final report detailing the research, creatives, and commercial generated."
-    )
-    events, texts = stream_and_collect(ae, report_msg, session_id)
-    status = check_session_state(ae, session_id)
-    save_screenshot(f"08_final_report_{timestamp}", texts)
-
-    if status["final_report_len"] > 0:
-        save_screenshot(f"09_final_report_content_{timestamp}",
-                        f"FINAL REPORT ({status['final_report_len']} chars):\n\n{status['final_report'][:5000]}")
-
-    # === FINAL SUMMARY ===
+    # Final summary
     elapsed = time.time() - start_time
     elapsed_min = elapsed / 60.0
 
-    commercial = status["state"].get("commercial_artifact", "")
-    has_commercial = bool(commercial)
-
     summary = f"""
 {'='*60}
-E2E CEO DEMO RESULTS - {timestamp}
+E2E DEMO RESULTS (CampaignOrchestrator) - {timestamp}
 {'='*60}
   Engine ID: {ENGINE_ID}
   Session ID: {session_id}
   Duration: {elapsed_min:.1f} minutes
   Campaign: Tide Fabric Softener (Hibiscus) for Gen Z
 
-  Research report: {status['report_len']} chars {'PASS' if status['report_len'] > 500 else 'FAIL (need >500 chars)'}
-  Draft PDF artifact: {'PASS' if status['report_len'] > 0 else 'FAIL'}
-  Images: {status['num_images']} {'PASS' if status['num_images'] >= 2 else 'FAIL (need >=2)'}
-  Videos: {status['num_videos']} {'PASS' if status['num_videos'] >= 2 else 'FAIL (need >=2)'}
-  15s Commercial: {'PASS' if has_commercial else 'FAIL'}
+  Research report: {status['report_len']} chars {'PASS' if status['report_len'] > 500 else 'FAIL'}
+  Images: {status['num_images']} {'PASS' if status['num_images'] >= 2 else 'FAIL'}
+  Videos: {status['num_videos']} {'PASS' if status['num_videos'] >= 2 else 'FAIL'}
+  15s Commercial: {'PASS' if status['has_commercial'] else 'FAIL'}
   Final report: {status['final_report_len']} chars {'PASS' if status['final_report_len'] > 0 else 'FAIL'}
 
-  OVERALL: {'PASS' if (status['report_len'] > 500 and status['num_images'] >= 2 and status['num_videos'] >= 2 and has_commercial and status['final_report_len'] > 0) else 'FAIL'}
+  OVERALL: {'PASS' if (status['report_len'] > 500 and status['num_images'] >= 2 and status['num_videos'] >= 2 and status['has_commercial'] and status['final_report_len'] > 0) else 'FAIL'}
 {'='*60}
 """
     print(summary)
-    save_screenshot(f"10_final_summary_{timestamp}", summary)
+    save_screenshot(f"99_final_summary_{timestamp}", summary)
 
     # Save full session state
     try:
         state_json = json.dumps(status["state"], indent=2, default=str)
-        save_screenshot(f"11_full_session_state_{timestamp}", state_json[:50000])
+        save_screenshot(f"99_full_session_state_{timestamp}", state_json[:50000])
     except Exception as e:
         print(f"  Could not save full state: {e}")
 
     return (status["report_len"] > 500 and status["num_images"] >= 2
-            and status["num_videos"] >= 2 and has_commercial
+            and status["num_videos"] >= 2 and status["has_commercial"]
             and status["final_report_len"] > 0)
 
 

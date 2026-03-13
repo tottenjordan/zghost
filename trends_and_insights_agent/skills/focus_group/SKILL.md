@@ -26,6 +26,7 @@ focus_group_evaluator_agent (LLM Agent)
 | Tool | Purpose |
 |------|---------|
 | `analyze_commercial_video` | Analyze commercial video using Gemini vision for frame-by-frame assessment |
+| `save_creatives_and_research_report` | Compile final PDF report with research, creatives, and focus group scores |
 
 ## Session State Keys
 
@@ -43,7 +44,9 @@ focus_group_evaluator_agent (LLM Agent)
 | `key_selling_points` | trend-discovery |
 
 ### Written
-None (read-only evaluation skill)
+| Key | Description |
+|-----|-------------|
+| `final_report_with_citations` | Final PDF report combining research + creatives + focus group evaluation |
 
 ## Workflow
 
@@ -51,3 +54,4 @@ None (read-only evaluation skill)
 2. **Context Review** -- Read session state for creative intent and campaign context.
 3. **Focus Group Simulation** -- Simulate 5 panelists scoring 6 categories.
 4. **Summary Report** -- Compile scores, strengths, improvements, uplift prediction, and Go/No-Go.
+5. **Final Report** -- Call `save_creatives_and_research_report` to generate PDF with research + creatives + evaluation.
