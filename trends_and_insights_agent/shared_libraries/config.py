@@ -19,17 +19,17 @@ class ResearchConfiguration:
 
     """
 
-    critic_model: str = "gemini-2.5-flash"
-    worker_model: str = "gemini-2.5-flash"
-    video_analysis_model: str = "gemini-2.5-flash"
+    critic_model: str = "gemini-3-flash-preview"
+    worker_model: str = "gemini-3-flash-preview"
+    video_analysis_model: str = "gemini-3-flash-preview"
     lite_planner_model: str = (
-        "gemini-2.5-flash"
+        "gemini-3-flash-preview"
     )
-    image_gen_model: str = "gemini-2.5-flash-image"  # was: gemini-3.1-flash-image-preview
+    image_gen_model: str = "gemini-3-pro-image-preview"  # native image gen via response_modalities=["IMAGE"], global endpoint
     video_gen_model: str = (
         "veo-3.1-fast-generate-001"  # GA model | "veo-3.1-fast-generate-preview"
     )
-    subject_image_gen_model: str = "gemini-2.5-flash-image"  # was: gemini-3.1-flash-image-preview
+    subject_image_gen_model: str = "gemini-3-pro-image-preview"  # native image gen via response_modalities=["IMAGE"], global endpoint
 
     max_results_yt_trends: int = 45
 

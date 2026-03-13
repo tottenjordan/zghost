@@ -1,12 +1,49 @@
+# Virtual environment
 .venv
+
+# Google Cloud SDK
 /google-cloud-cli-linux-x86_64.tar.gz
 /google-cloud-sdk
+
+# Python bytecode
 *.pyc
-*.env
 **/__pycache__/
 __pycache__/
+
+# Environment files
+*.env
+
+# Wheel files
 *.whl
-trends_and_insights_agent/.adk/*
+
+# ADK runtime artifacts (session DBs, cached artifacts)
+.adk/
+**/.adk/
+
+# Eval artifacts
 *.evalset.json
+tests/eval_artifacts/
+
+# Stash and temp files
 stash/*
 files/*
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Pytest
+.pytest_cache/
+**/.pytest_cache/
+
+# Playwright / E2E test artifacts
+frontend/screenshots/
+frontend/test-results/
+frontend/playwright-report/
+ralph_screenshots/
+
+# AI-generated iteration directories
+docs/run_*/
+
+# Duplicate/old agent copies
+agents/

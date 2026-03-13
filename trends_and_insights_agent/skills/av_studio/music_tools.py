@@ -8,6 +8,7 @@ import base64
 from typing import Optional, Dict, Any, List
 from google.adk.tools import ToolContext
 from ...shared_libraries.config import audio_config as config
+from .tools import FFMPEG_BIN
 from ...shared_libraries.utils import upload_blob_to_gcs
 
 logging.basicConfig(level=logging.INFO)
@@ -365,7 +366,7 @@ def combine_audio_with_video(
             else:
                 # Simple audio replacement
                 cmd = [
-                    "ffmpeg",
+                    FFMPEG_BIN,
                     "-i", video_path,
                     "-i", music_path,
                     "-map", "0:v",

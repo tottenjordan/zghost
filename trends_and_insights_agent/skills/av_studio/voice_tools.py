@@ -8,6 +8,7 @@ import time
 from typing import Optional, Dict, List, Any
 from google.cloud import texttospeech_v1beta1 as texttospeech
 from google.adk.tools import ToolContext
+from .tools import FFMPEG_BIN
 from ...shared_libraries.config import config, audio_config
 from ...shared_libraries.utils import upload_blob_to_gcs
 try:
@@ -589,7 +590,7 @@ def mix_voice_with_audio(
             filter_complex += f";{mix_inputs}amix=inputs={num_inputs}:duration=first,dynaudnorm=p=0.95:m=10:s=5[final_audio]"
 
             # Build ffmpeg command
-            cmd = ["ffmpeg"] + inputs + [
+            cmd = [FFMPEG_BIN] + inputs + [
                 "-filter_complex", filter_complex,
                 "-map", "0:v",
                 "-map", "[final_audio]",

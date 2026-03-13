@@ -14,7 +14,7 @@ from vertexai import agent_engines
 from trends_and_insights_agent import agent
 
 
-def deploy_agent_engine():
+def deploy_agent_engine(update=False):
     """Deploy the agent to Vertex AI Agent Engine."""
     env_vars = {
         "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY": "true",
@@ -33,6 +33,10 @@ def deploy_agent_engine():
     my_agent = agent_engines.AdkApp(
         agent=agent.root_agent,
         enable_tracing=True,
+        session_service_builder=lambda: __import__("google.adk.sessions", fromlist=["VertexAiSessionService"]).VertexAiSessionService(
+            project=os.getenv("GOOGLE_CLOUD_PROJECT"),
+            location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
+        ),
         artifact_service_builder=lambda: __import__("google.adk.artifacts", fromlist=["GcsArtifactService"]).GcsArtifactService(
             bucket_name=os.getenv("BUCKET", "gs://zghost-media-center").replace("gs://", "")
         ),
@@ -59,56 +63,95 @@ def deploy_agent_engine():
     GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT")
     BUCKET = os.getenv("BUCKET")
 
+    requirements = [
+        "google-cloud-aiplatform[agent-engines]",
+        "google-adk==1.25.1",
+        "python-dotenv",
+        "pandas",
+        "numpy",
+        "requests",
+        "pillow",
+        "opencv-python-headless",
+        "google-api-python-client",
+        "pydantic",
+        "cloudpickle",
+        "google-cloud-bigquery",
+        "db-dtypes",
+        "markdown_pdf",
+        "tabulate",
+        "google-cloud-texttospeech",
+        "google-cloud-storage",
+    ]
+    extra_packages = [
+        "trends_and_insights_agent",
+        "notebooks/installation_scripts/install_ffmpeg.sh",
+        "notebooks/installation_scripts/install_opencv.sh",
+    ]
+    build_options = {
+        "installation": [
+            "installation_scripts/install_ffmpeg.sh",
+            "installation_scripts/install_opencv.sh",
+        ]
+    }
+
     client = vertexai.Client(
         project=GOOGLE_CLOUD_PROJECT,
         location="us-central1",
     )
 
-    remote_agent = client.agent_engines.create(
-        agent=my_agent,
-        config=dict(
-            display_name="ralph-wiggum",
-            description="You are a helpful AI assistant, part of a multi-agent system designed for advanced web research and ad creative generation.",
-            requirements=[
-                "google-cloud-aiplatform[agent-engines]",
-                "google-adk>=1.21.0",
-                "python-dotenv",
-                "pandas",
-                "numpy",
-                "requests",
-                "pillow",
-                "opencv-python-headless",
-                "google-api-python-client",
-                "pydantic",
-                "cloudpickle",
-                "google-cloud-bigquery",
-                "db-dtypes",
-                "markdown_pdf",
-                "tabulate",
-            ],
-            staging_bucket=BUCKET,
-            extra_packages=[
-                "trends_and_insights_agent",
-            ],
-            env_vars=env_vars,
-        ),
-    )
+    # Check if we should update an existing engine
+    existing_engine_id = None
+    if os.path.exists("deployment_info.json"):
+        with open("deployment_info.json") as f:
+            info = json.load(f)
+        existing_engine_id = info.get("engine_id")
 
-    resource_name = remote_agent.api_resource.name
-    engine_id = resource_name.split("/")[-1]
-    print(f"Deployed Agent Resource Name: {resource_name}")
-    print(f"Deployed Agent Engine ID: {engine_id}")
+    if update and existing_engine_id:
+        print(f"Updating existing engine: {existing_engine_id}")
+        full_name = f"projects/{GOOGLE_CLOUD_PROJECT}/locations/us-central1/reasoningEngines/{existing_engine_id}"
+        remote_agent = client.agent_engines.update(
+            name=full_name,
+            agent=my_agent,
+            config=dict(
+                display_name="trends2insights",
+                description="You are a helpful AI assistant, part of a multi-agent system designed for advanced web research and ad creative generation.",
+                requirements=requirements,
+                staging_bucket=BUCKET,
+                extra_packages=extra_packages,
+                env_vars=env_vars,
+                build_options=build_options,
+            ),
+        )
+        engine_id = existing_engine_id
+        print(f"Updated Agent Engine ID: {engine_id}")
+    else:
+        remote_agent = client.agent_engines.create(
+            agent=my_agent,
+            config=dict(
+                display_name="trends2insights",
+                description="You are a helpful AI assistant, part of a multi-agent system designed for advanced web research and ad creative generation.",
+                requirements=requirements,
+                staging_bucket=BUCKET,
+                extra_packages=extra_packages,
+                env_vars=env_vars,
+                build_options=build_options,
+            ),
+        )
+        resource_name = remote_agent.api_resource.name
+        engine_id = resource_name.split("/")[-1]
+        print(f"Deployed Agent Resource Name: {resource_name}")
+        print(f"Deployed Agent Engine ID: {engine_id}")
 
-    # Save deployment info for GE registration
-    deployment_info = {
-        "resource_name": resource_name,
-        "engine_id": engine_id,
-        "project_id": GOOGLE_CLOUD_PROJECT,
-        "project_number": os.getenv("GOOGLE_CLOUD_PROJECT_NUMBER"),
-    }
-    with open("deployment_info.json", "w") as f:
-        json.dump(deployment_info, f, indent=2)
-    print(f"Saved deployment info to deployment_info.json")
+        # Save deployment info for GE registration
+        deployment_info = {
+            "resource_name": resource_name,
+            "engine_id": engine_id,
+            "project_id": GOOGLE_CLOUD_PROJECT,
+            "project_number": os.getenv("GOOGLE_CLOUD_PROJECT_NUMBER"),
+        }
+        with open("deployment_info.json", "w") as f:
+            json.dump(deployment_info, f, indent=2)
+        print(f"Saved deployment info to deployment_info.json")
 
     return remote_agent
 
@@ -136,10 +179,15 @@ if __name__ == "__main__":
         default="all",
         help="Which deployment step to run (default: all)",
     )
+    parser.add_argument(
+        "--update",
+        action="store_true",
+        help="Update existing engine from deployment_info.json instead of creating new",
+    )
     args = parser.parse_args()
 
     if args.step in ("agent-engine", "all"):
-        deploy_agent_engine()
+        deploy_agent_engine(update=args.update)
 
     if args.step in ("gemini-enterprise", "all"):
         register_gemini_enterprise()

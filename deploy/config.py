@@ -16,10 +16,10 @@ class DeployConfig:
     agentspace_location: str = "global"
     agentspace_app_id: str = "gemini-enterprise-17634901_1763490144996"
     reasoning_engine_id: str = ""
-    display_name: str = "ralph-wiggum"
-    description: str = "AI assistant for web research and ad creative generation."
-    instructions: str = "Use this agent for marketing research, trend analysis, and ad creative generation."
-    icon_uri: str = "https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/corporate_fare/default/24px.svg"
+    display_name: str = "trends2insights"
+    description: str = "Finding the intersection of brand, product, and audience."
+    instructions: str = "Use this agent for marketing research, trend analysis, and ad creative generation. It finds trending topics, conducts web research, and generates ad creatives with images and videos."
+    icon_uri: str = "https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/trending_up/default/48px.svg"
 
     @classmethod
     def from_env(cls) -> "DeployConfig":
@@ -29,8 +29,8 @@ class DeployConfig:
         return cls(
             project_id=os.getenv("GOOGLE_CLOUD_PROJECT", ""),
             project_number=os.getenv("GOOGLE_CLOUD_PROJECT_NUMBER", ""),
-            agent_engine_location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
-            agentspace_location=os.getenv("AGENTSPACE_LOCATION", "us"),
+            agent_engine_location=os.getenv("AGENT_ENGINE_LOCATION", "us-central1"),
+            agentspace_location=os.getenv("AGENTSPACE_LOCATION", "global"),
             agentspace_app_id=os.getenv("AGENTSPACE_APP_ID", ""),
         )
 

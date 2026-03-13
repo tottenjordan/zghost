@@ -46,6 +46,10 @@ INITIAL_STATE = {
     "sources": {},
     "final_report_with_citations": "",
     "autopilot_mode": True,
+    "commercial_duration": 15,
+    "commercial_artifact": "",
+    "campaign_guide_content": "",
+    "gcs_folder": "",
 }
 
 
@@ -215,55 +219,87 @@ def run_e2e():
             artifact_info += f"    Prompt: {vid.get('vid_prompt', '?')[:200]}\n\n"
         save_screenshot(f"05_generated_artifacts_{timestamp}", artifact_info)
 
-    # === STEP 4: Final Report ===
-    print("\n=== STEP 4: Final Report ===")
+    # === STEP 4: AV Studio - 15s Commercial ===
+    print("\n=== STEP 4: AV Studio - 15s Commercial ===")
+    av_msg = (
+        "Now transfer to the av_editing_studio_agent to produce a 15-second commercial. "
+        "The commercial_duration is set to 15 seconds. Use the generated images and videos as reference. "
+        "Generate clips in parallel, add soundtrack and voice-over, then concatenate into the final commercial. "
+        "Save the commercial artifact when complete. Proceed without asking for confirmation."
+    )
+    events, texts = stream_and_collect(ae, av_msg, session_id)
+    status = check_session_state(ae, session_id)
+    save_screenshot(f"06_av_studio_{timestamp}", texts)
+
+    commercial = status["state"].get("commercial_artifact", "")
+    if not commercial:
+        print("\nNo commercial artifact yet. Sending follow-up...")
+        followup = (
+            "Please continue with the AV studio. Generate the clips, add audio, concatenate them, "
+            "and save the final commercial artifact using save_commercial_artifact."
+        )
+        events, texts = stream_and_collect(ae, followup, session_id)
+        status = check_session_state(ae, session_id)
+        commercial = status["state"].get("commercial_artifact", "")
+        save_screenshot(f"06b_av_followup_{timestamp}", texts)
+
+    if commercial:
+        save_screenshot(f"07_commercial_artifact_{timestamp}",
+                        f"COMMERCIAL ARTIFACT: {commercial}")
+
+    # === STEP 5: Final Report ===
+    print("\n=== STEP 5: Final Report ===")
     report_msg = (
-        "All creatives look great. Now use the save_creatives_and_research_report tool "
-        "to build the final report detailing the research and creatives generated."
+        "All creatives and the commercial look great. Now use the save_creatives_and_research_report tool "
+        "to build the final report detailing the research, creatives, and commercial generated."
     )
     events, texts = stream_and_collect(ae, report_msg, session_id)
     status = check_session_state(ae, session_id)
-    save_screenshot(f"06_final_report_{timestamp}", texts)
+    save_screenshot(f"08_final_report_{timestamp}", texts)
 
     if status["final_report_len"] > 0:
-        save_screenshot(f"07_final_report_content_{timestamp}",
+        save_screenshot(f"09_final_report_content_{timestamp}",
                         f"FINAL REPORT ({status['final_report_len']} chars):\n\n{status['final_report'][:5000]}")
 
     # === FINAL SUMMARY ===
     elapsed = time.time() - start_time
     elapsed_min = elapsed / 60.0
 
+    commercial = status["state"].get("commercial_artifact", "")
+    has_commercial = bool(commercial)
+
     summary = f"""
 {'='*60}
-E2E DEMO RESULTS - {timestamp}
+E2E CEO DEMO RESULTS - {timestamp}
 {'='*60}
   Engine ID: {ENGINE_ID}
   Session ID: {session_id}
   Duration: {elapsed_min:.1f} minutes
+  Campaign: Tide Fabric Softener (Hibiscus) for Gen Z
 
-  Research report: {status['report_len']} chars {'PASS' if status['report_len'] > 0 else 'FAIL'}
-  Images: {status['num_images']} {'PASS' if status['num_images'] > 0 else 'FAIL'}
-  Videos: {status['num_videos']} {'PASS' if status['num_videos'] > 0 else 'FAIL'}
+  Research report: {status['report_len']} chars {'PASS' if status['report_len'] > 500 else 'FAIL (need >500 chars)'}
+  Draft PDF artifact: {'PASS' if status['report_len'] > 0 else 'FAIL'}
+  Images: {status['num_images']} {'PASS' if status['num_images'] >= 2 else 'FAIL (need >=2)'}
+  Videos: {status['num_videos']} {'PASS' if status['num_videos'] >= 2 else 'FAIL (need >=2)'}
+  15s Commercial: {'PASS' if has_commercial else 'FAIL'}
   Final report: {status['final_report_len']} chars {'PASS' if status['final_report_len'] > 0 else 'FAIL'}
 
-  Image model: gemini-3-pro-image-preview (Gemini native)
-  Video model: veo-3.1-fast-generate-preview (Veo 3)
-  Image-to-Video Reference: YES (keyframe -> video workflow)
-
-  OVERALL: {'PASS' if (status['report_len'] > 0 and status['num_images'] > 0 and status['num_videos'] > 0 and status['final_report_len'] > 0) else 'FAIL'}
+  OVERALL: {'PASS' if (status['report_len'] > 500 and status['num_images'] >= 2 and status['num_videos'] >= 2 and has_commercial and status['final_report_len'] > 0) else 'FAIL'}
 {'='*60}
 """
     print(summary)
-    save_screenshot(f"08_final_summary_{timestamp}", summary)
+    save_screenshot(f"10_final_summary_{timestamp}", summary)
 
     # Save full session state
     try:
         state_json = json.dumps(status["state"], indent=2, default=str)
-        save_screenshot(f"09_full_session_state_{timestamp}", state_json[:50000])
+        save_screenshot(f"11_full_session_state_{timestamp}", state_json[:50000])
     except Exception as e:
         print(f"  Could not save full state: {e}")
 
-    return status["report_len"] > 0 and status["num_images"] > 0 and status["num_videos"] > 0
+    return (status["report_len"] > 500 and status["num_images"] >= 2
+            and status["num_videos"] >= 2 and has_commercial
+            and status["final_report_len"] > 0)
 
 
 if __name__ == "__main__":

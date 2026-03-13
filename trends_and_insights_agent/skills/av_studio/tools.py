@@ -20,6 +20,10 @@ from ...shared_libraries.utils import (
     download_image_from_gcs,
 )
 
+# ffmpeg/ffprobe binaries — installed via build_options installation script on Agent Engine
+FFMPEG_BIN = "ffmpeg"
+FFPROBE_BIN = "ffprobe"
+
 logging.basicConfig(level=logging.INFO)
 
 MAX_VEO_POLL_SECONDS = 300  # 5 min
@@ -583,7 +587,7 @@ def concatenate_clips(
 
             result = subprocess.run(
                 [
-                    "ffmpeg",
+                    FFMPEG_BIN,
                     "-f", "concat",
                     "-safe", "0",
                     "-i", concat_list_path,
@@ -598,7 +602,7 @@ def concatenate_clips(
             # Get duration
             probe_result = subprocess.run(
                 [
-                    "ffprobe",
+                    FFPROBE_BIN,
                     "-v", "error",
                     "-show_entries", "format=duration",
                     "-of", "default=noprint_wrappers=1:nokey=1",
@@ -682,7 +686,7 @@ def trim_video(
 
             subprocess.run(
                 [
-                    "ffmpeg",
+                    FFMPEG_BIN,
                     "-i", input_path,
                     "-t", str(target_duration_seconds),
                     "-c", "copy",
@@ -785,7 +789,7 @@ async def save_commercial_artifact(
         try:
             # Use ffprobe to check for audio streams
             probe_cmd = [
-                "ffprobe",
+                FFPROBE_BIN,
                 "-v", "quiet",
                 "-print_format", "json",
                 "-show_streams",
@@ -883,7 +887,7 @@ def add_audio_to_clip(
             audio_filter = f"adelay={delay_ms}|{delay_ms},{audio_filter}"
 
         cmd = [
-            "ffmpeg", "-y",
+            FFMPEG_BIN, "-y",
             "-i", clip_path,
             "-i", audio_path,
             "-filter_complex", f"[1:a]{audio_filter}[a]",
