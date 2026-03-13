@@ -125,12 +125,12 @@ class CreativeProductionOrchestrator(BaseAgent):
         if isinstance(img_keys, dict):
             img_keys = img_keys.get("img_artifact_keys", [])
 
-        # If concepts + images exist, go to AV_STUDIO
-        # (the _run_async_impl handler will trigger fallback if exhausted)
-        if ad_copies and vis_concepts and img_keys and len(img_keys) >= 1:
+        # If images exist, go to AV_STUDIO
+        if img_keys and len(img_keys) >= 1:
             return 2  # AV_STUDIO
-        # If concepts exist but no images, run IMAGE_GEN stage
-        if ad_copies and vis_concepts:
+        # If ad copies exist (with or without visual concepts), run IMAGE_GEN
+        # IMAGE_GEN will fall back to ad copy descriptions if no visual concepts
+        if ad_copies:
             return 1  # IMAGE_GEN
 
         return 0  # Start from AD_CREATIVE
@@ -264,9 +264,25 @@ class CreativeProductionOrchestrator(BaseAgent):
         if isinstance(vis_concepts, dict):
             vis_concepts = vis_concepts.get("final_select_vis_concepts", [])
 
+        # Fall back chain: visual concepts → ad copies → ad copy critique → generic
         if not vis_concepts:
-            yield self._status_event(ctx, "No visual concepts found — skipping image generation.")
-            return
+            ad_copies = state.get("final_select_ad_copies", {})
+            if isinstance(ad_copies, dict):
+                ad_copies = ad_copies.get("final_select_ad_copies", [])
+            # Also try ad_copy_critique (critic output) as fallback
+            ad_critique = state.get("ad_copy_critique", "")
+            if ad_copies:
+                vis_concepts = [
+                    {"concept_name": f"ad_copy_{i+1}", "description": str(c)[:300]}
+                    for i, c in enumerate(ad_copies[:2])
+                ]
+                yield self._status_event(ctx, "No visual concepts — generating images from ad copy descriptions.")
+            elif ad_critique:
+                vis_concepts = [{"concept_name": "campaign_visual", "description": str(ad_critique)[:300]}]
+                yield self._status_event(ctx, "Using ad copy critique to generate campaign image.")
+            else:
+                vis_concepts = [{"concept_name": "product_hero", "description": f"Hero shot of {product}"}]
+                yield self._status_event(ctx, "No visual concepts or ad copies — generating generic product image.")
 
         product = state.get("target_product", "the product")
         audience = state.get("target_audience", "consumers")

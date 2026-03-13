@@ -158,17 +158,12 @@ class CampaignOrchestrator(BaseAgent):
         if not report or len(str(report)) < 500:
             return "RESEARCH"
 
-        # Stage 2: Need ad creatives AND commercial
-        img_keys = state.get("img_artifact_keys", {})
-        if isinstance(img_keys, dict):
-            img_keys = img_keys.get("img_artifact_keys", [])
+        # Stage 2: Need commercial (images are optional)
         creative_attempts = state.get("_creative_pipeline_attempts", 0)
         creative_exhausted = creative_attempts >= MAX_CREATIVE_ATTEMPTS
+        has_commercial = bool(state.get("commercial_artifact"))
 
-        if not img_keys or len(img_keys) < 1:
-            if not creative_exhausted:
-                return "CREATIVE"
-        if not state.get("commercial_artifact") and not creative_exhausted:
+        if not has_commercial and not creative_exhausted:
             return "CREATIVE"
 
         # Stage 3: Need focus group evaluation
