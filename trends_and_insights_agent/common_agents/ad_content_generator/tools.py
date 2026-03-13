@@ -11,7 +11,7 @@ from google import genai
 from google.genai import types
 from google.cloud import storage
 from google.adk.tools import ToolContext
-from google.genai.types import GenerateVideosConfig, VideoGenerationReferenceImage
+from google.genai.types import GenerateVideosConfig
 
 from ...shared_libraries.config import config
 from ...shared_libraries.utils import (
@@ -209,30 +209,31 @@ async def generate_video(
     else:
         filename_prefix = f"{str(uuid.uuid4())[:8]}"
 
-    # Build reference_images list if an existing image is provided as a keyframe
-    reference_images = None
+    # Build first-frame image conditioning if an existing image is provided as a keyframe.
+    # NOTE: Veo 3.1 does not support reference_images with reference_type="STYLE".
+    # Instead, pass the image as the `image` parameter (first-frame conditioning).
+    first_frame_image = None
     if existing_image_filename != "":
         gcs_folder = tool_context.state.get("gcs_folder", "")
         gcs_location = f"{os.environ['BUCKET']}/{gcs_folder}/{existing_image_filename}"
-        reference_images = [
-            VideoGenerationReferenceImage(
-                image=types.Image(gcs_uri=gcs_location, mime_type="image/png"),
-                reference_type="STYLE",
-            )
-        ]
-        logging.info(f"Using reference image for video generation: {gcs_location}")
+        first_frame_image = types.Image(gcs_uri=gcs_location, mime_type="image/png")
+        logging.info(f"Using first-frame image for video generation: {gcs_location}")
 
     gen_config = GenerateVideosConfig(
         aspect_ratio="16:9",
         number_of_videos=number_of_videos,
         output_gcs_uri=os.environ["BUCKET"],
         negative_prompt=negative_prompt,
-        reference_images=reference_images,
     )
     try:
-        operation = client.models.generate_videos(
-            model=config.video_gen_model, prompt=prompt, config=gen_config
-        )
+        if first_frame_image:
+            operation = client.models.generate_videos(
+                model=config.video_gen_model, prompt=prompt, image=first_frame_image, config=gen_config
+            )
+        else:
+            operation = client.models.generate_videos(
+                model=config.video_gen_model, prompt=prompt, config=gen_config
+            )
         while not operation.done:
             time.sleep(15)
             operation = client.operations.get(operation)
@@ -379,6 +380,16 @@ def evaluate_media_fidelity(
     # Gecko eval uses Vertex AI evaluation API which requires a regional endpoint,
     # not the "global" endpoint used for Gemini 3 models.
     location = "us-central1"
+
+    # If media_uri is not a full GCS URI, construct it from artifact_key + gcs_folder
+    if not media_uri.startswith("gs://"):
+        gcs_folder = tool_context.state.get("gcs_folder", "")
+        bucket = os.environ.get("BUCKET", "gs://zghost-media-center")
+        if gcs_folder:
+            media_uri = f"{bucket}/{gcs_folder}/{media_uri}"
+        else:
+            media_uri = f"{bucket}/{media_uri}"
+        logging.info(f"Gecko eval: constructed GCS URI: {media_uri}")
 
     try:
         result = gecko_evaluate(

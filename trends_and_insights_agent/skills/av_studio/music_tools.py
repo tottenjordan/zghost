@@ -67,7 +67,9 @@ def _call_lyria_predict(prompt: str, negative_prompt: str = "", sample_count: in
     credentials.refresh(google.auth.transport.requests.Request())
 
     project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
-    location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+    # Lyria 2 is a Vertex AI predict endpoint — always us-central1, NOT the
+    # global endpoint used for Gemini 3 models.
+    location = "us-central1"
     endpoint = f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/publishers/google/models/{config.lyria_model}:predict"
 
     payload: Dict[str, Any] = {"instances": [{"prompt": prompt}], "parameters": {}}

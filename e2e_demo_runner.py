@@ -18,13 +18,13 @@ import vertexai
 
 PROJECT = "wortz-project-352116"
 LOCATION = "us-central1"
-ENGINE_ID = "4886457272743493632"
+ENGINE_ID = "8788263399906607104"
 RESOURCE_NAME = f"projects/679926387543/locations/{LOCATION}/reasoningEngines/{ENGINE_ID}"
 USER_ID = "e2e_demo_user"
 SCREENSHOT_DIR = "demo_screenshots"
 
 # Max re-invocations before giving up
-MAX_WAVES = 15
+MAX_WAVES = 35
 
 # Pre-populated state to skip trend selection - Tide Fabric Softener campaign
 INITIAL_STATE = {
@@ -229,9 +229,10 @@ E2E DEMO RESULTS (CampaignOrchestrator) - {timestamp}
   Images: {status['num_images']} {'PASS' if status['num_images'] >= 2 else 'FAIL'}
   Videos: {status['num_videos']} {'PASS' if status['num_videos'] >= 2 else 'FAIL'}
   15s Commercial: {'PASS' if status['has_commercial'] else 'FAIL'}
+  Focus Group: {'PASS' if status['has_focus_group'] else 'FAIL'}
   Final report: {status['final_report_len']} chars {'PASS' if status['final_report_len'] > 0 else 'FAIL'}
 
-  OVERALL: {'PASS' if (status['report_len'] > 500 and status['num_images'] >= 2 and status['num_videos'] >= 2 and status['has_commercial'] and status['final_report_len'] > 0) else 'FAIL'}
+  OVERALL: {'PASS' if (status['report_len'] > 500 and status['num_images'] >= 2 and status['num_videos'] >= 2 and status['has_commercial'] and status['has_focus_group'] and status['final_report_len'] > 0) else 'FAIL'}
 {'='*60}
 """
     print(summary)
@@ -246,7 +247,7 @@ E2E DEMO RESULTS (CampaignOrchestrator) - {timestamp}
 
     return (status["report_len"] > 500 and status["num_images"] >= 2
             and status["num_videos"] >= 2 and status["has_commercial"]
-            and status["final_report_len"] > 0)
+            and status["has_focus_group"] and status["final_report_len"] > 0)
 
 
 if __name__ == "__main__":
