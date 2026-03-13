@@ -52,6 +52,10 @@ def generate_subject_image(
     Use this tool to create visual reference images that establish consistent characters,
     props, or settings across multiple video clips in the commercial.
 
+    NOTE: Results are cached in session state (av_studio_subjects). If a subject
+    with the same name was already generated in a prior wave, the cached GCS URI
+    is returned immediately without regenerating.
+
     Args:
         prompt (str): A detailed description of the subject to generate. Be specific about
             appearance, pose, lighting, and style for visual consistency.
@@ -62,6 +66,13 @@ def generate_subject_image(
     Returns:
         dict: Status and paths. Keys: "status", "gcs_uri", "local_path", "subject_name".
     """
+    # Check session state cache — avoid regenerating across AE invocations
+    subjects_cache = tool_context.state.get("av_studio_subjects", {})
+    if subject_name in subjects_cache:
+        cached = subjects_cache[subject_name]
+        logging.info(f"Subject '{subject_name}' already exists in cache: {cached}")
+        return {"status": "ok", "gcs_uri": cached, "local_path": "", "subject_name": subject_name}
+
     try:
         response = client.models.generate_content(
             model=config.subject_image_gen_model,
@@ -106,6 +117,10 @@ def generate_subject_image(
 
         bucket_name = get_gcs_bucket().replace("gs://", "")
         gcs_uri = f"gs://{bucket_name}/{destination_blob}"
+
+        # Cache in session state for cross-wave persistence on AE
+        subjects_cache[subject_name] = gcs_uri
+        tool_context.state["av_studio_subjects"] = subjects_cache
 
         logging.info(f"Generated subject image '{subject_name}' at {gcs_uri}")
 
@@ -228,6 +243,13 @@ async def generate_clip_with_frames(
     Returns:
         dict: Status and paths. Keys: "status", "gcs_uri", "local_path", "clip_name".
     """
+    # Check session state cache — avoid regenerating clips across AE invocations
+    clips_cache = tool_context.state.get("av_studio_clips", {})
+    if clip_name in clips_cache:
+        cached_uri = clips_cache[clip_name]
+        logging.info(f"Clip '{clip_name}' already exists in cache: {cached_uri}")
+        return {"status": "ok", "gcs_uri": cached_uri, "local_path": "", "clip_name": clip_name}
+
     try:
         safe_name = clip_name.replace(" ", "_").replace(",", "")
         filename = f"{safe_name}_{str(uuid.uuid4())[:8]}.mp4"
@@ -349,6 +371,11 @@ async def generate_clip_with_frames(
 
                     gcs_uri = f"gs://{bucket_name}/{destination_blob}"
                     logging.info(f"Generated clip '{clip_name}' at {gcs_uri} (verified)")
+
+                    # Cache in session state for cross-wave persistence on AE
+                    clips_cache = tool_context.state.get("av_studio_clips", {})
+                    clips_cache[clip_name] = gcs_uri
+                    tool_context.state["av_studio_clips"] = clips_cache
 
                     return {
                         "status": "ok",
