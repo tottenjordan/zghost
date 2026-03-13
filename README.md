@@ -1,406 +1,292 @@
-# trends-2-creatives
+# Trends & Insights
 
-> a multi-agent system finding the intersection between product, trend, and audience
-
-<details>
-  <summary>trends R us</summary>
+> A multi-agent marketing intelligence system that transforms real-time cultural trends into broadcast-ready advertising campaigns — from research to finished commercial — in under 15 minutes.
 
 <p align="center">
-  <img src='media/deep-fried-trends.jpeg' width="700"/>
+  <img src='functional_architecture_diagram.png' width="800"/>
 </p>
 
-</details>
+## What It Does
 
-## About
+Trends & Insights is an AI-powered marketing platform that:
 
-_trends-2-creatives_ is a marketing tool for developing data-driven and culturally relevant marketing content. Built with Google’s [Agent Development Kit (ADK)](https://google.github.io/adk-docs/), this multi-agent system helps users generate ad creatives from trending themes in Google Search and YouTube.
+1. **Discovers trends** — surfaces what consumers care about right now from Google Search and YouTube
+2. **Conducts research** — runs parallel market research across three dimensions (search trends, YouTube trends, campaign brief) and synthesizes a cited report
+3. **Creates ad campaigns** — writes ad copy, generates campaign images, and produces 15-second commercials with AI video (Veo 3.1)
+4. **Evaluates quality** — runs a simulated focus group with AI-generated panelist portraits and weighted scoring
+5. **Delivers a PDF report** — compiles research, creatives, commercial, and focus group evaluation into a single downloadable artifact
 
-- Build LLM-based agents with [models supported in Vertex AI's Model Garden](https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/available-models)
-- Explore [trending Search terms](https://cloud.google.com/blog/products/data-analytics/top-25-google-search-terms-now-in-bigquery?e=48754805) and [trending YouTube videos](https://developers.google.com/youtube/v3/docs/videos/list)
-- Conduct web research to better understand the campaign, Search trend, and trending YouTube video
-- Draft ad creatives (e.g., image and video) based on trends, campaign themes, or specific prompts
+The entire pipeline runs autonomously on [Vertex AI Agent Engine](https://cloud.google.com/vertex-ai/docs/reasoning-engine/overview), orchestrated by a deterministic state machine (no LLM decision-making at the top level).
+
+## Architecture
 
 <p align="center">
-  <img src='media/t2a_overview_0725_v2.png' width="800"/>
+  <img src='gcp_architecture_diagram.png' width="800"/>
 </p>
 
-## How to use this repo
+> Architecture diagrams are being actively updated — see `docs/` for the latest versions.
 
-1. **Clone the repository**
+### Pipeline Stages
+
+```
+CampaignOrchestrator (BaseAgent state machine)
+│
+├── TRENDS       → trends_and_insights_agent
+│                  Surfaces Google Search + YouTube trends, captures selections
+│
+├── RESEARCH     → research_orchestrator
+│                  Parallel research (YT + Search + Campaign), memory recall,
+│                  quality evaluation, cited report generation
+│
+├── CREATIVE     → CreativeProductionOrchestrator
+│   ├── AD_CREATIVE    → Ad copy draft-critique + visual concept draft-critique-finalize
+│   ├── IMAGE_GEN      → Deterministic image generation (Gemini 3 Pro)
+│   ├── AV_STUDIO      → 15s commercial via Veo 3.1 with first-frame conditioning
+│   └── COMMERCIAL_QA  → Gecko fidelity scoring + Gemini video analysis
+│
+├── FOCUS_GROUP  → focus_group_evaluator_agent
+│                  3-person panel simulation with portrait generation,
+│                  6-category weighted scoring, Go/No-Go recommendation
+│
+├── SAVE_REPORT  → PDF generation with all assets
+│
+└── COMPLETE
+```
+
+### Models & Services
+
+| Component | Model / Service |
+|-----------|----------------|
+| Agent reasoning | Gemini 3 Flash Preview |
+| Image generation | Gemini 3 Pro Image Preview |
+| Video generation | Veo 3.1 Fast |
+| Voice-over & dialogue | Chirp 3 HD |
+| Music generation | Lyria 2 |
+| Media fidelity scoring | Gecko (Vertex AI rubric-based evaluation) |
+| Search trends | BigQuery (`google_trends.top_terms`) |
+| Video trends | YouTube Data API v3 |
+| Web research | Google Search grounding |
+| Campaign memory | Vertex AI Memory Bank |
+| Agent runtime | Vertex AI Agent Engine |
+
+## Quick Start
+
+### Prerequisites
+
+- Google Cloud project with billing enabled
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/) package manager
+- YouTube Data API key stored in Secret Manager
+
+### 1. Clone and install
 
 ```bash
 git clone https://github.com/tottenjordan/zghost.git
+cd zghost
+pip install uv
+uv sync
 ```
 
-2. **Create a virtual environment and install dependencies**
-
-```bash
-poetry config virtualenvs.in-project true
-
-poetry install
-```
-
-3. **Authenticate and Enable Google Cloud APIs**
+### 2. Enable Google Cloud APIs
 
 ```bash
 gcloud auth application-default login
 
-gcloud services enable artifactregistry.googleapis.com \
-    bigquery.googleapis.com \
-    logging.googleapis.com \
-    run.googleapis.com \
-    storage-component.googleapis.com  \
-    eventarc.googleapis.com \
-    serviceusage.googleapis.com \
-    secretmanager.googleapis.com \
+gcloud services enable \
     aiplatform.googleapis.com \
-    youtube.googleapis.com
+    bigquery.googleapis.com \
+    storage-component.googleapis.com \
+    secretmanager.googleapis.com \
+    youtube.googleapis.com \
+    texttospeech.googleapis.com \
+    run.googleapis.com
 ```
 
-4. **Create and store YouTube API key**
+### 3. Create YouTube API key
 
-- See [these instructions](https://developers.google.com/youtube/v3/getting-started) for getting a `YOUTUBE_DATA_API_KEY`
-- Store this API key in [Secret Manager](https://cloud.google.com/secret-manager/docs/creating-and-accessing-secrets) as `yt-data-api` (see `YT_SECRET_MNGR_NAME` in `.env` file)
-  - For step-by-step guidance, see [create a secret and access a secret version](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#create_a_secret_and_access_a_secret_version)
+Follow [these instructions](https://developers.google.com/youtube/v3/getting-started) to get a YouTube Data API key, then store it in Secret Manager:
 
-5. **Create and populate `.env` file(s)**
+```bash
+echo -n "YOUR_API_KEY" | gcloud secrets create yt-data-api --data-file=-
+```
+
+### 4. Create GCS bucket
+
+```bash
+gcloud storage buckets create gs://YOUR_BUCKET_NAME --location=us-central1
+```
+
+### 5. Configure environment
+
+Create `trends_and_insights_agent/.env`:
 
 ```bash
 GOOGLE_GENAI_USE_VERTEXAI=1
-GOOGLE_CLOUD_PROJECT=<YOUR_GCP_PROJECT_ID>
-GOOGLE_CLOUD_PROJECT_NUMBER=<YOUR_GCP_PROJECT_NUMBER> # e.g., 1234756
-GOOGLE_CLOUD_LOCATION=<YOUR_LOCATION> # e.g., us-central1
-BUCKET=gs://<YOUR_GCS_BUCKET_NAME> # create a GCS bucket
-YT_SECRET_MNGR_NAME=<YOUR_SECRET_NAME> # e.g., yt-data-api
-MEMORY_BANK_AGENT_ENGINE_ID=<YOUR_MEMORY_BANK_AGENT_ID> # e.g., 6534772537337839616
-# SESSION_STATE_JSON_PATH=example_state_pixel.json # uncomment to use default config values
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_CLOUD_PROJECT_NUMBER=123456789
+GOOGLE_CLOUD_LOCATION=global
+BUCKET=gs://your-bucket-name
+YT_SECRET_MNGR_NAME=yt-data-api
 ```
 
-_copy `.env` file to `root_agent` dir:_
+### 6. Run locally
 
 ```bash
-cp .env trends_and_insights_agent/.env
-cat trends_and_insights_agent/.env
+# Start all services (ADK server + frontend + voice + memory API)
+./run_local.sh
 
-source .env
+# Or just the ADK server:
+uv run adk web trends_and_insights_agent
 ```
 
-6.  **Create Cloud Storage bucket**
+Open [http://localhost:8000](http://localhost:8000) and select the agent from the dropdown.
+
+## Deploy to Agent Engine
+
+Agent Engine is the recommended deployment target for production use. It provides managed sessions, memory, and observability.
+
+### Deploy
 
 ```bash
-gcloud storage buckets create $BUCKET --location=$GOOGLE_CLOUD_LOCATION
-```
-
-7. **Launch the adk developer UI**
-
-```bash
-poetry run adk web
-```
-
-Open your browser and navigate to [http://localhost:8000](http://localhost:8000) and select an agent from the drop-down (top left)
-
-```bash
-INFO:     Started server process [750453]
-INFO:     Waiting for application startup.
-
-+-----------------------------------------------------------------------------+
-| ADK Web Server started                                                      |
-|                                                                             |
-| For local testing, access at http://localhost:8000.                         |
-+-----------------------------------------------------------------------------+
-
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-```
-
-<details>
-  <summary>If port :8000 in use</summary>
-
-_find any processes listening to port `:8000`, kill them, then return to step (7):_
-
-```bash
-lsof -i :8000
-kill -9 $PID
-lsof -i :8000
-```
-
-</details>
-
-## How it works
-
-<details>
-  <summary> Example usage </summary>
-
-#### [1] Capture campaign metadata & user-selected trends
-
-Agent will ask user for **campaign metadata** in the UI
-
-```
-> [agent]: Hello! I'm your AI Marketing Research & Strategy Assistant... To start, what please provide the following campaign metadata:
-
-    * Brand
-    * Target Product
-    * Key Selling Points
-    * Target Audience
-```
-
-<details>
-  <summary> [Optional] preload campaign metadata </summary>
-
-preload these values using one of the example json configs e.g., [shared_libraries/profiles/example_state_pixel.json](trends_and_insights_agent/shared_libraries/profiles/example_state_pixel.json) or upload your own. The json config you wish to reference should be set in your `.env` file like below. _Note: remove or comment out this variable to use default option (1)_
-
-```
-SESSION_STATE_JSON_PATH=example_state_prs.json
-```
-
-</details>
-
-#### [2] Autonomous research workflow
-
-#### [3] Interactive ad content generator
-
-> Note: this section is configured for **human-in-the-loop** i.e., agent will iterate with user when generating image and video creatives
-
-- Choose a subset of ad copies to proceed with
-- Choose a subset of visual concepts to proceed with
-- Generate image and video creatives with visual concepts
-
-#### [4] Compile final research and creative report
-
-</details>
-
-## Example ad creatives
-
-<details>
-  <summary>Hulkamania & Pixel 9's Call Assist</summary>
-
-<p align="center">
-  <img src='media/t2a_hulk_call_Screen_v2.png' width="800"/>
-</p>
-
-</details>
-
-<details>
-  <summary>Titanic & PRS Guitars</summary>
-
-<p align="center">
-  <img src='media/titanic_prs.png' width="800"/>
-</p>
-
-</details>
-
-<details>
-  <summary>Adam Sandler (Waterboy) & PRS Guitars</summary>
-
-<p align="center">
-  <img src='media/waterboy_prs.png' width="800"/>
-</p>
-
-</details>
-
-<details>
-  <summary>Mad Again & Pixel 9' Call Assist</summary>
-
-<p align="center">
-  <img src='media/mad_again_pixel.png' width="800"/>
-</p>
-
-</details>
-
-## Video walkthrough
-
-> This demo gives a quick overview of the end-to-end workflow
-
-[![demo](https://img.youtube.com/vi/S8Bh4eBQSs0/hqdefault.jpg)](https://www.youtube.com/watch?v=S8Bh4eBQSs0)
-
-## Sub-agents & Tools
-
-```
-root_agent (orchestrator)
-├── trends_and_insights_agent              # Display/capture trend selections
-├── research_orchestrator                  # Coordinate research pipeline
-│   ├── combined_research_pipeline         # Sub-agent for SequentialAgent workflow
-│   │   ├── merge_parallel_insights        # Parallel research coordination
-│   │   │   ├── parallel_planner_agent     # Runs 3 research types simultaneously
-│   │   │   │   ├── yt_sequential_planner  # YouTube trend analysis
-│   │   │   │   ├── gs_sequential_planner  # Google Search trend analysis
-│   │   │   │   └── ca_sequential_planner  # Campaign research
-│   │   │   └── merge_planners             # Combines research plans
-│   │   ├── combined_web_evaluator         # Quality check
-│   │   ├── enhanced_combined_searcher     # Expand web search
-│   │   └── combined_report_composer       # Generate unified research report
-├── ad_content_generator_agent             # Create comprehensive ad campaigns
-│   ├── ad_creative_pipeline               # Ad copy actor-critic framework
-│   │   ├── ad_copy_drafter
-│   │   ├── ad_copy_critic
-│   ├── visual_generation_pipeline         # Visual concept actor-critic framework
-│   │   ├── visual_concept_drafter
-│   │   ├── visual_concept_critic
-│   │   └── visual_concept_finalizer
-│   └── visual_generator                   # Image/video generation
-└── save_creatives_and_research_report     # Compile PDF reports
-
-```
-
-Expand sections below to visualize complex agent workflows
-
-<details>
-  <summary>Trend and Insight Agent</summary>
-
-> This agent is responsible for gathering input from the user.
-
-<p align="center">
-  <img src='media/t2a_trend_ast_overview_0725.png' width="800"/>
-</p>
-
-</details>
-
-<details>
-  <summary>Research Orchestrator Pipeline</summary>
-
-**The research workflow has two phases:**
-
-1. Parallel web research for individual topics: search trend, YouTube video, and campaign metadata e.g., target audience, product, brand, etc.
-2. Combined web research for the intersection of individual topics
-
-> This structure helps us achieve a deeper understanding of each subject first. And this helps us ask better questions for a second round of research where we are solely focused on finding any culturally relevant overlaps to exploit for ad creatives.
-
-<p align="center">
-  <img src='media/t2a_research_overview_0725.png' width="800"/>
-</p>
-
-</details>
-
-<details>
-  <summary>Ad Content Generator Pipeline</summary>
-
-> This agent uses the research report to generate relevant ad copy, visual concepts, and creatives (image and video).
-
-<p align="center">
-  <img src='media/t2a_ad_overview_0725.png' width="800"/>
-</p>
-
-</details>
-
-# CI And Testing
-
-Using `pytest`, users can test for tool coverage as well as Agent evaluations.
-
-More detail on agent evaluations [can be found here](https://google.github.io/adk-docs/evaluate/#2-pytest-run-tests-programmatically), along with how to run a `pytest` eval.
-
-#### Running `pytest`
-
-From the project root, run:
-
-```bash
-pytest tests/*.py
-```
-
-## Deployment
-
-The agent can be deployed in a couple of different ways
-
-1. Agent Engine
-   - Here's an end-to-end guide on deploying
-   - Be sure to first run the `setup_ae_sm_access.sh` script to give Agent Engine access to Secret Manager
-   - Run the [deployment guide](.notebooks/deployment_guide.ipynb) to deploy the agent
-2. Cloud Run
-   - Run `deploy_to_cloud_run.sh`
-   - Note this runs unit tests prior to deploying
-
-Script for Cloud Run:
-
-```bash
-#!/bin/bash
 source trends_and_insights_agent/.env
-
-# run unit tests before deploying
-pytest tests/*.py
-
-# write requirements.txt to the agent folder
-poetry export --without-hashes --format=requirements.txt >   trends_and_insights_agent/requirements.txt
-
-#deploy to cloud run
-adk deploy cloud_run \
-  --project=$GOOGLE_CLOUD_PROJECT \
-  --region=$GOOGLE_CLOUD_LOCATION \
-  --service_name='trends-and-insights-agent' \
-  --with_ui \
-  trends_and_insights_agent/
+uv run python deploy_to_ae.py --step agent-engine --update
 ```
 
-## Deployment to Agentspace
+This deploys the `CampaignOrchestrator` as a Vertex AI Reasoning Engine. The engine ID is saved to `deployment_info.json`.
 
-Create an Agent Engine in the `notebooks/deployment_guide.ipynb` notebook
+### Run E2E on Agent Engine
 
-Then note the Agent Engine ID (last numeric portion of the Resource Name). e.g.:
+The E2E runner creates a session with pre-populated campaign data and runs the full pipeline:
 
 ```bash
-agent_engine = vertexai.agent_engines.get('projects/679926387543/locations/us-central1/reasoningEngines/1093257605637210112')
+source trends_and_insights_agent/.env
+uv run python e2e_demo_runner.py
 ```
 
-Update the `agent_config_example.json`, then run:
+**Quality gates** (all must pass):
+- Research report > 500 chars with citations
+- 1+ campaign images generated
+- 15s commercial video via Veo 3.1
+- Focus group evaluation with Go/No-Go score
+- Final PDF report saved as artifact
+
+### Publish to Gemini Enterprise
+
+After deploying to Agent Engine, register with Gemini Enterprise (Agentspace):
 
 ```bash
 ./publish_to_agentspace_v2.sh --action create --config agent_config.json
 ```
 
-Usage: `./publish_to_agentspace_v2.sh [OPTIONS]`
+See the Agentspace section below for full CLI options.
+
+## Agent Engine Observability
+
+The system provides full observability when running on Agent Engine.
+
+### Dashboard
+<img src='docs/agent_engine_screenshots/ae_dashboard_overview.png' width="800"/>
+
+Sessions, agent latency (P50/P95/P99), invocation counts, and error rates.
+
+### Tools
+<img src='docs/agent_engine_screenshots/ae_tools_dashboard.png' width="800"/>
+
+Per-tool call counts, P95 duration, and error rates across 30+ tool calls per campaign run.
+
+### Cloud Trace
+<img src='docs/agent_engine_screenshots/ae_cloud_trace_session_spans.png' width="800"/>
+
+End-to-end distributed tracing with span-level detail for each pipeline stage.
+
+## Project Structure
+
+```
+zghost/
+├── trends_and_insights_agent/     # Main agent module
+│   ├── orchestrator.py            # CampaignOrchestrator (top-level state machine)
+│   ├── agent.py                   # Agent wiring and sub-agent definitions
+│   ├── common_agents/
+│   │   ├── ad_content_generator/
+│   │   │   ├── creative_orchestrator.py  # Creative pipeline state machine
+│   │   │   ├── agent.py                  # Ad copy + visual concept agents
+│   │   │   └── tools.py                  # Image/video gen, Gecko fidelity
+│   │   └── market_research/
+│   │       ├── agent.py                  # Research pipeline agents
+│   │       └── tools.py                  # Memory recall, report save
+│   ├── skills/
+│   │   ├── av_studio/                    # Commercial production (Veo + audio)
+│   │   └── focus_group/                  # Focus group evaluation
+│   └── shared_libraries/
+│       ├── config.py                     # Model configuration
+│       ├── callbacks.py                  # Status callbacks, rate limiting
+│       └── fidelity_eval/                # Gecko image fidelity scoring
+├── e2e_demo_runner.py             # Agent Engine E2E test runner
+├── deploy_to_ae.py                # Agent Engine deployment script
+├── deployment_info.json           # Current engine ID and project info
+├── docs/
+│   ├── CAPABILITIES.md            # Detailed capability documentation
+│   ├── agent_engine_screenshots/  # AE dashboard screenshots
+│   ├── NOVASTORM.md               # Skill self-reflection system design
+│   └── NOVASTORM_INTEGRATION.md   # NovaStorm integration guide
+├── functional_architecture_diagram.png
+├── gcp_architecture_diagram.png
+└── CLAUDE.md                      # Claude Code development instructions
+```
+
+## Autopilot Mode
+
+Set `autopilot_mode: true` in session state to run the full pipeline end-to-end without user confirmations — from trend selection through finished commercial and focus group evaluation. The E2E runner uses this mode by default.
+
+## Agentspace CLI Reference
+
+Manage the agent in Gemini Enterprise (Agentspace):
 
 ```bash
+# Create
+./publish_to_agentspace_v2.sh --action create --config agent_config.json
+
+# Update
+./publish_to_agentspace_v2.sh --action update --config agent_config.json
+
+# List
+./publish_to_agentspace_v2.sh --action list --config agent_config.json
+
+# Delete
+./publish_to_agentspace_v2.sh --action delete --config agent_config.json
+```
+
+<details>
+<summary>CLI options</summary>
+
+```
+Usage: ./publish_to_agentspace_v2.sh [OPTIONS]
+
 Options:
   -a, --action <create|update|list|delete>  Action to perform (required)
   -c, --config <file>              JSON configuration file
   -p, --project-id <id>            Google Cloud project ID
   -n, --project-number <number>    Google Cloud project number
   -e, --app-id <id>                Agent Space application ID
-  -r, --reasoning-engine <id>      Reasoning Engine ID (required for create/update)
-  -d, --display-name <name>        Agent display name (required for create/update)
-  -s, --description <desc>         Agent description (required for create)
-  -i, --agent-id <id>              Agent ID (required for update/delete)
-  -t, --instructions <text>        Agent instructions/tool description (required for create)
-  -u, --icon-uri <uri>             Icon URI (optional)
+  -r, --reasoning-engine <id>      Reasoning Engine ID
+  -d, --display-name <name>        Agent display name
+  -s, --description <desc>         Agent description
+  -i, --agent-id <id>              Agent ID (for update/delete)
+  -t, --instructions <text>        Agent instructions
+  -u, --icon-uri <uri>             Icon URI
   -l, --location <location>        Location (default: us)
-  -h, --help                       Display this help message
 ```
 
-### Example with config file:
+</details>
 
-```bash
-./publish_to_agentspace_v2.sh --action create --config agent_config.json
-./publish_to_agentspace_v2.sh --action update --config agent_config.json
-./publish_to_agentspace_v2.sh --action list --config agent_config.json
-./publish_to_agentspace_v2.sh --action delete --config agent_config.json
-```
+## Video Walkthrough
 
-### Example with command line args:
+> Overview of the end-to-end workflow
 
-Create agent:
+[![demo](https://img.youtube.com/vi/S8Bh4eBQSs0/hqdefault.jpg)](https://www.youtube.com/watch?v=S8Bh4eBQSs0)
 
-```bash
-./publish_to_agentspace_v2.sh --action create --project-id my-project --project-number 12345 \
---app-id my-app --reasoning-engine 67890 --display-name 'My Agent' \
---description 'Agent description' --instructions 'Agent instructions here'
-```
+## Detailed Documentation
 
-Update agent:
-
-```bash
-./publish_to_agentspace_v2.sh --action update --project-id my-project --project-number 12345 \
---app-id my-app --reasoning-engine 67890 --display-name 'My Agent' \
---agent-id 123456789 --description 'Updated description'
-```
-
-List agents:
-
-```bash
-./publish_to_agentspace_v2.sh --action list --project-id my-project --project-number 12345 \
---app-id my-app
-```
-
-Delete agent:
-
-```bash
-./publish_to_agentspace_v2.sh --action delete --project-id my-project --project-number 12345 \
---app-id my-app --agent-id 123456789
-```
+- [Capability Overview](docs/CAPABILITIES.md) — detailed breakdown of each pipeline stage with tools, models, and business value
+- [NovaStorm Design](docs/NOVASTORM.md) — skill self-reflection and evolution system
+- [NovaStorm Integration](docs/NOVASTORM_INTEGRATION.md) — how to wire NovaStorm into the pipeline
