@@ -276,3 +276,39 @@ python deploy_to_ae.py
 ### Autopilot Mode
 
 Set `autopilot_mode: true` in session state to run the full pipeline end-to-end without user confirmations — from trend selection through finished commercial and focus group evaluation.
+
+---
+
+## Agent Engine Screenshots
+
+The following screenshots show the system running on Vertex AI Agent Engine (Engine ID: `8788263399906607104`).
+
+### Dashboard Overview
+
+![Agent Engine Dashboard](agent_engine_screenshots/ae_dashboard_overview.png)
+
+The Agent Engine dashboard shows real-time metrics across all sessions:
+- **Sessions:** Active session count with per-session turn tracking
+- **Agent latency:** P50/P95/P99 latency for agent invocations (sub-4 minute P99)
+- **Agent invocations:** Total invocations across the pipeline (19 per full campaign run)
+- **Request rate & error rate:** Live throughput and reliability monitoring
+
+### Tools Dashboard
+
+![Tools Dashboard](agent_engine_screenshots/ae_tools_dashboard.png)
+
+The Tools view provides per-tool observability:
+- **30 tool calls** per campaign run across `analyze_youtube_videos`, `load_skill`, `recall_prior_insights`, `save_select_ad_copy`, `save_select_visual_concept`, `transfer_to_agent`, and more
+- **P95 duration by tool:** Identifies bottlenecks (image/video generation tools peak at ~5-10s)
+- **Count of calls by tool:** Shows distribution of tool usage across pipeline stages
+- **Error rate by tool:** Surfaces reliability issues for targeted fixes
+
+### Cloud Trace — Session Spans
+
+![Cloud Trace Session Spans](agent_engine_screenshots/ae_cloud_trace_session_spans.png)
+
+Cloud Trace provides end-to-end distributed tracing for each session:
+- **11 agent invocations** per session, each as a separate span with duration breakdown
+- **Span waterfall:** Visual timeline showing sequential pipeline stages (RESEARCH → CREATIVE → FOCUS_GROUP → SAVE_REPORT)
+- **Attribute inspection:** Each span tagged with `cloud.account.id`, `cloud.platform: gcp_agent_engine`, `cloud.region: us-central1`, and full `cloud.resource_id`
+- **Links to Cloud Logging:** "View Logs" button for each span to inspect detailed agent reasoning and tool call traces

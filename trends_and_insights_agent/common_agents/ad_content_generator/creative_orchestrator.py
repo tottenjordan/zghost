@@ -174,7 +174,7 @@ class CreativeProductionOrchestrator(BaseAgent):
             if stage_name == "AV_STUDIO":
                 # Don't increment av_runs if we're just polling a pending Veo operation
                 clips_cache = state.get("_commercial_clips", {})
-                has_pending_op = any(k.startswith("_pending_op") for k in clips_cache)
+                has_pending_op = any(k.startswith("_pending") for k in clips_cache)
 
                 if not has_pending_op:
                     av_runs = state.get("_av_studio_runs", 0) + 1
@@ -188,18 +188,26 @@ class CreativeProductionOrchestrator(BaseAgent):
                     yield self._status_event(ctx, f"Resuming Veo clip generation (attempt {av_runs}/{AV_STUDIO_MAX_RUNS})...")
 
                 commercial_generated = False
+                veo_still_pending = False
                 async for event in self._generate_commercial_deterministic(ctx):
                     yield event
                     # Check if this event saved commercial_artifact via state_delta
                     if "commercial_artifact" in event.actions.state_delta:
                         commercial_generated = True
+                    # Check if a pending Veo op was saved (still generating)
+                    clips_delta = event.actions.state_delta.get("_commercial_clips", {})
+                    if clips_delta and clips_delta.get("_pending_veo_op"):
+                        veo_still_pending = True
 
                 if commercial_generated:
                     i += 1  # Move to COMMERCIAL_QA
-                elif av_runs >= AV_STUDIO_MAX_RUNS and not has_pending_op:
+                elif veo_still_pending:
+                    # Veo is actively generating — do NOT count as failed attempt
+                    pass  # Will resume polling on next wave
+                elif av_runs >= AV_STUDIO_MAX_RUNS:
                     yield self._status_event(ctx, "All AV studio attempts exhausted — skipping commercial QA")
                     i = len(CREATIVE_STAGES)  # Skip to end
-                # else: will retry/resume on next wave
+                # else: will retry on next wave
                 continue
 
             # Run the sub-agent
