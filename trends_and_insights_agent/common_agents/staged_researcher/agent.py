@@ -29,10 +29,24 @@ from google.adk.agents import Agent, ParallelAgent
 from google.adk.utils.context_utils import Aclosing
 from google.adk.utils.feature_decorator import experimental
 
+import pathlib
+
+from google.adk.tools.skill_toolset import SkillToolset
+
 from trends_and_insights_agent.shared_libraries.config import config
 from trends_and_insights_agent.shared_libraries import callbacks, schema_types
+from trends_and_insights_agent.skills.skill_loader import load_skill_from_dir
 
 from .tools import recall_prior_insights, draft_research_report_tool
+
+# Load research skill for NovaStorm-evolvable instructions
+_research_skill_dir = pathlib.Path(__file__).parent / "../../skills/research"
+try:
+    _research_skill = load_skill_from_dir(_research_skill_dir)
+    _research_skill_toolset = SkillToolset(skills=[_research_skill])
+except Exception as _e:
+    logging.warning(f"Could not load research skill: {_e}")
+    _research_skill_toolset = None
 from .sub_agents.campaign_web_researcher.agent import ca_sequential_planner
 from .sub_agents.search_web_researcher.agent import gs_sequential_planner
 from .sub_agents.youtube_web_researcher.agent import yt_sequential_planner
@@ -166,6 +180,8 @@ enhanced_combined_searcher = Agent(
     after_model_callback=callbacks.reorder_parts_text_first,
 )
 
+_report_tools = [_research_skill_toolset] if _research_skill_toolset else []
+
 combined_report_composer = Agent(
     model=config.critic_model,
     name="combined_report_composer",
@@ -176,6 +192,7 @@ combined_report_composer = Agent(
         )
     ),
     include_contents="none",
+    tools=_report_tools,
     description="Transforms research data and a markdown outline into a final, cited report.",
     instruction="""
     Transform the provided data into a polished, professional, and meticulously cited research report.
@@ -267,31 +284,73 @@ class ResearchPipelineOrchestrator(BaseAgent):
     (no LLM wrapper needed). Supports AE resumability.
     """
 
+    def _determine_start_index(self, ctx: InvocationContext) -> int:
+        """Determine which stage to start from based on session state keys.
+
+        On AE, each stream_query is a separate invocation — BaseAgentState
+        doesn't persist across invocations. Instead, check session state
+        output keys to determine what already completed.
+        """
+        state = ctx.session.state
+
+        # Check outputs from each stage to determine where to resume
+        # COMPOSE_REPORT produces combined_final_cited_report
+        report = state.get("combined_final_cited_report", "")
+        if report and len(str(report)) > 200:
+            # Report already composed — go to SAVE_REPORT
+            return 6  # SAVE_REPORT index
+
+        # ENHANCED_SEARCH writes back to combined_web_search_insights (enriched)
+        # and combined_research_evaluation exists
+        eval_result = state.get("combined_research_evaluation", "")
+        insights = state.get("combined_web_search_insights", "")
+        prior = state.get("prior_campaign_insights", "")
+
+        if eval_result and insights and prior:
+            # Memory recall and enhanced search done — compose report
+            return 5  # COMPOSE_REPORT index
+
+        if eval_result and insights:
+            # Eval done, need memory recall
+            return 3  # MEMORY_RECALL index
+
+        if insights and len(str(insights)) > 200:
+            # Merge done, need evaluation
+            return 2  # EVALUATE index
+
+        # Check if any parallel research ran (sub-search insights populated)
+        gs_insights = state.get("gs_web_search_insights", "")
+        yt_insights = state.get("yt_web_search_insights", "")
+        ca_insights = state.get("campaign_web_search_insights", "")
+        if gs_insights or yt_insights or ca_insights:
+            # Parallel research started/done — go to merge
+            return 1  # MERGE_INSIGHTS index
+
+        return 0  # Start from beginning
+
     async def _run_async_impl(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
         if not self.sub_agents:
             return
 
-        # Load persisted state for resumability
-        agent_state = self._load_agent_state(ctx, ResearchPipelineState)
-        start_index = agent_state.current_stage_index if agent_state else 0
+        # Determine start index from session state (works across AE invocations)
+        start_index = self._determine_start_index(ctx)
+        logger.info(f"[ResearchPipeline] Starting from stage index {start_index} (of {len(RESEARCH_STAGES)})")
 
         pause_invocation = False
-        resuming = agent_state is not None
 
         for i in range(start_index, len(RESEARCH_STAGES)):
             stage_name, agent_name, status_msg = RESEARCH_STAGES[i]
 
-            if not resuming:
-                # Persist current stage for AE resume
-                if ctx.is_resumable:
-                    state = ResearchPipelineState(current_stage_index=i)
-                    ctx.set_agent_state(self.name, agent_state=state)
-                    yield self._create_agent_state_event(ctx)
+            # Persist current stage for AE resume
+            if ctx.is_resumable:
+                state = ResearchPipelineState(current_stage_index=i)
+                ctx.set_agent_state(self.name, agent_state=state)
+                yield self._create_agent_state_event(ctx)
 
-                # Emit status message
-                yield self._status_event(ctx, status_msg)
+            # Emit status message
+            yield self._status_event(ctx, status_msg)
 
             if stage_name == "SAVE_REPORT":
                 # Direct tool call — no LLM agent needed
@@ -309,8 +368,6 @@ class ResearchPipelineOrchestrator(BaseAgent):
 
                     if pause_invocation:
                         return
-
-            resuming = False
 
         # Mark complete
         if ctx.is_resumable:
@@ -395,5 +452,8 @@ research_orchestrator = ResearchPipelineOrchestrator(
         enhanced_combined_searcher,
         combined_report_composer,
     ],
-    after_agent_callback=callbacks.save_research_to_memory,
+    after_agent_callback=[
+        callbacks.save_research_to_memory,
+        callbacks.after_agent_skill_reflection,
+    ],
 )

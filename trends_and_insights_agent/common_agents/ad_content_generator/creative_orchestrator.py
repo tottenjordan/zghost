@@ -91,6 +91,28 @@ class CreativeProductionOrchestrator(BaseAgent):
     fails, retries AV studio up to MAX_COMMERCIAL_RETRIES times.
     """
 
+    def _determine_start_index(self, ctx: InvocationContext) -> int:
+        """Determine start index from session state (works across AE invocations)."""
+        state = ctx.session.state
+
+        # If commercial QA already done, nothing left
+        qa_result = state.get("commercial_qa_result", "")
+        if qa_result and "PASS" in str(qa_result):
+            return len(CREATIVE_STAGES)  # All done
+
+        # If commercial exists, go to QA
+        if state.get("commercial_artifact"):
+            return 2  # COMMERCIAL_QA
+
+        # If images exist (2+), skip ad creative, go to AV studio
+        img_keys = state.get("img_artifact_keys", {})
+        if isinstance(img_keys, dict):
+            img_keys = img_keys.get("img_artifact_keys", [])
+        if img_keys and len(img_keys) >= 2:
+            return 1  # AV_STUDIO
+
+        return 0  # Start from AD_CREATIVE
+
     async def _run_async_impl(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
@@ -98,43 +120,26 @@ class CreativeProductionOrchestrator(BaseAgent):
             return
 
         state = ctx.session.state
-        agent_state = self._load_agent_state(ctx, CreativeProductionState)
-        start_index = agent_state.current_stage_index if agent_state else 0
-        av_attempts = agent_state.av_studio_attempts if agent_state else 0
-        resuming = agent_state is not None
+        # Determine start from session state (robust across AE invocations)
+        start_index = self._determine_start_index(ctx)
+        av_attempts = 0
         pause_invocation = False
+
+        logger.info(f"[CreativeProduction] Starting from stage index {start_index} (of {len(CREATIVE_STAGES)})")
 
         i = start_index
         while i < len(CREATIVE_STAGES):
             stage_name, agent_name, status_msg = CREATIVE_STAGES[i]
 
-            # Skip AD_CREATIVE if images already generated
-            if stage_name == "AD_CREATIVE" and not resuming:
-                img_keys = state.get("img_artifact_keys", {})
-                if isinstance(img_keys, dict):
-                    img_keys = img_keys.get("img_artifact_keys", [])
-                if img_keys and len(img_keys) >= 2:
-                    logger.info("[CreativeProduction] Skipping AD_CREATIVE — images already exist")
-                    i += 1
-                    continue
+            # Persist state for AE resume
+            if ctx.is_resumable:
+                ps = CreativeProductionState(
+                    current_stage_index=i, av_studio_attempts=av_attempts
+                )
+                ctx.set_agent_state(self.name, agent_state=ps)
+                yield self._create_agent_state_event(ctx)
 
-            # Skip AV_STUDIO if commercial already exists (and not retrying)
-            if stage_name == "AV_STUDIO" and not resuming and av_attempts == 0:
-                if state.get("commercial_artifact"):
-                    logger.info("[CreativeProduction] Skipping AV_STUDIO — commercial already exists")
-                    i += 1
-                    continue
-
-            if not resuming:
-                # Persist state for AE resume
-                if ctx.is_resumable:
-                    ps = CreativeProductionState(
-                        current_stage_index=i, av_studio_attempts=av_attempts
-                    )
-                    ctx.set_agent_state(self.name, agent_state=ps)
-                    yield self._create_agent_state_event(ctx)
-
-                yield self._status_event(ctx, status_msg)
+            yield self._status_event(ctx, status_msg)
 
             # Run the sub-agent
             target = self._get_sub_agent(agent_name)
@@ -160,10 +165,8 @@ class CreativeProductionOrchestrator(BaseAgent):
                         f"Commercial QA failed. Retrying AV studio (attempt {av_attempts + 1}/{MAX_COMMERCIAL_RETRIES + 1})...",
                     )
                     i = 1  # Jump back to AV_STUDIO
-                    resuming = False
                     continue
 
-            resuming = False
             i += 1
 
         # Mark complete
