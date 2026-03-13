@@ -71,6 +71,7 @@ Be concise. Focus on actionable quality feedback.""",
 
 CREATIVE_STAGES = [
     ("AD_CREATIVE", "ad_content_generator_agent", "Generating ad copy and visual creatives..."),
+    ("IMAGE_GEN", "standalone_image_generator", "Generating campaign images from visual concepts..."),
     ("AV_STUDIO", "av_editing_studio_agent", "Producing commercial in AV editing studio..."),
     ("COMMERCIAL_QA", "commercial_qa_agent", "Evaluating commercial quality with Gecko..."),
 ]
@@ -103,9 +104,9 @@ class CreativeProductionOrchestrator(BaseAgent):
 
         # If commercial exists but no QA yet, go to QA
         if has_commercial:
-            return 2  # COMMERCIAL_QA
+            return 3  # COMMERCIAL_QA
 
-        # If ad copies, visual concepts, AND images exist, skip to AV_STUDIO
+        # Check creative assets
         ad_copies = state.get("final_select_ad_copies", {})
         vis_concepts = state.get("final_select_vis_concepts", {})
         img_keys = state.get("img_artifact_keys", {})
@@ -115,11 +116,13 @@ class CreativeProductionOrchestrator(BaseAgent):
             vis_concepts = vis_concepts.get("final_select_vis_concepts", [])
         if isinstance(img_keys, dict):
             img_keys = img_keys.get("img_artifact_keys", [])
+
+        # If concepts + images exist, skip to AV_STUDIO
         if ad_copies and vis_concepts and img_keys and len(img_keys) >= 2:
-            return 1  # AV_STUDIO
-        # If concepts exist but no images, still run AD_CREATIVE to generate images
+            return 2  # AV_STUDIO
+        # If concepts exist but no images, run IMAGE_GEN stage
         if ad_copies and vis_concepts:
-            return 0  # AD_CREATIVE (need images)
+            return 1  # IMAGE_GEN
 
         return 0  # Start from AD_CREATIVE
 
@@ -174,7 +177,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                         ctx,
                         f"Commercial QA failed. Retrying AV studio (attempt {av_attempts + 1}/{MAX_COMMERCIAL_RETRIES + 1})...",
                     )
-                    i = 1  # Jump back to AV_STUDIO
+                    i = 2  # Jump back to AV_STUDIO
                     continue
 
             i += 1

@@ -395,6 +395,45 @@ visual_generator = Agent(
     after_model_callback=callbacks.reorder_parts_text_first,
 )
 
+# Standalone image generator for the creative orchestrator's IMAGE_GEN stage.
+# Separate instance because ADK doesn't allow agents to have two parents.
+standalone_image_generator = Agent(
+    model=config.critic_model,
+    name="standalone_image_generator",
+    description="Generate campaign images from visual concepts using Imagen + Gecko fidelity scoring.",
+    planner=BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(include_thoughts=True, thinking_budget=1024),
+    ),
+    instruction="""You are a visual content producer. Generate images for each visual concept in session state.
+
+**Steps for EACH concept in `final_select_vis_concepts`:**
+1. Call `generate_image` with a detailed prompt based on the concept's description.
+2. Call `evaluate_media_fidelity` on the generated image (construct GCS URI as `gs://BUCKET/gcs_folder/artifact_key`, use `{target_product}` as ground_truth_description, media_type="image").
+3. If fidelity_score < 0.7, regenerate with refined prompt (up to 2 retries).
+4. Call `save_img_artifact_key` with metadata including `fidelity_score`.
+5. Optionally generate a video with `generate_video` using the image as `existing_image_filename`, then call `save_vid_artifact_key`.
+
+**Campaign context:**
+- Brand: `{brand}`
+- Product: `{target_product}`
+- Audience: `{target_audience}`
+- Key selling points: `{key_selling_points}`
+""",
+    tools=[
+        generate_image,
+        generate_video,
+        save_img_artifact_key,
+        save_vid_artifact_key,
+        evaluate_media_fidelity,
+    ],
+    generate_content_config=types.GenerateContentConfig(temperature=1.0),
+    before_model_callback=[callbacks.before_model_status_callback, callbacks.rate_limit_callback],
+    before_tool_callback=callbacks.before_tool_status_callback,
+    after_tool_callback=callbacks.after_tool_status_callback,
+    after_model_callback=callbacks.reorder_parts_text_first,
+)
+
+
 # Main orchestrator agent
 ad_content_generator_agent = Agent(
     model=config.lite_planner_model,

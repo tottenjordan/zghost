@@ -6,7 +6,7 @@ from .common_agents.ad_content_generator.creative_orchestrator import (
     CreativeProductionOrchestrator,
     commercial_qa_agent,
 )
-from .common_agents.ad_content_generator.agent import ad_content_generator_agent
+from .common_agents.ad_content_generator.agent import ad_content_generator_agent, standalone_image_generator
 from .skills.av_studio.agents import av_editing_studio_agent
 from .skills.focus_group.agents import focus_group_evaluator_agent
 
@@ -18,6 +18,7 @@ creative_production_orchestrator = CreativeProductionOrchestrator(
     description="Orchestrate creative production: ad copy, visual generation, commercial production, and quality evaluation.",
     sub_agents=[
         ad_content_generator_agent,
+        standalone_image_generator,
         av_editing_studio_agent,
         commercial_qa_agent,
     ],
