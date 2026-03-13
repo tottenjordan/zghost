@@ -72,18 +72,22 @@ class CampaignOrchestrator(BaseAgent):
         state = ctx.session.state
 
         # Track creative pipeline attempts to break infinite loops
+        # Counter is persisted via event state_delta (not direct state mutation)
         if stage == "CREATIVE":
             creative_attempts = state.get("_creative_pipeline_attempts", 0) + 1
-            state["_creative_pipeline_attempts"] = creative_attempts
             if creative_attempts > MAX_CREATIVE_ATTEMPTS:
                 logger.warning(
                     f"[CampaignOrchestrator] Creative pipeline exhausted "
                     f"({creative_attempts} attempts). Skipping to FOCUS_GROUP."
                 )
                 stage = "FOCUS_GROUP"
-        elif stage != "RESEARCH":
-            # Reset counter when we move past CREATIVE
-            state.pop("_creative_pipeline_attempts", None)
+            else:
+                # Persist counter via state_delta event
+                counter_event = self._status_event(
+                    ctx, f"Creative pipeline attempt {creative_attempts}/{MAX_CREATIVE_ATTEMPTS}..."
+                )
+                counter_event.actions.state_delta["_creative_pipeline_attempts"] = creative_attempts
+                yield counter_event
 
         logger.info(f"[CampaignOrchestrator] Determined stage: {stage}")
 

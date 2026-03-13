@@ -95,13 +95,14 @@ class CreativeProductionOrchestrator(BaseAgent):
         """Determine start index from session state (works across AE invocations)."""
         state = ctx.session.state
 
-        # If commercial QA already done, nothing left
+        # If commercial QA passed AND commercial actually exists, all done
         qa_result = state.get("commercial_qa_result", "")
-        if qa_result and "PASS" in str(qa_result):
+        has_commercial = bool(state.get("commercial_artifact"))
+        if qa_result and "PASS" in str(qa_result) and has_commercial:
             return len(CREATIVE_STAGES)  # All done
 
-        # If commercial exists, go to QA
-        if state.get("commercial_artifact"):
+        # If commercial exists but no QA yet, go to QA
+        if has_commercial:
             return 2  # COMMERCIAL_QA
 
         # If ad copies AND visual concepts exist, skip to AV_STUDIO

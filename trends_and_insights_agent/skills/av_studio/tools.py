@@ -489,10 +489,15 @@ async def generate_clips_parallel(
 
     logging.info(f"generate_clips_parallel: completed. Success: {len(clips)}/{len(clip_configs)}, Errors: {len(errors)}")
 
+    # Store ordered clip URIs in session state for cross-wave persistence
+    clip_uris = [c["gcs_uri"] for c in clips]
+    if clip_uris:
+        tool_context.state["av_studio_clip_uris_ordered"] = clip_uris
+
     return {
         "status": "ok" if len(clips) == len(clip_configs) else "partial",
         "clips": clips,
-        "clip_gcs_uris": [c["gcs_uri"] for c in clips],
+        "clip_gcs_uris": clip_uris,
         "errors": errors,
     }
 
@@ -608,10 +613,34 @@ def concatenate_clips(
         dict: Status and paths. Keys: "status", "gcs_uri", "local_path", "duration_seconds".
     """
     if not clip_gcs_uris:
-        return {"status": "failed", "error": "No clip URIs provided"}
+        # Fallback: use ordered clip URIs from generate_clips_parallel
+        cached_ordered = tool_context.state.get("av_studio_clip_uris_ordered", [])
+        if cached_ordered:
+            logging.info(f"concatenate_clips: no URIs provided, using {len(cached_ordered)} cached URIs")
+            clip_gcs_uris = cached_ordered
+        else:
+            return {"status": "failed", "error": "No clip URIs provided"}
 
     # Sanitize GCS URIs
     clip_gcs_uris = [_sanitize_gcs_uri(u) for u in clip_gcs_uris]
+
+    # If av_studio_clips cache exists, try to resolve URIs from cache
+    # (LLM agents often forget exact URIs across AE invocations)
+    clips_cache = tool_context.state.get("av_studio_clips", {})
+    if clips_cache:
+        resolved_uris = []
+        for uri in clip_gcs_uris:
+            # Try direct match first
+            resolved_uris.append(uri)
+            # Check if this URI is a shortened/wrong version of a cached URI
+            for cached_name, cached_uri in clips_cache.items():
+                # Match by clip name embedded in the URI
+                if cached_name.lower().replace(" ", "_") in uri.lower():
+                    if uri != cached_uri:
+                        logging.info(f"concatenate_clips: resolved '{uri}' -> '{cached_uri}' from cache")
+                        resolved_uris[-1] = cached_uri
+                    break
+        clip_gcs_uris = resolved_uris
 
     try:
         bucket_name = get_gcs_bucket().replace("gs://", "")
@@ -626,14 +655,26 @@ def concatenate_clips(
                 bucket_obj = storage_client.get_bucket(bucket_name)
                 blob_obj = bucket_obj.blob(source_blob)
                 if not blob_obj.exists():
-                    logging.error(
-                        f"concatenate_clips: clip {idx} NOT FOUND in GCS — "
-                        f"gs://{bucket_name}/{source_blob}"
-                    )
-                    return {
-                        "status": "failed",
-                        "error": f"Clip not found in GCS: gs://{bucket_name}/{source_blob}",
-                    }
+                    # Try fallback: use any cached clip URI containing this clip's name
+                    fallback_found = False
+                    for cached_name, cached_uri in clips_cache.items():
+                        cached_blob = cached_uri.replace(f"gs://{bucket_name}/", "")
+                        cached_blob_obj = bucket_obj.blob(cached_blob)
+                        if cached_blob_obj.exists():
+                            logging.info(f"concatenate_clips: clip {idx} fallback to cached '{cached_name}': {cached_uri}")
+                            gcs_uri = cached_uri
+                            source_blob = cached_blob
+                            fallback_found = True
+                            break
+                    if not fallback_found:
+                        logging.error(
+                            f"concatenate_clips: clip {idx} NOT FOUND in GCS — "
+                            f"gs://{bucket_name}/{source_blob}"
+                        )
+                        return {
+                            "status": "failed",
+                            "error": f"Clip not found in GCS: gs://{bucket_name}/{source_blob}",
+                        }
 
                 local_path = os.path.join(temp_dir, f"clip_{idx}.mp4")
                 download_image_from_gcs(
