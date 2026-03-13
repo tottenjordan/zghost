@@ -165,7 +165,7 @@ class CampaignOrchestrator(BaseAgent):
         creative_attempts = state.get("_creative_pipeline_attempts", 0)
         creative_exhausted = creative_attempts >= MAX_CREATIVE_ATTEMPTS
 
-        if not img_keys or len(img_keys) < 2:
+        if not img_keys or len(img_keys) < 1:
             if not creative_exhausted:
                 return "CREATIVE"
         if not state.get("commercial_artifact") and not creative_exhausted:

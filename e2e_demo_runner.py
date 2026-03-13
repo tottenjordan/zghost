@@ -173,7 +173,7 @@ def get_pipeline_status(ae, session_id):
         stage = "SAVE_REPORT"
     elif report_len < 500:
         stage = "RESEARCH"
-    elif (num_images < 2 or not has_commercial) and not creative_exhausted:
+    elif (num_images < 1 or not has_commercial) and not creative_exhausted:
         stage = "CREATIVE"
     elif not has_focus_group:
         stage = "FOCUS_GROUP"
@@ -260,13 +260,13 @@ E2E DEMO RESULTS (CampaignOrchestrator) - {timestamp}
   Campaign: Tide Fabric Softener (Hibiscus) for Gen Z
 
   Research report: {status['report_len']} chars {'PASS' if status['report_len'] > 500 else 'FAIL'}
-  Images: {status['num_images']} {'PASS' if status['num_images'] >= 2 else 'FAIL'}
+  Images: {status['num_images']} {'PASS' if status['num_images'] >= 1 else 'FAIL'}
   Videos: {status['num_videos']} {'PASS' if status['num_videos'] >= 1 else 'FAIL'}
   15s Commercial: {'PASS' if status['has_commercial'] else 'FAIL'}
   Focus Group: {'PASS' if status['has_focus_group'] else 'FAIL'}
   Final report: {status['final_report_len']} chars {'PASS' if status['final_report_len'] > 0 else 'FAIL'}
 
-  OVERALL: {'PASS' if (status['report_len'] > 500 and status['num_images'] >= 2 and status['num_videos'] >= 1 and status['has_commercial'] and status['has_focus_group'] and status['final_report_len'] > 0) else 'FAIL'}
+  OVERALL: {'PASS' if (status['report_len'] > 500 and status['num_images'] >= 1 and status['num_videos'] >= 1 and status['has_commercial'] and status['has_focus_group'] and status['final_report_len'] > 0) else 'FAIL'}
 {'='*60}
 """
     print(summary)

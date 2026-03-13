@@ -123,7 +123,7 @@ class CreativeProductionOrchestrator(BaseAgent):
             img_keys = img_keys.get("img_artifact_keys", [])
 
         # If concepts + images exist, check if AV_STUDIO is exhausted
-        if ad_copies and vis_concepts and img_keys and len(img_keys) >= 2:
+        if ad_copies and vis_concepts and img_keys and len(img_keys) >= 1:
             av_runs = state.get("_av_studio_runs", 0)
             if av_runs >= AV_STUDIO_MAX_RUNS:
                 return len(CREATIVE_STAGES)  # Skip to end (fallback will handle)
