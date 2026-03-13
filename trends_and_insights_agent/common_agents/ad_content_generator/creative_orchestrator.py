@@ -15,9 +15,13 @@ MAX_COMMERCIAL_RETRIES times before continuing.
 from __future__ import annotations
 
 import logging
+import os
+import time
 from typing import AsyncGenerator
 
+from google import genai
 from google.genai import types
+from google.genai.types import GenerateVideosConfig
 from google.adk.agents.base_agent import BaseAgent, BaseAgentState
 from google.adk.agents.invocation_context import InvocationContext
 from google.adk.agents import Agent
@@ -34,6 +38,7 @@ from .tools import evaluate_media_fidelity
 logger = logging.getLogger("google_adk." + __name__)
 
 MAX_COMMERCIAL_RETRIES = 2
+AV_STUDIO_MAX_RUNS = 3  # Max AV_STUDIO invocations before fallback commercial
 
 # --- Commercial QA Agent ---
 commercial_qa_agent = Agent(
@@ -117,8 +122,11 @@ class CreativeProductionOrchestrator(BaseAgent):
         if isinstance(img_keys, dict):
             img_keys = img_keys.get("img_artifact_keys", [])
 
-        # If concepts + images exist, skip to AV_STUDIO
+        # If concepts + images exist, check if AV_STUDIO is exhausted
         if ad_copies and vis_concepts and img_keys and len(img_keys) >= 2:
+            av_runs = state.get("_av_studio_runs", 0)
+            if av_runs >= AV_STUDIO_MAX_RUNS:
+                return len(CREATIVE_STAGES)  # Skip to end (fallback will handle)
             return 2  # AV_STUDIO
         # If concepts exist but no images, run IMAGE_GEN stage
         if ad_copies and vis_concepts:
@@ -153,6 +161,21 @@ class CreativeProductionOrchestrator(BaseAgent):
                 yield self._create_agent_state_event(ctx)
 
             yield self._status_event(ctx, status_msg)
+
+            # Track AV_STUDIO invocations via state_delta
+            if stage_name == "AV_STUDIO":
+                av_runs = state.get("_av_studio_runs", 0) + 1
+                track_event = self._status_event(
+                    ctx, f"AV studio attempt {av_runs}/{AV_STUDIO_MAX_RUNS}..."
+                )
+                track_event.actions.state_delta["_av_studio_runs"] = av_runs
+                yield track_event
+                if av_runs > AV_STUDIO_MAX_RUNS:
+                    # AV studio exhausted — generate fallback commercial
+                    async for event in self._generate_fallback_commercial(ctx):
+                        yield event
+                    i += 1  # Skip to COMMERCIAL_QA (or end)
+                    continue
 
             # Run the sub-agent
             target = self._get_sub_agent(agent_name)
@@ -194,6 +217,110 @@ class CreativeProductionOrchestrator(BaseAgent):
             if agent.name == name:
                 return agent
         return None
+
+    async def _generate_fallback_commercial(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """Generate a simple Veo video as a fallback commercial.
+
+        Called when the AV studio fails to produce a commercial after
+        AV_STUDIO_MAX_RUNS attempts. Uses the first campaign image as
+        a first-frame reference and generates a single Veo clip.
+        """
+        state = ctx.session.state
+        yield self._status_event(ctx, "AV studio exhausted. Generating fallback commercial with Veo...")
+
+        # Get campaign context
+        product = state.get("target_product", "the product")
+        audience = state.get("target_audience", "target consumers")
+        selling_points = state.get("key_selling_points", "")
+        duration = state.get("commercial_duration", 15)
+
+        # Get first campaign image for first-frame conditioning
+        img_keys = state.get("img_artifact_keys", {})
+        if isinstance(img_keys, dict):
+            img_list = img_keys.get("img_artifact_keys", [])
+        else:
+            img_list = img_keys if isinstance(img_keys, list) else []
+
+        first_frame_image = None
+        gcs_folder = state.get("gcs_folder", "")
+        bucket = os.getenv("BUCKET", "")
+        if img_list and gcs_folder and bucket:
+            first_img = img_list[0]
+            img_filename = first_img.get("artifact_key", "") if isinstance(first_img, dict) else str(first_img)
+            if img_filename:
+                gcs_uri = f"{bucket}/{gcs_folder}/{img_filename}"
+                first_frame_image = types.Image(gcs_uri=gcs_uri, mime_type="image/png")
+                logger.info(f"[FallbackCommercial] Using first-frame: {gcs_uri}")
+
+        # Build prompt
+        prompt = (
+            f"A cinematic {duration}-second commercial for {product}. "
+            f"Targeting {audience}. "
+            f"Key features: {selling_points}. "
+            f"Smooth camera movement, warm natural lighting, lifestyle setting. "
+            f"Product prominently featured. No text or logos in the video."
+        )
+
+        try:
+            veo_client = genai.Client(vertexai=True)
+            gen_config = GenerateVideosConfig(
+                aspect_ratio="16:9",
+                number_of_videos=1,
+                output_gcs_uri=bucket,
+            )
+            if first_frame_image:
+                operation = veo_client.models.generate_videos(
+                    model=config.video_gen_model,
+                    prompt=prompt,
+                    image=first_frame_image,
+                    config=gen_config,
+                )
+            else:
+                operation = veo_client.models.generate_videos(
+                    model=config.video_gen_model,
+                    prompt=prompt,
+                    config=gen_config,
+                )
+
+            while not operation.done:
+                time.sleep(15)
+                operation = veo_client.operations.get(operation)
+
+            if operation.error:
+                logger.warning(f"[FallbackCommercial] Veo error: {operation.error}")
+                yield self._status_event(ctx, f"Fallback commercial generation failed: {operation.error}")
+                return
+
+            if operation.result and operation.result.generated_videos:
+                video = operation.result.generated_videos[0]
+                if video.video and video.video.uri:
+                    video_uri = video.video.uri
+                    commercial_data = {
+                        "artifact_key": f"commercial_{duration}s.mp4",
+                        "gcs_uri": video_uri,
+                        "metadata": {
+                            "title": f"Fallback {duration}s commercial for {product}",
+                            "scene_descriptions": [f"Single-shot lifestyle commercial for {product}"],
+                            "total_clips": 1,
+                            "duration_seconds": duration,
+                            "narrative_arc": f"Simple product showcase for {product}",
+                            "target_audience_appeal": f"Designed for {audience}",
+                            "fallback": True,
+                        },
+                    }
+                    event = self._status_event(ctx, f"Fallback commercial generated: {video_uri}")
+                    event.actions.state_delta["commercial_artifact"] = commercial_data
+                    yield event
+                    logger.info(f"[FallbackCommercial] Commercial saved: {video_uri}")
+                    return
+
+            yield self._status_event(ctx, "Fallback commercial: no video in Veo response")
+
+        except Exception as e:
+            logger.warning(f"[FallbackCommercial] Exception: {e}")
+            yield self._status_event(ctx, f"Fallback commercial failed: {str(e)[:200]}")
 
     def _status_event(self, ctx: InvocationContext, message: str) -> Event:
         logger.info(f"[CreativeProduction] {message}")
