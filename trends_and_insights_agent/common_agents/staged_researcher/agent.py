@@ -379,7 +379,7 @@ class ResearchPipelineOrchestrator(BaseAgent):
     ) -> AsyncGenerator[Event, None]:
         """Call draft_research_report_tool directly — no LLM needed."""
         state = ctx.session.state
-        processed_report = state.get("final_report_with_citations", "")
+        processed_report = state.get("research_report_with_citations", "") or state.get("final_report_with_citations", "")
         gcs_folder = state.get("gcs_folder", "")
 
         if not processed_report:

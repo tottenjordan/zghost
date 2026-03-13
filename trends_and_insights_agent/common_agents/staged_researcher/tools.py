@@ -110,7 +110,7 @@ async def save_draft_report_artifact(tool_context: ToolContext) -> dict:
     Returns:
         dict: Status and the location of the generated PDF artifact.
     """
-    processed_report = tool_context.state["final_report_with_citations"]
+    processed_report = tool_context.state.get("research_report_with_citations", "") or tool_context.state.get("final_report_with_citations", "")
     gcs_folder = tool_context.state.get("gcs_folder", "")
 
     async def _save_artifact(filename, artifact):

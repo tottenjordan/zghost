@@ -583,7 +583,7 @@ def citation_replacement_callback(
         final_report,
     )
     processed_report = re.sub(r"\s+([.,;:])", r"\1", processed_report)
-    callback_context.state["final_report_with_citations"] = processed_report
+    callback_context.state["research_report_with_citations"] = processed_report
     # return types.Content(parts=[types.Part(text=processed_report)])
     return types.Content(parts=[types.Part(text="PDF report saved to memory 📝 !!")])
 
