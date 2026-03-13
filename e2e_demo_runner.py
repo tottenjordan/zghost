@@ -24,7 +24,7 @@ USER_ID = "e2e_demo_user"
 SCREENSHOT_DIR = "demo_screenshots"
 
 # Max re-invocations before giving up
-MAX_WAVES = 35
+MAX_WAVES = 45
 
 # Pre-populated state to skip trend selection - Tide Fabric Softener campaign
 INITIAL_STATE = {
@@ -166,7 +166,7 @@ def get_pipeline_status(ae, session_id):
 
     # Determine stage — check COMPLETE first (creative exhaustion can skip stages)
     creative_attempts = state.get("_creative_pipeline_attempts", 0)
-    creative_exhausted = creative_attempts >= 5
+    creative_exhausted = creative_attempts >= 15
     if final_len > 0:
         stage = "COMPLETE"
     elif has_focus_group:
