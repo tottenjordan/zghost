@@ -32,7 +32,7 @@ logger = logging.getLogger("google_adk." + __name__)
 
 STAGES = ["TRENDS", "RESEARCH", "CREATIVE", "FOCUS_GROUP", "SAVE_REPORT", "COMPLETE"]
 
-MAX_CREATIVE_ATTEMPTS = 10  # Max times to re-enter CREATIVE before skipping to FOCUS_GROUP
+MAX_CREATIVE_ATTEMPTS = 5  # Max times to re-enter CREATIVE before skipping to FOCUS_GROUP
 
 STAGE_STATUS_MESSAGES = {
     "TRENDS": "Gathering campaign metadata and trend selections...",
