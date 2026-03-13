@@ -122,11 +122,9 @@ class CreativeProductionOrchestrator(BaseAgent):
         if isinstance(img_keys, dict):
             img_keys = img_keys.get("img_artifact_keys", [])
 
-        # If concepts + images exist, check if AV_STUDIO is exhausted
+        # If concepts + images exist, go to AV_STUDIO
+        # (the _run_async_impl handler will trigger fallback if exhausted)
         if ad_copies and vis_concepts and img_keys and len(img_keys) >= 1:
-            av_runs = state.get("_av_studio_runs", 0)
-            if av_runs >= AV_STUDIO_MAX_RUNS:
-                return len(CREATIVE_STAGES)  # Skip to end (fallback will handle)
             return 2  # AV_STUDIO
         # If concepts exist but no images, run IMAGE_GEN stage
         if ad_copies and vis_concepts:
@@ -177,7 +175,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                 )
                 track_event.actions.state_delta["_av_studio_runs"] = av_runs
                 yield track_event
-                if av_runs > AV_STUDIO_MAX_RUNS:
+                if av_runs >= AV_STUDIO_MAX_RUNS:
                     # AV studio exhausted — generate fallback commercial
                     async for event in self._generate_fallback_commercial(ctx):
                         yield event
