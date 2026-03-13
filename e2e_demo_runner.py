@@ -75,36 +75,49 @@ def stream_and_collect(ae, message, session_id):
     events = []
     agent_texts = []
     thought_count = 0
-    try:
-        for event in ae.stream_query(
-            message=message,
-            user_id=USER_ID,
-            session_id=session_id,
-        ):
-            events.append(event)
-            if isinstance(event, dict):
-                author = event.get("author", "")
-                parts = event.get("content", {}).get("parts", [])
-                for part in parts:
-                    if isinstance(part, dict) and part.get("thought"):
-                        thought_count += 1
-                        thought_text = part.get("text", "")[:100]
-                        print(f"  [{author}] THOUGHT: {thought_text}...")
-                    elif isinstance(part, dict) and part.get("text"):
-                        text_preview = part["text"][:300]
-                        print(f"  [{author}]: {text_preview}")
-                        agent_texts.append(f"[{author}]: {part['text']}")
-                    elif isinstance(part, dict) and part.get("function_call"):
-                        fn = part["function_call"].get("name", "?")
-                        print(f"  [{author}] -> tool: {fn}")
-                    elif isinstance(part, dict) and part.get("function_response"):
-                        fn = part["function_response"].get("name", "?")
-                        resp = part["function_response"].get("response", {})
-                        status = resp.get("status", "") if isinstance(resp, dict) else ""
-                        artifact = resp.get("artifact_key", "") if isinstance(resp, dict) else ""
-                        print(f"  [{author}] <- tool response: {fn} (status={status}, artifact={artifact})")
-    except Exception as e:
-        print(f"  ERROR during stream: {e}")
+
+    for attempt in range(3):
+        try:
+            for event in ae.stream_query(
+                message=message,
+                user_id=USER_ID,
+                session_id=session_id,
+            ):
+                events.append(event)
+                if isinstance(event, dict):
+                    author = event.get("author", "")
+                    parts = event.get("content", {}).get("parts", [])
+                    for part in parts:
+                        if isinstance(part, dict) and part.get("thought"):
+                            thought_count += 1
+                            thought_text = part.get("text", "")[:100]
+                            print(f"  [{author}] THOUGHT: {thought_text}...")
+                        elif isinstance(part, dict) and part.get("text"):
+                            text_preview = part["text"][:300]
+                            print(f"  [{author}]: {text_preview}")
+                            agent_texts.append(f"[{author}]: {part['text']}")
+                        elif isinstance(part, dict) and part.get("function_call"):
+                            fn = part["function_call"].get("name", "?")
+                            print(f"  [{author}] -> tool: {fn}")
+                        elif isinstance(part, dict) and part.get("function_response"):
+                            fn = part["function_response"].get("name", "?")
+                            resp = part["function_response"].get("response", {})
+                            status = resp.get("status", "") if isinstance(resp, dict) else ""
+                            artifact = resp.get("artifact_key", "") if isinstance(resp, dict) else ""
+                            print(f"  [{author}] <- tool response: {fn} (status={status}, artifact={artifact})")
+            break  # Success
+        except Exception as e:
+            err_str = str(e)
+            if ("FAILED_PRECONDITION" in err_str or "Service Unavailable" in err_str) and attempt < 2:
+                wait = 30 * (attempt + 1)
+                print(f"  AE transient error (attempt {attempt + 1}/3), waiting {wait}s: {err_str[:100]}")
+                time.sleep(wait)
+                events = []
+                agent_texts = []
+                thought_count = 0
+            else:
+                print(f"  ERROR during stream: {e}")
+                break
 
     print(f"  Total events: {len(events)}, Thoughts: {thought_count}")
     return events, "\n".join(agent_texts), thought_count
@@ -112,7 +125,24 @@ def stream_and_collect(ae, message, session_id):
 
 def get_pipeline_status(ae, session_id):
     """Check session state and determine current pipeline status."""
-    session = ae.get_session(user_id=USER_ID, session_id=session_id)
+    # Retry get_session — AE instances can restart between waves
+    session = None
+    for attempt in range(3):
+        try:
+            session = ae.get_session(user_id=USER_ID, session_id=session_id)
+            break
+        except Exception as e:
+            print(f"  get_session failed (attempt {attempt + 1}/3): {e}")
+            if attempt < 2:
+                wait = 30 * (attempt + 1)
+                print(f"  Waiting {wait}s before retry...")
+                time.sleep(wait)
+    if session is None:
+        print("  ERROR: Could not retrieve session after 3 attempts")
+        return {"stage": "UNKNOWN", "report_len": 0, "num_images": 0,
+                "num_videos": 0, "has_commercial": False, "has_focus_group": False,
+                "final_report_len": 0, "state": {}, "report": "", "final_report": "",
+                "commercial": "", "focus_group": "", "imgs": [], "vids": []}
     state = session.get("state", {}) if isinstance(session, dict) else {}
 
     report = state.get("combined_final_cited_report", "")
