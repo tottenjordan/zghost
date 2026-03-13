@@ -321,15 +321,29 @@ class CreativeProductionOrchestrator(BaseAgent):
                                 ),
                             )
 
-                        generated_images.append({
+                        img_meta = {
                             "artifact_key": artifact_key,
                             "img_prompt": prompt[:500],
                             "concept": concept_name,
                             "headline": "",
                             "caption": "",
                             "auto_saved": True,
-                        })
+                        }
+                        generated_images.append(img_meta)
                         logger.info(f"[ImageGen] Generated: {artifact_key}")
+
+                        # Persist IMMEDIATELY after each image via state_delta
+                        # (AE wave may end before the next image generates)
+                        existing = state.get("img_artifact_keys", {"img_artifact_keys": []})
+                        prev_list = list(existing.get("img_artifact_keys", []) if isinstance(existing, dict) else existing)
+                        existing_keys = {item.get("artifact_key") for item in prev_list if isinstance(item, dict)}
+                        if artifact_key not in existing_keys:
+                            prev_list.append(img_meta)
+                        save_event = self._status_event(
+                            ctx, f"Image {len(generated_images)} saved: {artifact_key}"
+                        )
+                        save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": list(prev_list)}
+                        yield save_event
                         break  # Only need first image part
 
             except Exception as e:
@@ -337,19 +351,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                 yield self._status_event(ctx, f"Image generation failed for {concept_name}: {str(e)[:100]}")
 
         if generated_images:
-            # Persist via state_delta
-            existing = state.get("img_artifact_keys", {"img_artifact_keys": []})
-            prev_list = list(existing.get("img_artifact_keys", []) if isinstance(existing, dict) else existing)
-            existing_keys = {item.get("artifact_key") for item in prev_list if isinstance(item, dict)}
-            for img in generated_images:
-                if img["artifact_key"] not in existing_keys:
-                    prev_list.append(img)
-
-            event = self._status_event(
-                ctx, f"Generated {len(generated_images)} campaign images successfully."
-            )
-            event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": prev_list}
-            yield event
+            yield self._status_event(ctx, f"Generated {len(generated_images)} campaign images successfully.")
         else:
             yield self._status_event(ctx, "No images generated — will retry on next wave.")
 
