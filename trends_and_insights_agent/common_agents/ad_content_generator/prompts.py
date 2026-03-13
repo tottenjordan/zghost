@@ -38,11 +38,11 @@ AD_CREATIVE_SUBAGENT_INSTR = """**Role:** You are the orchestrator for a compreh
    - **Visual Concept:** Name, Creative Concept Explanation, Imagen prompt (for the keyframe image), Veo prompt (for the video)
    - **Trend Alignment:** Which trend(s) each idea references
    - **Rationale:** Why this idea will perform well
-10. Ask the user: "Here are the top 2 ad ideas I've selected. Each will produce a keyframe image and a video using that image as a reference. Do you approve, or would you like changes?"
-11. **Wait for user approval before proceeding.** If the user requests changes, adjust the selections and re-present.
+10. **IMPORTANT: Check the `autopilot_mode` state key.** If `autopilot_mode` is true, SKIP user approval and proceed directly to Phase 4. Otherwise, ask the user: "Here are the top 2 ad ideas I've selected. Each will produce a keyframe image and a video using that image as a reference. Do you approve, or would you like changes?"
+11. If not in autopilot mode, **wait for user approval before proceeding.** If the user requests changes, adjust the selections and re-present.
 
 **Phase 4: Generate Creatives (Image-to-Video with Reference Images)**
-12. Once the user approves, transfer to `visual_generator` to generate the creatives. The visual_generator will:
+12. Transfer to `visual_generator` to generate the creatives. The visual_generator will:
     - For each of the 2 concepts: first generate the keyframe image, then use that image as a reference image (`existing_image_filename`) for video generation.
     - Save metadata with `save_img_artifact_key` and `save_vid_artifact_key`.
 13. Use `load_artifacts` to display the generated images and videos to the user for final review.

@@ -42,6 +42,7 @@ TOOL_STATUS_MESSAGES = {
     "transfer_to_agent": "Transferring to next agent...",
     "load_artifacts": "Loading artifacts for display...",
     "preload_memory": "Loading campaign memories...",
+    "recall_prior_insights": "Searching memory bank for prior insights...",
 }
 
 TOOL_DESCRIPTIONS = {
@@ -62,6 +63,7 @@ TOOL_DESCRIPTIONS = {
     "memorize": "saves information to memory",
     "load_artifacts": "loads saved artifacts for display",
     "preload_memory": "loads campaign memories from memory bank",
+    "recall_prior_insights": "retrieves prior campaign insights from memory bank",
     "transfer_to_agent": "transfers control to another agent",
     "combined_research_pipeline": "runs the full research pipeline",
 }
@@ -549,6 +551,183 @@ def citation_replacement_callback(
     callback_context.state["final_report_with_citations"] = processed_report
     # return types.Content(parts=[types.Part(text=processed_report)])
     return types.Content(parts=[types.Part(text="PDF report saved to memory 📝 !!")])
+
+
+def _get_memory_client():
+    """Get Memory Bank client and resource name, or (None, None) if not configured."""
+    agent_engine_id = os.getenv("MEMORY_BANK_AGENT_ENGINE_ID")
+    if not agent_engine_id:
+        return None, None
+    import vertexai
+    project = os.getenv("GOOGLE_CLOUD_PROJECT")
+    project_number = os.getenv("GOOGLE_CLOUD_PROJECT_NUMBER")
+    location = os.getenv("MEMORY_BANK_LOCATION", "us-central1")
+    client = vertexai.Client(project=project, location=location)
+    resource_name = f"projects/{project_number}/locations/{location}/reasoningEngines/{agent_engine_id}"
+    return client, resource_name
+
+
+def _save_facts_to_memory(client, resource_name, facts, scope):
+    """Save facts to Memory Bank in batches of 5."""
+    for i in range(0, len(facts), 5):
+        batch = facts[i:i+5]
+        client.agent_engines.memories.generate(
+            name=resource_name,
+            direct_memories_source={"direct_memories": [{"fact": f} for f in batch]},
+            scope=scope,
+            config={"wait_for_completion": False},
+        )
+        logging.info(f"Saved batch of {len(batch)} facts to Memory Bank (scope={scope})")
+
+
+# --- SCOPE SCHEMA ---
+# Memory Bank uses scope keys for filtering. Our multi-dimensional schema:
+#
+# Dimension 1: Campaign Insights (what we learned about brands/audiences)
+#   scope: {"user_id": "...", "memory_type": "campaign_insight", "brand": "Tide"}
+#
+# Dimension 2: Skill Memories (what worked/failed for each pipeline stage)
+#   scope: {"user_id": "...", "memory_type": "skill_memory", "skill": "research"}
+#   scope: {"user_id": "...", "memory_type": "skill_memory", "skill": "ad_creative"}
+#   scope: {"user_id": "...", "memory_type": "skill_memory", "skill": "av_studio"}
+#
+# Dimension 3: Quality Metrics (track improvement over time)
+#   scope: {"user_id": "...", "memory_type": "quality_metric", "skill": "research"}
+
+
+def save_research_to_memory(callback_context: CallbackContext) -> None:
+    """After research completes, save campaign insights AND skill memories."""
+    try:
+        client, resource_name = _get_memory_client()
+        if not client:
+            return
+
+        report = callback_context.state.get("combined_final_cited_report", "")
+        if not report or len(report) < 100:
+            return
+
+        brand = callback_context.state.get("brand", "unknown")
+        product = callback_context.state.get("target_product", "unknown")
+        audience = callback_context.state.get("target_audience", "unknown")
+        user_id = getattr(callback_context, "user_id", "default") or "default"
+
+        # --- Campaign Insights ---
+        campaign_facts = []
+        ksp = callback_context.state.get("key_selling_points", "")
+        if ksp:
+            campaign_facts.append(f"{brand} {product} key selling points: {ksp}")
+
+        search_trends = callback_context.state.get("target_search_trends", {})
+        yt_trends = callback_context.state.get("target_yt_trends", {})
+        if isinstance(search_trends, dict):
+            for t in search_trends.get("target_search_trends", []):
+                campaign_facts.append(f"Search trend for {brand}: {t.get('title', '')} - {t.get('description', '')}")
+        if isinstance(yt_trends, dict):
+            for t in yt_trends.get("target_yt_trends", []):
+                campaign_facts.append(f"YouTube trend for {brand}: {t.get('title', '')} - {t.get('description', '')}")
+
+        report_summary = report[:500].replace("\n", " ").strip()
+        campaign_facts.append(f"Research summary for {brand} {product} (audience: {audience}): {report_summary}")
+
+        _save_facts_to_memory(client, resource_name, campaign_facts, scope={
+            "user_id": user_id,
+            "memory_type": "campaign_insight",
+            "brand": brand,
+        })
+
+        # --- Skill Memory: Research ---
+        eval_data = callback_context.state.get("combined_research_evaluation", "")
+        skill_facts = [
+            f"Research pipeline completed for {brand} {product}: report is {len(report)} chars with citations.",
+            f"Target audience was '{audience}' — research covered search trends, YouTube trends, and campaign guide.",
+        ]
+        if eval_data:
+            eval_str = json.dumps(eval_data) if isinstance(eval_data, dict) else str(eval_data)
+            skill_facts.append(f"Research quality evaluation: {eval_str[:300]}")
+
+        _save_facts_to_memory(client, resource_name, skill_facts, scope={
+            "user_id": user_id,
+            "memory_type": "skill_memory",
+            "skill": "research",
+        })
+
+        logging.info(f"Saved {len(campaign_facts)} campaign + {len(skill_facts)} skill insights to Memory Bank")
+    except Exception as e:
+        logging.warning(f"Memory Bank save failed (non-fatal): {e}")
+
+
+def save_creative_skill_to_memory(callback_context: CallbackContext) -> None:
+    """After ad creative generation, save skill memories about what worked."""
+    try:
+        client, resource_name = _get_memory_client()
+        if not client:
+            return
+
+        brand = callback_context.state.get("brand", "unknown")
+        product = callback_context.state.get("target_product", "unknown")
+        user_id = getattr(callback_context, "user_id", "default") or "default"
+
+        imgs = callback_context.state.get("img_artifact_keys", {})
+        vids = callback_context.state.get("vid_artifact_keys", {})
+        if isinstance(imgs, dict):
+            imgs = imgs.get("img_artifact_keys", [])
+        if isinstance(vids, dict):
+            vids = vids.get("vid_artifact_keys", [])
+
+        skill_facts = [
+            f"Ad creative for {brand} {product}: generated {len(imgs)} images and {len(vids)} videos.",
+        ]
+
+        # Record successful image prompts for skill improvement
+        for img in (imgs or [])[:3]:
+            prompt = img.get("img_prompt", "")
+            headline = img.get("headline", "")
+            if prompt:
+                skill_facts.append(
+                    f"Successful image prompt for {brand} (headline: '{headline}'): {prompt[:200]}"
+                )
+
+        # Record successful video prompts
+        for vid in (vids or [])[:3]:
+            prompt = vid.get("vid_prompt", "")
+            headline = vid.get("headline", "")
+            if prompt:
+                skill_facts.append(
+                    f"Successful video prompt for {brand} (headline: '{headline}'): {prompt[:200]}"
+                )
+
+        # Record ad copy patterns
+        copies = callback_context.state.get("final_select_ad_copies", {})
+        if isinstance(copies, dict):
+            copies = copies.get("final_select_ad_copies", [])
+        for copy in (copies or [])[:2]:
+            if isinstance(copy, dict):
+                skill_facts.append(
+                    f"Selected ad copy for {brand}: headline='{copy.get('headline', '')}', "
+                    f"body='{str(copy.get('body', ''))[:150]}'"
+                )
+
+        _save_facts_to_memory(client, resource_name, skill_facts, scope={
+            "user_id": user_id,
+            "memory_type": "skill_memory",
+            "skill": "ad_creative",
+        })
+
+        # Quality metric
+        fidelity = callback_context.state.get("fidelity_scores", {})
+        if fidelity:
+            metric_facts = [
+                f"Gecko fidelity scores for {brand} {product}: {json.dumps(fidelity)[:300]}"
+            ]
+            _save_facts_to_memory(client, resource_name, metric_facts, scope={
+                "user_id": user_id,
+                "memory_type": "quality_metric",
+                "skill": "ad_creative",
+            })
+
+        logging.info(f"Saved {len(skill_facts)} creative skill insights to Memory Bank")
+    except Exception as e:
+        logging.warning(f"Creative skill memory save failed (non-fatal): {e}")
 
 
 # TODO: add logic for processing PDF contents for session state

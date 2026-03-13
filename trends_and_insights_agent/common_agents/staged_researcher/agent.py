@@ -11,7 +11,7 @@ from google.adk.agents import Agent, SequentialAgent, ParallelAgent
 from trends_and_insights_agent.shared_libraries.config import config
 from trends_and_insights_agent.shared_libraries import callbacks, schema_types
 
-from .tools import save_draft_report_artifact
+from .tools import save_draft_report_artifact, recall_prior_insights
 from .sub_agents.campaign_web_researcher.agent import ca_sequential_planner
 from .sub_agents.search_web_researcher.agent import gs_sequential_planner
 from .sub_agents.youtube_web_researcher.agent import yt_sequential_planner
@@ -116,12 +116,14 @@ enhanced_combined_searcher = Agent(
     You are a specialist researcher executing a refinement pass.
     You are tasked to conduct a second round of web research and gather insights related to the trending YouTube video, the trending Search terms, the target audience, and the target product.
 
-    1.  Review the 'combined_research_evaluation' state key to understand the previous round of research.
-    2.  Execute EVERY query listed in 'follow_up_queries' using the 'google_search' tool.
-    3.  Synthesize the new findings and COMBINE them with the existing information in 'combined_web_search_insights'.
-    4.  Your output MUST be the new, complete, and improved set of research insights for the trending Search terms, trending YouTube video, and campaign guide.
+    1.  First, call `recall_prior_insights` with the brand and product from session state to retrieve learnings from previous campaigns. This gives you historical context.
+    2.  Review the 'combined_research_evaluation' state key to understand the previous round of research.
+    3.  Execute EVERY query listed in 'follow_up_queries' using the 'google_search' tool.
+    4.  Synthesize the new findings and COMBINE them with the existing information in 'combined_web_search_insights'.
+    5.  If prior campaign insights were retrieved, incorporate relevant learnings into your synthesis (e.g., what messaging worked before, audience preferences, successful creative approaches).
+    6.  Your output MUST be the new, complete, and improved set of research insights for the trending Search terms, trending YouTube video, and campaign guide.
     """,
-    tools=[google_search],
+    tools=[google_search, recall_prior_insights],
     output_key="combined_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
     before_model_callback=callbacks.before_model_status_callback,
@@ -160,8 +162,11 @@ combined_report_composer = Agent(
     *   **Final Research:**
         {combined_web_search_insights}
     
-    *   **Citation Sources:** 
+    *   **Citation Sources:**
         `{sources}`
+
+    *   **Prior Campaign Insights (from Memory Bank):**
+        {prior_campaign_insights}
 
     ---
     **CRITICAL: Citation System**
@@ -232,4 +237,5 @@ research_orchestrator = SequentialAgent(
     name="research_orchestrator",
     description="Orchestrate comprehensive research for the campaign metadata and trending topics.",
     sub_agents=[combined_research_pipeline, report_saver_agent],
+    after_agent_callback=callbacks.save_research_to_memory,
 )

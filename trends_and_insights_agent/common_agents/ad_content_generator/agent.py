@@ -403,4 +403,5 @@ ad_content_generator_agent = Agent(
     before_tool_callback=callbacks.before_tool_status_callback,
     after_tool_callback=callbacks.after_tool_status_callback,
     after_model_callback=callbacks.reorder_parts_text_first,
+    after_agent_callback=callbacks.save_creative_skill_to_memory,
 )

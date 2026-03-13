@@ -16,24 +16,24 @@ import vertexai
 
 PROJECT = "wortz-project-352116"
 LOCATION = "us-central1"
-ENGINE_ID = "9218251611204222976"
+ENGINE_ID = "4886457272743493632"
 RESOURCE_NAME = f"projects/679926387543/locations/{LOCATION}/reasoningEngines/{ENGINE_ID}"
 USER_ID = "e2e_demo_user"
 SCREENSHOT_DIR = "demo_screenshots"
 
-# Pre-populated state to skip trend selection
+# Pre-populated state to skip trend selection - Tide Fabric Softener campaign
 INITIAL_STATE = {
-    "brand": "Nike",
-    "target_product": "Air Max Pulse",
-    "target_audience": "Gen Z sneaker enthusiasts and streetwear culture fans",
-    "key_selling_points": "Inspired by the icons that came before. The Air Max Pulse pulls design cues from the Air Max archives with modern comfort tech.",
+    "brand": "Tide",
+    "target_product": "Tide Fabric Softener with Hibiscus Scent",
+    "target_audience": "Gen Z eco-conscious consumers who value sustainable products and fresh scents",
+    "key_selling_points": "New Hibiscus Scent. Plant-based formula. 2x cleaning power. Biodegradable packaging. Fresh floral fragrance that lasts.",
     "target_search_trends": {"target_search_trends": [
-        {"title": "Sneaker Culture", "description": "Rising interest in sneaker collecting and streetwear fashion"}
+        {"title": "Sustainable Laundry", "description": "Growing interest in eco-friendly laundry products and sustainable cleaning solutions"}
     ]},
     "target_yt_trends": {"target_yt_trends": [
-        {"title": "Best Sneakers 2026", "description": "YouTube creators reviewing the top sneaker releases"}
+        {"title": "Eco Cleaning Hacks", "description": "YouTube creators sharing sustainable cleaning routines and eco-friendly product reviews"}
     ]},
-    "yt_video_analysis": "YouTube trend analysis: Gen Z audiences are drawn to sneakers that blend retro aesthetics with modern comfort tech. Key themes: nostalgia, self-expression, sustainability.",
+    "yt_video_analysis": "YouTube trend analysis: Gen Z audiences are highly engaged with sustainable product content. Key themes: eco-friendly lifestyle, plant-based products, aesthetic packaging, fresh floral scents, laundry hacks that save money and the planet.",
     "final_select_ad_copies": {"final_select_ad_copies": []},
     "final_select_vis_concepts": {"final_select_vis_concepts": []},
     "img_artifact_keys": {"img_artifact_keys": []},
@@ -45,6 +45,7 @@ INITIAL_STATE = {
     "combined_final_cited_report": "",
     "sources": {},
     "final_report_with_citations": "",
+    "autopilot_mode": True,
 }
 
 
