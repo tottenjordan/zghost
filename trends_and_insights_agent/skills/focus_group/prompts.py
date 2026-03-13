@@ -41,10 +41,12 @@ Read the following session state to understand the creative intent behind the co
 
 Create 3 diverse consumer personas matching the target audience: `{target_audience}`.
 
-For EACH panelist, call `generate_panelist_portrait` to create their headshot photo:
+For EACH panelist, attempt to call `generate_panelist_portrait` to create their headshot photo:
 1. Define a name, age, and brief persona description fitting the target demographic
 2. Call `generate_panelist_portrait(panelist_name, age, persona_description)` for each
 3. Aim for diversity in age, background, and lifestyle within the target audience
+
+**CRITICAL: NO RETRIES** — If `generate_panelist_portrait` or `generate_panelist_testimonial` fails for ANY panelist, do NOT retry. Skip portrait/testimonial generation entirely and proceed to the next step with text-only output. These are optional enhancements; the evaluation itself is what matters.
 
 Example panelists for Gen Z eco-consumers:
 - "Maya Chen", 22, "college student studying environmental science, thrift shopper, CleanTok enthusiast"
@@ -94,14 +96,16 @@ Format each panelist's feedback as:
 | Audience Appeal | X | [feedback] |
 ```
 
-## Step 5: Panelist Testimonial Videos (SKIP if no commercial_artifact)
+## Step 5: Panelist Testimonial Videos (OPTIONAL — skip on failure)
 
 **IMPORTANT**: Only run this step if `commercial_artifact` exists and is non-empty. If there is no commercial, skip directly to Step 6.
 
-After scoring, generate a short video testimonial for the top 2 panelists using `generate_panelist_testimonial`:
+After scoring, attempt to generate a short video testimonial for the top 2 panelists using `generate_panelist_testimonial`:
 1. Write a 30-50 word spoken testimonial in the panelist's voice summarizing their key feedback
 2. Choose a matching voice_style from: "young_female", "young_male", "mature_female", "mature_male", "british_female"
 3. Call `generate_panelist_testimonial(panelist_name, testimonial_script, voice_style)`
+
+**If ANY testimonial call fails, do NOT retry. Skip remaining testimonials and proceed directly to Step 6.** The written evaluation is the primary deliverable.
 
 ## Step 6: Summary Report
 
