@@ -90,13 +90,29 @@ def generate_subject_image(
         return {"status": "ok", "gcs_uri": cached, "local_path": "", "subject_name": subject_name}
 
     try:
-        response = client.models.generate_content(
-            model=config.subject_image_gen_model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=["IMAGE"],
-            ),
-        )
+        # Retry with backoff for RESOURCE_EXHAUSTED (429) errors
+        response = None
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model=config.subject_image_gen_model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_modalities=["IMAGE"],
+                    ),
+                )
+                break  # Success
+            except Exception as gen_err:
+                err_str = str(gen_err)
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    wait = 15 * (attempt + 1)
+                    logging.warning(f"Subject image '{subject_name}' rate limited, waiting {wait}s (attempt {attempt + 1}/3)")
+                    time.sleep(wait)
+                else:
+                    raise  # Non-retryable error
+
+        if response is None:
+            return {"status": "failed", "error": "Rate limited after 3 retries"}
 
         if not response.candidates or not response.candidates[0].content.parts:
             return {"status": "failed", "error": "No image generated"}

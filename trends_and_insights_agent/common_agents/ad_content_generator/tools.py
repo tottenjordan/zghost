@@ -108,13 +108,28 @@ async def generate_image(
 
     """
     try:
-        response = client.models.generate_content(
-            model=config.image_gen_model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=["IMAGE"],
-            ),
-        )
+        response = None
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model=config.image_gen_model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_modalities=["IMAGE"],
+                    ),
+                )
+                break
+            except Exception as gen_err:
+                err_str = str(gen_err)
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    import time
+                    wait = 15 * (attempt + 1)
+                    logging.warning(f"Image gen rate limited, waiting {wait}s (attempt {attempt + 1}/3)")
+                    time.sleep(wait)
+                else:
+                    raise
+        if response is None:
+            return {"status": "failed", "error": "Rate limited after 3 retries"}
     except Exception as e:
         logging.error(f"Image generation failed: {e}")
         return {"status": "failed", "error": str(e)}

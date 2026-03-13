@@ -104,11 +104,15 @@ class CreativeProductionOrchestrator(BaseAgent):
         if state.get("commercial_artifact"):
             return 2  # COMMERCIAL_QA
 
-        # If images exist (2+), skip ad creative, go to AV studio
-        img_keys = state.get("img_artifact_keys", {})
-        if isinstance(img_keys, dict):
-            img_keys = img_keys.get("img_artifact_keys", [])
-        if img_keys and len(img_keys) >= 2:
+        # If ad copies AND visual concepts exist, skip to AV_STUDIO
+        # (even if images haven't been generated yet — AV studio will handle that)
+        ad_copies = state.get("final_select_ad_copies", {})
+        vis_concepts = state.get("final_select_vis_concepts", {})
+        if isinstance(ad_copies, dict):
+            ad_copies = ad_copies.get("final_select_ad_copies", [])
+        if isinstance(vis_concepts, dict):
+            vis_concepts = vis_concepts.get("final_select_vis_concepts", [])
+        if ad_copies and vis_concepts:
             return 1  # AV_STUDIO
 
         return 0  # Start from AD_CREATIVE
