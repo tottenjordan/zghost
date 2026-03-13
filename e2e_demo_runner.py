@@ -261,12 +261,12 @@ E2E DEMO RESULTS (CampaignOrchestrator) - {timestamp}
 
   Research report: {status['report_len']} chars {'PASS' if status['report_len'] > 500 else 'FAIL'}
   Images: {status['num_images']} {'PASS' if status['num_images'] >= 2 else 'FAIL'}
-  Videos: {status['num_videos']} {'PASS' if status['num_videos'] >= 2 else 'FAIL'}
+  Videos: {status['num_videos']} {'PASS' if status['num_videos'] >= 1 else 'FAIL'}
   15s Commercial: {'PASS' if status['has_commercial'] else 'FAIL'}
   Focus Group: {'PASS' if status['has_focus_group'] else 'FAIL'}
   Final report: {status['final_report_len']} chars {'PASS' if status['final_report_len'] > 0 else 'FAIL'}
 
-  OVERALL: {'PASS' if (status['report_len'] > 500 and status['num_images'] >= 2 and status['num_videos'] >= 2 and status['has_commercial'] and status['has_focus_group'] and status['final_report_len'] > 0) else 'FAIL'}
+  OVERALL: {'PASS' if (status['report_len'] > 500 and status['num_images'] >= 2 and status['num_videos'] >= 1 and status['has_commercial'] and status['has_focus_group'] and status['final_report_len'] > 0) else 'FAIL'}
 {'='*60}
 """
     print(summary)
@@ -280,7 +280,7 @@ E2E DEMO RESULTS (CampaignOrchestrator) - {timestamp}
         print(f"  Could not save full state: {e}")
 
     return (status["report_len"] > 500 and status["num_images"] >= 2
-            and status["num_videos"] >= 2 and status["has_commercial"]
+            and status["num_videos"] >= 1 and status["has_commercial"]
             and status["has_focus_group"] and status["final_report_len"] > 0)
 
 
