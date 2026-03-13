@@ -162,6 +162,13 @@ class CreativeProductionOrchestrator(BaseAgent):
 
             yield self._status_event(ctx, status_msg)
 
+            # IMAGE_GEN: deterministic image generation (no LLM agent)
+            if stage_name == "IMAGE_GEN":
+                async for event in self._generate_images_deterministic(ctx):
+                    yield event
+                i += 1
+                continue
+
             # Track AV_STUDIO invocations via state_delta
             if stage_name == "AV_STUDIO":
                 av_runs = state.get("_av_studio_runs", 0) + 1
@@ -217,6 +224,134 @@ class CreativeProductionOrchestrator(BaseAgent):
             if agent.name == name:
                 return agent
         return None
+
+    async def _generate_images_deterministic(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """Generate campaign images deterministically without an LLM agent.
+
+        Called as the IMAGE_GEN stage. Reads visual concepts from state and
+        generates images directly via the Gemini image gen SDK.
+        """
+        state = ctx.session.state
+        vis_concepts = state.get("final_select_vis_concepts", {})
+        if isinstance(vis_concepts, dict):
+            vis_concepts = vis_concepts.get("final_select_vis_concepts", [])
+
+        if not vis_concepts:
+            yield self._status_event(ctx, "No visual concepts found — skipping image generation.")
+            return
+
+        product = state.get("target_product", "the product")
+        audience = state.get("target_audience", "consumers")
+        gcs_folder = state.get("gcs_folder", "")
+        bucket = os.getenv("BUCKET", "")
+
+        img_client = genai.Client(vertexai=True)
+        generated_images = []
+
+        for i, concept in enumerate(vis_concepts[:2]):  # Generate max 2 images
+            concept_name = concept.get("concept_name", f"concept_{i}") if isinstance(concept, dict) else f"concept_{i}"
+            description = concept.get("description", str(concept)) if isinstance(concept, dict) else str(concept)
+
+            prompt = (
+                f"Professional campaign photography for {product}. "
+                f"Visual concept: {description[:300]}. "
+                f"Target audience: {audience}. "
+                f"High quality, cinematic lighting, lifestyle aesthetic. "
+                f"No text, no logos, no watermarks."
+            )
+            yield self._status_event(ctx, f"Generating image {i + 1}/2: {concept_name}...")
+
+            try:
+                response = None
+                for attempt in range(3):
+                    try:
+                        response = img_client.models.generate_content(
+                            model=config.image_gen_model,
+                            contents=prompt,
+                            config=types.GenerateContentConfig(
+                                response_modalities=["IMAGE"],
+                            ),
+                        )
+                        break
+                    except Exception as gen_err:
+                        err_str = str(gen_err)
+                        if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str) and attempt < 2:
+                            wait = 15 * (attempt + 1)
+                            logger.warning(f"Image gen rate limited, waiting {wait}s")
+                            time.sleep(wait)
+                        else:
+                            raise
+
+                if not response or not response.candidates or not response.candidates[0].content.parts:
+                    logger.warning(f"[ImageGen] No image in response for concept {i}")
+                    continue
+
+                # Save image to GCS
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data and part.inline_data.data:
+                        image_bytes = part.inline_data.data
+                        safe_name = concept_name.replace(",", "").replace(" ", "_")
+                        artifact_key = f"{safe_name}_0.png"
+
+                        if bucket and gcs_folder:
+                            from .tools import upload_blob_to_gcs
+                            import tempfile
+                            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                                tmp.write(image_bytes)
+                                tmp_path = tmp.name
+                            try:
+                                upload_blob_to_gcs(
+                                    source_file_name=tmp_path,
+                                    destination_blob_name=os.path.join(gcs_folder, artifact_key),
+                                )
+                            finally:
+                                os.unlink(tmp_path)
+
+                        # Save artifact via artifact_service if available
+                        if ctx.artifact_service:
+                            await ctx.artifact_service.save_artifact(
+                                app_name=ctx.app_name,
+                                user_id=ctx.user_id,
+                                session_id=ctx.session.id,
+                                filename=artifact_key,
+                                artifact=types.Part.from_bytes(
+                                    data=image_bytes, mime_type="image/png"
+                                ),
+                            )
+
+                        generated_images.append({
+                            "artifact_key": artifact_key,
+                            "img_prompt": prompt[:500],
+                            "concept": concept_name,
+                            "headline": "",
+                            "caption": "",
+                            "auto_saved": True,
+                        })
+                        logger.info(f"[ImageGen] Generated: {artifact_key}")
+                        break  # Only need first image part
+
+            except Exception as e:
+                logger.warning(f"[ImageGen] Failed for concept {i}: {e}")
+                yield self._status_event(ctx, f"Image generation failed for {concept_name}: {str(e)[:100]}")
+
+        if generated_images:
+            # Persist via state_delta
+            existing = state.get("img_artifact_keys", {"img_artifact_keys": []})
+            prev_list = list(existing.get("img_artifact_keys", []) if isinstance(existing, dict) else existing)
+            existing_keys = {item.get("artifact_key") for item in prev_list if isinstance(item, dict)}
+            for img in generated_images:
+                if img["artifact_key"] not in existing_keys:
+                    prev_list.append(img)
+
+            event = self._status_event(
+                ctx, f"Generated {len(generated_images)} campaign images successfully."
+            )
+            event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": prev_list}
+            yield event
+        else:
+            yield self._status_event(ctx, "No images generated — will retry on next wave.")
 
     async def _generate_fallback_commercial(
         self, ctx: InvocationContext
