@@ -1,12 +1,23 @@
-# Gecko rubric-based media fidelity evaluation.
-#
-# Based on product-fidelity-eval by Bryan Eusebio:
-#   https://github.com/behardja/product-fidelity-eval (branch: expand_video_feature)
-#
-# References:
-#   Gecko paper — https://arxiv.org/abs/2404.16820
-#   Vertex AI rubric metrics — https://cloud.google.com/vertex-ai/generative-ai/docs/evaluation/metrics/rubric-based-metrics
-#   GECKO_TEXT2IMAGE / GECKO_TEXT2VIDEO — https://cloud.google.com/python/docs/reference/vertexai/latest/vertexai.types.RubricMetric
+"""Gecko rubric-based media fidelity evaluation.
+
+Evaluates generated images and videos against ground-truth product descriptions
+using Vertex AI's rubric-based Gecko metrics (GECKO_TEXT2IMAGE / GECKO_TEXT2VIDEO).
+The evaluation generates per-attribute rubrics and returns a composite fidelity
+score (0.0-1.0) along with individual passing/failing verdicts.
+
+Based on Gecko: Versatile Text Embeddings Distilled from Large Language Models
+    Jinhyuk Lee, Zhuyun Dai, Xiaoqi Ren, et al. (2024)
+    https://arxiv.org/abs/2404.16820
+
+Adapted from: https://github.com/behardja/product-fidelity-eval
+    (branch: expand_video_feature) by Bryan Eusebio
+
+References:
+    Vertex AI rubric-based metrics:
+        https://cloud.google.com/vertex-ai/generative-ai/docs/evaluation/metrics/rubric-based-metrics
+    RubricMetric SDK reference:
+        https://cloud.google.com/python/docs/reference/vertexai/latest/vertexai.types.RubricMetric
+"""
 
 import logging
 import time

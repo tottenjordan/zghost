@@ -101,8 +101,8 @@ Takes the research report and selected trends, then produces a complete set of a
 - **Phase 3 — Asset Generation (Image-to-Video Reference Workflow):**
   - For each concept: generates a keyframe image first, then passes it as a reference image to the video generator
   - This reference image workflow ensures visual continuity between the still and the motion asset
-  - Runs Gecko fidelity evaluation to score product representation accuracy (0.0-1.0)
-  - Saves all metadata (headline, caption, rationale, prompts) alongside each artifact
+  - **Gecko fidelity evaluation** runs automatically after every image generation, scoring product representation accuracy (0.0-1.0) using Vertex AI rubric-based metrics. Based on [Gecko: Versatile Text Embeddings Distilled from Large Language Models](https://arxiv.org/abs/2404.16820) (Lee, Dai, Ren et al., 2024) and adapted from the [product-fidelity-eval](https://github.com/behardja/product-fidelity-eval) framework. Images scoring below 0.7 are automatically regenerated with refined prompts informed by the failing verdict descriptions.
+  - Saves all metadata (headline, caption, rationale, prompts, fidelity score) alongside each artifact
 
 ### Key Tools
 
@@ -110,7 +110,7 @@ Takes the research report and selected trends, then produces a complete set of a
 |------|---------|
 | `generate_image` | Creates images via Gemini 3 Pro native image generation |
 | `generate_video` | Produces 8-second videos via Veo 3.1 with optional reference image |
-| `evaluate_media_fidelity` | Scores generated media against product description using Gecko |
+| `evaluate_media_fidelity` | Scores generated media against product description using [Gecko](https://arxiv.org/abs/2404.16820) rubric-based evaluation (auto-runs after every image generation; regenerates if score < 0.7) |
 | `save_select_ad_copy` | Saves selected ad copies to session state |
 | `save_select_visual_concept` | Saves selected visual concepts to session state |
 | `save_img_artifact_key` / `save_vid_artifact_key` | Records image and video metadata for reporting |
@@ -235,7 +235,7 @@ For detailed architecture diagrams, see `functional_architecture_diagram.png` an
 | Video generation | Veo 3.1 Fast (`veo-3.1-fast-generate-001`) |
 | Music generation | Lyria 2 (`lyria-002` via Vertex AI predict) |
 | Voice-over & dialogue | Chirp 3 HD (Cloud Text-to-Speech v1beta1) |
-| Media fidelity scoring | Gecko (Vertex AI rubric-based evaluation) |
+| Media fidelity scoring | [Gecko](https://arxiv.org/abs/2404.16820) (Vertex AI rubric-based evaluation; adapted from [product-fidelity-eval](https://github.com/behardja/product-fidelity-eval)) |
 | Search trend data | BigQuery public dataset (`google_trends.top_terms`) |
 | Video trend data | YouTube Data API v3 |
 | Web research grounding | Google Search (ADK built-in) |

@@ -313,6 +313,7 @@ async def save_img_artifact_key(
             rationale_perf (str): Performance rationale.
             audience_appeal (str): Audience appeal.
             markets_product (str): How it markets the product.
+            fidelity_score (float): Gecko fidelity score (0.0-1.0) from evaluate_media_fidelity.
         tool_context (ToolContext): The tool context.
     """
     state_key = "img_artifact_keys"
@@ -391,6 +392,17 @@ def evaluate_media_fidelity(
 
     passed = result.get("score", 0.0) >= 0.7
     result["passed"] = passed
+
+    # Log fidelity score to session state for tracking
+    fidelity_log = tool_context.state.get("fidelity_eval_log", [])
+    fidelity_log.append({
+        "media_uri": media_uri,
+        "media_type": media_type,
+        "score": result.get("score", 0.0),
+        "passed": passed,
+    })
+    tool_context.state["fidelity_eval_log"] = fidelity_log
+
     return result
 
 
@@ -475,6 +487,8 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
             IMG_CREATIVE_STRING += f"- **Product Strategy:** {entry['markets_product']}\n"
             IMG_CREATIVE_STRING += f"- **Audience Appeal:** {entry['audience_appeal']}\n"
             IMG_CREATIVE_STRING += f"- **Performance Logic:** {entry['rationale_perf']}\n\n"
+            if entry.get('fidelity_score') is not None:
+                IMG_CREATIVE_STRING += f"**Gecko Fidelity Score:** {entry['fidelity_score']:.2f} / 1.00\n\n"
             IMG_CREATIVE_STRING += f"**AI Generation Prompt:**\n> {entry['img_prompt']}\n\n"
             IMG_CREATIVE_STRING += "---\n\n"
 

@@ -39,6 +39,7 @@ TOOL_STATUS_MESSAGES = {
     "ad_creative_pipeline": "Starting ad copy generation...",
     "visual_generation_pipeline": "Starting visual concept development...",
     "visual_generator": "Generating images and videos...",
+    "evaluate_media_fidelity": "Evaluating image fidelity with Gecko...",
     "transfer_to_agent": "Transferring to next agent...",
     "load_artifacts": "Loading artifacts for display...",
     "preload_memory": "Loading campaign memories...",
@@ -64,6 +65,7 @@ TOOL_DESCRIPTIONS = {
     "load_artifacts": "loads saved artifacts for display",
     "preload_memory": "loads campaign memories from memory bank",
     "recall_prior_insights": "retrieves prior campaign insights from memory bank",
+    "evaluate_media_fidelity": "evaluates image fidelity against product description using Gecko scoring",
     "transfer_to_agent": "transfers control to another agent",
     "combined_research_pipeline": "runs the full research pipeline",
 }
@@ -164,12 +166,40 @@ async def before_tool_status_callback(
 async def after_tool_status_callback(
     tool: BaseTool, args: dict, tool_context: ToolContext, tool_response: dict
 ) -> Optional[dict]:
-    """Log duration. Do NOT modify ui:status_update — ADK bundles before/after state changes."""
+    """Log duration and surface fidelity/generation results as status updates."""
     start_ts = tool_context.state.get("_tool_start_ts")
     tool_name = tool_context.state.get("_tool_name", tool.name)
     if start_ts:
         duration = time.time() - start_ts
         logging.info(f"[TOOL_DURATION] {tool_name} completed in {duration:.1f}s")
+
+    # Surface fidelity evaluation results
+    if tool_name == "evaluate_media_fidelity" and isinstance(tool_response, dict):
+        score = tool_response.get("score", 0.0)
+        passed = tool_response.get("passed", False)
+        if tool_response.get("status") == "error":
+            status_msg = f"Fidelity evaluation error: {tool_response.get('error', 'unknown')}"
+        elif passed:
+            status_msg = f"Image fidelity score: {score:.2f}/1.0 — High quality, proceeding"
+        else:
+            # Include failing verdict details if available
+            failing = tool_response.get("failing", [])
+            if failing:
+                verdict_summary = ", ".join(str(v)[:40] for v in failing[:2])
+                status_msg = f"Image fidelity score: {score:.2f}/1.0 — Below threshold, regenerating ({verdict_summary})"
+            else:
+                status_msg = f"Image fidelity score: {score:.2f}/1.0 — Below threshold, regenerating with improved prompt"
+        tool_context.state["ui:status_update"] = status_msg
+        logging.info(f"[FIDELITY_STATUS] {status_msg}")
+
+    # Surface failed image generation
+    if tool_name == "generate_image" and isinstance(tool_response, dict):
+        if tool_response.get("status") != "ok":
+            error_detail = tool_response.get("error", "unknown error")
+            status_msg = f"Image generation failed ({error_detail}) — retrying with refined prompt"
+            tool_context.state["ui:status_update"] = status_msg
+            logging.info(f"[GEN_STATUS] {status_msg}")
+
     return None
 
 

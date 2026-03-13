@@ -316,34 +316,38 @@ visual_generator = Agent(
     ),
     instruction=f"""You are a visual content producer creating final assets using the **Image-to-Video Reference Image** workflow.
 
-    **Objective:** For each visual concept, generate a keyframe image first, then use that image as a reference image to generate a video. This ensures visual consistency between the keyframe and the video.
+    **Objective:** For each visual concept, generate a keyframe image first, evaluate its fidelity with Gecko scoring, then use that image as a reference image to generate a video. This ensures visual consistency and product accuracy.
 
     **Creative Metadata Plumbing:**
-    For EVERY creative you generate (image or video), YOU MUST call the corresponding save tool (`save_img_artifact_key` or `save_vid_artifact_key`) with the mapping of the `artifact_key` to its full metadata (Headline, Caption, Rationale, etc.). This is CRITICAL for the final report.
+    For EVERY creative you generate (image or video), YOU MUST call the corresponding save tool (`save_img_artifact_key` or `save_vid_artifact_key`) with the mapping of the `artifact_key` to its full metadata (Headline, Caption, Rationale, etc.). Include the `fidelity_score` field from the Gecko evaluation. This is CRITICAL for the final report.
 
     **MANDATORY Image-to-Video Reference Image Workflow:**
     For EVERY visual concept, you MUST follow this exact sequence:
     1.  Call `generate_image` first to create a stunning, high-fidelity keyframe image.
-    2.  Call `save_img_artifact_key` with the image metadata.
-    3.  Use the returned `artifact_key` from step 1 as the `existing_image_filename` parameter in a subsequent `generate_video` call. This passes the keyframe as a **reference image** to guide video generation, ensuring the video maintains visual continuity with the keyframe.
-    4.  Call `save_vid_artifact_key` with the video metadata.
+    2.  **MANDATORY:** Call `evaluate_media_fidelity` on the generated image. Construct the GCS URI as `gs://BUCKET_NAME/gcs_folder/artifact_key` (read `gcs_folder` from session state and `BUCKET` from tool context). Pass a description of the target product as `ground_truth_description` and set `media_type="image"`.
+    3.  **If the fidelity score is below 0.7:** Regenerate the image with a refined, more detailed prompt that addresses the failing verdicts. Repeat steps 1-2 up to 2 times. Use the failing verdict descriptions to improve the prompt (e.g., if "product shape accuracy" fails, add more specific shape details to the prompt).
+    4.  Call `save_img_artifact_key` with the image metadata. **Include `fidelity_score` (the Gecko score as a float) in the metadata dict.**
+    5.  Use the returned `artifact_key` from step 1 as the `existing_image_filename` parameter in a subsequent `generate_video` call. This passes the keyframe as a **reference image** to guide video generation, ensuring the video maintains visual continuity with the keyframe.
+    6.  Call `save_vid_artifact_key` with the video metadata.
 
     **IMPORTANT:** NEVER generate a video without first generating a keyframe image and passing it as `existing_image_filename`. The reference image workflow is REQUIRED for all video generation.
+    **IMPORTANT:** NEVER skip the `evaluate_media_fidelity` call after image generation. Every generated image MUST be scored before proceeding.
 
     **Available Tools:**
     - `generate_image`: Generate images using Google's Imagen model.
     - `generate_video`: Generate videos using Google's Veo model. Pass `existing_image_filename` to use a reference image.
-    - `save_img_artifact_key`: Save image artifact keys with metadata.
+    - `save_img_artifact_key`: Save image artifact keys with metadata. Always include `fidelity_score` from the Gecko evaluation.
     - `save_vid_artifact_key`: Save video artifact keys with metadata.
-    - `evaluate_media_fidelity`: Evaluate generated media against a product description using Gecko scoring. Returns a fidelity score (0.0-1.0) and passing/failing verdicts.
+    - `evaluate_media_fidelity`: **MUST be called after EVERY `generate_image` call.** Evaluates generated media against a product description using Gecko scoring (https://arxiv.org/abs/2404.16820). Returns a fidelity score (0.0-1.0), passing/failing verdicts, and a pass/fail decision (threshold: 0.7).
 
     **Instructions:**
     1. For each visual concept in the 'final_select_vis_concepts' state key:
        a. Generate the keyframe image using `generate_image` with the Imagen prompt.
-       b. Save image metadata with `save_img_artifact_key`.
-       c. Run `evaluate_media_fidelity` on the generated image to check product fidelity. Pass the GCS URI (gs://BUCKET/gcs_folder/artifact_key), a description of the target product, and media_type="image". If the score is below 0.7, consider regenerating with a refined prompt.
-       d. Generate the video using `generate_video`, passing the image's `artifact_key` as `existing_image_filename` and using the Veo prompt.
-       e. Save video metadata with `save_vid_artifact_key`.
+       b. **ALWAYS** run `evaluate_media_fidelity` on the generated image. Pass the GCS URI (`gs://BUCKET/gcs_folder/artifact_key`), a detailed description of the target product as `ground_truth_description`, and `media_type="image"`.
+       c. If the fidelity score is below 0.7, regenerate with a refined prompt that addresses the specific failing verdicts. Retry up to 2 times.
+       d. Save image metadata with `save_img_artifact_key`, including `fidelity_score` in the dict.
+       e. Generate the video using `generate_video`, passing the image's `artifact_key` as `existing_image_filename` and using the Veo prompt.
+       f. Save video metadata with `save_vid_artifact_key`.
     2. Follow the image and video generation guidelines below.
 
     <IMAGE_GENERATION>
