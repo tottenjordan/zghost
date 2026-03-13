@@ -1,10 +1,15 @@
+import logging
+import pathlib
+
 from google.genai import types
 from google.adk.planners import BuiltInPlanner
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.tools import google_search, load_artifacts
+from google.adk.tools.skill_toolset import SkillToolset
 
 from trends_and_insights_agent.shared_libraries.config import config
 from trends_and_insights_agent.shared_libraries import callbacks
+from trends_and_insights_agent.skills.skill_loader import load_skill_from_dir
 from .tools import (
     generate_image,
     generate_video,
@@ -18,7 +23,15 @@ from .prompts import (
     AD_CREATIVE_SUBAGENT_INSTR,
     VEO3_INSTR,
 )
-from google.adk.planners import BuiltInPlanner
+
+# Load ad_creative skill for NovaStorm-evolvable instructions
+_ad_skill_dir = pathlib.Path(__file__).parent / "../../skills/ad_creative"
+try:
+    _ad_skill = load_skill_from_dir(_ad_skill_dir)
+    _ad_skill_toolset = SkillToolset(skills=[_ad_skill])
+except Exception as _e:
+    logging.warning(f"Could not load ad_creative skill: {_e}")
+    _ad_skill_toolset = None
 
 
 # --- AD CREATIVE SUBAGENTS ---
@@ -401,7 +414,7 @@ ad_content_generator_agent = Agent(
         save_select_ad_copy,
         save_select_visual_concept,
         load_artifacts,
-    ],
+    ] + ([_ad_skill_toolset] if _ad_skill_toolset else []),
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
     before_model_callback=callbacks.before_model_status_callback,
     before_tool_callback=callbacks.before_tool_status_callback,

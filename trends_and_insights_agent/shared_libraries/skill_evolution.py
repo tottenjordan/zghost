@@ -432,6 +432,200 @@ Output JSON:
         return current_dna  # Return unchanged on error
 
 
+SKILL_PIPELINE = [
+    ("research", "ad_creative", "Research report feeds ad copy and visual concept generation"),
+    ("ad_creative", "av_studio", "Ad creatives (images, videos, copy) are composited into a commercial"),
+    ("av_studio", "focus_group", "The commercial is evaluated by a simulated focus group panel"),
+    ("focus_group", "research", "Focus group feedback informs the next campaign research cycle"),
+]
+
+
+def run_skill_council(
+    session_state: dict,
+    user_id: str = "default",
+) -> dict:
+    """Run a cross-skill discussion where skills analyze each other's handoffs.
+
+    Skills form a pipeline: research → ad_creative → av_studio → focus_group.
+    Each skill reviews its upstream neighbor's output and suggests improvements
+    that would make its own job easier/better.
+
+    This creates a collaborative improvement loop where skills teach each other.
+
+    Args:
+        session_state: Full session state with all skill outputs
+        user_id: User identifier for Memory Bank scoping
+
+    Returns:
+        dict with cross-skill recommendations for each skill
+    """
+    try:
+        client = genai.Client(vertexai=True)
+
+        # Gather pipeline artifacts from session state
+        artifacts = {
+            "research": {
+                "report": str(session_state.get("combined_final_cited_report", ""))[:800],
+                "sources": len(session_state.get("sources", {})),
+            },
+            "ad_creative": {
+                "num_images": len(_extract_list(session_state, "img_artifact_keys")),
+                "num_videos": len(_extract_list(session_state, "vid_artifact_keys")),
+                "copies": str(session_state.get("final_select_ad_copies", ""))[:400],
+            },
+            "av_studio": {
+                "commercial": str(session_state.get("commercial_artifact", ""))[:300],
+                "duration": session_state.get("commercial_duration", 0),
+            },
+            "focus_group": {
+                "evaluation": str(session_state.get("focus_group_evaluation", ""))[:800],
+                "panelists": str(session_state.get("focus_group_panelists", ""))[:400],
+            },
+        }
+
+        prompt = f"""You are a Skill Council — a group discussion between 4 skills that form a campaign pipeline.
+
+## The Pipeline
+1. **RESEARCH** produces a market research report → feeds AD_CREATIVE
+2. **AD_CREATIVE** generates ad copies, images, videos → feeds AV_STUDIO
+3. **AV_STUDIO** produces a commercial → feeds FOCUS_GROUP
+4. **FOCUS_GROUP** evaluates everything → feeds back to RESEARCH
+
+## Current Pipeline Artifacts
+
+RESEARCH output: {json.dumps(artifacts['research'])}
+
+AD_CREATIVE output: {json.dumps(artifacts['ad_creative'])}
+
+AV_STUDIO output: {json.dumps(artifacts['av_studio'])}
+
+FOCUS_GROUP output: {json.dumps(artifacts['focus_group'])}
+
+## Your Task
+
+Have each skill speak about:
+1. What it received from its upstream neighbor — was it sufficient?
+2. What it would have liked to receive instead
+3. What it thinks its downstream neighbor needs from it
+4. Specific instruction changes for BOTH itself AND its neighbors
+
+Format as JSON:
+{{
+    "council_discussion": {{
+        "research": {{
+            "to_self": "What research should do differently...",
+            "to_ad_creative": "What research recommends to ad_creative...",
+            "received_quality": 7.5,
+            "handoff_quality": 8.0
+        }},
+        "ad_creative": {{
+            "to_self": "What ad_creative should do differently...",
+            "to_av_studio": "What ad_creative recommends to av_studio...",
+            "to_research": "What ad_creative needs from research...",
+            "received_quality": 7.0,
+            "handoff_quality": 7.5
+        }},
+        "av_studio": {{
+            "to_self": "What av_studio should do differently...",
+            "to_focus_group": "What av_studio recommends to focus_group...",
+            "to_ad_creative": "What av_studio needs from ad_creative...",
+            "received_quality": 6.5,
+            "handoff_quality": 7.0
+        }},
+        "focus_group": {{
+            "to_self": "What focus_group should do differently...",
+            "to_research": "What focus_group recommends to research for next cycle...",
+            "to_av_studio": "What focus_group needs from av_studio...",
+            "received_quality": 7.0,
+            "handoff_quality": 8.0
+        }}
+    }},
+    "pipeline_score": 7.5,
+    "top_improvements": [
+        "Most impactful change 1...",
+        "Most impactful change 2...",
+        "Most impactful change 3..."
+    ]
+}}
+
+Be specific and actionable. Focus on handoff quality between skills."""
+
+        response = client.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.7,
+                response_mime_type="application/json",
+            ),
+        )
+
+        council_result = json.loads(response.text)
+
+        # Save cross-skill recommendations to Memory Bank
+        _save_council_to_memory(council_result, user_id)
+
+        logging.info(
+            f"[NovaStorm] Skill Council complete: pipeline_score={council_result.get('pipeline_score', 0)}/10"
+        )
+        return council_result
+
+    except Exception as e:
+        logging.error(f"[NovaStorm] Skill Council failed: {e}")
+        return {"error": str(e)}
+
+
+def _extract_list(state: dict, key: str) -> list:
+    """Extract a list from state, handling the nested dict pattern."""
+    val = state.get(key, {})
+    if isinstance(val, dict):
+        return val.get(key, [])
+    return val if isinstance(val, list) else []
+
+
+def _save_council_to_memory(council_result: dict, user_id: str):
+    """Save cross-skill council recommendations to Memory Bank."""
+    try:
+        client, resource_name = _get_memory_client()
+        if not client:
+            return
+
+        discussion = council_result.get("council_discussion", {})
+        facts = []
+
+        # Save cross-skill recommendations
+        for skill_name, recs in discussion.items():
+            to_self = recs.get("to_self", "")
+            if to_self:
+                facts.append(f"Skill council recommendation for {skill_name}: {to_self[:200]}")
+
+            # Save what each skill recommends to its neighbors
+            for key, value in recs.items():
+                if key.startswith("to_") and key != "to_self" and value:
+                    target = key[3:]  # e.g., "to_ad_creative" -> "ad_creative"
+                    facts.append(
+                        f"Cross-skill: {skill_name} recommends to {target}: {str(value)[:200]}"
+                    )
+
+        # Save top improvements
+        top = council_result.get("top_improvements", [])
+        for imp in top[:3]:
+            facts.append(f"Pipeline improvement priority: {imp[:200]}")
+
+        score = council_result.get("pipeline_score", 0)
+        facts.append(f"Pipeline overall score: {score}/10")
+
+        _save_facts_to_memory(client, resource_name, facts, scope={
+            "user_id": user_id,
+            "memory_type": "skill_council",
+            "skill": "pipeline",
+        })
+
+        logging.info(f"[NovaStorm] Saved {len(facts)} council recommendations to Memory Bank")
+
+    except Exception as e:
+        logging.warning(f"[NovaStorm] Council save failed: {e}")
+
+
 def get_skill_lineage(skill_name: str, user_id: str = "default") -> List[dict]:
     """Get the evolution history of a skill.
 

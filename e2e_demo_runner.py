@@ -164,17 +164,17 @@ def get_pipeline_status(ae, session_id):
     has_commercial = bool(commercial)
     has_focus_group = bool(focus_group)
 
-    # Determine stage based on same logic as CampaignOrchestrator
-    if report_len < 500:
+    # Determine stage — check COMPLETE first (creative exhaustion can skip stages)
+    if final_len > 0:
+        stage = "COMPLETE"
+    elif has_focus_group:
+        stage = "SAVE_REPORT"
+    elif report_len < 500:
         stage = "RESEARCH"
     elif num_images < 2 or not has_commercial:
         stage = "CREATIVE"
-    elif not has_focus_group:
-        stage = "FOCUS_GROUP"
-    elif final_len == 0:
-        stage = "SAVE_REPORT"
     else:
-        stage = "COMPLETE"
+        stage = "FOCUS_GROUP"
 
     print(f"\n--- Pipeline Status: {stage} ---")
     print(f"  Research report: {report_len} chars")

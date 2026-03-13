@@ -14,6 +14,12 @@ from google.adk.agents import Agent
 from google.adk.planners import BuiltInPlanner
 
 from ...shared_libraries.config import config
+from ...shared_libraries.skill_evolution_tools import (
+    reflect_and_improve_skill,
+    load_evolved_instructions,
+    list_skill_versions,
+    convene_skill_council,
+)
 
 
 SKILL_CRITIC_INSTRUCTIONS = """You are a skill evaluation critic using the GEPA framework.
@@ -83,6 +89,12 @@ skill_critic_agent = Agent(
         thinking_config=types.ThinkingConfig(thinking_budget=4096),
     ),
     instruction=SKILL_CRITIC_INSTRUCTIONS,
+    tools=[
+        reflect_and_improve_skill,
+        load_evolved_instructions,
+        list_skill_versions,
+        convene_skill_council,
+    ],
     planner=BuiltInPlanner(),
     output_key="skill_critique",
 )

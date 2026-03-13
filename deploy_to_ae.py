@@ -21,6 +21,7 @@ def deploy_agent_engine(update=False):
         "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT": "true",
         "GOOGLE_CLOUD_LOCATION": "global",
         "ENABLE_LLM_STATUS": "true",
+        "NOVASTORM_ENABLED": "true",
     }
 
     env_vars["GOOGLE_GENAI_USE_VERTEXAI"] = os.getenv("GOOGLE_GENAI_USE_VERTEXAI")

@@ -860,8 +860,11 @@ async def after_agent_skill_reflection(callback_context: CallbackContext):
         "report_saver_agent": "research",
         "ad_content_generator_agent": "ad_creative",
         "ad_creative_pipeline": "ad_creative",
+        "creative_production_orchestrator": "ad_creative",
         "visual_generator": "ad_creative",
+        "av_editing_studio_agent": "av_studio",
         "av_studio_agent": "av_studio",
+        "focus_group_evaluator_agent": "focus_group",
         "focus_group_agent": "focus_group",
     }
 

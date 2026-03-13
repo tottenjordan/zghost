@@ -37,4 +37,5 @@ focus_group_evaluator_agent = Agent(
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     before_model_callback=callbacks.rate_limit_callback,
+    after_agent_callback=callbacks.after_agent_skill_reflection,
 )

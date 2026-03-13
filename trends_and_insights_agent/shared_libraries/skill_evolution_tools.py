@@ -18,6 +18,7 @@ from .skill_evolution import (
     save_skill_dna,
     load_skill_dna,
     get_skill_lineage,
+    run_skill_council,
     SkillDNA,
 )
 
@@ -262,3 +263,59 @@ def list_skill_versions(
             "num_versions": 0,
             "versions": [],
         }
+
+
+async def convene_skill_council(
+    tool_context: ToolContext,
+) -> dict:
+    """Run a cross-skill council where all pipeline skills discuss and improve each other.
+
+    The skills form a pipeline: research → ad_creative → av_studio → focus_group.
+    Each skill reviews its upstream neighbor's output and suggests improvements
+    that would make its own job easier and the overall pipeline better.
+
+    Call this after the full pipeline completes (all 4 skills have run) to get
+    cross-skill improvement recommendations.
+
+    Args:
+        tool_context: The tool context (reads session state for all skill outputs)
+
+    Returns:
+        dict with council discussion, cross-skill recommendations, pipeline score,
+        and top improvement priorities
+
+    Example:
+        {
+            "status": "ok",
+            "pipeline_score": 7.5,
+            "top_improvements": ["Add competitive analysis to research...", ...],
+            "council_discussion": {
+                "research": {"to_self": "...", "to_ad_creative": "..."},
+                "ad_creative": {"to_self": "...", "to_research": "..."},
+                ...
+            }
+        }
+    """
+    try:
+        session_state = dict(tool_context.state)
+        user_id = tool_context.user_id or "default"
+
+        council_result = run_skill_council(session_state, user_id)
+
+        if "error" in council_result:
+            return {"status": "error", "error": council_result["error"]}
+
+        # Store council results in session state for visibility
+        tool_context.state["skill_council_result"] = council_result
+
+        return {
+            "status": "ok",
+            "pipeline_score": council_result.get("pipeline_score", 0),
+            "top_improvements": council_result.get("top_improvements", []),
+            "council_discussion": council_result.get("council_discussion", {}),
+            "saved_to_memory": True,
+        }
+
+    except Exception as e:
+        logging.error(f"[NovaStorm] convene_skill_council failed: {e}")
+        return {"status": "error", "error": str(e)}

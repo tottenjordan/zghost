@@ -21,7 +21,10 @@ creative_production_orchestrator = CreativeProductionOrchestrator(
         av_editing_studio_agent,
         commercial_qa_agent,
     ],
-    after_agent_callback=callbacks.save_creative_skill_to_memory,
+    after_agent_callback=[
+        callbacks.save_creative_skill_to_memory,
+        callbacks.after_agent_skill_reflection,
+    ],
 )
 
 root_agent = CampaignOrchestrator(
