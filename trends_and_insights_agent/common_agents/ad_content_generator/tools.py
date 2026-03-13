@@ -188,6 +188,27 @@ async def generate_image(
     if artifact_key is None:
         return {"status": "failed", "error": "No image data in response"}
 
+    # Auto-save img_artifact_key so orchestrator sees the image even if
+    # the LLM doesn't get a chance to call save_img_artifact_key separately
+    # (AE wave may end before the next tool call)
+    auto_metadata = {
+        "artifact_key": artifact_key,
+        "img_prompt": prompt[:500],
+        "concept": concept_name or "",
+        "headline": "",
+        "caption": "",
+        "auto_saved": True,
+    }
+    state_key = "img_artifact_keys"
+    existing = tool_context.state.get(state_key, {"img_artifact_keys": []})
+    prev_list = list(existing.get("img_artifact_keys", []) if isinstance(existing, dict) else existing)
+    # Avoid duplicates
+    existing_keys = {item.get("artifact_key") for item in prev_list if isinstance(item, dict)}
+    if artifact_key not in existing_keys:
+        prev_list.append(auto_metadata)
+        tool_context.state[state_key] = {"img_artifact_keys": prev_list}
+        logging.info(f"Auto-saved img_artifact_key: {artifact_key} (total: {len(prev_list)})")
+
     return {"status": "ok", "artifact_key": f"{artifact_key}"}
 
 
