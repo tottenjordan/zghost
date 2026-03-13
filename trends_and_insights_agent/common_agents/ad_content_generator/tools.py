@@ -682,15 +682,31 @@ async def save_final_report_tool(
         artifact_key = "final_trends_and_creatives_report.pdf"
         report_filepath = f"{DIR}/{artifact_key}"
 
-        pdf = MarkdownPdf(toc_level=4)
-        pdf.add_section(Section(f" {processed_report}\n"))
-        pdf.add_section(
-            Section(f"# Ad Creatives\n\n{IMG_CREATIVE_STRING}\n\n{VID_CREATIVE_STRING}")
-        )
-        pdf.add_section(Section(COMMERCIAL_STRING))
-        pdf.add_section(Section(FOCUS_GROUP_STRING))
-        pdf.meta["title"] = "[Final] Trends-to-Creatives Campaign Report"
-        pdf.save(report_filepath)
+        # Sanitize focus group text — downgrade headers to avoid "bad hierarchy level"
+        import re as _re
+        sanitized_fg = _re.sub(r'^(#{1,2})\s', lambda m: '#' * (len(m.group(1)) + 2) + ' ', FOCUS_GROUP_STRING, flags=_re.MULTILINE)
+
+        try:
+            pdf = MarkdownPdf(toc_level=4)
+            pdf.add_section(Section(f" {processed_report}\n"))
+            pdf.add_section(
+                Section(f"# Ad Creatives\n\n{IMG_CREATIVE_STRING}\n\n{VID_CREATIVE_STRING}")
+            )
+            pdf.add_section(Section(COMMERCIAL_STRING))
+            pdf.add_section(Section(sanitized_fg))
+            pdf.meta["title"] = "[Final] Trends-to-Creatives Campaign Report"
+            pdf.save(report_filepath)
+        except Exception as pdf_err:
+            logging.warning(f"PDF with toc_level=4 failed ({pdf_err}), retrying with toc_level=0")
+            pdf = MarkdownPdf(toc_level=0)
+            pdf.add_section(Section(f" {processed_report}\n"))
+            pdf.add_section(
+                Section(f"# Ad Creatives\n\n{IMG_CREATIVE_STRING}\n\n{VID_CREATIVE_STRING}")
+            )
+            pdf.add_section(Section(COMMERCIAL_STRING))
+            pdf.add_section(Section(sanitized_fg))
+            pdf.meta["title"] = "[Final] Trends-to-Creatives Campaign Report"
+            pdf.save(report_filepath)
 
         with open(report_filepath, "rb") as f:
             document_bytes = f.read()
