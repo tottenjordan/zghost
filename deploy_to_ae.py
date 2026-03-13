@@ -33,10 +33,6 @@ def deploy_agent_engine(update=False):
     my_agent = agent_engines.AdkApp(
         agent=agent.root_agent,
         enable_tracing=True,
-        session_service_builder=lambda: __import__("google.adk.sessions", fromlist=["VertexAiSessionService"]).VertexAiSessionService(
-            project=os.getenv("GOOGLE_CLOUD_PROJECT"),
-            location=os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
-        ),
         artifact_service_builder=lambda: __import__("google.adk.artifacts", fromlist=["GcsArtifactService"]).GcsArtifactService(
             bucket_name=os.getenv("BUCKET", "gs://zghost-media-center").replace("gs://", "")
         ),
