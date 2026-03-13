@@ -282,12 +282,15 @@ class CampaignOrchestrator(BaseAgent):
         status = result.get("status", "failed")
         artifact_key = result.get("artifact_key", "")
         if status == "ok":
-            state["final_report_with_citations"] = processed_report
-            msg = f"Final campaign report saved as PDF: {artifact_key}"
+            # Persist via state_delta event (direct mutation doesn't survive AE invocations)
+            report_event = self._status_event(
+                ctx, f"Final campaign report saved as PDF: {artifact_key}"
+            )
+            report_event.actions.state_delta["final_report_with_citations"] = processed_report
+            yield report_event
         else:
             msg = f"Failed to save final report: {result.get('error', 'unknown')}"
-
-        yield self._status_event(ctx, msg)
+            yield self._status_event(ctx, msg)
 
     def _status_event(self, ctx: InvocationContext, message: str) -> Event:
         """Create an event with a status message and ui:status_update."""

@@ -171,12 +171,14 @@ class CreativeProductionOrchestrator(BaseAgent):
                 qa_result = str(state.get("commercial_qa_result", ""))
                 if "FAIL" in qa_result and av_attempts < MAX_COMMERCIAL_RETRIES:
                     av_attempts += 1
-                    state["commercial_artifact"] = ""
-                    state["commercial_qa_result"] = ""
-                    yield self._status_event(
+                    # Clear via state_delta event (direct mutation doesn't persist on AE)
+                    retry_event = self._status_event(
                         ctx,
                         f"Commercial QA failed. Retrying AV studio (attempt {av_attempts + 1}/{MAX_COMMERCIAL_RETRIES + 1})...",
                     )
+                    retry_event.actions.state_delta["commercial_artifact"] = ""
+                    retry_event.actions.state_delta["commercial_qa_result"] = ""
+                    yield retry_event
                     i = 2  # Jump back to AV_STUDIO
                     continue
 

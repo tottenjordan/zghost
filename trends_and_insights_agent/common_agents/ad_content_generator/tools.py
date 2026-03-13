@@ -334,8 +334,10 @@ async def save_img_artifact_key(
     """
     state_key = "img_artifact_keys"
     existing = tool_context.state.get(state_key, {"img_artifact_keys": []})
-    existing["img_artifact_keys"].append(artifact_key_dict)
-    tool_context.state[state_key] = existing
+    # Create a NEW list/dict to ensure ADK state tracking detects the change
+    prev_list = list(existing.get("img_artifact_keys", []) if isinstance(existing, dict) else existing)
+    prev_list.append(artifact_key_dict)
+    tool_context.state[state_key] = {"img_artifact_keys": prev_list}
     return {"status": "ok", "message": f"Saved metadata for {artifact_key_dict.get('artifact_key')}"}
 
 
@@ -361,8 +363,10 @@ async def save_vid_artifact_key(
     """
     state_key = "vid_artifact_keys"
     existing = tool_context.state.get(state_key, {"vid_artifact_keys": []})
-    existing["vid_artifact_keys"].append(artifact_key_dict)
-    tool_context.state[state_key] = existing
+    # Create a NEW list/dict to ensure ADK state tracking detects the change
+    prev_list = list(existing.get("vid_artifact_keys", []) if isinstance(existing, dict) else existing)
+    prev_list.append(artifact_key_dict)
+    tool_context.state[state_key] = {"vid_artifact_keys": prev_list}
     return {"status": "ok", "message": f"Saved metadata for {artifact_key_dict.get('artifact_key')}"}
 
 
