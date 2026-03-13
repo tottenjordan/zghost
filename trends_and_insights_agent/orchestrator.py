@@ -26,10 +26,13 @@ from google.adk.utils.context_utils import Aclosing
 from google.adk.utils.feature_decorator import experimental
 
 from .common_agents.ad_content_generator.tools import save_final_report_tool
+from .shared_libraries.skill_evolution import run_skill_council
 
 logger = logging.getLogger("google_adk." + __name__)
 
 STAGES = ["TRENDS", "RESEARCH", "CREATIVE", "FOCUS_GROUP", "SAVE_REPORT", "COMPLETE"]
+
+MAX_CREATIVE_ATTEMPTS = 5  # Max times to re-enter CREATIVE before skipping to FOCUS_GROUP
 
 STAGE_STATUS_MESSAGES = {
     "TRENDS": "Gathering campaign metadata and trend selections...",
@@ -66,6 +69,22 @@ class CampaignOrchestrator(BaseAgent):
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
         stage = self._determine_stage(ctx)
+        state = ctx.session.state
+
+        # Track creative pipeline attempts to break infinite loops
+        if stage == "CREATIVE":
+            creative_attempts = state.get("_creative_pipeline_attempts", 0) + 1
+            state["_creative_pipeline_attempts"] = creative_attempts
+            if creative_attempts > MAX_CREATIVE_ATTEMPTS:
+                logger.warning(
+                    f"[CampaignOrchestrator] Creative pipeline exhausted "
+                    f"({creative_attempts} attempts). Skipping to FOCUS_GROUP."
+                )
+                stage = "FOCUS_GROUP"
+        elif stage != "RESEARCH":
+            # Reset counter when we move past CREATIVE
+            state.pop("_creative_pipeline_attempts", None)
+
         logger.info(f"[CampaignOrchestrator] Determined stage: {stage}")
 
         # Persist stage for AE resumability
@@ -139,9 +158,13 @@ class CampaignOrchestrator(BaseAgent):
         img_keys = state.get("img_artifact_keys", {})
         if isinstance(img_keys, dict):
             img_keys = img_keys.get("img_artifact_keys", [])
+        creative_attempts = state.get("_creative_pipeline_attempts", 0)
+        creative_exhausted = creative_attempts >= MAX_CREATIVE_ATTEMPTS
+
         if not img_keys or len(img_keys) < 2:
-            return "CREATIVE"
-        if not state.get("commercial_artifact"):
+            if not creative_exhausted:
+                return "CREATIVE"
+        if not state.get("commercial_artifact") and not creative_exhausted:
             return "CREATIVE"
 
         # Stage 3: Need focus group evaluation
@@ -178,10 +201,34 @@ class CampaignOrchestrator(BaseAgent):
     async def _save_final_report(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        """Call save_final_report_tool directly — no LLM needed."""
+        """Call save_final_report_tool directly — no LLM needed.
+
+        Also runs the NovaStorm Skill Council if enabled, so skills
+        discuss each other's handoffs and store cross-skill recommendations.
+        """
         state = ctx.session.state
         processed_report = state.get("combined_final_cited_report", "")
         gcs_folder = state.get("gcs_folder", "")
+
+        # Run Skill Council — all skills discuss and improve each other
+        novastorm_enabled = (
+            os.environ.get("NOVASTORM_ENABLED", "").lower() == "true"
+            or state.get("novastorm_enabled", False)
+        )
+        if novastorm_enabled:
+            yield self._status_event(ctx, "Running Skill Council — skills discussing pipeline improvements...")
+            try:
+                user_id = ctx.user_id or "default"
+                council_result = run_skill_council(dict(state), user_id)
+                state["skill_council_result"] = council_result
+                pipeline_score = council_result.get("pipeline_score", 0)
+                top = council_result.get("top_improvements", [])
+                summary = f"Skill Council complete: pipeline score {pipeline_score}/10."
+                if top:
+                    summary += f" Top priority: {top[0][:80]}"
+                yield self._status_event(ctx, summary)
+            except Exception as e:
+                logger.warning(f"[NovaStorm] Skill Council failed (non-fatal): {e}")
 
         if not processed_report:
             yield self._status_event(ctx, "No research report to save — skipping PDF generation.")

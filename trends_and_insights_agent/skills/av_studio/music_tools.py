@@ -303,6 +303,9 @@ def combine_audio_with_video(
     Returns:
         dict: Status and final video with audio GCS URI.
     """
+    from .tools import _sanitize_gcs_uri
+    video_gcs_uri = _sanitize_gcs_uri(video_gcs_uri)
+    music_gcs_uri = _sanitize_gcs_uri(music_gcs_uri)
     try:
         import subprocess
         import tempfile

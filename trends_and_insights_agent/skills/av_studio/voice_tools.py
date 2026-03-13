@@ -504,6 +504,9 @@ def mix_voice_with_audio(
     Returns:
         dict: Status and final mixed video with professional audio.
     """
+    from .tools import _sanitize_gcs_uri
+    video_gcs_uri = _sanitize_gcs_uri(video_gcs_uri)
+    music_gcs_uri = _sanitize_gcs_uri(music_gcs_uri)
     try:
         import subprocess
         import tempfile

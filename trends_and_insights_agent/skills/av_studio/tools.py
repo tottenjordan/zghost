@@ -35,6 +35,22 @@ def get_gcs_bucket():
         raise Exception("BUCKET environment variable not set")
     return bucket
 
+
+def _sanitize_gcs_uri(uri: str) -> str:
+    """Fix double-prefix GCS URIs that LLM agents sometimes construct.
+
+    The AV studio agent occasionally builds URIs like:
+      gs://zghost-media-center/gs://zghost-media-center/folder/file.png
+    This strips the duplicate prefix.
+    """
+    if not uri:
+        return uri
+    # Strip repeated gs:// prefixes
+    while "gs://" in uri[5:]:  # Check for gs:// after the first one
+        idx = uri.index("gs://", 5)
+        uri = uri[idx:]
+    return uri
+
 # Lazy evaluation - will be called at runtime
 GCS_BUCKET = None
 
@@ -243,6 +259,12 @@ async def generate_clip_with_frames(
     Returns:
         dict: Status and paths. Keys: "status", "gcs_uri", "local_path", "clip_name".
     """
+    # Sanitize GCS URIs — LLM agents sometimes construct double-prefixed URIs
+    first_frame_gcs_uri = _sanitize_gcs_uri(first_frame_gcs_uri)
+    last_frame_gcs_uri = _sanitize_gcs_uri(last_frame_gcs_uri)
+    if reference_image_gcs_uris:
+        reference_image_gcs_uris = [_sanitize_gcs_uri(u) for u in reference_image_gcs_uris]
+
     # Check session state cache — avoid regenerating clips across AE invocations
     clips_cache = tool_context.state.get("av_studio_clips", {})
     if clip_name in clips_cache:
@@ -480,6 +502,7 @@ def extract_frame_from_clip(
     Returns:
         dict: Status and paths. Keys: "status", "gcs_uri", "local_path".
     """
+    video_gcs_uri = _sanitize_gcs_uri(video_gcs_uri)
     try:
         bucket_name = get_gcs_bucket().replace("gs://", "")
         source_blob = video_gcs_uri.replace(f"gs://{bucket_name}/", "")
@@ -570,6 +593,9 @@ def concatenate_clips(
     """
     if not clip_gcs_uris:
         return {"status": "failed", "error": "No clip URIs provided"}
+
+    # Sanitize GCS URIs
+    clip_gcs_uris = [_sanitize_gcs_uri(u) for u in clip_gcs_uris]
 
     try:
         bucket_name = get_gcs_bucket().replace("gs://", "")
@@ -695,6 +721,7 @@ def trim_video(
     Returns:
         dict: Status and paths. Keys: "status", "gcs_uri", "local_path", "duration_seconds".
     """
+    video_gcs_uri = _sanitize_gcs_uri(video_gcs_uri)
     try:
         bucket_name = get_gcs_bucket().replace("gs://", "")
         source_blob = video_gcs_uri.replace(f"gs://{bucket_name}/", "")
@@ -785,6 +812,7 @@ async def save_commercial_artifact(
     Returns:
         dict: Status and artifact key. Keys: "status", "artifact_key".
     """
+    commercial_gcs_uri = _sanitize_gcs_uri(commercial_gcs_uri)
     try:
         bucket_name = get_gcs_bucket().replace("gs://", "")
         source_blob = commercial_gcs_uri.replace(f"gs://{bucket_name}/", "")
