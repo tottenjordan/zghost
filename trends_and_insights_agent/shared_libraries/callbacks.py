@@ -1,6 +1,7 @@
 """callbacks - currently exploring how these work by observing log output"""
 
 from typing import Dict, Any, Optional
+import asyncio
 import os, re, json, time
 import pandas as pd
 import requests
@@ -66,8 +67,40 @@ TOOL_DESCRIPTIONS = {
 }
 
 
-def _sync_generate_contextual_status(tool_name: str, args: dict) -> str:
-    """Generate a contextual status message using a fast LLM call."""
+AGENT_STATUS_MESSAGES = {
+    "root_agent": "Planning next steps...",
+    "research_orchestrator": "Orchestrating research...",
+    "merge_planners": "Merging research findings...",
+    "combined_web_evaluator": "Evaluating research quality...",
+    "enhanced_combined_searcher": "Conducting follow-up research...",
+    "combined_report_composer": "Composing research report...",
+    "ad_copy_drafter": "Drafting ad copy ideas...",
+    "ad_copy_critic": "Critiquing ad copies...",
+    "ad_content_generator_agent": "Orchestrating ad generation...",
+    "visual_concept_drafter": "Drafting visual concepts...",
+    "visual_concept_critic": "Critiquing visual concepts...",
+    "visual_concept_finalizer": "Finalizing visual concepts...",
+    "visual_generator": "Preparing to generate visuals...",
+    "report_saver_agent": "Saving research report...",
+    "fidelity_evaluator": "Evaluating media fidelity with Gecko...",
+}
+
+
+def before_model_status_callback(
+    callback_context: CallbackContext, llm_request: LlmRequest
+) -> None:
+    """Sets ui:status_update before each LLM call so GE shows status during model generation."""
+    agent_name = callback_context.agent_name
+    status_msg = AGENT_STATUS_MESSAGES.get(agent_name, f"Working on {agent_name}...")
+    callback_context.state["ui:status_update"] = status_msg
+    logging.info(f"[MODEL_STATUS] {agent_name}: {status_msg}")
+
+
+_LLM_STATUS_TIMEOUT_SECONDS = 3.0
+
+
+async def _async_generate_contextual_status(tool_name: str, args: dict) -> str:
+    """Generate a contextual status message using a fast async LLM call."""
     try:
         tool_desc = TOOL_DESCRIPTIONS.get(tool_name, f"runs {tool_name}")
         context_hint = ""
@@ -76,15 +109,19 @@ def _sync_generate_contextual_status(tool_name: str, args: dict) -> str:
                 context_hint = f" Context: {str(args[key])[:100]}"
                 break
 
-        client = genai.Client()
-        response = client.models.generate_content(
-            model="gemini-2.0-flash-001",
-            contents=f"Tool '{tool_name}' {tool_desc}.{context_hint}",
-            config=types.GenerateContentConfig(
-                system_instruction="Generate a single short status message (under 15 words) describing what is happening. Be specific and contextual. Do not use quotes. Example: Searching for Nike summer campaign trends across social media",
-                temperature=0.3,
-                max_output_tokens=30,
+        client = genai.Client(vertexai=True)
+        response = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model="gemini-3-flash-preview",
+                contents=f"Tool '{tool_name}' {tool_desc}.{context_hint}",
+                config=types.GenerateContentConfig(
+                    system_instruction="Generate a single short status message (under 15 words) describing what is happening. Be specific and contextual. Do not use quotes. Example: Searching for Nike summer campaign trends across social media",
+                    temperature=0.3,
+                    max_output_tokens=30,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                ),
             ),
+            timeout=_LLM_STATUS_TIMEOUT_SECONDS,
         )
         status = response.text.strip().rstrip(".")
         if status and len(status) < 100:
@@ -94,7 +131,7 @@ def _sync_generate_contextual_status(tool_name: str, args: dict) -> str:
     return TOOL_STATUS_MESSAGES.get(tool_name, f"Processing {tool_name}...")
 
 
-def before_tool_status_callback(
+async def before_tool_status_callback(
     tool: BaseTool, args: dict, tool_context: ToolContext
 ) -> Optional[dict]:
     """Sets ui:status_update in session state so Gemini Enterprise renders a status chip."""
@@ -106,7 +143,7 @@ def before_tool_status_callback(
 
     # Generate contextual status via LLM or fall back to static
     if ENABLE_LLM_STATUS:
-        status_msg = _sync_generate_contextual_status(tool_name, args)
+        status_msg = await _async_generate_contextual_status(tool_name, args)
     else:
         status_msg = TOOL_STATUS_MESSAGES.get(tool_name, f"Processing {tool_name}...")
 
@@ -116,14 +153,16 @@ def before_tool_status_callback(
         status_msg = f"Transferring to {agent_display}..."
 
     logging.info(f"[STATUS] {tool_name}: {status_msg}")
+
+    # Only set ui:status_update — do NOT set ui:thinking_message
     tool_context.state["ui:status_update"] = status_msg
     return None
 
 
-def after_tool_status_callback(
+async def after_tool_status_callback(
     tool: BaseTool, args: dict, tool_context: ToolContext, tool_response: dict
 ) -> Optional[dict]:
-    """Logs tool execution duration."""
+    """Log duration. Do NOT modify ui:status_update — ADK bundles before/after state changes."""
     start_ts = tool_context.state.get("_tool_start_ts")
     tool_name = tool_context.state.get("_tool_name", tool.name)
     if start_ts:
@@ -135,18 +174,20 @@ def after_tool_status_callback(
 def reorder_parts_text_first(
     callback_context: CallbackContext, llm_response: LlmResponse
 ) -> Optional[LlmResponse]:
-    """after_model_callback: reorders parts (text first) and strips inline_data.
+    """after_model_callback: reorders parts (text first), preserves thoughts, strips inline_data.
 
-    - Reorders so text parts come before function_call parts (prevents GE blank bubbles)
+    - Preserves thought parts (parts with thought=True) in their original position
+      so GE can render them as thinking indicators
+    - Reorders remaining parts so text comes before function_calls (prevents GE blank bubbles)
     - Strips inline_data parts (images/videos already saved as ADK artifacts via
-      tool_context.save_artifact(); GE renders those inline natively. If the model
-      ALSO emits inline_data parts, GE shows broken placeholder images.)
+      tool_context.save_artifact(); GE renders those inline natively)
     """
     if (
         llm_response
         and llm_response.content
         and llm_response.content.parts
     ):
+        thought_parts = []
         text_parts = []
         func_parts = []
         stripped_count = 0
@@ -154,14 +195,19 @@ def reorder_parts_text_first(
             if hasattr(part, "inline_data") and part.inline_data is not None:
                 stripped_count += 1
                 continue
-            if part.text is not None:
+            # Preserve thought parts separately — GE renders these as thinking indicators
+            if getattr(part, "thought", False) or getattr(part, "thought_signature", None):
+                thought_parts.append(part)
+            elif part.text is not None:
                 text_parts.append(part)
             else:
                 func_parts.append(part)
         if stripped_count:
             logging.info(f"[CALLBACK] Stripped {stripped_count} inline_data part(s) from model response")
-        if text_parts or func_parts:
-            llm_response.content.parts = text_parts + func_parts
+        # Order: thoughts first, then text, then function calls
+        reordered = thought_parts + text_parts + func_parts
+        if reordered:
+            llm_response.content.parts = reordered
     return llm_response
 
 

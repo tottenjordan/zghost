@@ -11,7 +11,7 @@ from google import genai
 from google.genai import types
 from google.cloud import storage
 from google.adk.tools import ToolContext
-from google.genai.types import GenerateVideosConfig
+from google.genai.types import GenerateVideosConfig, VideoGenerationReferenceImage
 
 from ...shared_libraries.config import config
 from ...shared_libraries.utils import (
@@ -19,6 +19,7 @@ from ...shared_libraries.utils import (
     upload_blob_to_gcs,
     download_image_from_gcs,
 )
+from ...shared_libraries.fidelity_eval.gecko import evaluate as gecko_evaluate
 
 # Get the cloud storage bucket from the environment variable
 try:
@@ -94,7 +95,7 @@ async def generate_image(
     concept_name: str,
     number_of_images: int = 1,
 ) -> dict:
-    f"""Generates an image based on the prompt for {config.image_gen_model}
+    f"""Generates an image based on the prompt using {config.image_gen_model} via Gemini native image generation.
 
     Args:
         prompt (str): The prompt to generate the image from.
@@ -106,17 +107,24 @@ async def generate_image(
         dict: Status and the artifact_key of the generated image.
 
     """
-    response = client.models.generate_images(
-        model=config.image_gen_model,
-        prompt=prompt,
-        config={"number_of_images": number_of_images},
-    )
-    if not response.generated_images:
+    try:
+        response = client.models.generate_content(
+            model=config.image_gen_model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE"],
+            ),
+        )
+    except Exception as e:
+        logging.error(f"Image generation failed: {e}")
+        return {"status": "failed", "error": str(e)}
+
+    if not response or not response.candidates or not response.candidates[0].content.parts:
         return {"status": "failed"}
 
     # Create output filename
     if concept_name:
-        filename_prefix = f"{concept_name.replace(",", "").replace(" ", "_")}"
+        filename_prefix = f"{concept_name.replace(',', '').replace(' ', '_')}"
     else:
         filename_prefix = f"{str(uuid.uuid4())[:8]}"
 
@@ -125,35 +133,34 @@ async def generate_image(
     if not os.path.exists(SUBDIR):
         os.makedirs(SUBDIR)
 
-    for index, image_results in enumerate(response.generated_images):
-        if image_results.image is not None:
-            if image_results.image.image_bytes is not None:
+    artifact_key = None
+    for index, part in enumerate(response.candidates[0].content.parts):
+        if hasattr(part, 'inline_data') and part.inline_data and part.inline_data.data:
+            image_bytes = part.inline_data.data
+            artifact_key = f"{filename_prefix}_{index}.png"
 
-                image_bytes = image_results.image.image_bytes
-                artifact_key = f"{filename_prefix}_{index}.png"
+            await tool_context.save_artifact(
+                filename=artifact_key,
+                artifact=types.Part.from_bytes(
+                    data=image_bytes, mime_type="image/png"
+                ),
+            )
+            local_filepath = f"{SUBDIR}/{artifact_key}"
 
-                await tool_context.save_artifact(
-                    filename=artifact_key,
-                    artifact=types.Part.from_bytes(
-                        data=image_bytes, mime_type="image/png"
-                    ),
-                )
-                local_filepath = f"{SUBDIR}/{artifact_key}"
+            # save the file locally for gcs upload
+            image = Image.open(BytesIO(image_bytes))
+            image.save(local_filepath)
+            gcs_folder = tool_context.state["gcs_folder"]
+            artifact_path = os.path.join(gcs_folder, artifact_key)
+            logging.info(f"\n\n `generate_image` listdir: {os.listdir('.')}\n\n")
 
-                # save the file locally for gcs upload
-                image = Image.open(BytesIO(image_bytes))
-                image.save(local_filepath)
-                gcs_folder = tool_context.state["gcs_folder"]
-                artifact_path = os.path.join(gcs_folder, artifact_key)
-                logging.info(f"\n\n `generate_image` listdir: {os.listdir('.')}\n\n")
-
-                upload_blob_to_gcs(
-                    source_file_name=local_filepath,
-                    destination_blob_name=artifact_path,
-                )
-                logging.info(
-                    f"Saved image artifact '{artifact_key}' to folder '{gcs_folder}'"
-                )
+            upload_blob_to_gcs(
+                source_file_name=local_filepath,
+                destination_blob_name=artifact_path,
+            )
+            logging.info(
+                f"Saved image artifact '{artifact_key}' to folder '{gcs_folder}'"
+            )
 
     try:
         shutil.rmtree(DIR)
@@ -162,6 +169,9 @@ async def generate_image(
         logging.exception(f"Directory '{DIR}' not found")
     except OSError as e:
         logging.exception(f"Error removing directory '{DIR}': {e}")
+
+    if artifact_key is None:
+        return {"status": "failed", "error": "No image data in response"}
 
     return {"status": "ok", "artifact_key": f"{artifact_key}"}
 
@@ -177,12 +187,18 @@ async def generate_video(
 ):
     f"""Generates a video based on the prompt for {config.video_gen_model}.
 
+    When `existing_image_filename` is provided, the image is passed as a reference image
+    to guide the video generation, ensuring visual consistency with the keyframe.
+
     Args:
         prompt (str): The prompt to generate the video from.
         concept_name (str, optional): The name of the creative/visual concept.
         tool_context (ToolContext): The tool context.
         number_of_videos (int, optional): The number of videos to generate. Defaults to 1.
         negative_prompt (str, optional): The negative prompt to use. Defaults to "".
+        existing_image_filename (str, optional): The artifact_key of a previously generated
+            image to use as a reference image for the video. This should be the artifact_key
+            returned by `generate_image`. Defaults to "".
 
     Returns:
         dict: Status and the `artifact_key` of the generated video.
@@ -193,29 +209,37 @@ async def generate_video(
     else:
         filename_prefix = f"{str(uuid.uuid4())[:8]}"
 
+    # Build reference_images list if an existing image is provided as a keyframe
+    reference_images = None
+    if existing_image_filename != "":
+        gcs_folder = tool_context.state.get("gcs_folder", "")
+        gcs_location = f"{os.environ['BUCKET']}/{gcs_folder}/{existing_image_filename}"
+        reference_images = [
+            VideoGenerationReferenceImage(
+                image=types.Image(gcs_uri=gcs_location, mime_type="image/png"),
+                reference_type="STYLE",
+            )
+        ]
+        logging.info(f"Using reference image for video generation: {gcs_location}")
+
     gen_config = GenerateVideosConfig(
         aspect_ratio="16:9",
         number_of_videos=number_of_videos,
         output_gcs_uri=os.environ["BUCKET"],
         negative_prompt=negative_prompt,
+        reference_images=reference_images,
     )
-    if existing_image_filename != "":
-        gcs_location = f"{os.environ['BUCKET']}/{existing_image_filename}"
-        existing_image = types.Image(gcs_uri=gcs_location, mime_type="image/png")
-        operation = client.models.generate_videos(
-            model=config.video_gen_model,
-            prompt=prompt,
-            image=existing_image,
-            config=gen_config,
-        )
-    else:
+    try:
         operation = client.models.generate_videos(
             model=config.video_gen_model, prompt=prompt, config=gen_config
         )
-    while not operation.done:
-        time.sleep(15)
-        operation = client.operations.get(operation)
-        logging.info(operation)
+        while not operation.done:
+            time.sleep(15)
+            operation = client.operations.get(operation)
+            logging.info(operation)
+    except Exception as e:
+        logging.error(f"Veo generation failed: {e}")
+        return {"status": "failed", "error": str(e)}
 
     if operation.error:
         return {"status": f"failed due to error: {operation.error}"}
@@ -276,29 +300,26 @@ async def save_img_artifact_key(
     tool_context: ToolContext,
 ) -> dict:
     """
-    Tool to save image artifact details to the session state.
-    Use this tool after generating an image with the `generate_image` tool.
+    Saves image artifact metadata to the session state for report generation.
 
     Args:
-        artifact_key_dict (dict): A dict representing a generated image artifact. Use the `tool_context` to extract the following schema:
-            artifact_key (str): The filename used to identify the image artifact; the value returned in `generate_image` tool response.
-            img_prompt (str): The prompt used to generate the image artifact.
-            concept (str): A brief explanation of the creative concept used to generate this artifact.
-            headline (str): The attention-grabbing headline proposed for the artifact's ad-copy.
-            caption (str): The candidate social media caption proposed for the artifact's ad-copy.
-            trend (str): The trend(s) referenced by this creative.
-            rationale_perf (str): A brief rationale explaining why this ad copy will perform well.
-            audience_appeal (str): A brief explanation for the target audience appeal.
-            markets_product (str): A brief explanation of how this markets the target product.
-        tool_context (ToolContext) The tool context.
-
-    Returns:
-        dict: the status of this functions overall outcome.
+        artifact_key_dict (dict): Metadata for the generated image.
+            artifact_key (str): The filename/key returned by generate_image.
+            img_prompt (str): The prompt used.
+            concept (str): Creative concept explanation.
+            headline (str): Attention-grabbing headline.
+            caption (str): Social media caption.
+            trend (str): Referenced trend(s).
+            rationale_perf (str): Performance rationale.
+            audience_appeal (str): Audience appeal.
+            markets_product (str): How it markets the product.
+        tool_context (ToolContext): The tool context.
     """
-    existing_img_artifact_keys = tool_context.state.get("img_artifact_keys", {"img_artifact_keys": []})
-    existing_img_artifact_keys["img_artifact_keys"].append(artifact_key_dict)
-    tool_context.state["img_artifact_keys"] = existing_img_artifact_keys
-    return {"status": "ok"}
+    state_key = "img_artifact_keys"
+    existing = tool_context.state.get(state_key, {"img_artifact_keys": []})
+    existing["img_artifact_keys"].append(artifact_key_dict)
+    tool_context.state[state_key] = existing
+    return {"status": "ok", "message": f"Saved metadata for {artifact_key_dict.get('artifact_key')}"}
 
 
 async def save_vid_artifact_key(
@@ -306,29 +327,66 @@ async def save_vid_artifact_key(
     tool_context: ToolContext,
 ) -> dict:
     """
-    Tool to save video artifact details to the session state.
-    Use this tool after generating an video with the `generate_video` tool.
+    Saves video artifact metadata to the session state for report generation.
 
     Args:
-        artifact_key_dict (dict): A dict representing a generated video artifact. Use the `tool_context` to extract the following schema:
-            artifact_key (str): The filename used to identify the video artifact; the value returned in `generate_video` tool response.
-            vid_prompt (str): The prompt used to generate the video artifact.
-            concept (str): A brief explanation of the creative concept used to generate this artifact.
-            headline (str): The attention-grabbing headline proposed for the artifact's ad-copy.
-            caption (str): The candidate social media caption proposed for the artifact's ad-copy.
-            trend (str): The trend(s) referenced by this creative.
-            rationale_perf (str): A brief rationale explaining why this ad copy will perform well.
-            audience_appeal (str): A brief explanation for the target audience appeal.
-            markets_product (str): A brief explanation of how this markets the target product.
-        tool_context (ToolContext) The tool context.
+        artifact_key_dict (dict): Metadata for the generated video.
+            artifact_key (str): The filename/key returned by generate_video.
+            vid_prompt (str): The prompt used.
+            concept (str): Creative concept explanation.
+            headline (str): Attention-grabbing headline.
+            caption (str): Social media caption.
+            trend (str): Referenced trend(s).
+            rationale_perf (str): Performance rationale.
+            audience_appeal (str): Audience appeal.
+            markets_product (str): How it markets the product.
+        tool_context (ToolContext): The tool context.
+    """
+    state_key = "vid_artifact_keys"
+    existing = tool_context.state.get(state_key, {"vid_artifact_keys": []})
+    existing["vid_artifact_keys"].append(artifact_key_dict)
+    tool_context.state[state_key] = existing
+    return {"status": "ok", "message": f"Saved metadata for {artifact_key_dict.get('artifact_key')}"}
+
+
+def evaluate_media_fidelity(
+    media_uri: str,
+    ground_truth_description: str,
+    media_type: str,
+    tool_context: ToolContext,
+) -> dict:
+    """Evaluate generated image/video fidelity using Gecko scoring.
+
+    Runs a rubric-based evaluation against a ground-truth product description
+    to measure how faithfully the generated media represents the product.
+
+    Args:
+        media_uri: GCS URI of generated image or video (e.g. gs://bucket/path/file.png).
+        ground_truth_description: Product description to evaluate against.
+        media_type: "image" or "video".
+        tool_context: The tool context.
 
     Returns:
-        dict: the status of this functions overall outcome.
+        dict with score, passing/failing verdicts, and pass/fail decision.
     """
-    existing_vid_artifact_keys = tool_context.state.get("vid_artifact_keys", {"vid_artifact_keys": []})
-    existing_vid_artifact_keys["vid_artifact_keys"].append(artifact_key_dict)
-    tool_context.state["vid_artifact_keys"] = existing_vid_artifact_keys
-    return {"status": "ok"}
+    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
+    location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+
+    try:
+        result = gecko_evaluate(
+            prompt=ground_truth_description,
+            media_uri=media_uri,
+            media_type=media_type,
+            project_id=project_id,
+            location=location,
+        )
+    except Exception as e:
+        logging.error(f"Gecko evaluation failed: {e}")
+        return {"status": "error", "error": str(e)}
+
+    passed = result.get("score", 0.0) >= 0.7
+    result["passed"] = passed
+    return result
 
 
 def extract_single_frame(video_path, frame_number, output_image_path) -> str:
@@ -394,53 +452,26 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
         img_artifact_state_dict = tool_context.state.get("img_artifact_keys")
         img_artifact_list = img_artifact_state_dict["img_artifact_keys"]
 
-        IMG_CREATIVE_STRING = ""
+        IMG_CREATIVE_STRING = "# Image Creatives\n\n"
         for entry in img_artifact_list:
             logging.info(entry)
             LOCAL_FILE_PATH = os.path.join(IMG_SUBDIR, entry["artifact_key"])
-            ARTIFACT_KEY_NAME = entry["artifact_key"].replace(".png", "")
-            # download locally
             download_image_from_gcs(
                 source_blob_name=os.path.join(gcs_folder, entry["artifact_key"]),
                 destination_file_name=LOCAL_FILE_PATH,
             )
-            # TODO: optimize
-            path_str = f"![Example Image]({LOCAL_FILE_PATH})\n"
-            str_1 = f"## {entry["headline"]}\n"
-            str_2 = (
-                f"*{os.path.join(GCS_BUCKET, gcs_folder, entry["artifact_key"])}*\n\n"
-            )
-            str_3 = f"{path_str}\n\n"
-            str_4 = f"**{entry["caption"]}**\n\n"
-            str_5 = f"**Trend(s):** {entry["trend"]}\n\n"
-            str_6 = f"**Visual Concept:** {entry["concept"]}\n\n"
-            str_7 = f"**How it markets target product:** {entry["markets_product"]}\n\n"
-            str_8 = f"**Target audience appeal:** {entry["audience_appeal"]}\n\n"
-            str_9 = f"**Why this will perform well:** {entry["rationale_perf"]}\n\n"
-            str_10 = f"**Prompt:** {entry["img_prompt"]}\n\n"
-            result = (
-                str_1
-                + " "
-                + str_2
-                + " "
-                + str_3
-                + " "
-                + str_4
-                + " "
-                + str_5
-                + " "
-                + str_6
-                + " "
-                + str_7
-                + " "
-                + str_8
-                + " "
-                + str_9
-                + " "
-                + str_10
-            )
-
-            IMG_CREATIVE_STRING += result
+            IMG_CREATIVE_STRING += f"## {entry['headline']}\n"
+            IMG_CREATIVE_STRING += f"*{os.path.join(GCS_BUCKET, gcs_folder, entry['artifact_key'])}*\n\n"
+            IMG_CREATIVE_STRING += f"![Generated Image]({LOCAL_FILE_PATH})\n\n"
+            IMG_CREATIVE_STRING += f"> **Caption:** {entry['caption']}\n\n"
+            IMG_CREATIVE_STRING += f"**Trend(s) Referenced:** `{entry['trend']}`\n\n"
+            IMG_CREATIVE_STRING += f"### Strategic Rationale\n\n"
+            IMG_CREATIVE_STRING += f"- **Visual Concept:** {entry['concept']}\n"
+            IMG_CREATIVE_STRING += f"- **Product Strategy:** {entry['markets_product']}\n"
+            IMG_CREATIVE_STRING += f"- **Audience Appeal:** {entry['audience_appeal']}\n"
+            IMG_CREATIVE_STRING += f"- **Performance Logic:** {entry['rationale_perf']}\n\n"
+            IMG_CREATIVE_STRING += f"**AI Generation Prompt:**\n> {entry['img_prompt']}\n\n"
+            IMG_CREATIVE_STRING += "---\n\n"
 
         # ==================== #
         # get video creatives
@@ -449,16 +480,14 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
         if not os.path.exists(VID_SUBDIR):
             os.makedirs(VID_SUBDIR)
 
-        # get artifact details
         vid_artifact_state_dict = tool_context.state.get("vid_artifact_keys")
         vid_artifact_list = vid_artifact_state_dict["vid_artifact_keys"]
 
-        VID_CREATIVE_STRING = ""
+        VID_CREATIVE_STRING = "# Video Creatives\n\n"
         for entry in vid_artifact_list:
             logging.info(entry)
             LOCAL_VID_PATH = os.path.join(VID_SUBDIR, entry["artifact_key"])
             ARTIFACT_KEY_NAME = entry["artifact_key"].replace(".mp4", "")
-            # download locally
             download_image_from_gcs(
                 source_blob_name=os.path.join(gcs_folder, entry["artifact_key"]),
                 destination_file_name=LOCAL_VID_PATH,
@@ -466,43 +495,18 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
             LOCAL_FRAME_PATH = os.path.join(VID_SUBDIR, f"{ARTIFACT_KEY_NAME}.png")
             LOCAL_VID_FRAME = extract_single_frame(LOCAL_VID_PATH, 1, LOCAL_FRAME_PATH)
 
-            path_str = f"![Thumbnail Image]({LOCAL_VID_FRAME})\n"
-            str_1 = f"## {entry["headline"]}\n"
-            str_2 = (
-                f"*{os.path.join(GCS_BUCKET, gcs_folder, entry["artifact_key"])}*\n\n"
-            )
-            str_3 = f"{path_str}\n\n"
-            str_4 = f"**{entry["caption"]}**\n\n"
-            str_5 = f"**Trend(s):** {entry["trend"]}\n\n"
-            str_6 = f"**Visual Concept:** {entry["concept"]}\n\n"
-            str_7 = f"**How it markets target product:** {entry["markets_product"]}\n\n"
-            str_8 = f"**Target audience appeal:** {entry["audience_appeal"]}\n\n"
-            str_9 = f"**Why this will perform well:** {entry["rationale_perf"]}\n\n"
-            str_10 = f"**Prompt:** {entry["vid_prompt"]}\n\n"
-
-            result = (
-                str_1
-                + " "
-                + str_2
-                + " "
-                + str_3
-                + " "
-                + str_4
-                + " "
-                + str_5
-                + " "
-                + str_6
-                + " "
-                + str_7
-                + " "
-                + str_8
-                + " "
-                + str_9
-                + " "
-                + str_10
-            )
-
-            VID_CREATIVE_STRING += result
+            VID_CREATIVE_STRING += f"## {entry['headline']}\n"
+            VID_CREATIVE_STRING += f"*{os.path.join(GCS_BUCKET, gcs_folder, entry['artifact_key'])}*\n\n"
+            VID_CREATIVE_STRING += f"![Video Thumbnail]({LOCAL_VID_FRAME})\n\n"
+            VID_CREATIVE_STRING += f"> **Caption:** {entry['caption']}\n\n"
+            VID_CREATIVE_STRING += f"**Trend(s) Referenced:** `{entry['trend']}`\n\n"
+            VID_CREATIVE_STRING += f"### Strategic Rationale\n\n"
+            VID_CREATIVE_STRING += f"- **Visual Concept:** {entry['concept']}\n"
+            VID_CREATIVE_STRING += f"- **Product Strategy:** {entry['markets_product']}\n"
+            VID_CREATIVE_STRING += f"- **Audience Appeal:** {entry['audience_appeal']}\n"
+            VID_CREATIVE_STRING += f"- **Performance Logic:** {entry['rationale_perf']}\n\n"
+            VID_CREATIVE_STRING += f"**AI Generation Prompt:**\n> {entry['vid_prompt']}\n\n"
+            VID_CREATIVE_STRING += "---\n\n"
 
         # ==================== #
         # create local PDF file
@@ -545,9 +549,8 @@ async def save_creatives_and_research_report(tool_context: ToolContext) -> dict:
         logging.info(f"Directory '{DIR}' and its contents removed successfully")
         return {
             "status": "ok",
-            "gcs_bucket": GCS_BUCKET,
-            "gcs_folder": gcs_folder,
             "artifact_key": artifact_key,
+            "message": "Final report saved. Use load_artifacts to display it.",
         }
     except Exception as e:
         logging.error(f"Error saving artifact: {e}")

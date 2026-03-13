@@ -1,38 +1,63 @@
+import pathlib
+
 from google.genai import types
 from google.adk.planners import BuiltInPlanner
+from google.adk.tools.agent_tool import AgentTool
+from google.adk.tools.skill_toolset import SkillToolset
 from google.adk.agents import Agent, SequentialAgent
 from google.adk.tools import google_search, load_artifacts
 
-from trends_and_insights_agent.shared_libraries.config import config
-from trends_and_insights_agent.shared_libraries import callbacks
+from ...shared_libraries.config import config
+from ...shared_libraries import callbacks
+from ...skills.skill_loader import load_skill_from_dir
 from .tools import (
     generate_image,
     generate_video,
+    generate_visuals_batch,
     save_img_artifact_key,
     save_vid_artifact_key,
     save_select_ad_copy,
     save_select_visual_concept,
-    evaluate_media_fidelity,
 )
 from .prompts import (
     AD_CREATIVE_SUBAGENT_INSTR,
     VEO3_INSTR,
 )
-from google.adk.planners import BuiltInPlanner
+
+# Load this skill's own SKILL.md for self-contained documentation
+_skill_dir = pathlib.Path(__file__).parent
+_skill = load_skill_from_dir(_skill_dir)
+_skill_toolset = SkillToolset(skills=[_skill])
 
 
 # --- AD CREATIVE SUBAGENTS ---
 ad_copy_drafter = Agent(
     model=config.worker_model,
     name="ad_copy_drafter",
-    description="Generate 10-12 initial ad copy ideas based on campaign guidelines and trends",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
-    ),
+    description="Generate initial ad copy ideas based on campaign guidelines and trends",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a creative copywriter generating initial ad copy ideas.
 
     Your goal is to review the research and trends provided in the **Input Data** to generate 10-12 culturally relevant ad copy ideas.
- 
+
+    If the session state `autopilot_mode` is set to true, generate 6 ad copy ideas instead of 10-12 to optimize for speed.
+
+    ---
+    ## Product Context
+    Brand: {brand}
+    Product: {target_product}
+    Target Audience: {target_audience}
+    Key Selling Points: {key_selling_points}
+
+    IMPORTANT: All ad copy MUST prominently feature and be relevant to the product above.
+    If the trend topic seems unrelated to the product, creatively bridge the trend to the product.
+
+    ## Campaign Guide (if available)
+    If a campaign guide has been uploaded, use it for brand voice, messaging pillars, and creative direction:
+    <campaign_guide_content>
+    {campaign_guide_content}
+    </campaign_guide_content>
+
     ---
     ### Input Data
 
@@ -43,7 +68,7 @@ ad_copy_drafter = Agent(
     <target_search_trends>
     {target_search_trends}
     </target_search_trends>
-    
+
     <combined_final_cited_report>
     {combined_final_cited_report}
     </combined_final_cited_report>
@@ -58,8 +83,8 @@ ad_copy_drafter = Agent(
         - Are suitable for Instagram/TikTok platforms
         - Reference at least one of the topics from the 'target_search_trends' or 'target_yt_trends' state keys.
     3. **Out of all the copy ideas you generate**, be sure to include:
-        - A few that reference the Search trend from the 'target_search_trends' state key, 
-        - A few that reference the YouTube trend from the 'target_yt_trends' state key, 
+        - A few that reference the Search trend from the 'target_search_trends' state key,
+        - A few that reference the YouTube trend from the 'target_yt_trends' state key,
         - And if possible, a few that combine ideas from both trends in the 'target_search_trends' and 'target_yt_trends' state keys.
     4. **Each ad copy should include:**
         - Headline (attention-grabbing)
@@ -77,10 +102,6 @@ ad_copy_drafter = Agent(
     ),
     tools=[google_search],
     output_key="ad_copy_draft",
-    before_model_callback=callbacks.before_model_status_callback,
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -88,9 +109,7 @@ ad_copy_critic = Agent(
     model=config.critic_model,
     name="ad_copy_critic",
     description="Critique and narrow down ad copies based on product, audience, and trends",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""You are a strategic marketing critic evaluating ad copy ideas.
 
     Your goal is to review the proposed candidates in the 'ad_copy_draft' state key and select the 6-8 BEST ad copies based on:
@@ -100,9 +119,9 @@ ad_copy_critic = Agent(
     4. Platform-appropriate tone and length.
 
     Use the `google_search` tool to support your decisions
-    
+
     Provide detailed rationale for your selections, explaining why these specific copies will perform best.
-    
+
     Each ad copy should include:
     - Headline (attention-grabbing)
     - Call-to-action
@@ -116,34 +135,7 @@ ad_copy_critic = Agent(
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     output_key="ad_copy_critique",
-    before_model_callback=callbacks.before_model_status_callback,
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
 )
-
-
-# ad_copy_finalizer = Agent(
-#     model=config.worker_model,
-#     name="ad_copy_finalizer",
-#     description="Finalize user-selected ad copy (or ad copies) to proceed with.",
-#     # planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
-#     instruction="""You are a senior copywriter finalizing ad campaigns.
-
-#     1. Display the ad copies from the 'ad_copy_critique' state key.
-#     2. For each ad copy, be sure to include the following:
-#         - Headline (attention-grabbing)
-#         - Body text (concise and compelling)
-#         - Call-to-action
-#         - Which trend(s) it references (e.g., which trend from the 'target_search_trends' and 'target_yt_trends' state keys)
-#         - Brief rationale for target audience appeal
-#         - A candidate social media caption
-#     3. Ask the user which ad copies they want to proceed with. They can choose one or multiple.
-#
-#     """,
-#     generate_content_config=types.GenerateContentConfig(temperature=0.8),
-#     output_key="final_ad_copies",
-# )
 
 
 # Sequential agent for ad creative generation
@@ -153,7 +145,6 @@ ad_creative_pipeline = SequentialAgent(
     sub_agents=[
         ad_copy_drafter,
         ad_copy_critic,
-        # ad_copy_finalizer,
     ],
 )
 
@@ -163,15 +154,28 @@ visual_concept_drafter = Agent(
     model=config.worker_model,
     name="visual_concept_drafter",
     description="Generate initial visual concepts for selected ad copies",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction=f"""You are a visual creative director generating initial concepts and an expert at creating AI prompts for {config.image_gen_model} and {config.video_gen_model}.
-    
+
+    ## Product Context
+    Brand: {{brand}}
+    Product: {{target_product}}
+    Target Audience: {{target_audience}}
+    Key Selling Points: {{key_selling_points}}
+
+    CRITICAL: Every visual concept you create MUST be for the brand and product listed above. Do NOT invent a different product.
+    If the brand is "McDonald's" and the product is "McRib Sandwich", every concept must feature and promote the McRib Sandwich.
+
+    ## Campaign Guide (if available)
+    If a campaign guide has been uploaded, use it for brand voice, messaging pillars, and creative direction:
+    <campaign_guide_content>
+    {{campaign_guide_content}}
+    </campaign_guide_content>
+
     Based on the user-selected ad copies in the 'final_select_ad_copies' state key, generate visual concepts that:
     - Incorporate trending visual styles and themes.
     - Consider platform-specific best practices.
-    - Find a clever way to market the 'target_product'
+    - Market the EXACT product from the 'target_product' state key for the EXACT brand from the 'brand' state key. Do not substitute a different product.
 
     Try generating at least one visual concept for each ad copy.
 
@@ -198,12 +202,8 @@ visual_concept_drafter = Agent(
     </PROMPTING_BEST_PRACTICES>
     """,
     tools=[google_search],
-    generate_content_config=types.GenerateContentConfig(temperature=1.5),
+    generate_content_config=types.GenerateContentConfig(temperature=1.0),
     output_key="visual_draft",
-    before_model_callback=callbacks.before_model_status_callback,
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -211,11 +211,16 @@ visual_concept_critic = Agent(
     model=config.critic_model,
     name="visual_concept_critic",
     description="Critique and narrow down visual concepts",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(include_thoughts=False)
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction=f"""You are a creative director evaluating visual concepts and high quality prompts that result in high impact.
-    
+
+    ## Product Context
+    Brand: {{brand}}
+    Product: {{target_product}}
+    Target Audience: {{target_audience}}
+
+    IMPORTANT: All visual concepts MUST feature and market the product above. Reject any concepts that drift from the product.
+
     Review the concepts in the 'visual_draft' state key and critique the draft prompts on:
     1. Visual appeal and stopping power for social media
     2. Alignment with ad copy messaging
@@ -240,7 +245,7 @@ visual_concept_critic = Agent(
     -   Type (image or video)
     -   Which trend(s) it relates to (e.g., which trend from the 'target_search_trends' and 'target_yt_trends' state keys)
     -   Creative concept explanation
-    -   Detailed rationale explaining why this concept will perform well 
+    -   Detailed rationale explaining why this concept will perform well
     -   A draft Imagen or Veo prompt
 
     <PROMPTING_BEST_PRACTICES>
@@ -250,10 +255,6 @@ visual_concept_critic = Agent(
     tools=[google_search],
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     output_key="visual_concept_critique",
-    before_model_callback=callbacks.before_model_status_callback,
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
@@ -261,12 +262,6 @@ visual_concept_finalizer = Agent(
     model=config.worker_model,
     name="visual_concept_finalizer",
     description="Finalize visual concepts to proceed with.",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_budget=1024,
-        )
-    ),
     instruction="""You are a senior creative director finalizing visual concepts for ad creatives.
 
     1. Review the 'visual_concept_critique' state key to understand the refined visual concepts.
@@ -281,14 +276,11 @@ visual_concept_finalizer = Agent(
         -   Brief rationale for target audience appeal
         -   Brief explanation of how this markets the target product
         -   A draft Imagen or Veo prompt.
-    
+
     """,
     generate_content_config=types.GenerateContentConfig(temperature=0.8),
     output_key="final_visual_concepts",
-    before_model_callback=callbacks.before_model_status_callback,
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
 )
 
 
@@ -307,57 +299,34 @@ visual_generation_pipeline = SequentialAgent(
 visual_generator = Agent(
     model=config.critic_model,
     name="visual_generator",
-    description="Generate final visuals using image and video generation tools",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_budget=1024,
-        )
-    ),
-    instruction=f"""You are a visual content producer creating final assets using the **Image-to-Video Reference Image** workflow.
+    description="Generate final visuals using image and video generation tools. ONLY for interactive/sequential mode — in autopilot mode, use generate_visuals_batch instead.",
+    instruction=f"""You are a visual content producer creating final assets.
 
-    **Objective:** For each visual concept, generate a keyframe image first, then use that image as a reference image to generate a video. This ensures visual consistency between the keyframe and the video.
+    **NOTE: This tool is for interactive/sequential mode only. In autopilot mode, the orchestrator should use `generate_visuals_batch` instead for parallel generation.**
 
-    **Creative Metadata Plumbing:**
-    For EVERY creative you generate (image or video), YOU MUST call the corresponding save tool (`save_img_artifact_key` or `save_vid_artifact_key`) with the mapping of the `artifact_key` to its full metadata (Headline, Caption, Rationale, etc.). This is CRITICAL for the final report.
-
-    **MANDATORY Image-to-Video Reference Image Workflow:**
-    For EVERY visual concept, you MUST follow this exact sequence:
-    1.  Call `generate_image` first to create a stunning, high-fidelity keyframe image.
-    2.  Call `save_img_artifact_key` with the image metadata.
-    3.  Use the returned `artifact_key` from step 1 as the `existing_image_filename` parameter in a subsequent `generate_video` call. This passes the keyframe as a **reference image** to guide video generation, ensuring the video maintains visual continuity with the keyframe.
-    4.  Call `save_vid_artifact_key` with the video metadata.
-
-    **IMPORTANT:** NEVER generate a video without first generating a keyframe image and passing it as `existing_image_filename`. The reference image workflow is REQUIRED for all video generation.
+    **Objective:** Generate visual content options (images and videos) based on the user-selected visual concepts.
 
     **Available Tools:**
     - `generate_image`: Generate images using Google's Imagen model.
-    - `generate_video`: Generate videos using Google's Veo model. Pass `existing_image_filename` to use a reference image.
-    - `save_img_artifact_key`: Save image artifact keys with metadata.
-    - `save_vid_artifact_key`: Save video artifact keys with metadata.
-    - `evaluate_media_fidelity`: Evaluate generated media against a product description using Gecko scoring. Returns a fidelity score (0.0-1.0) and passing/failing verdicts.
+    - `generate_video`: Generate videos using Google's Veo model.
 
     **Instructions:**
-    1. For each visual concept in the 'final_select_vis_concepts' state key:
-       a. Generate the keyframe image using `generate_image` with the Imagen prompt.
-       b. Save image metadata with `save_img_artifact_key`.
-       c. Run `evaluate_media_fidelity` on the generated image to check product fidelity. Pass the GCS URI (gs://BUCKET/gcs_folder/artifact_key), a description of the target product, and media_type="image". If the score is below 0.7, consider regenerating with a refined prompt.
-       d. Generate the video using `generate_video`, passing the image's `artifact_key` as `existing_image_filename` and using the Veo prompt.
-       e. Save video metadata with `save_vid_artifact_key`.
-    2. Follow the image and video generation guidelines below.
+    1. For each user-selected visual concept in the 'final_select_vis_concepts' state key, generate the creative visual using the appropriate tool (`generate_image` or `generate_video`).
+        - For images, follow the instructions in the <IMAGE_GENERATION/> block,
+        - For videos, follow the instructions in the <VIDEO_GENERATION/> block and consider prompting best practices in the <PROMPTING_BEST_PRACTICES/> block,
 
     <IMAGE_GENERATION>
     - Create descriptive image prompts that visualize the ad copy concepts
     - Include subject, context/background, and style elements
     - Ensure prompts capture the essence of the trends and campaign highlights
-    - This image will serve as the keyframe reference for the video — make it high quality and representative of the final video's look
+    - Generate diverse visual approaches (different styles, compositions, contexts)
     </IMAGE_GENERATION>
 
     <VIDEO_GENERATION>
-    - Create dynamic video prompts that bring the keyframe image to life with motion
+    - Create dynamic video prompts that bring the ad copy to life
     - Include subject, context, action, style, and optional camera/composition elements
-    - The video prompt should describe motion and action that naturally extends the keyframe image
-    - The `existing_image_filename` parameter ensures the video uses the keyframe as a reference image for visual consistency
+    - Consider continuity with the image concepts when appropriate
+    - Vary the approaches (different actions, camera angles, moods)
     </VIDEO_GENERATION>
 
     <PROMPTING_BEST_PRACTICES>
@@ -367,40 +336,30 @@ visual_generator = Agent(
     tools=[
         generate_image,
         generate_video,
-        save_img_artifact_key,
-        save_vid_artifact_key,
-        evaluate_media_fidelity,
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.2),
-    before_model_callback=[callbacks.before_model_status_callback, callbacks.rate_limit_callback],
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    before_model_callback=callbacks.rate_limit_callback,
 )
 
 # Main orchestrator agent
 ad_content_generator_agent = Agent(
     model=config.lite_planner_model,
     name="ad_content_generator_agent",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_budget=1024,
-        )
-    ),
     description="Help users with ad generation; brainstorm and refine ad copy and visual concept ideas with actor-critic workflows; iterate with the user to generate final ad creatives.",
     instruction=AD_CREATIVE_SUBAGENT_INSTR,
-    sub_agents=[ad_creative_pipeline, visual_generation_pipeline, visual_generator],
     tools=[
+        AgentTool(agent=ad_creative_pipeline),
+        AgentTool(agent=visual_generation_pipeline),
+        AgentTool(agent=visual_generator),
+        generate_visuals_batch,
         save_img_artifact_key,
         save_vid_artifact_key,
         save_select_ad_copy,
         save_select_visual_concept,
         load_artifacts,
+        _skill_toolset,
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
-    before_model_callback=callbacks.before_model_status_callback,
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
 )

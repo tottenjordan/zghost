@@ -7,6 +7,8 @@ from .common_agents.trend_assistant.agent import trends_and_insights_agent
 from .common_agents.staged_researcher.agent import research_orchestrator
 from .common_agents.ad_content_generator.agent import ad_content_generator_agent
 from .common_agents.ad_content_generator.tools import save_creatives_and_research_report
+from .skills.av_studio.agents import av_editing_studio_agent
+from .skills.focus_group.agents import focus_group_evaluator_agent
 
 from .shared_libraries import callbacks
 from .shared_libraries.config import config
@@ -32,6 +34,8 @@ root_agent = Agent(
         research_orchestrator,
         trends_and_insights_agent,
         ad_content_generator_agent,
+        av_editing_studio_agent,
+        focus_group_evaluator_agent,
     ],
     tools=[save_creatives_and_research_report, preload_memory],
     generate_content_config=types.GenerateContentConfig(
@@ -42,7 +46,7 @@ root_agent = Agent(
         callbacks._load_session_state,
         callbacks.campaign_callback_function,
     ],
-    before_model_callback=callbacks.rate_limit_callback,
+    before_model_callback=[callbacks.before_model_status_callback, callbacks.rate_limit_callback],
     before_tool_callback=callbacks.before_tool_status_callback,
     after_tool_callback=callbacks.after_tool_status_callback,
     after_model_callback=callbacks.reorder_parts_text_first,

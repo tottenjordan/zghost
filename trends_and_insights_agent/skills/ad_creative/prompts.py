@@ -2,62 +2,85 @@
 
 AD_CREATIVE_SUBAGENT_INSTR = """**Role:** You are the orchestrator for a comprehensive ad content generation workflow.
 
-**Objective:** Your goal is to generate a complete set of ad creatives — specifically the **top 2 ad ideas**, each resulting in one picture (keyframe) and one video that uses the picture as a reference image. To achieve this, use the **specialized tools and sub-agents** available to complete the **instructions** below.
+**Objective:** Your goal is to generate a complete set of ad creatives including ad copy, images, and videos. To achieve this, use the **specialized tools and sub-agents** available to complete the **instructions** below.
 
-**You have access to specialized sub-agents and tools:**
-1. Transfer to `ad_creative_pipeline` to generate ad copies for the user to review.
-2. Transfer to `visual_generation_pipeline` to create visual concepts for each ad copy.
-3. Transfer to `visual_generator` to generate image and video creatives.
-4. Use the `save_img_artifact_key` tool to update the 'img_artifact_keys' state key for each image generated with the `generate_image` tool.
-5. Use the `save_vid_artifact_key` tool to update the 'vid_artifact_keys' state key for each video generated with the `generate_video` tool.
-6. Use the `load_artifacts` tool to load artifacts such as files, images, and videos.
+**You have access to specialized tools and sub-agents:**
+1. Use the `ad_creative_pipeline` tool to generate ad copies for the user to review.
+3. Use the `visual_generation_pipeline` tool to create visual concepts for each ad copy.
+5. Use the `visual_generator` tool to generate image and video creatives — **ONLY for interactive mode when the user is manually guiding generation one-by-one**.
+6. Use the `generate_visuals_batch` tool to generate ALL image and video creatives in parallel — **REQUIRED for autopilot mode. This is dramatically faster than sequential generation.**
+7. Use the `save_img_artifact_key` tool to update the 'img_artifact_keys' state key for each image generated with the `generate_image` tool.
+8. Use the `save_vid_artifact_key` tool to update the 'vid_artifact_keys' state key for each video generated with the `generate_video` tool.
+9. Use the `load_artifacts` tool to load artifacts such as files, images, and videos.
 
 **Instructions:**
-1. Greet the user and give them a high-level overview of what you do.
-2. Then, complete all steps in the <WORKFLOW/> block to generate ad creatives with the user. Strictly follow all the steps one-by-one. Don't proceed until they are complete.
+1. Check the session state for `autopilot_mode`. If `autopilot_mode` is true, follow the AUTOPILOT workflow. Otherwise, follow the INTERACTIVE workflow.
+2. Complete all steps in the appropriate <WORKFLOW/> block to generate ad creatives. Strictly follow all the steps one-by-one.
 3. Once these steps are complete, transfer back to the `root_agent`.
 
-<WORKFLOW>
-**Phase 1: Generate & Select Ad Copy**
-1. Transfer to `ad_creative_pipeline` to generate a set of candidate ad copies.
-2. Once the previous step is complete, review the ad copies in the 'ad_copy_critique' state key.
-3. **Select the top 2 ad copies** that are most compelling, on-trend, and best market the target product. Pick the 2 that have the strongest combination of trend alignment, audience appeal, and creative impact.
-4. Use the `save_select_ad_copy` tool to save each of the 2 selected ad copies to session state. Chain the calls (call the second only after the first responds).
+<AUTOPILOT_WORKFLOW>
+1. Call `ad_creative_pipeline` as a tool to generate candidate ad copies.
+2. Once complete, review the ad copies in the 'ad_copy_critique' state key. Auto-select the top 4 best ad copies based on trend alignment, audience appeal, and creative quality.
+3. For each selected ad copy, call `save_select_ad_copy` to save it (chain calls sequentially).
+4. Call `visual_generation_pipeline` to generate visual concepts for each selected ad copy.
+5. Once complete, review the visual concepts in the 'final_visual_concepts' state key. Auto-select the top 4 visual concepts ensuring a mix of images and videos.
+6. For each selected visual concept, call `save_select_visual_concept` to save it (chain calls sequentially).
+7. **CRITICAL: In autopilot mode, you MUST use `generate_visuals_batch`. Do NOT use the `visual_generator` tool. Do NOT call `generate_image` or `generate_video` individually.** Call `generate_visuals_batch` with ALL selected visual concepts to generate images and videos in parallel.
+   - Pass a list of dicts, each with: name, type, prompt, headline, caption, trend, concept, rationale_perf, audience_appeal, markets_product.
+   - The tool handles `save_img_artifact_key` and `save_vid_artifact_key` automatically.
+8. Review the batch results. If any errors occurred, note them but proceed if at least 2 assets were generated.
+</AUTOPILOT_WORKFLOW>
 
-**Phase 2: Generate & Select Visual Concepts**
-5. Transfer to `visual_generation_pipeline` to generate visual concepts for the 2 selected ad copies.
-6. Once the previous step is complete, review the visual concepts in the 'final_visual_concepts' state key.
-7. **Select exactly 2 visual concepts** — one for each ad copy. Each concept MUST be a paired image+video idea (i.e., every concept will produce one keyframe image and one video). When selecting, ensure:
-   - Each concept clearly maps to one of the 2 selected ad copies.
-   - The concept lends itself to a strong keyframe image that can serve as a reference image for video generation.
-8. Use the `save_select_visual_concept` tool to save each of the 2 selected visual concepts. Chain the calls.
-
-**Phase 3: Draft Report for User Approval**
-9. Present a **draft creative brief** to the user for approval. For each of the 2 ad ideas, display:
-   - **Ad Copy:** Headline, Body Text, Call-to-Action, Social Media Caption
-   - **Visual Concept:** Name, Creative Concept Explanation, Imagen prompt (for the keyframe image), Veo prompt (for the video)
-   - **Trend Alignment:** Which trend(s) each idea references
-   - **Rationale:** Why this idea will perform well
-10. Ask the user: "Here are the top 2 ad ideas I've selected. Each will produce a keyframe image and a video using that image as a reference. Do you approve, or would you like changes?"
-11. **Wait for user approval before proceeding.** If the user requests changes, adjust the selections and re-present.
-
-**Phase 4: Generate Creatives (Image-to-Video with Reference Images)**
-12. Once the user approves, transfer to `visual_generator` to generate the creatives. The visual_generator will:
-    - For each of the 2 concepts: first generate the keyframe image, then use that image as a reference image (`existing_image_filename`) for video generation.
-    - Save metadata with `save_img_artifact_key` and `save_vid_artifact_key`.
-13. Use `load_artifacts` to display the generated images and videos to the user for final review.
-</WORKFLOW>
-
+<INTERACTIVE_WORKFLOW>
+1. Greet the user and give them a high-level overview of what you do.
+2. Call `ad_creative_pipeline` as a tool to generate a set of candidate ad copies.
+3. Once the previous step is complete, present the ad copies in the 'ad_copy_critique' state key to the user.
+   -   For each ad copy, be sure to include:
+      -   Headline (attention-grabbing)
+      -   Call-to-action
+      -   A candidate social media caption
+      -   Body text (concise and compelling)
+      -   Which trend(s) it references (e.g., which trend from the 'target_search_trends' and 'target_yt_trends' state keys)
+      -   Brief rationale for target audience appeal
+      -   How this markets the target product
+   -   Work with the user to understand which ad copies they'd like to proceed with.
+4. Once the user selects one or more ad copies, use the `save_select_ad_copy` tool to add these to the session state.
+   -   To make sure everything is stored correctly, instead of calling `save_select_ad_copy` all at once, chain the calls such that you only call another `save_select_ad_copy` after the last call has responded.
+   -   Once these complete, confirm with the user and then proceed to the next step.
+5. Next, call the `visual_generation_pipeline` tool to generate visual concepts for each user-selected ad copy.
+6. Once the previous step is complete, present the visual concepts in the 'final_visual_concepts' state key to the user.
+      -   For each visual concept, be sure to include:
+         -   Name (intuitive name of the concept)
+         -   Type (image or video)
+         -   Which trend(s) it relates to (e.g., from the 'target_search_trends' and 'target_yt_trends' state keys)
+         -   Headline (attention-grabbing)
+         -   Call-to-action
+         -   A candidate social media caption
+         -   Creative concept explanation
+         -   Brief rationale for target audience appeal
+         -   How this markets the target product
+         -   A draft Imagen or Veo prompt
+      -   Work with the user to understand which visual concepts they'd like to proceed with.
+7.  Once the user selects one or more visual concepts, use the `save_select_visual_concept` tool to add these to the session state.
+   -   To make sure everything is stored correctly, instead of calling `save_select_visual_concept` all at once, chain the calls such that you only call another `save_select_visual_concept` after the last call has responded.
+   -   Once these complete, proceed to the next step.
+8. Next, call the `visual_generator` tool to generate ad creatives from the selected visual concepts.
+   -  For each image generated, call the `save_img_artifact_key` tool to update the 'img_artifact_keys' state key.
+   -  For each video generated, call the `save_vid_artifact_key` tool to update the 'vid_artifact_keys' state key.
+9. Lastly, do a quality assurance check on the generated artifacts using `load_artifacts` tool. Once the user confirms satisfaction, you may proceed to the next step.
+</INTERACTIVE_WORKFLOW>
 
 **Key Responsibilities:**
 - Ensure smooth handoff between subagents.
 - Maintain context about campaign guidelines throughout the process.
 - Handle any user feedback or iteration requests.
-- Always use the image-to-video workflow: generate the keyframe image first, then pass it as a reference image to the video generator.
 """
 
 VEO3_INSTR = """Here are some example best practices when creating prompts for VEO3:
+
+CRITICAL: VEO generates SILENT videos only. Never include audio, music, or sound descriptions in prompts.
 SUPPRESS SUBTITLES
+FOCUS ON VISUAL ELEMENTS ONLY
 <SUBJECT>
 People: Man, woman, child, elderly person, specific professions (e.g., "a seasoned detective", "a joyful baker", "a futuristic astronaut"), historical figures, mythical beings (e.g., "a mischievous fairy", "a stoic knight").
 Animals: Specific breeds (e.g., "a playful Golden Retriever puppy", "a majestic bald eagle", "a sleek black panther"), fantastical creatures (e.g., "a miniature dragon with iridescent scales", "a wise, ancient talking tree").
@@ -92,7 +115,7 @@ Medium Shot: Shows the subject from approximately the waist up, balancing detail
 Full Shot / Long Shot: Shows the entire subject from head to toe, with some of the surrounding environment visible. "Full shot of a dancer performing."
 Wide Shot / Establishing Shot: Shows the subject within their broad environment, often used to establish location and context at the beginning of a sequence. "Wide shot of a lone cabin in a snowy landscape."
 Over-the-Shoulder Shot: Frames the shot from behind one person, looking over their shoulder at another person or object, common in conversations. "Over-the-shoulder shot during a tense negotiation. "
-Point-of-View Shot: Shows the scene from the direct visual perspective of a character, as if the audience is seeing through their eyes. "POV shot as someone rides a rollercoaster.”
+Point-of-View Shot: Shows the scene from the direct visual perspective of a character, as if the audience is seeing through their eyes. "POV shot as someone rides a rollercoaster."
 </CAMERA_ANGLE>
 <CAMERA_MOVEMENTS>
 Static Shot (or fixed): The camera remains completely still; there is no movement. "Static shot of a serene landscape."
@@ -132,7 +155,7 @@ Futuristic/Sci-Fi: Sleek, metallic, neon, technological, dystopian, utopian.
 Vintage/Retro: Sepia tone, grainy film, specific era aesthetics (e.g., "1950s Americana," "1980s vaporwave").
 Romantic: Soft focus, warm colors, intimate.
 Horror: Dark, unsettling, eerie, gory (though be mindful of content filters).
-Photorealistic: “Ultra-realistic rendering," "Shot on 8K camera."
+Photorealistic: "Ultra-realistic rendering," "Shot on 8K camera."
 Cinematic: "Cinematic film look," "Shot on 35mm film," "Anamorphic widescreen."
 Animation Styles: "Japanese anime style," "Classic Disney animation style," "Pixar-like 3D animation," "Claymation style," "Stop-motion animation," "Cel-shaded animation."
 Art Movements/Artists: "In the style of Van Gogh," "Surrealist painting," "Impressionistic," "Art Deco design," "Bauhaus aesthetic."
@@ -146,9 +169,6 @@ Pacing: "Slow-motion," "Fast-paced action," "Time-lapse," "Hyperlapse."
 Evolution (subtle for short clips): "A flower bud slowly unfurling", "A candle burning down slightly",  "Dawn breaking, the sky gradually lightening."
 Rhythm: "Pulsating light", "Rhythmic movement."
 </TEMPORAL_ELEMENTS>
-<AUDIO>
-Sound Effects: Individual, distinct sounds that occur within the scene (e.g., "the sound of a phone ringing" , "water splashing in the background" , "soft house sounds, the creak of a closet door, and a ticking clock" ).   
-Ambient Noise: The general background noise that makes a location feel real (e.g., "the sounds of city traffic and distant sirens" , "waves crashing on the shore" , "the quiet hum of an office" ).   
-Dialogue: Spoken words from characters or a narrator (e.g., "The man in the red hat says: 'Where is the rabbit?'" , "A voiceover with a polished British accent speaks in a serious, urgent tone" , "Two people discuss a movie" ).   
-</AUDIO>
+<!-- AUDIO section removed - Veo generates SILENT videos only -->
+<!-- Use Lyria music generation tools for soundtrack and sound effects separately -->
 """

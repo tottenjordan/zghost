@@ -1,20 +1,29 @@
 import datetime
 import logging
+import pathlib
 
 logging.basicConfig(level=logging.INFO)
 
 from google.genai import types
 from google.adk.tools import google_search
 from google.adk.planners import BuiltInPlanner
+from google.adk.tools.agent_tool import AgentTool
+from google.adk.tools.skill_toolset import SkillToolset
 from google.adk.agents import Agent, SequentialAgent, ParallelAgent
 
-from trends_and_insights_agent.shared_libraries.config import config
-from trends_and_insights_agent.shared_libraries import callbacks, schema_types
+from ...shared_libraries.config import config
+from ...shared_libraries import callbacks, schema_types
+from ...skills.skill_loader import load_skill_from_dir
 
-from .tools import save_draft_report_artifact
+from .tools import save_draft_report_artifact, recall_prior_insights
 from .sub_agents.campaign_web_researcher.agent import ca_sequential_planner
 from .sub_agents.search_web_researcher.agent import gs_sequential_planner
 from .sub_agents.youtube_web_researcher.agent import yt_sequential_planner
+
+# Load this skill's own SKILL.md for self-contained documentation
+_skill_dir = pathlib.Path(__file__).parent
+_skill = load_skill_from_dir(_skill_dir)
+_skill_toolset = SkillToolset(skills=[_skill])
 
 
 # --- PARALLEL RESEARCH SUBAGENTS --- #
@@ -26,14 +35,11 @@ parallel_planner_agent = ParallelAgent(
 
 merge_planners = Agent(
     name="merge_planners",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_budget=1024,
-        )
-    ),
+    model=config.worker_model,
+    # include_contents="none",
+    description="Combine results from state keys 'campaign_web_search_insights', 'gs_web_search_insights', and 'yt_web_search_insights'",
     instruction="""You are an AI Assistant responsible for combining initial research findings into a comprehensive summary.
-    Your primary task is to organize the following research summaries, clearly attributing findings to their source areas. 
+    Your primary task is to organize the following research summaries, clearly attributing findings to their source areas.
     Structure your response using headings for each topic. Ensure the report is coherent and integrates the key points smoothly.
 
     ---
@@ -53,10 +59,7 @@ merge_planners = Agent(
     Output *only* the structured report following this format. Do not include introductory or concluding phrases outside this structure, and strictly adhere to using only the provided input summary content.
     """,
     output_key="combined_web_search_insights",
-    before_model_callback=callbacks.before_model_status_callback,
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
 )
 
 merge_parallel_insights = SequentialAgent(
@@ -73,12 +76,12 @@ combined_web_evaluator = Agent(
     description="Critically evaluates research about the campaign guide and generates follow-up queries.",
     instruction=f"""
     You are a meticulous quality assurance analyst evaluating the research findings in 'combined_web_search_insights'.
-    
+
     Be critical of the completeness of the research.
-    Consider the bigger picture and the intersection of the `target_product` and `target_audience`. 
+    Consider the bigger picture and the intersection of the `target_product` and `target_audience`.
     Consider the trends in each of the 'target_search_trends' and 'target_yt_trends' state keys.
-    
-    Look for any gaps in depth or coverage, as well as any areas that need more clarification. 
+
+    Look for any gaps in depth or coverage, as well as any areas that need more clarification.
         - If you find significant gaps in depth or coverage, write a detailed comment about what's missing, and generate 5-7 specific follow-up queries to fill those gaps.
         - If you don't find any significant gaps, write a detailed comment about any aspect of the campaign guide or trends to research further. Provide 5-7 related queries.
 
@@ -86,19 +89,11 @@ combined_web_evaluator = Agent(
     Your response must be a single, raw JSON object validating against the 'CampaignFeedback' schema.
     """,
     output_schema=schema_types.CampaignFeedback,
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_budget=1024,
-        )
-    ),
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
     output_key="combined_research_evaluation",
-    before_model_callback=[callbacks.before_model_status_callback, callbacks.rate_limit_callback],
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    before_model_callback=callbacks.rate_limit_callback,
 )
 
 
@@ -106,12 +101,7 @@ enhanced_combined_searcher = Agent(
     model=config.worker_model,
     name="enhanced_combined_searcher",
     description="Executes follow-up searches and integrates new findings.",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_budget=1024,
-        )
-    ),
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     instruction="""
     You are a specialist researcher executing a refinement pass.
     You are tasked to conduct a second round of web research and gather insights related to the trending YouTube video, the trending Search terms, the target audience, and the target product.
@@ -124,22 +114,12 @@ enhanced_combined_searcher = Agent(
     tools=[google_search],
     output_key="combined_web_search_insights",
     after_agent_callback=callbacks.collect_research_sources_callback,
-    before_model_callback=callbacks.before_model_status_callback,
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
 )
 
 
 combined_report_composer = Agent(
     model=config.critic_model,
     name="combined_report_composer",
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_budget=1024,
-        )
-    ),
     include_contents="none",
     description="Transforms research data and a markdown outline into a final, cited report.",
     instruction="""
@@ -156,11 +136,11 @@ combined_report_composer = Agent(
 
     *   **YouTube Video Analysis:**
         {yt_video_analysis}
-    
+
     *   **Final Research:**
         {combined_web_search_insights}
-    
-    *   **Citation Sources:** 
+
+    *   **Citation Sources:**
         `{sources}`
 
     ---
@@ -191,11 +171,9 @@ combined_report_composer = Agent(
     Do not include a "References" or "Sources" section; all citations must be in-line.
     """,
     output_key="combined_final_cited_report",
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
     after_agent_callback=callbacks.citation_replacement_callback,
-    before_model_callback=[callbacks.before_model_status_callback, callbacks.rate_limit_callback],
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
+    before_model_callback=callbacks.rate_limit_callback,
 )
 
 
@@ -212,24 +190,27 @@ combined_research_pipeline = SequentialAgent(
 )
 
 
-# Agent that saves the research report as a PDF artifact after the pipeline completes
-report_saver_agent = Agent(
+# Main orchestrator agent
+research_orchestrator = Agent(
     model=config.worker_model,
-    name="report_saver_agent",
-    description="Saves research report as PDF artifact.",
-    instruction="Use save_draft_report_artifact to save the combined_final_cited_report as PDF. Then stop.",
-    tools=[save_draft_report_artifact],
-    before_model_callback=callbacks.before_model_status_callback,
-    before_tool_callback=callbacks.before_tool_status_callback,
-    after_tool_callback=callbacks.after_tool_status_callback,
-    after_model_callback=callbacks.reorder_parts_text_first,
-)
-
-# Main orchestrator — SequentialAgent so all intermediate events (including
-# ui:status_update state deltas) flow to GE in real-time instead of being
-# buffered inside an AgentTool's isolated runner.
-research_orchestrator = SequentialAgent(
     name="research_orchestrator",
     description="Orchestrate comprehensive research for the campaign metadata and trending topics.",
-    sub_agents=[combined_research_pipeline, report_saver_agent],
+    instruction="""**Role:** You are the orchestrator for a comprehensive research workflow.
+
+    **Objective:** Your task is to facilitate several research tasks and produce a draft research report.
+
+    **Workflow:**
+    1. First, transfer to the `combined_research_pipeline` sub-agent to conduct web research on the campaign metadata and selected trends. It will run all research steps automatically.
+    2. Once all research tasks are complete, use the `save_draft_report_artifact` tool to save a PDF draft of the research.
+    3. Finally, transfer back to the `root_agent`.
+
+    """,
+    tools=[
+        save_draft_report_artifact,
+        recall_prior_insights,
+        _skill_toolset,
+    ],
+    sub_agents=[combined_research_pipeline],
+    planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    generate_content_config=types.GenerateContentConfig(temperature=1.0),
 )
