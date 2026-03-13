@@ -357,8 +357,13 @@ def evaluate_media_fidelity(
 ) -> dict:
     """Evaluate generated image/video fidelity using Gecko scoring.
 
-    Runs a rubric-based evaluation against a ground-truth product description
-    to measure how faithfully the generated media represents the product.
+    Uses Vertex AI's Gecko rubric-based evaluation (GECKO_TEXT2IMAGE / GECKO_TEXT2VIDEO)
+    to measure how faithfully generated media represents the product.
+
+    References:
+        - Gecko paper: https://arxiv.org/abs/2404.16820
+        - product-fidelity-eval: https://github.com/behardja/product-fidelity-eval
+        - Vertex AI rubric metrics: https://cloud.google.com/vertex-ai/generative-ai/docs/evaluation/metrics/rubric-based-metrics
 
     Args:
         media_uri: GCS URI of generated image or video (e.g. gs://bucket/path/file.png).
