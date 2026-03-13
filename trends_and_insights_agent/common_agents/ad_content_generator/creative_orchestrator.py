@@ -513,9 +513,13 @@ class CreativeProductionOrchestrator(BaseAgent):
 
             if pending_op_name:
                 # Resume polling an already-submitted operation
+                # Must construct a GenerateVideosOperation object — operations.get
+                # expects an object with .name, not a raw string
+                from google.genai.types import GenerateVideosOperation
                 logger.info(f"[DetAV] Resuming Veo operation: {pending_op_name}")
                 try:
-                    operation = veo_client.operations.get(operation=pending_op_name)
+                    stub_op = GenerateVideosOperation(name=pending_op_name)
+                    operation = veo_client.operations.get(operation=stub_op)
                 except Exception as e:
                     logger.warning(f"[DetAV] Could not resume operation {pending_op_name}: {e}")
                     # Operation may have expired — resubmit
@@ -545,7 +549,7 @@ class CreativeProductionOrchestrator(BaseAgent):
             while not operation.done:
                 if time.time() - start_time > AE_WAVE_POLL_BUDGET:
                     # Wave budget exhausted — return pending operation for next wave
-                    op_name = getattr(operation, 'name', None) or str(operation)
+                    op_name = operation.name
                     logger.info(f"[DetAV] Veo clip still generating, will resume: {op_name}")
                     return (None, op_name)
                 time.sleep(10)
@@ -564,7 +568,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                     start_time = time.time()
                     while not operation.done:
                         if time.time() - start_time > AE_WAVE_POLL_BUDGET:
-                            op_name = getattr(operation, 'name', None) or str(operation)
+                            op_name = operation.name
                             return (None, op_name)
                         time.sleep(10)
                         operation = veo_client.operations.get(operation)
