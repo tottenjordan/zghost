@@ -289,7 +289,10 @@ async def capture_ge_screenshots(session_id):
             return screenshots
 
         context = browser.contexts[0]
-        page = context.pages[0]
+        if not context.pages:
+            page = await context.new_page()
+        else:
+            page = context.pages[0]
         await page.set_viewport_size({"width": 1920, "height": 1080})
 
         # Navigate to GE chat

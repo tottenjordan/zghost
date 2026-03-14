@@ -499,15 +499,61 @@ class ResearchPipelineOrchestrator(BaseAgent):
                     yield self._status_event(ctx, f"Parallel research exceeded {MAX_RESEARCH_WAVES} waves — merging available data")
                     async for event in self._merge_insights_deterministic(ctx):
                         yield event
-                    return  # End wave; _determine_start_index will resume at EVALUATE
+                    # If merge still found nothing, force-advance to COMPOSE_REPORT
+                    # to avoid infinite loop of empty merge attempts
+                    if not ctx.session.state.get("combined_web_search_insights"):
+                        fallback_report = (
+                            f"# Market Research Report\n\n"
+                            f"## Product: {session_state.get('target_product', 'Unknown')}\n"
+                            f"## Brand: {session_state.get('brand', 'Unknown')}\n"
+                            f"## Target Audience: {session_state.get('target_audience', 'Unknown')}\n\n"
+                            f"Research data collection exceeded time budget. "
+                            f"Key selling points: {session_state.get('key_selling_points', 'N/A')}.\n\n"
+                            f"Proceeding with available campaign context."
+                        )
+                        force_event = self._status_event(ctx, "No research insights persisted — using fallback report to unblock pipeline")
+                        force_event.actions.state_delta["combined_web_search_insights"] = fallback_report
+                        force_event.actions.state_delta["combined_final_cited_report"] = fallback_report
+                        yield force_event
+                        logger.warning("[ResearchPipeline] Forced fallback report — output_key state likely lost on AE")
+                    return  # End wave; _determine_start_index will resume at EVALUATE or beyond
 
                 target = self._get_sub_agent(agent_name)
                 if target:
+                    # Collect agent text outputs to persist via state_delta
+                    collected_texts = {"gs": [], "yt": [], "ca": []}
                     async with Aclosing(target.run_async(ctx)) as agen:
                         async for event in agen:
                             yield event
+                            # Capture text from sub-agent events for state persistence
+                            if (hasattr(event, 'content') and event.content
+                                    and hasattr(event, 'author') and event.author):
+                                for part in (event.content.parts or []):
+                                    if hasattr(part, 'text') and part.text and len(part.text) > 50:
+                                        author = event.author or ""
+                                        if "gs_" in author or "search_web" in author:
+                                            collected_texts["gs"].append(part.text)
+                                        elif "yt_" in author or "youtube" in author:
+                                            collected_texts["yt"].append(part.text)
+                                        elif "campaign" in author or "ca_" in author:
+                                            collected_texts["ca"].append(part.text)
                             if ctx.should_pause_invocation(event):
                                 pause_invocation = True
+
+                    # Persist any collected text via state_delta (output_key doesn't survive AE)
+                    delta_event = None
+                    if collected_texts["gs"] and not session_state.get("gs_web_search_insights"):
+                        delta_event = delta_event or self._status_event(ctx, "Persisting research insights...")
+                        delta_event.actions.state_delta["gs_web_search_insights"] = "\n\n".join(collected_texts["gs"])
+                    if collected_texts["yt"] and not session_state.get("yt_web_search_insights"):
+                        delta_event = delta_event or self._status_event(ctx, "Persisting research insights...")
+                        delta_event.actions.state_delta["yt_web_search_insights"] = "\n\n".join(collected_texts["yt"])
+                    if collected_texts["ca"] and not session_state.get("campaign_web_search_insights"):
+                        delta_event = delta_event or self._status_event(ctx, "Persisting research insights...")
+                        delta_event.actions.state_delta["campaign_web_search_insights"] = "\n\n".join(collected_texts["ca"])
+                    if delta_event:
+                        yield delta_event
+                        logger.info(f"[ResearchPipeline] Persisted research via state_delta: gs={len(collected_texts['gs'])} yt={len(collected_texts['yt'])} ca={len(collected_texts['ca'])}")
 
                     if pause_invocation:
                         return
