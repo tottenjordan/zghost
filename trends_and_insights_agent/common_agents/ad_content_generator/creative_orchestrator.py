@@ -261,6 +261,9 @@ class CreativeProductionOrchestrator(BaseAgent):
         generates images directly via the Gemini image gen SDK.
         """
         state = ctx.session.state
+        product = state.get("target_product", "the product")
+        audience = state.get("target_audience", "consumers")
+
         vis_concepts = state.get("final_select_vis_concepts", {})
         if isinstance(vis_concepts, dict):
             vis_concepts = vis_concepts.get("final_select_vis_concepts", [])
@@ -295,8 +298,6 @@ class CreativeProductionOrchestrator(BaseAgent):
         while len(vis_concepts) < 4:
             vis_concepts.append(generic_concepts[len(vis_concepts) % len(generic_concepts)])
 
-        product = state.get("target_product", "the product")
-        audience = state.get("target_audience", "consumers")
         gcs_folder = state.get("gcs_folder", "")
         bucket = os.getenv("BUCKET", "")
 
