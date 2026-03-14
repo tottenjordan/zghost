@@ -356,6 +356,10 @@ class ResearchPipelineOrchestrator(BaseAgent):
                 # Direct tool call — no LLM agent needed
                 async for event in self._save_report(ctx):
                     yield event
+            elif stage_name == "MERGE_INSIGHTS":
+                # Deterministic merge — no LLM needed, just concatenate
+                async for event in self._merge_insights_deterministic(ctx):
+                    yield event
             else:
                 # Run the sub-agent
                 target = self._get_sub_agent(agent_name)
@@ -373,6 +377,39 @@ class ResearchPipelineOrchestrator(BaseAgent):
         if ctx.is_resumable:
             ctx.set_agent_state(self.name, end_of_agent=True)
             yield self._create_agent_state_event(ctx)
+
+    async def _merge_insights_deterministic(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """Merge parallel research insights deterministically — no LLM needed.
+
+        Concatenates gs/yt/campaign insights into combined_web_search_insights.
+        This replaces the LLM-based merge_planners agent which frequently times
+        out on AE waves.
+        """
+        state = ctx.session.state
+        gs = state.get("gs_web_search_insights", "")
+        yt = state.get("yt_web_search_insights", "")
+        ca = state.get("campaign_web_search_insights", "")
+
+        sections = []
+        if ca:
+            sections.append(f"## Campaign Guide\n{ca}")
+        if gs:
+            sections.append(f"## Search Trend Analysis\n{gs}")
+        if yt:
+            sections.append(f"## YouTube Trends Findings\n{yt}")
+
+        if not sections:
+            yield self._status_event(ctx, "No parallel research insights found — skipping merge.")
+            return
+
+        merged = "# Summary of Campaign and Trend Research\n\n" + "\n\n".join(sections)
+
+        event = self._status_event(ctx, f"Merged {len(sections)} research streams ({len(merged)} chars)")
+        event.actions.state_delta["combined_web_search_insights"] = merged
+        yield event
+        logger.info(f"[ResearchPipeline] Deterministic merge: {len(merged)} chars from {len(sections)} streams")
 
     async def _save_report(
         self, ctx: InvocationContext
