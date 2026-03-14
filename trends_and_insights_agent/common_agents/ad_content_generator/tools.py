@@ -830,532 +830,535 @@ async def save_final_report_tool(
                 self.set_text_color(128, 128, 128)
                 self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
 
-        pdf = CampaignPDF()
-        pdf.set_auto_page_break(auto=True, margin=15)
+        branded_pdf_ok = True
+        try:
+            pdf = CampaignPDF()
+            pdf.set_auto_page_break(auto=True, margin=15)
 
-        # ==================== #
-        # 1. COVER PAGE
-        # ==================== #
-        pdf.is_cover = True
-        pdf.add_page()
+            # ==================== #
+            # 1. COVER PAGE
+            # ==================== #
+            pdf.is_cover = True
+            pdf.add_page()
 
-        # Top accent bar
-        pdf.set_fill_color(0, 51, 160)  # #0033A0
-        pdf.rect(0, 0, 210, 30, 'F')
+            # Top accent bar
+            pdf.set_fill_color(0, 51, 160)  # #0033A0
+            pdf.rect(0, 0, 210, 30, 'F')
 
-        # Title area
-        pdf.set_y(50)
-        pdf.set_font('Helvetica', 'B', 32)
-        pdf.set_text_color(0, 51, 160)
-        pdf.cell(0, 15, brand_name, 0, 1, 'C')
+            # Title area
+            pdf.set_y(50)
+            pdf.set_font('Helvetica', 'B', 32)
+            pdf.set_text_color(0, 51, 160)
+            pdf.cell(0, 15, brand_name, 0, 1, 'C')
 
-        pdf.set_font('Helvetica', '', 24)
-        pdf.set_text_color(32, 33, 36)
-        pdf.cell(0, 12, product_name, 0, 1, 'C')
+            pdf.set_font('Helvetica', '', 24)
+            pdf.set_text_color(32, 33, 36)
+            pdf.cell(0, 12, product_name, 0, 1, 'C')
 
-        if campaign_tagline:
-            pdf.set_y(pdf.get_y() + 5)
-            pdf.set_font('Helvetica', 'I', 14)
-            pdf.set_text_color(100, 100, 100)
-            # Truncate long taglines
-            if len(campaign_tagline) > 80:
-                campaign_tagline = campaign_tagline[:77] + "..."
-            pdf.multi_cell(0, 8, campaign_tagline, 0, 'C')
+            if campaign_tagline:
+                pdf.set_y(pdf.get_y() + 5)
+                pdf.set_font('Helvetica', 'I', 14)
+                pdf.set_text_color(100, 100, 100)
+                # Truncate long taglines
+                if len(campaign_tagline) > 80:
+                    campaign_tagline = campaign_tagline[:77] + "..."
+                pdf.multi_cell(0, 8, campaign_tagline, 0, 'C')
 
-        # Hero image if available
-        if img_artifact_list and len(img_artifact_list) > 0:
-            first_img_key = img_artifact_list[0].get("artifact_key", "")
-            hero_path = os.path.join(IMG_SUBDIR, first_img_key)
-            if os.path.exists(hero_path):
-                pdf.set_y(120)
-                try:
-                    # Center image, max width 140mm
-                    pdf.image(hero_path, x=35, w=140)
-                except Exception as e:
-                    logging.warning(f"Could not embed hero image: {e}")
+            # Hero image if available
+            if img_artifact_list and len(img_artifact_list) > 0:
+                first_img_key = img_artifact_list[0].get("artifact_key", "")
+                hero_path = os.path.join(IMG_SUBDIR, first_img_key)
+                if os.path.exists(hero_path):
+                    pdf.set_y(120)
+                    try:
+                        # Center image, max width 140mm
+                        pdf.image(hero_path, x=35, w=140)
+                    except Exception as e:
+                        logging.warning(f"Could not embed hero image: {e}")
 
-        # Footer info
-        pdf.set_y(250)
-        pdf.set_font('Helvetica', '', 10)
-        pdf.set_text_color(100, 100, 100)
-        pdf.cell(0, 5, f"Campaign Report — {datetime.now().strftime('%B %d, %Y')}", 0, 1, 'C')
-        pdf.cell(0, 5, "Prepared by Trends & Insights AI", 0, 1, 'C')
-
-        pdf.is_cover = False
-
-        # ==================== #
-        # 2. EXECUTIVE SUMMARY
-        # ==================== #
-        pdf.add_page()
-        pdf.set_font('Helvetica', 'B', 18)
-        pdf.set_text_color(0, 51, 160)
-        pdf.cell(0, 10, "Executive Summary", 0, 1)
-        pdf.ln(3)
-
-        pdf.set_font('Helvetica', '', 10)
-        pdf.set_text_color(32, 33, 36)
-
-        # Extract key findings from research report (first few sentences or bullets)
-        key_findings = []
-        if processed_report:
-            # Try to extract bullet points or first few sentences
-            lines = processed_report.split('\n')
-            for line in lines[:30]:  # Check first 30 lines
-                line = line.strip()
-                if line.startswith('- ') or line.startswith('* '):
-                    key_findings.append(line[2:].strip())
-                    if len(key_findings) >= 3:
-                        break
-
-            # If no bullets found, extract first few sentences
-            if not key_findings:
-                sentences = re.split(r'[.!?]\s+', processed_report[:500])
-                key_findings = [s.strip() for s in sentences[:3] if len(s.strip()) > 20]
-
-        if key_findings:
-            pdf.set_font('Helvetica', 'B', 11)
-            pdf.cell(0, 6, "Key Findings:", 0, 1)
+            # Footer info
+            pdf.set_y(250)
             pdf.set_font('Helvetica', '', 10)
-            for finding in key_findings:
-                pdf.multi_cell(0, 5, f"• {finding[:200]}", 0)
-                pdf.ln(2)
-        else:
-            pdf.multi_cell(0, 5, "Comprehensive market research and trend analysis conducted.", 0)
-            pdf.ln(2)
+            pdf.set_text_color(100, 100, 100)
+            pdf.cell(0, 5, f"Campaign Report — {datetime.now().strftime('%B %d, %Y')}", 0, 1, 'C')
+            pdf.cell(0, 5, "Prepared by Trends & Insights AI", 0, 1, 'C')
 
-        pdf.ln(3)
+            pdf.is_cover = False
 
-        # Campaign metrics summary
-        pdf.set_fill_color(248, 249, 250)  # #F8F9FA light gray background
-        pdf.rect(10, pdf.get_y(), 190, 40, 'F')
-        pdf.ln(5)
-
-        pdf.set_font('Helvetica', 'B', 11)
-        pdf.cell(0, 6, "Campaign Assets:", 0, 1)
-        pdf.set_font('Helvetica', '', 10)
-
-        metrics_y = pdf.get_y()
-        pdf.set_xy(15, metrics_y)
-        pdf.cell(90, 5, f"Images Generated: {len(img_artifact_list or [])}", 0, 0)
-        pdf.set_x(105)
-        pdf.cell(90, 5, f"Videos Generated: {len(vid_artifact_list or [])}", 0, 1)
-
-        pdf.set_x(15)
-        has_commercial = bool(commercial_artifact and commercial_artifact.get("gcs_uri"))
-        pdf.cell(90, 5, f"Commercial: {'Yes' if has_commercial else 'No'}", 0, 0)
-
-        # Focus group verdict
-        focus_verdict = "Not conducted"
-        if focus_group_evaluation:
-            if "go decision" in focus_group_evaluation.lower() or "approve" in focus_group_evaluation.lower():
-                focus_verdict = "GO"
-            elif "no-go" in focus_group_evaluation.lower() or "reject" in focus_group_evaluation.lower():
-                focus_verdict = "NO-GO"
-            else:
-                focus_verdict = "Completed"
-
-        pdf.set_x(105)
-        pdf.cell(90, 5, f"Focus Group: {focus_verdict}", 0, 1)
-
-        pdf.ln(10)
-
-        # ==================== #
-        # 3. RESEARCH HIGHLIGHTS
-        # ==================== #
-        pdf.add_page()
-        pdf.set_font('Helvetica', 'B', 18)
-        pdf.set_text_color(0, 51, 160)
-        pdf.cell(0, 10, "Research Highlights", 0, 1)
-        pdf.ln(3)
-
-        pdf.set_font('Helvetica', '', 10)
-        pdf.set_text_color(32, 33, 36)
-
-        if processed_report:
-            # Simple markdown parsing for headers and bullets
-            lines = processed_report.split('\n')
-            for line in lines:
-                line_stripped = line.strip()
-
-                # Headers
-                if line_stripped.startswith('## '):
-                    pdf.ln(3)
-                    pdf.set_font('Helvetica', 'B', 13)
-                    pdf.set_text_color(26, 115, 232)  # #1A73E8 Google blue
-                    pdf.multi_cell(0, 6, line_stripped[3:], 0)
-                    pdf.set_font('Helvetica', '', 10)
-                    pdf.set_text_color(32, 33, 36)
-                    pdf.ln(1)
-                elif line_stripped.startswith('### '):
-                    pdf.ln(2)
-                    pdf.set_font('Helvetica', 'B', 11)
-                    pdf.multi_cell(0, 5, line_stripped[4:], 0)
-                    pdf.set_font('Helvetica', '', 10)
-                    pdf.ln(1)
-                elif line_stripped.startswith('# ') and not line_stripped.startswith('## '):
-                    pdf.ln(4)
-                    pdf.set_font('Helvetica', 'B', 15)
-                    pdf.set_text_color(0, 51, 160)
-                    pdf.multi_cell(0, 7, line_stripped[2:], 0)
-                    pdf.set_font('Helvetica', '', 10)
-                    pdf.set_text_color(32, 33, 36)
-                    pdf.ln(2)
-                # Bullets
-                elif line_stripped.startswith('- ') or line_stripped.startswith('* '):
-                    pdf.set_x(15)
-                    pdf.multi_cell(0, 5, f"• {line_stripped[2:]}", 0)
-                # Bold text — strip markers and render as regular text
-                elif '**' in line_stripped:
-                    clean = line_stripped.replace('**', '')
-                    if clean.strip():
-                        pdf.multi_cell(0, 5, clean, 0)
-                # Regular text
-                elif line_stripped:
-                    pdf.multi_cell(0, 5, line_stripped, 0)
-                else:
-                    pdf.ln(2)
-        else:
-            pdf.multi_cell(0, 5, "No research report available.", 0)
-
-        # ==================== #
-        # 4. CREATIVE PORTFOLIO
-        # ==================== #
-        if img_artifact_list or vid_artifact_list:
+            # ==================== #
+            # 2. EXECUTIVE SUMMARY
+            # ==================== #
             pdf.add_page()
             pdf.set_font('Helvetica', 'B', 18)
             pdf.set_text_color(0, 51, 160)
-            pdf.cell(0, 10, "Creative Portfolio", 0, 1)
+            pdf.cell(0, 10, "Executive Summary", 0, 1)
+            pdf.ln(3)
+
+            pdf.set_font('Helvetica', '', 10)
+            pdf.set_text_color(32, 33, 36)
+
+            # Extract key findings from research report (first few sentences or bullets)
+            key_findings = []
+            if processed_report:
+                # Try to extract bullet points or first few sentences
+                lines = processed_report.split('\n')
+                for line in lines[:30]:  # Check first 30 lines
+                    line = line.strip()
+                    if line.startswith('- ') or line.startswith('* '):
+                        key_findings.append(line[2:].strip())
+                        if len(key_findings) >= 3:
+                            break
+
+                # If no bullets found, extract first few sentences
+                if not key_findings:
+                    sentences = re.split(r'[.!?]\s+', processed_report[:500])
+                    key_findings = [s.strip() for s in sentences[:3] if len(s.strip()) > 20]
+
+            if key_findings:
+                pdf.set_font('Helvetica', 'B', 11)
+                pdf.cell(0, 6, "Key Findings:", 0, 1)
+                pdf.set_font('Helvetica', '', 10)
+                for finding in key_findings:
+                    pdf.multi_cell(0, 5, f"• {finding[:200]}", 0)
+                    pdf.ln(2)
+            else:
+                pdf.multi_cell(0, 5, "Comprehensive market research and trend analysis conducted.", 0)
+                pdf.ln(2)
+
+            pdf.ln(3)
+
+            # Campaign metrics summary
+            pdf.set_fill_color(248, 249, 250)  # #F8F9FA light gray background
+            pdf.rect(10, pdf.get_y(), 190, 40, 'F')
             pdf.ln(5)
 
-        # Images
-        for idx, entry in enumerate(img_artifact_list or []):
-            if idx > 0:
-                pdf.add_page()
-
-            artifact_key = entry.get("artifact_key", "")
-            img_path = os.path.join(IMG_SUBDIR, artifact_key)
-
-            pdf.set_font('Helvetica', 'B', 14)
-            pdf.set_text_color(26, 115, 232)
-            headline = entry.get("headline", "Untitled")
-            pdf.multi_cell(0, 7, headline, 0)
-            pdf.ln(2)
-
-            # Image
-            if os.path.exists(img_path):
-                try:
-                    pdf.image(img_path, x=10, w=190)
-                    pdf.ln(3)
-                except Exception as e:
-                    logging.warning(f"Could not embed image {artifact_key}: {e}")
-
-            # Fidelity score badge
-            fidelity = entry.get("fidelity_score")
-            if fidelity is not None:
-                try:
-                    score = float(fidelity)
-                    if score >= 0.7:
-                        badge_color = (52, 168, 83)  # Green
-                        badge_text = "High Fidelity"
-                    elif score >= 0.5:
-                        badge_color = (251, 188, 4)  # Yellow
-                        badge_text = "Medium Fidelity"
-                    else:
-                        badge_color = (234, 67, 53)  # Red
-                        badge_text = "Low Fidelity"
-
-                    pdf.set_fill_color(*badge_color)
-                    pdf.set_text_color(255, 255, 255)
-                    pdf.set_font('Helvetica', 'B', 9)
-                    badge_width = pdf.get_string_width(f"{badge_text}: {score:.2f}") + 6
-                    pdf.cell(badge_width, 6, f"{badge_text}: {score:.2f}", 0, 1, 'L', True)
-                    pdf.ln(2)
-                    pdf.set_text_color(32, 33, 36)
-                except (ValueError, TypeError):
-                    pass
-
-            # Caption
-            pdf.set_font('Helvetica', 'I', 10)
-            pdf.set_text_color(80, 80, 80)
-            caption = entry.get("caption", "")
-            if caption:
-                pdf.multi_cell(0, 5, caption, 0)
-                pdf.ln(2)
-
-            # Concept rationale
+            pdf.set_font('Helvetica', 'B', 11)
+            pdf.cell(0, 6, "Campaign Assets:", 0, 1)
             pdf.set_font('Helvetica', '', 10)
-            pdf.set_text_color(32, 33, 36)
-            concept = entry.get("concept", "")
-            if concept:
-                pdf.set_font('Helvetica', 'B', 10)
-                pdf.cell(0, 5, "Concept:", 0, 1)
-                pdf.set_font('Helvetica', '', 10)
-                pdf.multi_cell(0, 5, concept, 0)
-                pdf.ln(2)
 
-            # AI prompt (smaller gray text)
-            prompt = entry.get("img_prompt", "")
-            if prompt:
-                pdf.set_font('Helvetica', '', 8)
-                pdf.set_text_color(128, 128, 128)
-                pdf.multi_cell(0, 4, f"AI Prompt: {prompt[:300]}", 0)
+            metrics_y = pdf.get_y()
+            pdf.set_xy(15, metrics_y)
+            pdf.cell(90, 5, f"Images Generated: {len(img_artifact_list or [])}", 0, 0)
+            pdf.set_x(105)
+            pdf.cell(90, 5, f"Videos Generated: {len(vid_artifact_list or [])}", 0, 1)
 
-        # Videos
-        for idx, entry in enumerate(vid_artifact_list or []):
-            pdf.add_page()
+            pdf.set_x(15)
+            has_commercial = bool(commercial_artifact and commercial_artifact.get("gcs_uri"))
+            pdf.cell(90, 5, f"Commercial: {'Yes' if has_commercial else 'No'}", 0, 0)
 
-            artifact_key = entry.get("artifact_key", "")
-            vid_path = os.path.join(VID_SUBDIR, artifact_key)
-
-            pdf.set_font('Helvetica', 'B', 14)
-            pdf.set_text_color(26, 115, 232)
-            headline = entry.get("headline", "Untitled Video")
-            pdf.multi_cell(0, 7, headline, 0)
-            pdf.ln(2)
-
-            # Video thumbnail
-            if os.path.exists(vid_path):
-                frame_path = os.path.join(VID_SUBDIR, artifact_key.replace(".mp4", ".png"))
-                if os.path.exists(frame_path):
-                    try:
-                        pdf.image(frame_path, x=10, w=190)
-                        pdf.ln(3)
-                    except Exception as e:
-                        logging.warning(f"Could not embed video frame: {e}")
-
-            # Caption and details (similar to images)
-            pdf.set_font('Helvetica', 'I', 10)
-            pdf.set_text_color(80, 80, 80)
-            caption = entry.get("caption", "")
-            if caption:
-                pdf.multi_cell(0, 5, caption, 0)
-                pdf.ln(2)
-
-            pdf.set_font('Helvetica', '', 10)
-            pdf.set_text_color(32, 33, 36)
-            concept = entry.get("concept", "")
-            if concept:
-                pdf.set_font('Helvetica', 'B', 10)
-                pdf.cell(0, 5, "Concept:", 0, 1)
-                pdf.set_font('Helvetica', '', 10)
-                pdf.multi_cell(0, 5, concept, 0)
-
-        # ==================== #
-        # 5. COMMERCIAL STORYBOARD
-        # ==================== #
-        if commercial_artifact and commercial_artifact.get("gcs_uri"):
-            pdf.add_page()
-            pdf.set_font('Helvetica', 'B', 18)
-            pdf.set_text_color(0, 51, 160)
-            pdf.cell(0, 10, "Commercial Storyboard", 0, 1)
-            pdf.ln(3)
-
-            metadata = commercial_artifact.get("metadata", {})
-            if isinstance(metadata, dict):
-                pdf.set_font('Helvetica', 'B', 12)
-                pdf.set_text_color(32, 33, 36)
-                title = metadata.get("title", "Campaign Commercial")
-                pdf.cell(0, 6, title, 0, 1)
-
-                pdf.set_font('Helvetica', '', 10)
-                duration = metadata.get("duration_seconds", "N/A")
-                pdf.cell(0, 5, f"Duration: {duration}s", 0, 1)
-                pdf.ln(2)
-
-            # Extract 4 frames from commercial
-            gcs_uri = commercial_artifact.get("gcs_uri", "")
-            if gcs_uri:
-                # Download commercial if not already downloaded
-                commercial_filename = os.path.basename(gcs_uri)
-                commercial_local_path = os.path.join(VID_SUBDIR, commercial_filename)
-
-                if not os.path.exists(commercial_local_path):
-                    try:
-                        # Extract just the blob path from GCS URI
-                        blob_path = gcs_uri.replace(gcs_bucket + "/", "")
-                        download_image_from_gcs(
-                            source_blob_name=blob_path,
-                            destination_file_name=commercial_local_path,
-                        )
-                    except Exception as e:
-                        logging.warning(f"Could not download commercial for storyboard: {e}")
-
-                # Extract 4 frames
-                if os.path.exists(commercial_local_path):
-                    frame_dir = os.path.join(VID_SUBDIR, "storyboard_frames")
-                    os.makedirs(frame_dir, exist_ok=True)
-
-                    frame_paths = extract_multiple_frames(commercial_local_path, num_frames=4, output_dir=frame_dir)
-
-                    if frame_paths:
-                        scenes = metadata.get("scene_descriptions", []) if isinstance(metadata, dict) else []
-
-                        # Display frames in 2x2 grid
-                        for i in range(0, len(frame_paths), 2):
-                            row_y = pdf.get_y()
-
-                            # Left frame
-                            if i < len(frame_paths):
-                                try:
-                                    pdf.image(frame_paths[i], x=10, y=row_y, w=90)
-                                    pdf.set_xy(10, row_y + 55)
-                                    pdf.set_font('Helvetica', 'I', 8)
-                                    pdf.set_text_color(80, 80, 80)
-                                    scene_desc = scenes[i] if i < len(scenes) else f"Frame {i+1}"
-                                    pdf.multi_cell(90, 4, scene_desc[:150], 0)
-                                except Exception as e:
-                                    logging.warning(f"Could not embed storyboard frame {i}: {e}")
-
-                            # Right frame
-                            if i + 1 < len(frame_paths):
-                                try:
-                                    pdf.image(frame_paths[i+1], x=110, y=row_y, w=90)
-                                    pdf.set_xy(110, row_y + 55)
-                                    pdf.set_font('Helvetica', 'I', 8)
-                                    pdf.set_text_color(80, 80, 80)
-                                    scene_desc = scenes[i+1] if i+1 < len(scenes) else f"Frame {i+2}"
-                                    pdf.multi_cell(90, 4, scene_desc[:150], 0)
-                                except Exception as e:
-                                    logging.warning(f"Could not embed storyboard frame {i+1}: {e}")
-
-                            pdf.set_y(row_y + 70)
-                            pdf.ln(5)
-
-                        pdf.set_text_color(32, 33, 36)
-                    else:
-                        pdf.set_font('Helvetica', '', 10)
-                        pdf.cell(0, 5, "Storyboard frames could not be extracted.", 0, 1)
-
-            # Narrative arc and other details
-            if isinstance(metadata, dict):
-                pdf.ln(3)
-                pdf.set_font('Helvetica', '', 10)
-                pdf.set_text_color(32, 33, 36)
-
-                if metadata.get("narrative_arc"):
-                    pdf.set_font('Helvetica', 'B', 10)
-                    pdf.cell(0, 5, "Narrative Arc:", 0, 1)
-                    pdf.set_font('Helvetica', '', 10)
-                    pdf.multi_cell(0, 5, metadata["narrative_arc"], 0)
-                    pdf.ln(2)
-
-                if metadata.get("target_audience_appeal"):
-                    pdf.set_font('Helvetica', 'B', 10)
-                    pdf.cell(0, 5, "Target Audience Appeal:", 0, 1)
-                    pdf.set_font('Helvetica', '', 10)
-                    pdf.multi_cell(0, 5, metadata["target_audience_appeal"], 0)
-
-        # ==================== #
-        # 6. FOCUS GROUP REPORT
-        # ==================== #
-        if focus_group_evaluation or panelists:
-            pdf.add_page()
-            pdf.set_font('Helvetica', 'B', 18)
-            pdf.set_text_color(0, 51, 160)
-            pdf.cell(0, 10, "Focus Group Evaluation", 0, 1)
-            pdf.ln(3)
-
-            pdf.set_font('Helvetica', '', 10)
-            pdf.set_text_color(32, 33, 36)
-
+            # Focus group verdict
+            focus_verdict = "Not conducted"
             if focus_group_evaluation:
-                # Parse the evaluation text
-                eval_lines = focus_group_evaluation.split('\n')
-                for line in eval_lines:
+                if "go decision" in focus_group_evaluation.lower() or "approve" in focus_group_evaluation.lower():
+                    focus_verdict = "GO"
+                elif "no-go" in focus_group_evaluation.lower() or "reject" in focus_group_evaluation.lower():
+                    focus_verdict = "NO-GO"
+                else:
+                    focus_verdict = "Completed"
+
+            pdf.set_x(105)
+            pdf.cell(90, 5, f"Focus Group: {focus_verdict}", 0, 1)
+
+            pdf.ln(10)
+
+            # ==================== #
+            # 3. RESEARCH HIGHLIGHTS
+            # ==================== #
+            pdf.add_page()
+            pdf.set_font('Helvetica', 'B', 18)
+            pdf.set_text_color(0, 51, 160)
+            pdf.cell(0, 10, "Research Highlights", 0, 1)
+            pdf.ln(3)
+
+            pdf.set_font('Helvetica', '', 10)
+            pdf.set_text_color(32, 33, 36)
+
+            if processed_report:
+                # Simple markdown parsing for headers and bullets
+                lines = processed_report.split('\n')
+                for line in lines:
                     line_stripped = line.strip()
-                    if line_stripped.startswith('##'):
-                        pdf.ln(2)
-                        pdf.set_font('Helvetica', 'B', 12)
-                        pdf.set_text_color(26, 115, 232)
-                        pdf.multi_cell(0, 6, line_stripped.lstrip('#').strip(), 0)
+
+                    # Headers
+                    if line_stripped.startswith('## '):
+                        pdf.ln(3)
+                        pdf.set_font('Helvetica', 'B', 13)
+                        pdf.set_text_color(26, 115, 232)  # #1A73E8 Google blue
+                        pdf.multi_cell(0, 6, line_stripped[3:], 0)
                         pdf.set_font('Helvetica', '', 10)
                         pdf.set_text_color(32, 33, 36)
+                        pdf.ln(1)
+                    elif line_stripped.startswith('### '):
+                        pdf.ln(2)
+                        pdf.set_font('Helvetica', 'B', 11)
+                        pdf.multi_cell(0, 5, line_stripped[4:], 0)
+                        pdf.set_font('Helvetica', '', 10)
+                        pdf.ln(1)
+                    elif line_stripped.startswith('# ') and not line_stripped.startswith('## '):
+                        pdf.ln(4)
+                        pdf.set_font('Helvetica', 'B', 15)
+                        pdf.set_text_color(0, 51, 160)
+                        pdf.multi_cell(0, 7, line_stripped[2:], 0)
+                        pdf.set_font('Helvetica', '', 10)
+                        pdf.set_text_color(32, 33, 36)
+                        pdf.ln(2)
+                    # Bullets
                     elif line_stripped.startswith('- ') or line_stripped.startswith('* '):
                         pdf.set_x(15)
                         pdf.multi_cell(0, 5, f"• {line_stripped[2:]}", 0)
+                    # Bold text — strip markers and render as regular text
+                    elif '**' in line_stripped:
+                        clean = line_stripped.replace('**', '')
+                        if clean.strip():
+                            pdf.multi_cell(0, 5, clean, 0)
+                    # Regular text
                     elif line_stripped:
                         pdf.multi_cell(0, 5, line_stripped, 0)
                     else:
-                        pdf.ln(1)
+                        pdf.ln(2)
             else:
-                pdf.multi_cell(0, 5, "No focus group evaluation was conducted.", 0)
+                pdf.multi_cell(0, 5, "No research report available.", 0)
 
-            # Panelist profiles
-            if panelists:
+            # ==================== #
+            # 4. CREATIVE PORTFOLIO
+            # ==================== #
+            if img_artifact_list or vid_artifact_list:
+                pdf.add_page()
+                pdf.set_font('Helvetica', 'B', 18)
+                pdf.set_text_color(0, 51, 160)
+                pdf.cell(0, 10, "Creative Portfolio", 0, 1)
                 pdf.ln(5)
-                pdf.set_font('Helvetica', 'B', 13)
+
+            # Images
+            for idx, entry in enumerate(img_artifact_list or []):
+                if idx > 0:
+                    pdf.add_page()
+
+                artifact_key = entry.get("artifact_key", "")
+                img_path = os.path.join(IMG_SUBDIR, artifact_key)
+
+                pdf.set_font('Helvetica', 'B', 14)
                 pdf.set_text_color(26, 115, 232)
-                pdf.cell(0, 7, "Panelist Profiles", 0, 1)
+                headline = entry.get("headline", "Untitled")
+                pdf.multi_cell(0, 7, headline, 0)
                 pdf.ln(2)
 
-                for p in panelists:
-                    pdf.set_font('Helvetica', 'B', 11)
+                # Image
+                if os.path.exists(img_path):
+                    try:
+                        pdf.image(img_path, x=10, w=190)
+                        pdf.ln(3)
+                    except Exception as e:
+                        logging.warning(f"Could not embed image {artifact_key}: {e}")
+
+                # Fidelity score badge
+                fidelity = entry.get("fidelity_score")
+                if fidelity is not None:
+                    try:
+                        score = float(fidelity)
+                        if score >= 0.7:
+                            badge_color = (52, 168, 83)  # Green
+                            badge_text = "High Fidelity"
+                        elif score >= 0.5:
+                            badge_color = (251, 188, 4)  # Yellow
+                            badge_text = "Medium Fidelity"
+                        else:
+                            badge_color = (234, 67, 53)  # Red
+                            badge_text = "Low Fidelity"
+
+                        pdf.set_fill_color(*badge_color)
+                        pdf.set_text_color(255, 255, 255)
+                        pdf.set_font('Helvetica', 'B', 9)
+                        badge_width = pdf.get_string_width(f"{badge_text}: {score:.2f}") + 6
+                        pdf.cell(badge_width, 6, f"{badge_text}: {score:.2f}", 0, 1, 'L', True)
+                        pdf.ln(2)
+                        pdf.set_text_color(32, 33, 36)
+                    except (ValueError, TypeError):
+                        pass
+
+                # Caption
+                pdf.set_font('Helvetica', 'I', 10)
+                pdf.set_text_color(80, 80, 80)
+                caption = entry.get("caption", "")
+                if caption:
+                    pdf.multi_cell(0, 5, caption, 0)
+                    pdf.ln(2)
+
+                # Concept rationale
+                pdf.set_font('Helvetica', '', 10)
+                pdf.set_text_color(32, 33, 36)
+                concept = entry.get("concept", "")
+                if concept:
+                    pdf.set_font('Helvetica', 'B', 10)
+                    pdf.cell(0, 5, "Concept:", 0, 1)
+                    pdf.set_font('Helvetica', '', 10)
+                    pdf.multi_cell(0, 5, concept, 0)
+                    pdf.ln(2)
+
+                # AI prompt (smaller gray text)
+                prompt = entry.get("img_prompt", "")
+                if prompt:
+                    pdf.set_font('Helvetica', '', 8)
+                    pdf.set_text_color(128, 128, 128)
+                    pdf.multi_cell(0, 4, f"AI Prompt: {prompt[:300]}", 0)
+
+            # Videos
+            for idx, entry in enumerate(vid_artifact_list or []):
+                pdf.add_page()
+
+                artifact_key = entry.get("artifact_key", "")
+                vid_path = os.path.join(VID_SUBDIR, artifact_key)
+
+                pdf.set_font('Helvetica', 'B', 14)
+                pdf.set_text_color(26, 115, 232)
+                headline = entry.get("headline", "Untitled Video")
+                pdf.multi_cell(0, 7, headline, 0)
+                pdf.ln(2)
+
+                # Video thumbnail
+                if os.path.exists(vid_path):
+                    frame_path = os.path.join(VID_SUBDIR, artifact_key.replace(".mp4", ".png"))
+                    if os.path.exists(frame_path):
+                        try:
+                            pdf.image(frame_path, x=10, w=190)
+                            pdf.ln(3)
+                        except Exception as e:
+                            logging.warning(f"Could not embed video frame: {e}")
+
+                # Caption and details (similar to images)
+                pdf.set_font('Helvetica', 'I', 10)
+                pdf.set_text_color(80, 80, 80)
+                caption = entry.get("caption", "")
+                if caption:
+                    pdf.multi_cell(0, 5, caption, 0)
+                    pdf.ln(2)
+
+                pdf.set_font('Helvetica', '', 10)
+                pdf.set_text_color(32, 33, 36)
+                concept = entry.get("concept", "")
+                if concept:
+                    pdf.set_font('Helvetica', 'B', 10)
+                    pdf.cell(0, 5, "Concept:", 0, 1)
+                    pdf.set_font('Helvetica', '', 10)
+                    pdf.multi_cell(0, 5, concept, 0)
+
+            # ==================== #
+            # 5. COMMERCIAL STORYBOARD
+            # ==================== #
+            if commercial_artifact and commercial_artifact.get("gcs_uri"):
+                pdf.add_page()
+                pdf.set_font('Helvetica', 'B', 18)
+                pdf.set_text_color(0, 51, 160)
+                pdf.cell(0, 10, "Commercial Storyboard", 0, 1)
+                pdf.ln(3)
+
+                metadata = commercial_artifact.get("metadata", {})
+                if isinstance(metadata, dict):
+                    pdf.set_font('Helvetica', 'B', 12)
                     pdf.set_text_color(32, 33, 36)
-                    name = p.get("name", "Unknown")
-                    age = p.get("age", "N/A")
-                    pdf.cell(0, 6, f"{name}, Age {age}", 0, 1)
+                    title = metadata.get("title", "Campaign Commercial")
+                    pdf.cell(0, 6, title, 0, 1)
 
                     pdf.set_font('Helvetica', '', 10)
-                    persona = p.get("persona", "")
-                    if persona:
-                        pdf.multi_cell(0, 5, f"Persona: {persona}", 0)
+                    duration = metadata.get("duration_seconds", "N/A")
+                    pdf.cell(0, 5, f"Duration: {duration}s", 0, 1)
+                    pdf.ln(2)
 
+                # Extract 4 frames from commercial
+                gcs_uri = commercial_artifact.get("gcs_uri", "")
+                if gcs_uri:
+                    # Download commercial if not already downloaded
+                    commercial_filename = os.path.basename(gcs_uri)
+                    commercial_local_path = os.path.join(VID_SUBDIR, commercial_filename)
+
+                    if not os.path.exists(commercial_local_path):
+                        try:
+                            # Extract just the blob path from GCS URI
+                            blob_path = gcs_uri.replace(gcs_bucket + "/", "")
+                            download_image_from_gcs(
+                                source_blob_name=blob_path,
+                                destination_file_name=commercial_local_path,
+                            )
+                        except Exception as e:
+                            logging.warning(f"Could not download commercial for storyboard: {e}")
+
+                    # Extract 4 frames
+                    if os.path.exists(commercial_local_path):
+                        frame_dir = os.path.join(VID_SUBDIR, "storyboard_frames")
+                        os.makedirs(frame_dir, exist_ok=True)
+
+                        frame_paths = extract_multiple_frames(commercial_local_path, num_frames=4, output_dir=frame_dir)
+
+                        if frame_paths:
+                            scenes = metadata.get("scene_descriptions", []) if isinstance(metadata, dict) else []
+
+                            # Display frames in 2x2 grid
+                            for i in range(0, len(frame_paths), 2):
+                                row_y = pdf.get_y()
+
+                                # Left frame
+                                if i < len(frame_paths):
+                                    try:
+                                        pdf.image(frame_paths[i], x=10, y=row_y, w=90)
+                                        pdf.set_xy(10, row_y + 55)
+                                        pdf.set_font('Helvetica', 'I', 8)
+                                        pdf.set_text_color(80, 80, 80)
+                                        scene_desc = scenes[i] if i < len(scenes) else f"Frame {i+1}"
+                                        pdf.multi_cell(90, 4, scene_desc[:150], 0)
+                                    except Exception as e:
+                                        logging.warning(f"Could not embed storyboard frame {i}: {e}")
+
+                                # Right frame
+                                if i + 1 < len(frame_paths):
+                                    try:
+                                        pdf.image(frame_paths[i+1], x=110, y=row_y, w=90)
+                                        pdf.set_xy(110, row_y + 55)
+                                        pdf.set_font('Helvetica', 'I', 8)
+                                        pdf.set_text_color(80, 80, 80)
+                                        scene_desc = scenes[i+1] if i+1 < len(scenes) else f"Frame {i+2}"
+                                        pdf.multi_cell(90, 4, scene_desc[:150], 0)
+                                    except Exception as e:
+                                        logging.warning(f"Could not embed storyboard frame {i+1}: {e}")
+
+                                pdf.set_y(row_y + 70)
+                                pdf.ln(5)
+
+                            pdf.set_text_color(32, 33, 36)
+                        else:
+                            pdf.set_font('Helvetica', '', 10)
+                            pdf.cell(0, 5, "Storyboard frames could not be extracted.", 0, 1)
+
+                # Narrative arc and other details
+                if isinstance(metadata, dict):
                     pdf.ln(3)
+                    pdf.set_font('Helvetica', '', 10)
+                    pdf.set_text_color(32, 33, 36)
 
-        # ==================== #
-        # 7. BACK COVER
-        # ==================== #
-        pdf.is_back_cover = True
-        pdf.add_page()
+                    if metadata.get("narrative_arc"):
+                        pdf.set_font('Helvetica', 'B', 10)
+                        pdf.cell(0, 5, "Narrative Arc:", 0, 1)
+                        pdf.set_font('Helvetica', '', 10)
+                        pdf.multi_cell(0, 5, metadata["narrative_arc"], 0)
+                        pdf.ln(2)
 
-        # Bottom accent bar
-        pdf.set_fill_color(0, 51, 160)
-        pdf.rect(0, 267, 210, 30, 'F')
+                    if metadata.get("target_audience_appeal"):
+                        pdf.set_font('Helvetica', 'B', 10)
+                        pdf.cell(0, 5, "Target Audience Appeal:", 0, 1)
+                        pdf.set_font('Helvetica', '', 10)
+                        pdf.multi_cell(0, 5, metadata["target_audience_appeal"], 0)
 
-        # Center content
-        pdf.set_y(100)
-        pdf.set_font('Helvetica', 'B', 24)
-        pdf.set_text_color(0, 51, 160)
-        pdf.cell(0, 12, "Trends & Insights AI Platform", 0, 1, 'C')
+            # ==================== #
+            # 6. FOCUS GROUP REPORT
+            # ==================== #
+            if focus_group_evaluation or panelists:
+                pdf.add_page()
+                pdf.set_font('Helvetica', 'B', 18)
+                pdf.set_text_color(0, 51, 160)
+                pdf.cell(0, 10, "Focus Group Evaluation", 0, 1)
+                pdf.ln(3)
 
-        pdf.ln(10)
-        pdf.set_font('Helvetica', '', 11)
-        pdf.set_text_color(100, 100, 100)
-        pdf.cell(0, 6, "Powered by Google Gemini, Veo, and Agent Development Kit", 0, 1, 'C')
+                pdf.set_font('Helvetica', '', 10)
+                pdf.set_text_color(32, 33, 36)
 
-        pdf.ln(20)
-        pdf.set_font('Helvetica', '', 10)
+                if focus_group_evaluation:
+                    # Parse the evaluation text
+                    eval_lines = focus_group_evaluation.split('\n')
+                    for line in eval_lines:
+                        line_stripped = line.strip()
+                        if line_stripped.startswith('##'):
+                            pdf.ln(2)
+                            pdf.set_font('Helvetica', 'B', 12)
+                            pdf.set_text_color(26, 115, 232)
+                            pdf.multi_cell(0, 6, line_stripped.lstrip('#').strip(), 0)
+                            pdf.set_font('Helvetica', '', 10)
+                            pdf.set_text_color(32, 33, 36)
+                        elif line_stripped.startswith('- ') or line_stripped.startswith('* '):
+                            pdf.set_x(15)
+                            pdf.multi_cell(0, 5, f"• {line_stripped[2:]}", 0)
+                        elif line_stripped:
+                            pdf.multi_cell(0, 5, line_stripped, 0)
+                        else:
+                            pdf.ln(1)
+                else:
+                    pdf.multi_cell(0, 5, "No focus group evaluation was conducted.", 0)
 
-        # Campaign metadata summary
-        summary_items = [
-            f"Report Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}",
-            f"Total Images: {len(img_artifact_list or [])}",
-            f"Total Videos: {len(vid_artifact_list or [])}",
-            f"Commercial: {'Included' if has_commercial else 'Not produced'}",
-            f"Focus Group: {focus_verdict}",
-        ]
+                # Panelist profiles
+                if panelists:
+                    pdf.ln(5)
+                    pdf.set_font('Helvetica', 'B', 13)
+                    pdf.set_text_color(26, 115, 232)
+                    pdf.cell(0, 7, "Panelist Profiles", 0, 1)
+                    pdf.ln(2)
 
-        for item in summary_items:
-            pdf.cell(0, 6, item, 0, 1, 'C')
+                    for p in panelists:
+                        pdf.set_font('Helvetica', 'B', 11)
+                        pdf.set_text_color(32, 33, 36)
+                        name = p.get("name", "Unknown")
+                        age = p.get("age", "N/A")
+                        pdf.cell(0, 6, f"{name}, Age {age}", 0, 1)
 
-        pdf.is_back_cover = False
+                        pdf.set_font('Helvetica', '', 10)
+                        persona = p.get("persona", "")
+                        if persona:
+                            pdf.multi_cell(0, 5, f"Persona: {persona}", 0)
 
-        # Save the PDF
-        try:
-            pdf.output(report_filepath)
-        except Exception as pdf_err:
-            logging.warning(f"Branded PDF failed ({pdf_err}), falling back to simple PDF")
-            # Fallback: simple plain-text PDF
+                        pdf.ln(3)
+
+            # ==================== #
+            # 7. BACK COVER
+            # ==================== #
+            pdf.is_back_cover = True
+            pdf.add_page()
+
+            # Bottom accent bar
+            pdf.set_fill_color(0, 51, 160)
+            pdf.rect(0, 267, 210, 30, 'F')
+
+            # Center content
+            pdf.set_y(100)
+            pdf.set_font('Helvetica', 'B', 24)
+            pdf.set_text_color(0, 51, 160)
+            pdf.cell(0, 12, "Trends & Insights AI Platform", 0, 1, 'C')
+
+            pdf.ln(10)
+            pdf.set_font('Helvetica', '', 11)
+            pdf.set_text_color(100, 100, 100)
+            pdf.cell(0, 6, "Powered by Google Gemini, Veo, and Agent Development Kit", 0, 1, 'C')
+
+            pdf.ln(20)
+            pdf.set_font('Helvetica', '', 10)
+
+            # Campaign metadata summary
+            summary_items = [
+                f"Report Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}",
+                f"Total Images: {len(img_artifact_list or [])}",
+                f"Total Videos: {len(vid_artifact_list or [])}",
+                f"Commercial: {'Included' if has_commercial else 'Not produced'}",
+                f"Focus Group: {focus_verdict}",
+            ]
+
+            for item in summary_items:
+                pdf.cell(0, 6, item, 0, 1, 'C')
+
+                pdf.is_back_cover = False
+
+                # Output branded PDF
+                pdf.output(report_filepath)
+
+        except Exception as branded_err:
+            logging.warning(f"Branded PDF layout failed ({branded_err}), falling back to simple PDF")
             pdf = FPDF()
             pdf.set_auto_page_break(auto=True, margin=15)
             pdf.add_page()
             pdf.set_font('Helvetica', '', 10)
-            # Write all sections as plain text
             all_text = f"{processed_report}\n\n{IMG_CREATIVE_STRING}\n\n{VID_CREATIVE_STRING}\n\n{COMMERCIAL_STRING}\n\n{FOCUS_GROUP_STRING}"
             for line in all_text.split('\n'):
                 safe_line = _sanitize_text(line.strip())
                 if safe_line:
-                    pdf.multi_cell(0, 5, safe_line, 0)
+                    try:
+                        pdf.multi_cell(0, 5, safe_line, 0)
+                    except Exception:
+                        pass
                 else:
                     pdf.ln(2)
             pdf.output(report_filepath)

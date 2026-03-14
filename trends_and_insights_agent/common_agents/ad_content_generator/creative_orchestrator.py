@@ -575,7 +575,10 @@ class CreativeProductionOrchestrator(BaseAgent):
                 yield event
                 logger.info(f"[DetAV] Commercial saved: {clip_uri}")
             else:
-                yield self._status_event(ctx, "Veo completed but no video URI returned")
+                # CRITICAL: Clear pending op so retry counter can increment
+                clear_event = self._status_event(ctx, "Veo completed but no video URI returned — will retry")
+                clear_event.actions.state_delta["_commercial_clips"] = {}
+                yield clear_event
 
         except Exception as e:
             logger.warning(f"[DetAV] Veo exception: {e}")
