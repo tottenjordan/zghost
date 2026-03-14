@@ -255,189 +255,149 @@ class CreativeProductionOrchestrator(BaseAgent):
     async def _generate_images_deterministic(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        """Generate campaign images deterministically without an LLM agent.
+        """Generate ONE campaign image per wave, deterministically.
 
-        Called as the IMAGE_GEN stage. Reads visual concepts from state and
-        generates images directly via the Gemini image gen SDK.
+        Called as the IMAGE_GEN stage. Generates one image per AE wave to stay
+        within wave budget (~60s). Persists immediately via state_delta so
+        subsequent waves can resume with the next concept.
         """
         state = ctx.session.state
         product = state.get("target_product", "the product")
         audience = state.get("target_audience", "consumers")
+        gcs_folder = state.get("gcs_folder", "")
+        bucket = os.getenv("BUCKET", "")
+        MAX_IMAGES = 2
 
+        # Check already-generated images
+        existing_imgs = state.get("img_artifact_keys", {})
+        if isinstance(existing_imgs, dict):
+            existing_imgs = existing_imgs.get("img_artifact_keys", [])
+        if not isinstance(existing_imgs, list):
+            existing_imgs = []
+        already_generated = len(existing_imgs)
+
+        if already_generated >= MAX_IMAGES:
+            yield self._status_event(ctx, f"All {MAX_IMAGES} images already generated.")
+            return
+
+        # Build concept list
         vis_concepts = state.get("final_select_vis_concepts", {})
         if isinstance(vis_concepts, dict):
             vis_concepts = vis_concepts.get("final_select_vis_concepts", [])
 
-        # Fall back chain: visual concepts → ad copies → ad copy critique → generic
         if not vis_concepts:
             ad_copies = state.get("final_select_ad_copies", {})
             if isinstance(ad_copies, dict):
                 ad_copies = ad_copies.get("final_select_ad_copies", [])
-            # Also try ad_copy_critique (critic output) as fallback
             ad_critique = state.get("ad_copy_critique", "")
             if ad_copies:
                 vis_concepts = [
                     {"concept_name": f"ad_copy_{i+1}", "description": str(c)[:300]}
-                    for i, c in enumerate(ad_copies[:2])
+                    for i, c in enumerate(ad_copies[:MAX_IMAGES])
                 ]
-                yield self._status_event(ctx, "No visual concepts — generating images from ad copy descriptions.")
             elif ad_critique:
                 vis_concepts = [{"concept_name": "campaign_visual", "description": str(ad_critique)[:300]}]
-                yield self._status_event(ctx, "Using ad copy critique to generate campaign image.")
             else:
                 vis_concepts = [{"concept_name": "product_hero", "description": f"Hero shot of {product}"}]
-                yield self._status_event(ctx, "No visual concepts or ad copies — generating generic product image.")
 
-        # Ensure we have at least 2 diverse concepts for creative output
-        # (Keep to 2 for AE wave-budget reliability — each image gen takes ~30-60s)
-        MAX_IMAGES = 2
+        # Pad with generic concepts if needed
         generic_concepts = [
-            {"concept_name": "lifestyle_shot", "description": f"{product} being used in a natural lifestyle setting, warm and inviting"},
-            {"concept_name": "hero_product", "description": f"Clean studio hero shot of {product} with elegant lighting on white background"},
-            {"concept_name": "flat_lay", "description": f"Aesthetic flat-lay arrangement featuring {product} with complementary props"},
-            {"concept_name": "environmental_mood", "description": f"Atmospheric mood shot with {product} in an aspirational environment"},
+            {"concept_name": "lifestyle_shot", "description": f"{product} in a natural lifestyle setting"},
+            {"concept_name": "hero_product", "description": f"Studio hero shot of {product}"},
         ]
         while len(vis_concepts) < MAX_IMAGES:
             vis_concepts.append(generic_concepts[len(vis_concepts) % len(generic_concepts)])
 
-        gcs_folder = state.get("gcs_folder", "")
-        bucket = os.getenv("BUCKET", "")
+        # Pick the NEXT concept to generate (skip already-generated)
+        concept = vis_concepts[already_generated] if already_generated < len(vis_concepts) else vis_concepts[0]
+        concept_name = concept.get("concept_name", "concept") if isinstance(concept, dict) else "concept"
+        description = concept.get("description", str(concept)) if isinstance(concept, dict) else str(concept)
 
-        # Skip already-generated images (wave-safe resumption)
-        existing_imgs = state.get("img_artifact_keys", {})
-        if isinstance(existing_imgs, dict):
-            existing_imgs = existing_imgs.get("img_artifact_keys", [])
-        already_generated = len(existing_imgs) if isinstance(existing_imgs, list) else 0
-        if already_generated > 0:
-            yield self._status_event(ctx, f"Resuming image gen — {already_generated} already generated.")
-            vis_concepts = vis_concepts[already_generated:]
+        prompt = (
+            f"Professional advertising photography for {product}. "
+            f"Concept: {description[:300]}. "
+            f"Target audience: {audience}. "
+            f"High quality, cinematic lighting, lifestyle aesthetic. "
+            f"No text, no logos, no watermarks."
+        )
 
-        img_client = genai.Client(vertexai=True)
-        generated_images = list(existing_imgs) if isinstance(existing_imgs, list) else []
-        num_to_gen = min(MAX_IMAGES - already_generated, len(vis_concepts))
-        product_description = state.get("key_selling_points", product)
+        yield self._status_event(ctx, f"Generating image {already_generated + 1}/{MAX_IMAGES}...")
 
-        for i, concept in enumerate(vis_concepts[:num_to_gen]):  # Generate remaining images
-            concept_name = concept.get("concept_name", f"concept_{i}") if isinstance(concept, dict) else f"concept_{i}"
-            description = concept.get("description", str(concept)) if isinstance(concept, dict) else str(concept)
-
-            prompt = (
-                f"Award-winning advertising photography for {product}. "
-                f"Campaign concept: {concept_name} — {description[:400]}. "
-                f"Target audience: {audience}. "
-                f"Style: Ultra-high quality, 8K resolution, professional studio lighting, "
-                f"lifestyle editorial aesthetic, warm natural color palette. "
-                f"Composition: Rule of thirds, shallow depth of field, product prominently featured. "
-                f"No text, no logos, no watermarks, no UI elements."
+        try:
+            img_client = genai.Client(vertexai=True)
+            response = img_client.models.generate_content(
+                model=config.image_gen_model,
+                contents=prompt,
+                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
             )
-            yield self._status_event(ctx, f"Generating image {i + 1}/{num_to_gen}: {concept_name}...")
 
-            try:
-                response = None
-                for attempt in range(3):
-                    try:
-                        response = img_client.models.generate_content(
-                            model=config.image_gen_model,
-                            contents=prompt,
-                            config=types.GenerateContentConfig(
-                                response_modalities=["IMAGE"],
-                            ),
-                        )
-                        break
-                    except Exception as gen_err:
-                        err_str = str(gen_err)
-                        if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str) and attempt < 2:
-                            wait = 15 * (attempt + 1)
-                            logger.warning(f"Image gen rate limited, waiting {wait}s")
-                            time.sleep(wait)
-                        else:
-                            raise
+            if not response or not response.candidates or not response.candidates[0].content.parts:
+                yield self._status_event(ctx, "Image gen returned empty — will retry next wave.")
+                return
 
-                if not response or not response.candidates or not response.candidates[0].content.parts:
-                    logger.warning(f"[ImageGen] No image in response for concept {i}")
+            for part in response.candidates[0].content.parts:
+                if not (hasattr(part, 'inline_data') and part.inline_data and part.inline_data.data):
                     continue
 
-                # Save image to GCS
-                for part in response.candidates[0].content.parts:
-                    if hasattr(part, 'inline_data') and part.inline_data and part.inline_data.data:
-                        image_bytes = part.inline_data.data
-                        safe_name = concept_name.replace(",", "").replace(" ", "_")
-                        artifact_key = f"{safe_name}_0.png"
+                image_bytes = part.inline_data.data
+                safe_name = concept_name.replace(",", "").replace(" ", "_")
+                artifact_key = f"{safe_name}_0.png"
 
-                        if bucket and gcs_folder:
-                            from .tools import upload_blob_to_gcs
-                            import tempfile
-                            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                                tmp.write(image_bytes)
-                                tmp_path = tmp.name
-                            try:
-                                upload_blob_to_gcs(
-                                    source_file_name=tmp_path,
-                                    destination_blob_name=os.path.join(gcs_folder, artifact_key),
-                                )
-                            finally:
-                                os.unlink(tmp_path)
-
-                        # Save artifact via artifact_service if available
-                        if ctx.artifact_service:
-                            await ctx.artifact_service.save_artifact(
-                                app_name=ctx.app_name,
-                                user_id=ctx.user_id,
-                                session_id=ctx.session.id,
-                                filename=artifact_key,
-                                artifact=types.Part.from_bytes(
-                                    data=image_bytes, mime_type="image/png"
-                                ),
-                            )
-
-                        img_meta = {
-                            "artifact_key": artifact_key,
-                            "img_prompt": prompt[:500],
-                            "concept": concept_name,
-                            "headline": "",
-                            "caption": "",
-                            "auto_saved": True,
-                        }
-
-                        # Gecko fidelity evaluation (best-effort, no retry to stay within AE wave budget)
-                        if bucket and gcs_folder:
-                            try:
-                                gcs_uri = f"{bucket}/{gcs_folder}/{artifact_key}"
-                                fidelity_score = gecko_evaluate(
-                                    prompt=product_description,
-                                    media_uri=gcs_uri,
-                                    media_type="image"
-                                )
-                                img_meta["fidelity_score"] = fidelity_score
-                                logger.info(f"[ImageGen] Gecko score for {artifact_key}: {fidelity_score}")
-                            except Exception as gecko_err:
-                                logger.warning(f"[ImageGen] Gecko fidelity check failed (non-fatal): {gecko_err}")
-
-                        generated_images.append(img_meta)
-                        logger.info(f"[ImageGen] Generated: {artifact_key}")
-
-                        # Persist IMMEDIATELY after each image via state_delta
-                        # (AE wave may end before the next image generates)
-                        existing = state.get("img_artifact_keys", {"img_artifact_keys": []})
-                        prev_list = list(existing.get("img_artifact_keys", []) if isinstance(existing, dict) else existing)
-                        existing_keys = {item.get("artifact_key") for item in prev_list if isinstance(item, dict)}
-                        if artifact_key not in existing_keys:
-                            prev_list.append(img_meta)
-                        save_event = self._status_event(
-                            ctx, f"Image {len(generated_images)} saved: {artifact_key}"
+                # Upload to GCS
+                if bucket and gcs_folder:
+                    from .tools import upload_blob_to_gcs
+                    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                        tmp.write(image_bytes)
+                        tmp_path = tmp.name
+                    try:
+                        upload_blob_to_gcs(
+                            source_file_name=tmp_path,
+                            destination_blob_name=os.path.join(gcs_folder, artifact_key),
                         )
-                        save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": list(prev_list)}
-                        yield save_event
-                        break  # Only need first image part
+                    finally:
+                        os.unlink(tmp_path)
 
-            except Exception as e:
-                logger.warning(f"[ImageGen] Failed for concept {i}: {e}")
-                yield self._status_event(ctx, f"Image generation failed for {concept_name}: {str(e)[:100]}")
+                # Save artifact
+                if ctx.artifact_service:
+                    await ctx.artifact_service.save_artifact(
+                        app_name=ctx.app_name,
+                        user_id=ctx.user_id,
+                        session_id=ctx.session.id,
+                        filename=artifact_key,
+                        artifact=types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+                    )
 
-        if generated_images:
-            yield self._status_event(ctx, f"Generated {len(generated_images)} campaign images successfully.")
-        else:
-            yield self._status_event(ctx, "No images generated — will retry on next wave.")
+                img_meta = {
+                    "artifact_key": artifact_key,
+                    "img_prompt": prompt[:500],
+                    "concept": concept_name,
+                    "headline": "",
+                    "caption": "",
+                    "auto_saved": True,
+                }
+
+                # Gecko fidelity (best-effort)
+                if bucket and gcs_folder:
+                    try:
+                        fidelity_score = gecko_evaluate(
+                            prompt=state.get("key_selling_points", product),
+                            media_uri=f"{bucket}/{gcs_folder}/{artifact_key}",
+                            media_type="image",
+                        )
+                        img_meta["fidelity_score"] = fidelity_score
+                    except Exception:
+                        pass
+
+                # Persist immediately via state_delta
+                new_list = list(existing_imgs) + [img_meta]
+                save_event = self._status_event(ctx, f"Image saved: {artifact_key}")
+                save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": new_list}
+                yield save_event
+                return  # One image per wave
+
+        except Exception as e:
+            logger.warning(f"[ImageGen] Failed: {e}")
+            yield self._status_event(ctx, f"Image gen failed: {str(e)[:100]} — will retry.")
 
     async def _generate_commercial_deterministic(
         self, ctx: InvocationContext
