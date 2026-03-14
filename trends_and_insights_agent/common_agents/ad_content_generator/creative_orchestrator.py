@@ -288,25 +288,36 @@ class CreativeProductionOrchestrator(BaseAgent):
                 vis_concepts = [{"concept_name": "product_hero", "description": f"Hero shot of {product}"}]
                 yield self._status_event(ctx, "No visual concepts or ad copies — generating generic product image.")
 
-        # Ensure we have 4 diverse concepts for richer creative output
+        # Ensure we have at least 2 diverse concepts for creative output
+        # (Keep to 2 for AE wave-budget reliability — each image gen takes ~30-60s)
+        MAX_IMAGES = 2
         generic_concepts = [
             {"concept_name": "lifestyle_shot", "description": f"{product} being used in a natural lifestyle setting, warm and inviting"},
             {"concept_name": "hero_product", "description": f"Clean studio hero shot of {product} with elegant lighting on white background"},
             {"concept_name": "flat_lay", "description": f"Aesthetic flat-lay arrangement featuring {product} with complementary props"},
             {"concept_name": "environmental_mood", "description": f"Atmospheric mood shot with {product} in an aspirational environment"},
         ]
-        while len(vis_concepts) < 4:
+        while len(vis_concepts) < MAX_IMAGES:
             vis_concepts.append(generic_concepts[len(vis_concepts) % len(generic_concepts)])
 
         gcs_folder = state.get("gcs_folder", "")
         bucket = os.getenv("BUCKET", "")
 
+        # Skip already-generated images (wave-safe resumption)
+        existing_imgs = state.get("img_artifact_keys", {})
+        if isinstance(existing_imgs, dict):
+            existing_imgs = existing_imgs.get("img_artifact_keys", [])
+        already_generated = len(existing_imgs) if isinstance(existing_imgs, list) else 0
+        if already_generated > 0:
+            yield self._status_event(ctx, f"Resuming image gen — {already_generated} already generated.")
+            vis_concepts = vis_concepts[already_generated:]
+
         img_client = genai.Client(vertexai=True)
-        generated_images = []
-        num_to_gen = min(4, len(vis_concepts))
+        generated_images = list(existing_imgs) if isinstance(existing_imgs, list) else []
+        num_to_gen = min(MAX_IMAGES - already_generated, len(vis_concepts))
         product_description = state.get("key_selling_points", product)
 
-        for i, concept in enumerate(vis_concepts[:4]):  # Generate max 4 images
+        for i, concept in enumerate(vis_concepts[:num_to_gen]):  # Generate remaining images
             concept_name = concept.get("concept_name", f"concept_{i}") if isinstance(concept, dict) else f"concept_{i}"
             description = concept.get("description", str(concept)) if isinstance(concept, dict) else str(concept)
 
@@ -388,8 +399,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                             "auto_saved": True,
                         }
 
-                        # Gecko fidelity evaluation (best-effort)
-                        fidelity_score = None
+                        # Gecko fidelity evaluation (best-effort, no retry to stay within AE wave budget)
                         if bucket and gcs_folder:
                             try:
                                 gcs_uri = f"{bucket}/{gcs_folder}/{artifact_key}"
@@ -400,51 +410,6 @@ class CreativeProductionOrchestrator(BaseAgent):
                                 )
                                 img_meta["fidelity_score"] = fidelity_score
                                 logger.info(f"[ImageGen] Gecko score for {artifact_key}: {fidelity_score}")
-
-                                # Retry if score < 0.7 (best-effort, one retry max)
-                                if fidelity_score < 0.7:
-                                    yield self._status_event(
-                                        ctx, f"Image quality score {fidelity_score:.2f} < 0.7, regenerating with enhanced prompt..."
-                                    )
-                                    enhanced_prompt = (
-                                        prompt + f" Ensure the product {product} is clearly visible and recognizable."
-                                    )
-                                    retry_response = img_client.models.generate_content(
-                                        model=config.image_gen_model,
-                                        contents=enhanced_prompt,
-                                        config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
-                                    )
-                                    if retry_response and retry_response.candidates:
-                                        for retry_part in retry_response.candidates[0].content.parts:
-                                            if hasattr(retry_part, 'inline_data') and retry_part.inline_data:
-                                                retry_bytes = retry_part.inline_data.data
-                                                retry_key = f"{safe_name}_retry.png"
-                                                retry_path = tempfile.NamedTemporaryFile(suffix=".png", delete=False).name
-                                                with open(retry_path, "wb") as f:
-                                                    f.write(retry_bytes)
-                                                upload_blob_to_gcs(
-                                                    source_file_name=retry_path,
-                                                    destination_blob_name=os.path.join(gcs_folder, retry_key),
-                                                )
-                                                os.unlink(retry_path)
-                                                retry_uri = f"{bucket}/{gcs_folder}/{retry_key}"
-                                                retry_score = gecko_evaluate(
-                                                    prompt=product_description,
-                                                    media_uri=retry_uri,
-                                                    media_type="image"
-                                                )
-                                                logger.info(f"[ImageGen] Retry Gecko score: {retry_score}")
-                                                # Keep better-scoring image
-                                                if retry_score > fidelity_score:
-                                                    image_bytes = retry_bytes
-                                                    artifact_key = retry_key
-                                                    fidelity_score = retry_score
-                                                    img_meta["artifact_key"] = retry_key
-                                                    img_meta["fidelity_score"] = retry_score
-                                                    yield self._status_event(
-                                                        ctx, f"Retry improved score to {retry_score:.2f}"
-                                                    )
-                                                break
                             except Exception as gecko_err:
                                 logger.warning(f"[ImageGen] Gecko fidelity check failed (non-fatal): {gecko_err}")
 
