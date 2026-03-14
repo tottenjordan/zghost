@@ -466,6 +466,12 @@ class CampaignOrchestrator(BaseAgent):
             focus_group_panelists=focus_group_panelists,
             gcs_folder=gcs_folder,
             save_artifact_fn=save_artifact_fn,
+            brand=state.get("brand", ""),
+            product=state.get("target_product", ""),
+            audience=state.get("target_audience", ""),
+            selling_points=state.get("key_selling_points", ""),
+            target_search_trends=state.get("target_search_trends", ""),
+            target_yt_trends=state.get("target_yt_trends", ""),
         )
 
         status = result.get("status", "failed")

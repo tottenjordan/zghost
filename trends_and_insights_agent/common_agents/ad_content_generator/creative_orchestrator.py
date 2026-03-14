@@ -532,33 +532,41 @@ class CreativeProductionOrchestrator(BaseAgent):
     async def _generate_commercial_deterministic(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        """Generate a commercial deterministically using direct Veo SDK calls.
+        """Generate a multi-clip commercial using Veo with first-frame chaining.
 
-        Uses a wave-safe approach: submit Veo operation, save operation name
-        to state, poll on subsequent waves until complete. Uses campaign images
-        as first-frame conditioning when available.
+        Generates NUM_CLIPS video clips (default 2) and concatenates them into
+        a single commercial. The second clip uses the last frame of the first
+        clip as its first-frame conditioning for visual continuity.
+
+        Wave-safe: saves pending operations to state so AE can resume polling.
+        Uses campaign images as ASSET (product) and STYLE (aesthetic) references.
         """
         state = ctx.session.state
         product = state.get("target_product", "the product")
         audience = state.get("target_audience", "target consumers")
         selling_points = state.get("key_selling_points", "")
         duration = state.get("commercial_duration", 15)
+        brand = state.get("brand", "")
         gcs_folder = state.get("gcs_folder", "")
         bucket = os.getenv("BUCKET", "")
         bucket_name = bucket.replace("gs://", "")
+        NUM_CLIPS = 2
+        clip_duration = max(duration // NUM_CLIPS, 5)
 
         veo_client = genai.Client(vertexai=True)
         clips_cache = state.get("_commercial_clips", {})
 
-        # Check for pending Veo operation from previous wave
+        # Track completed clips and pending op
+        completed_clips = clips_cache.get("_completed_clip_uris", [])
         pending_op = clips_cache.get("_pending_veo_op")
-        if pending_op:
-            yield self._status_event(ctx, "Polling Veo commercial (resuming from previous wave)...")
-        else:
-            yield self._status_event(ctx, "Submitting commercial to Veo...")
+        current_clip_idx = clips_cache.get("_current_clip_idx", 0)
 
-        # Build reference images from campaign images for Veo
-        # STYLE = visual aesthetic guide, ASSET = subject/product to include
+        if pending_op:
+            yield self._status_event(ctx, f"Polling Veo clip {current_clip_idx + 1}/{NUM_CLIPS} (resuming)...")
+        else:
+            yield self._status_event(ctx, f"Generating clip {current_clip_idx + 1}/{NUM_CLIPS} for {duration}s commercial...")
+
+        # Build reference images from campaign images
         img_keys = state.get("img_artifact_keys", {})
         if isinstance(img_keys, dict):
             img_list = img_keys.get("img_artifact_keys", [])
@@ -575,7 +583,6 @@ class CreativeProductionOrchestrator(BaseAgent):
                 img_gcs_uri = f"{bucket}/{gcs_folder}/{img_filename}"
                 if i == 0:
                     first_frame_uri = img_gcs_uri
-                # First image = ASSET (product hero), Second = STYLE (aesthetic)
                 ref_type = types.VideoGenerationReferenceType.ASSET if i == 0 else types.VideoGenerationReferenceType.STYLE
                 reference_images.append(
                     types.VideoGenerationReferenceImage(
@@ -585,160 +592,192 @@ class CreativeProductionOrchestrator(BaseAgent):
                 )
                 logger.info(f"[DetAV] Reference image {i}: {ref_type} -> {img_gcs_uri}")
 
-        # Build a detailed Veo prompt
-        brand = state.get("brand", "")
-        prompt = self._build_commercial_prompt(product, audience, selling_points, duration, brand=brand)
+        # Clip-specific prompts for narrative arc
+        clip_prompts = self._build_clip_prompts(product, audience, selling_points, brand, NUM_CLIPS, clip_duration)
 
         try:
-            gen_config = GenerateVideosConfig(
-                aspect_ratio="16:9",
-                number_of_videos=1,
-                output_gcs_uri=bucket,
-                reference_images=reference_images if reference_images else None,
-            )
+            # Process one clip per wave iteration
+            while current_clip_idx < NUM_CLIPS:
+                clip_prompt = clip_prompts[current_clip_idx] if current_clip_idx < len(clip_prompts) else clip_prompts[-1]
 
-            if pending_op:
-                # Resume polling an already-submitted operation
-                from google.genai.types import GenerateVideosOperation
-                logger.info(f"[DetAV] Resuming Veo operation: {pending_op}")
-                try:
-                    stub_op = GenerateVideosOperation(name=pending_op)
-                    operation = veo_client.operations.get(operation=stub_op)
-                except Exception as e:
-                    logger.warning(f"[DetAV] Could not resume operation {pending_op}: {e}")
-                    pending_op = None
+                gen_config = GenerateVideosConfig(
+                    aspect_ratio="16:9",
+                    number_of_videos=1,
+                    output_gcs_uri=bucket,
+                    reference_images=reference_images if reference_images else None,
+                )
 
-            if not pending_op:
-                # Submit new Veo operation
-                if first_frame_uri:
-                    first_frame_image = types.Image(
-                        gcs_uri=first_frame_uri, mime_type="image/png"
-                    )
-                    operation = veo_client.models.generate_videos(
-                        model=config.video_gen_model,
-                        prompt=prompt,
-                        image=first_frame_image,
-                        config=gen_config,
-                    )
-                else:
-                    operation = veo_client.models.generate_videos(
-                        model=config.video_gen_model,
-                        prompt=prompt,
-                        config=gen_config,
-                    )
+                if pending_op:
+                    from google.genai.types import GenerateVideosOperation
+                    logger.info(f"[DetAV] Resuming Veo operation: {pending_op}")
+                    try:
+                        stub_op = GenerateVideosOperation(name=pending_op)
+                        operation = veo_client.operations.get(operation=stub_op)
+                    except Exception as e:
+                        logger.warning(f"[DetAV] Could not resume operation {pending_op}: {e}")
+                        pending_op = None
 
-                # CRITICAL: Save operation name to state BEFORE polling
-                # If AE wave times out during polling, we can resume next wave
-                op_name = operation.name
-                if op_name:
-                    pre_save = self._status_event(ctx, f"Veo operation submitted: {op_name[:40]}...")
-                    pre_save.actions.state_delta["_commercial_clips"] = {"_pending_veo_op": op_name}
-                    yield pre_save
+                if not pending_op:
+                    # Determine first-frame for this clip
+                    clip_first_frame = None
+                    if current_clip_idx == 0 and first_frame_uri:
+                        # First clip: use campaign hero image
+                        clip_first_frame = types.Image(gcs_uri=first_frame_uri, mime_type="image/png")
+                        logger.info(f"[DetAV] Clip 1 first-frame: campaign image {first_frame_uri}")
+                    elif current_clip_idx > 0 and completed_clips:
+                        # Subsequent clips: extract last frame from previous clip for continuity
+                        prev_clip_uri = completed_clips[-1]
+                        last_frame_uri = self._extract_last_frame(prev_clip_uri, bucket_name, gcs_folder, bucket)
+                        if last_frame_uri:
+                            clip_first_frame = types.Image(gcs_uri=last_frame_uri, mime_type="image/png")
+                            logger.info(f"[DetAV] Clip {current_clip_idx + 1} first-frame: last frame of clip {current_clip_idx}")
 
-            # Poll within AE wave budget
-            start_time = time.time()
-            while not operation.done:
-                if time.time() - start_time > AE_WAVE_POLL_BUDGET:
+                    if clip_first_frame:
+                        operation = veo_client.models.generate_videos(
+                            model=config.video_gen_model,
+                            prompt=clip_prompt,
+                            image=clip_first_frame,
+                            config=gen_config,
+                        )
+                    else:
+                        operation = veo_client.models.generate_videos(
+                            model=config.video_gen_model,
+                            prompt=clip_prompt,
+                            config=gen_config,
+                        )
+
                     op_name = operation.name
-                    logger.info(f"[DetAV] Veo clip still generating, will resume: {op_name}")
-                    save_event = self._status_event(ctx, "Commercial still generating — will resume on next wave")
-                    save_event.actions.state_delta["_commercial_clips"] = {"_pending_veo_op": op_name}
-                    yield save_event
-                    return
-                time.sleep(10)
-                operation = veo_client.operations.get(operation)
+                    if op_name:
+                        pre_save = self._status_event(ctx, f"Veo clip {current_clip_idx + 1}/{NUM_CLIPS} submitted")
+                        pre_save.actions.state_delta["_commercial_clips"] = {
+                            "_pending_veo_op": op_name,
+                            "_current_clip_idx": current_clip_idx,
+                            "_completed_clip_uris": completed_clips,
+                        }
+                        yield pre_save
 
-            if operation.error:
-                logger.warning(f"[DetAV] Veo error: {operation.error}")
-                # Retry without reference images / first-frame if it failed with them
-                if (first_frame_uri or reference_images) and not pending_op:
-                    logger.info("[DetAV] Retrying without reference images...")
-                    retry_config = GenerateVideosConfig(
-                        aspect_ratio="16:9",
-                        number_of_videos=1,
-                        output_gcs_uri=bucket,
-                    )
-                    operation = veo_client.models.generate_videos(
-                        model=config.video_gen_model,
-                        prompt=prompt,
-                        config=retry_config,
-                    )
-                    # Save this new op too
-                    if operation.name:
-                        pre_save2 = self._status_event(ctx, "Retrying Veo without first-frame...")
-                        pre_save2.actions.state_delta["_commercial_clips"] = {"_pending_veo_op": operation.name}
-                        yield pre_save2
-
-                    start_time = time.time()
-                    while not operation.done:
-                        if time.time() - start_time > AE_WAVE_POLL_BUDGET:
-                            save_event = self._status_event(ctx, "Retry still generating — will resume")
-                            save_event.actions.state_delta["_commercial_clips"] = {"_pending_veo_op": operation.name}
-                            yield save_event
-                            return
-                        time.sleep(10)
-                        operation = veo_client.operations.get(operation)
-                    if operation.error:
-                        yield self._status_event(ctx, "Commercial generation failed after retry")
+                # Poll within AE wave budget
+                start_time = time.time()
+                while not operation.done:
+                    if time.time() - start_time > AE_WAVE_POLL_BUDGET:
+                        logger.info(f"[DetAV] Clip {current_clip_idx + 1} still generating, will resume")
+                        save_event = self._status_event(ctx, f"Clip {current_clip_idx + 1}/{NUM_CLIPS} still generating — will resume")
+                        save_event.actions.state_delta["_commercial_clips"] = {
+                            "_pending_veo_op": operation.name,
+                            "_current_clip_idx": current_clip_idx,
+                            "_completed_clip_uris": completed_clips,
+                        }
+                        yield save_event
                         return
+                    time.sleep(10)
+                    operation = veo_client.operations.get(operation)
+
+                if operation.error:
+                    logger.warning(f"[DetAV] Veo error on clip {current_clip_idx + 1}: {operation.error}")
+                    # Retry without reference images
+                    if not pending_op:
+                        logger.info("[DetAV] Retrying clip without reference images...")
+                        retry_config = GenerateVideosConfig(
+                            aspect_ratio="16:9", number_of_videos=1, output_gcs_uri=bucket,
+                        )
+                        operation = veo_client.models.generate_videos(
+                            model=config.video_gen_model, prompt=clip_prompt, config=retry_config,
+                        )
+                        if operation.name:
+                            retry_save = self._status_event(ctx, f"Retrying clip {current_clip_idx + 1} without references...")
+                            retry_save.actions.state_delta["_commercial_clips"] = {
+                                "_pending_veo_op": operation.name,
+                                "_current_clip_idx": current_clip_idx,
+                                "_completed_clip_uris": completed_clips,
+                            }
+                            yield retry_save
+                        start_time = time.time()
+                        while not operation.done:
+                            if time.time() - start_time > AE_WAVE_POLL_BUDGET:
+                                save_event = self._status_event(ctx, "Retry still generating — will resume")
+                                save_event.actions.state_delta["_commercial_clips"] = {
+                                    "_pending_veo_op": operation.name,
+                                    "_current_clip_idx": current_clip_idx,
+                                    "_completed_clip_uris": completed_clips,
+                                }
+                                yield save_event
+                                return
+                            time.sleep(10)
+                            operation = veo_client.operations.get(operation)
+                        if operation.error:
+                            yield self._status_event(ctx, f"Clip {current_clip_idx + 1} failed after retry — skipping")
+                            current_clip_idx += 1
+                            pending_op = None
+                            continue
+                    else:
+                        yield self._status_event(ctx, f"Clip {current_clip_idx + 1} failed")
+                        current_clip_idx += 1
+                        pending_op = None
+                        continue
+
+                # Extract clip URI
+                clip_uri = None
+                if operation.result and operation.result.generated_videos:
+                    for video in operation.result.generated_videos:
+                        if video.video and video.video.uri:
+                            clip_uri = video.video.uri
+                            break
+
+                if clip_uri:
+                    completed_clips.append(clip_uri)
+                    yield self._status_event(ctx, f"Clip {current_clip_idx + 1}/{NUM_CLIPS} complete: {clip_uri[-60:]}")
+                    # Save progress
+                    progress_event = self._status_event(ctx, f"Clips done: {len(completed_clips)}/{NUM_CLIPS}")
+                    progress_event.actions.state_delta["_commercial_clips"] = {
+                        "_completed_clip_uris": completed_clips,
+                        "_current_clip_idx": current_clip_idx + 1,
+                    }
+                    yield progress_event
                 else:
-                    yield self._status_event(ctx, "Commercial generation failed")
-                    return
+                    logger.warning(f"[DetAV] Clip {current_clip_idx + 1}: no video URI in result")
+                    clear_event = self._status_event(ctx, f"Clip {current_clip_idx + 1} returned empty — will retry")
+                    clear_event.actions.state_delta["_commercial_clips"] = {
+                        "_completed_clip_uris": completed_clips,
+                        "_current_clip_idx": current_clip_idx,
+                    }
+                    yield clear_event
+                    return  # Retry on next wave
 
-            # Success — extract video URI
-            clip_uri = None
-            if operation.result and operation.result.generated_videos:
-                for video in operation.result.generated_videos:
-                    if video.video and video.video.uri:
-                        clip_uri = video.video.uri
-                        break
+                current_clip_idx += 1
+                pending_op = None
 
-            if clip_uri:
-                # Copy video from Veo output path to session's gcs_folder
-                final_gcs_uri = clip_uri
-                art_fname = f"commercial_{duration}s.mp4"
-                source_blob = clip_uri.replace(f"gs://{bucket_name}/", "")
-                video_bytes = None
-                try:
-                    video_bytes = download_blob(bucket_name=bucket_name, source_blob_name=source_blob)
-                    if gcs_folder and bucket:
-                        dest_blob = f"{gcs_folder}/{art_fname}"
-                        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
-                            tmp.write(video_bytes)
-                            tmp_path = tmp.name
-                        try:
-                            upload_blob_to_gcs(
-                                source_file_name=tmp_path,
-                                destination_blob_name=dest_blob,
-                            )
-                            final_gcs_uri = f"{bucket}/{dest_blob}"
-                            logger.info(f"[DetAV] Copied commercial to {final_gcs_uri}")
-                        finally:
-                            os.unlink(tmp_path)
-                except Exception as e:
-                    logger.warning(f"[DetAV] Could not copy commercial to gcs_folder: {e}")
+            # All clips done — concatenate into final commercial
+            if not completed_clips:
+                yield self._status_event(ctx, "No clips generated — commercial failed")
+                return
 
+            yield self._status_event(ctx, f"Concatenating {len(completed_clips)} clips into {duration}s commercial...")
+
+            final_gcs_uri, video_bytes = self._concatenate_clips(
+                completed_clips, bucket_name, gcs_folder, bucket, product, duration,
+            )
+            art_fname = f"commercial_{duration}s.mp4"
+
+            if final_gcs_uri:
                 commercial_data = {
                     "artifact_key": art_fname,
                     "gcs_uri": final_gcs_uri,
                     "metadata": {
                         "title": f"{duration}s commercial for {product}",
                         "scene_descriptions": [
-                            f"Opening: Character discovers {product}",
-                            f"Middle: Product in use, sensory delight",
-                            f"Closing: Product hero shot",
+                            f"Clip {i+1}: {clip_prompts[i][:100]}..." if i < len(clip_prompts) else f"Clip {i+1}"
+                            for i in range(len(completed_clips))
                         ],
-                        "total_clips": 1,
+                        "total_clips": len(completed_clips),
                         "duration_seconds": duration,
-                        "narrative_arc": f"Discovery -> delight -> product reveal for {product}",
+                        "narrative_arc": f"Multi-clip narrative for {product} by {brand}",
                         "target_audience_appeal": f"Designed for {audience}",
                         "deterministic_av_studio": True,
                     },
                 }
-                event = self._status_event(ctx, f"Commercial generated: {final_gcs_uri}")
+                event = self._status_event(ctx, f"Commercial generated: {len(completed_clips)} clips, {duration}s")
                 event.actions.state_delta["commercial_artifact"] = commercial_data
                 event.actions.state_delta["_commercial_clips"] = {}
-                # Save as ADK artifact for inline display
                 if ctx.artifact_service and video_bytes:
                     try:
                         version = await ctx.artifact_service.save_artifact(
@@ -750,17 +789,189 @@ class CreativeProductionOrchestrator(BaseAgent):
                     except Exception as e:
                         logger.warning(f"[DetAV] Failed to save commercial artifact: {e}")
                 yield event
-                logger.info(f"[DetAV] Commercial saved: {clip_uri}")
+                logger.info(f"[DetAV] Multi-clip commercial saved: {final_gcs_uri}")
             else:
-                # CRITICAL: Clear pending op so retry counter can increment
-                logger.warning(f"[DetAV] No generated_videos. result={operation.result}")
-                clear_event = self._status_event(ctx, "Veo completed but no video URI returned — will retry")
-                clear_event.actions.state_delta["_commercial_clips"] = {}
-                yield clear_event
+                # Fallback: use first clip as the commercial
+                if completed_clips:
+                    clip_uri = completed_clips[0]
+                    source_blob = clip_uri.replace(f"gs://{bucket_name}/", "")
+                    try:
+                        video_bytes = download_blob(bucket_name=bucket_name, source_blob_name=source_blob)
+                        if gcs_folder and bucket:
+                            dest_blob = f"{gcs_folder}/{art_fname}"
+                            with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+                                tmp.write(video_bytes)
+                                tmp_path = tmp.name
+                            try:
+                                upload_blob_to_gcs(source_file_name=tmp_path, destination_blob_name=dest_blob)
+                                final_gcs_uri = f"{bucket}/{dest_blob}"
+                            finally:
+                                os.unlink(tmp_path)
+                    except Exception as e:
+                        final_gcs_uri = clip_uri
+                        video_bytes = None
+                        logger.warning(f"[DetAV] Fallback copy failed: {e}")
+
+                    commercial_data = {
+                        "artifact_key": art_fname,
+                        "gcs_uri": final_gcs_uri,
+                        "metadata": {
+                            "title": f"{duration}s commercial for {product} (single clip fallback)",
+                            "total_clips": 1,
+                            "duration_seconds": duration,
+                            "deterministic_av_studio": True,
+                        },
+                    }
+                    event = self._status_event(ctx, f"Commercial (single clip fallback): {final_gcs_uri}")
+                    event.actions.state_delta["commercial_artifact"] = commercial_data
+                    event.actions.state_delta["_commercial_clips"] = {}
+                    if ctx.artifact_service and video_bytes:
+                        try:
+                            version = await ctx.artifact_service.save_artifact(
+                                app_name=ctx.app_name, user_id=ctx.user_id,
+                                session_id=ctx.session.id, filename=art_fname,
+                                artifact=types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
+                            )
+                            event.actions.artifact_delta[art_fname] = version
+                        except Exception as e:
+                            logger.warning(f"[DetAV] Failed to save fallback artifact: {e}")
+                    yield event
 
         except Exception as e:
             logger.warning(f"[DetAV] Veo exception: {e}")
             yield self._status_event(ctx, f"Commercial generation error: {str(e)[:100]}")
+
+    def _extract_last_frame(self, clip_uri: str, bucket_name: str, gcs_folder: str, bucket: str) -> str:
+        """Extract the last frame from a video clip and upload as PNG for first-frame chaining."""
+        try:
+            import cv2
+            source_blob = clip_uri.replace(f"gs://{bucket_name}/", "")
+            video_bytes = download_blob(bucket_name=bucket_name, source_blob_name=source_blob)
+
+            with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+                tmp.write(video_bytes)
+                tmp_path = tmp.name
+
+            try:
+                cap = cv2.VideoCapture(tmp_path)
+                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                if total_frames > 0:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, total_frames - 1)
+                    ret, frame = cap.read()
+                    cap.release()
+                    if ret:
+                        frame_path = tmp_path.replace(".mp4", "_lastframe.png")
+                        cv2.imwrite(frame_path, frame)
+                        dest_blob = f"{gcs_folder}/_lastframe_clip.png"
+                        upload_blob_to_gcs(source_file_name=frame_path, destination_blob_name=dest_blob)
+                        os.unlink(frame_path)
+                        return f"{bucket}/{dest_blob}"
+                cap.release()
+            finally:
+                os.unlink(tmp_path)
+        except Exception as e:
+            logger.warning(f"[DetAV] Last frame extraction failed: {e}")
+        return ""
+
+    def _concatenate_clips(
+        self, clip_uris: list, bucket_name: str, gcs_folder: str, bucket: str,
+        product: str, duration: int,
+    ) -> tuple:
+        """Download clips and concatenate with ffmpeg. Returns (gcs_uri, video_bytes)."""
+        try:
+            import subprocess
+            clip_paths = []
+            for i, uri in enumerate(clip_uris):
+                source_blob = uri.replace(f"gs://{bucket_name}/", "")
+                clip_bytes = download_blob(bucket_name=bucket_name, source_blob_name=source_blob)
+                clip_path = tempfile.NamedTemporaryFile(suffix=f"_clip{i}.mp4", delete=False).name
+                with open(clip_path, "wb") as f:
+                    f.write(clip_bytes)
+                clip_paths.append(clip_path)
+
+            # Build ffmpeg concat filter
+            output_path = tempfile.NamedTemporaryFile(suffix="_commercial.mp4", delete=False).name
+
+            # Create concat list file
+            list_path = tempfile.NamedTemporaryFile(suffix=".txt", delete=False, mode="w").name
+            with open(list_path, "w") as f:
+                for cp in clip_paths:
+                    f.write(f"file '{cp}'\n")
+
+            # Normalize and concat
+            ffmpeg_cmd = [
+                "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_path,
+                "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+                "-c:a", "aac", "-b:a", "128k",
+                "-t", str(duration),
+                "-pix_fmt", "yuv420p",
+                output_path,
+            ]
+            result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=120)
+            if result.returncode != 0:
+                logger.warning(f"[DetAV] ffmpeg concat failed: {result.stderr[:200]}")
+                # Cleanup
+                for p in clip_paths:
+                    os.unlink(p)
+                os.unlink(list_path)
+                return "", None
+
+            with open(output_path, "rb") as f:
+                video_bytes = f.read()
+
+            # Upload concatenated video
+            art_fname = f"commercial_{duration}s.mp4"
+            dest_blob = f"{gcs_folder}/{art_fname}"
+            upload_blob_to_gcs(source_file_name=output_path, destination_blob_name=dest_blob)
+            final_uri = f"{bucket}/{dest_blob}"
+
+            # Cleanup
+            for p in clip_paths:
+                os.unlink(p)
+            os.unlink(list_path)
+            os.unlink(output_path)
+
+            logger.info(f"[DetAV] Concatenated {len(clip_uris)} clips -> {final_uri}")
+            return final_uri, video_bytes
+
+        except Exception as e:
+            logger.warning(f"[DetAV] Clip concatenation failed: {e}")
+            return "", None
+
+    def _build_clip_prompts(
+        self, product: str, audience: str, selling_points: str,
+        brand: str, num_clips: int, clip_duration: int,
+    ) -> list:
+        """Build per-clip Veo prompts that form a narrative arc across clips."""
+        if num_clips == 1:
+            return [self._build_commercial_prompt(product, audience, selling_points, clip_duration, brand)]
+
+        # 2-clip narrative: discovery → hero reveal
+        prompts = [
+            (
+                f"A cinematic {clip_duration}-second commercial opening for {product} by {brand}. "
+                f"SCENE: A {audience} in a vibrant, relatable setting discovers {product}. "
+                f"They pick it up with curiosity, examining the {brand} packaging. "
+                f"Warm golden-hour lighting, shallow depth of field, smooth dolly-in. "
+                f"MOOD: Fresh, intriguing, slice-of-life authenticity. "
+                f"PRODUCT: {selling_points[:150]}. "
+                f"SUPPRESS SUBTITLES. NO WATERMARKS."
+            ),
+            (
+                f"A cinematic {clip_duration}-second commercial finale for {product} by {brand}. "
+                f"SCENE: The {audience} experiences the product — genuine moment of delight. "
+                f"Transition to a hero close-up of {brand} {product} packaging with logo clearly visible. "
+                f"Dramatic lighting, slow push-in to branded hero moment. "
+                f"MOOD: Uplifting, satisfying, aspirational. "
+                f"PRODUCT BRANDING: {brand} name and label prominent in final frames. "
+                f"{selling_points[:150]}. "
+                f"SUPPRESS SUBTITLES. NO WATERMARKS."
+            ),
+        ]
+        # If more clips requested, extend with variations
+        while len(prompts) < num_clips:
+            prompts.append(prompts[-1])
+        return prompts[:num_clips]
 
     def _build_commercial_prompt(
         self, product: str, audience: str, selling_points: str, duration: int,

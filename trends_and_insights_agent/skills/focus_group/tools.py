@@ -22,15 +22,16 @@ tts_client = texttospeech.TextToSpeechClient()
 storage_client = storage.Client()
 
 # Chirp voice presets for diverse panelist personas
+# Each voice is unique to avoid all panelists sounding alike
 PANELIST_VOICES = {
     "young_female": {
         "language_code": "en-US",
-        "name": "en-US-Chirp3-HD-Aoede",
+        "name": "en-US-Chirp3-HD-Leda",
         "description": "Young, enthusiastic female voice",
     },
     "young_male": {
         "language_code": "en-US",
-        "name": "en-US-Chirp3-HD-Charon",
+        "name": "en-US-Chirp3-HD-Orus",
         "description": "Young, confident male voice",
     },
     "mature_female": {
@@ -353,22 +354,43 @@ async def generate_panelist_testimonial(
         os.makedirs(video_dir, exist_ok=True)
         video_local_path = os.path.join(video_dir, video_artifact_key)
 
-        # ffmpeg Ken Burns: zoom from 1.0x to 1.2x over duration, centered on face area
-        # zoompan filter: z='1+0.2*on/total_frames' gives smooth zoom in
-        # s=1920x1080 output, d=duration*fps frames
+        # Probe the audio duration so video matches voiceover exactly (no cutoff)
+        probe_cmd = [
+            "ffprobe", "-v", "error", "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1", vo_local_path,
+        ]
+        probe_result = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=10)
+        try:
+            audio_duration = float(probe_result.stdout.strip())
+        except (ValueError, AttributeError):
+            audio_duration = float(testimonial_duration)
+        # Add a small buffer so audio isn't clipped at the very end
+        video_duration = audio_duration + 0.5
+
+        # ffmpeg Ken Burns: pad portrait to 1:1 (no stretch), then zoompan
+        # The portrait may be any aspect ratio — pad to square first, then
+        # zoompan produces 1920x1080 output by centering the square on a
+        # 16:9 canvas. This prevents horizontal stretching.
         fps = 30
-        total_frames = testimonial_duration * fps
+        total_frames = int(video_duration * fps)
         ffmpeg_cmd = [
             "ffmpeg", "-y",
             "-loop", "1", "-i", portrait_local,
             "-i", vo_local_path,
             "-filter_complex",
-            f"[0:v]scale=3840:2160,zoompan=z='1+0.2*on/{total_frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={total_frames}:s=1920x1080:fps={fps}[v]",
+            (
+                "[0:v]"
+                "scale=2160:2160:force_original_aspect_ratio=decrease,"
+                "pad=2160:2160:(ow-iw)/2:(oh-ih)/2:black,"
+                f"zoompan=z='1+0.15*on/{total_frames}':"
+                "x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+                f"d={total_frames}:s=1920x1080:fps={fps}"
+                "[v]"
+            ),
             "-map", "[v]", "-map", "1:a",
             "-c:v", "libx264", "-preset", "fast", "-crf", "23",
             "-c:a", "aac", "-b:a", "128k",
-            "-t", str(testimonial_duration),
-            "-shortest",
+            "-t", f"{video_duration:.2f}",
             "-pix_fmt", "yuv420p",
             video_local_path,
         ]

@@ -588,6 +588,12 @@ async def save_final_report_tool(
     focus_group_panelists: dict,
     gcs_folder: str,
     save_artifact_fn=None,
+    brand: str = "",
+    product: str = "",
+    audience: str = "",
+    selling_points: str = "",
+    target_search_trends: str = "",
+    target_yt_trends: str = "",
 ) -> dict:
     """Generate the final campaign report PDF with all sections.
 
@@ -603,6 +609,12 @@ async def save_final_report_tool(
         focus_group_panelists: Dict with panelist metadata (portraits, testimonials).
         gcs_folder: GCS subfolder for uploads.
         save_artifact_fn: Optional async callable(filename, artifact_part) -> version.
+        brand: Brand name (e.g., "Tide").
+        product: Product name (e.g., "Tide Fabric Softener").
+        audience: Target audience (e.g., "Gen Z eco-conscious consumers").
+        selling_points: Key product features.
+        target_search_trends: Google Search trends that drove the campaign.
+        target_yt_trends: YouTube trends that drove the campaign.
 
     Returns:
         dict with status and artifact_key.
@@ -771,35 +783,31 @@ async def save_final_report_tool(
             # Final fallback: encode to latin-1 replacing unknown chars
             return text.encode("latin-1", errors="replace").decode("latin-1")
 
-        # Extract brand and product info from report or metadata
-        brand_name = "Campaign Report"
-        product_name = ""
+        # Brand and product info — prefer explicit params, fallback to extraction
+        brand_name = brand or "Campaign Report"
+        product_name = product or ""
         campaign_tagline = ""
 
-        # Try to extract from commercial metadata (has product name)
-        if commercial_artifact and isinstance(commercial_artifact, dict):
-            metadata = commercial_artifact.get("metadata", {})
-            if isinstance(metadata, dict) and metadata.get("title"):
-                product_name = metadata["title"]
+        if not product_name:
+            # Fallback: extract from commercial metadata or report
+            if commercial_artifact and isinstance(commercial_artifact, dict):
+                metadata = commercial_artifact.get("metadata", {})
+                if isinstance(metadata, dict) and metadata.get("title"):
+                    product_name = metadata["title"]
+            if not product_name and processed_report:
+                first_line = processed_report.strip().split("\n")[0].strip()
+                if ":" in first_line:
+                    product_name = first_line.split(":", 1)[1].strip()[:60]
+                elif first_line.startswith("#"):
+                    product_name = first_line.lstrip("# ").strip()[:60]
 
-        # Try to extract brand/product from first line of research report
-        if processed_report:
-            first_line = processed_report.strip().split("\n")[0].strip()
-            # Common format: "# Market Research Report: Tide Fabric Softener..."
-            if ":" in first_line:
-                product_name = product_name or first_line.split(":", 1)[1].strip()[:60]
-            elif first_line.startswith("#"):
-                product_name = product_name or first_line.lstrip("# ").strip()[:60]
-
-        # Try to extract tagline from img_artifact_list or commercial metadata
+        # Campaign tagline from image headlines or selling points
         if img_artifact_list and len(img_artifact_list) > 0:
             first_img = img_artifact_list[0]
             if first_img.get("headline"):
                 campaign_tagline = first_img["headline"]
-        elif commercial_artifact and isinstance(commercial_artifact, dict):
-            metadata = commercial_artifact.get("metadata", {})
-            if isinstance(metadata, dict) and metadata.get("title"):
-                campaign_tagline = metadata["title"]
+        if not campaign_tagline and selling_points:
+            campaign_tagline = selling_points[:80]
 
         # Custom PDF class with headers/footers and auto Unicode sanitization
         class CampaignPDF(FPDF):
@@ -960,6 +968,68 @@ async def save_final_report_tool(
             pdf.cell(90, 5, f"Focus Group: {focus_verdict}", 0, 1)
 
             pdf.ln(10)
+
+            # ==================== #
+            # 2b. CAMPAIGN CONTEXT & TRENDS
+            # ==================== #
+            if brand or audience or target_search_trends or target_yt_trends:
+                pdf.add_page()
+                pdf.set_font('Helvetica', 'B', 18)
+                pdf.set_text_color(0, 51, 160)
+                pdf.cell(0, 10, "Campaign Context & Trend Drivers", 0, 1)
+                pdf.ln(3)
+
+                # Campaign brief box
+                pdf.set_fill_color(240, 245, 255)  # Light blue
+                box_y = pdf.get_y()
+                pdf.rect(10, box_y, 190, 50, 'F')
+                pdf.set_xy(15, box_y + 5)
+                pdf.set_font('Helvetica', 'B', 11)
+                pdf.set_text_color(0, 51, 160)
+                pdf.cell(0, 6, "Campaign Brief", 0, 1)
+                pdf.set_x(15)
+                pdf.set_font('Helvetica', '', 10)
+                pdf.set_text_color(32, 33, 36)
+                if brand:
+                    pdf.set_x(15)
+                    pdf.cell(90, 5, f"Brand: {brand}", 0, 0)
+                if audience:
+                    pdf.set_x(105)
+                    pdf.cell(90, 5, f"Audience: {audience[:50]}", 0, 1)
+                if product:
+                    pdf.set_x(15)
+                    pdf.cell(0, 5, f"Product: {product}", 0, 1)
+                if selling_points:
+                    pdf.set_x(15)
+                    pdf.multi_cell(180, 5, f"Key Features: {selling_points[:200]}", 0)
+                pdf.set_y(box_y + 55)
+
+                # Trends
+                if target_search_trends:
+                    pdf.set_font('Helvetica', 'B', 12)
+                    pdf.set_text_color(26, 115, 232)
+                    pdf.cell(0, 7, "Google Search Trends", 0, 1)
+                    pdf.set_font('Helvetica', '', 10)
+                    pdf.set_text_color(32, 33, 36)
+                    trend_text = target_search_trends if isinstance(target_search_trends, str) else str(target_search_trends)
+                    for trend_line in trend_text.split('\n')[:10]:
+                        if trend_line.strip():
+                            pdf.set_x(15)
+                            pdf.multi_cell(0, 5, f"• {trend_line.strip()[:150]}", 0)
+                    pdf.ln(3)
+
+                if target_yt_trends:
+                    pdf.set_font('Helvetica', 'B', 12)
+                    pdf.set_text_color(26, 115, 232)
+                    pdf.cell(0, 7, "YouTube Trends", 0, 1)
+                    pdf.set_font('Helvetica', '', 10)
+                    pdf.set_text_color(32, 33, 36)
+                    yt_text = target_yt_trends if isinstance(target_yt_trends, str) else str(target_yt_trends)
+                    for yt_line in yt_text.split('\n')[:10]:
+                        if yt_line.strip():
+                            pdf.set_x(15)
+                            pdf.multi_cell(0, 5, f"• {yt_line.strip()[:150]}", 0)
+                    pdf.ln(3)
 
             # ==================== #
             # 3. RESEARCH HIGHLIGHTS
@@ -1261,47 +1331,135 @@ async def save_final_report_tool(
                 pdf.set_text_color(32, 33, 36)
 
                 if focus_group_evaluation:
-                    # Parse the evaluation text
+                    # Parse the evaluation text with table support
                     eval_lines = focus_group_evaluation.split('\n')
+                    in_table = False
                     for line in eval_lines:
                         line_stripped = line.strip()
-                        if line_stripped.startswith('##'):
-                            pdf.ln(2)
-                            pdf.set_font('Helvetica', 'B', 12)
-                            pdf.set_text_color(26, 115, 232)
-                            pdf.multi_cell(0, 6, line_stripped.lstrip('#').strip(), 0)
-                            pdf.set_font('Helvetica', '', 10)
-                            pdf.set_text_color(32, 33, 36)
-                        elif line_stripped.startswith('- ') or line_stripped.startswith('* '):
-                            pdf.set_x(15)
-                            pdf.multi_cell(0, 5, f"• {line_stripped[2:]}", 0)
-                        elif line_stripped:
-                            pdf.multi_cell(0, 5, line_stripped, 0)
+
+                        # Detect markdown tables (| col1 | col2 |)
+                        if '|' in line_stripped and line_stripped.startswith('|'):
+                            cells = [c.strip() for c in line_stripped.split('|') if c.strip()]
+                            # Skip separator rows (|---|---|)
+                            if all(set(c) <= {'-', ':'} for c in cells):
+                                continue
+                            if not in_table:
+                                in_table = True
+                                # Table header row
+                                pdf.set_font('Helvetica', 'B', 9)
+                                pdf.set_fill_color(0, 51, 160)
+                                pdf.set_text_color(255, 255, 255)
+                                col_w = 190 / max(len(cells), 1)
+                                for cell in cells:
+                                    pdf.cell(col_w, 6, cell[:30], 1, 0, 'C', True)
+                                pdf.ln()
+                                pdf.set_text_color(32, 33, 36)
+                            else:
+                                # Table body row
+                                pdf.set_font('Helvetica', '', 8)
+                                row_fill = pdf.page_no() % 2 == 0  # alternating is hard per-row, skip
+                                col_w = 190 / max(len(cells), 1)
+                                for cell in cells:
+                                    pdf.cell(col_w, 5, cell[:30], 1, 0, 'L')
+                                pdf.ln()
                         else:
-                            pdf.ln(1)
+                            if in_table:
+                                in_table = False
+                                pdf.ln(2)
+
+                            if line_stripped.startswith('###'):
+                                pdf.ln(2)
+                                pdf.set_font('Helvetica', 'B', 11)
+                                pdf.set_text_color(26, 115, 232)
+                                pdf.multi_cell(0, 5, line_stripped.lstrip('#').strip(), 0)
+                                pdf.set_font('Helvetica', '', 10)
+                                pdf.set_text_color(32, 33, 36)
+                            elif line_stripped.startswith('##'):
+                                pdf.ln(2)
+                                pdf.set_font('Helvetica', 'B', 12)
+                                pdf.set_text_color(26, 115, 232)
+                                pdf.multi_cell(0, 6, line_stripped.lstrip('#').strip(), 0)
+                                pdf.set_font('Helvetica', '', 10)
+                                pdf.set_text_color(32, 33, 36)
+                            elif line_stripped.startswith('- ') or line_stripped.startswith('* '):
+                                pdf.set_x(15)
+                                pdf.multi_cell(0, 5, f"• {line_stripped[2:]}", 0)
+                            elif '**' in line_stripped:
+                                # Bold text — render with emphasis
+                                clean = line_stripped.replace('**', '')
+                                if clean.strip():
+                                    pdf.set_font('Helvetica', 'B', 10)
+                                    pdf.multi_cell(0, 5, clean, 0)
+                                    pdf.set_font('Helvetica', '', 10)
+                            elif line_stripped:
+                                pdf.multi_cell(0, 5, line_stripped, 0)
+                            else:
+                                pdf.ln(1)
                 else:
                     pdf.multi_cell(0, 5, "No focus group evaluation was conducted.", 0)
 
-                # Panelist profiles
+                # Panelist profiles with portrait images
                 if panelists:
-                    pdf.ln(5)
-                    pdf.set_font('Helvetica', 'B', 13)
-                    pdf.set_text_color(26, 115, 232)
-                    pdf.cell(0, 7, "Panelist Profiles", 0, 1)
-                    pdf.ln(2)
+                    pdf.add_page()
+                    pdf.set_font('Helvetica', 'B', 18)
+                    pdf.set_text_color(0, 51, 160)
+                    pdf.cell(0, 10, "Focus Group Panelists", 0, 1)
+                    pdf.ln(3)
+
+                    PORTRAIT_DIR = f"{DIR}/portraits"
+                    os.makedirs(PORTRAIT_DIR, exist_ok=True)
 
                     for p in panelists:
-                        pdf.set_font('Helvetica', 'B', 11)
-                        pdf.set_text_color(32, 33, 36)
                         name = p.get("name", "Unknown")
                         age = p.get("age", "N/A")
-                        pdf.cell(0, 6, f"{name}, Age {age}", 0, 1)
-
-                        pdf.set_font('Helvetica', '', 10)
                         persona = p.get("persona", "")
-                        if persona:
-                            pdf.multi_cell(0, 5, f"Persona: {persona}", 0)
+                        portrait_uri = p.get("portrait_gcs_uri", "")
 
+                        # Try to download and embed portrait
+                        portrait_local = None
+                        if portrait_uri:
+                            try:
+                                safe_n = name.replace(" ", "_").replace(",", "")
+                                portrait_local = os.path.join(PORTRAIT_DIR, f"{safe_n}.png")
+                                blob_name = portrait_uri.replace(gcs_bucket + "/", "")
+                                download_image_from_gcs(
+                                    source_blob_name=blob_name,
+                                    destination_file_name=portrait_local,
+                                )
+                            except Exception as e:
+                                logging.warning(f"Could not download panelist portrait {name}: {e}")
+                                portrait_local = None
+
+                        # Card layout: portrait left, info right
+                        card_y = pdf.get_y()
+                        pdf.set_fill_color(248, 249, 250)
+                        pdf.rect(10, card_y, 190, 55, 'F')
+
+                        if portrait_local and os.path.exists(portrait_local):
+                            try:
+                                pdf.image(portrait_local, x=15, y=card_y + 5, w=40, h=40)
+                            except Exception:
+                                pass
+
+                        info_x = 65 if portrait_local else 15
+                        pdf.set_xy(info_x, card_y + 5)
+                        pdf.set_font('Helvetica', 'B', 13)
+                        pdf.set_text_color(32, 33, 36)
+                        pdf.cell(0, 7, f"{name}, Age {age}", 0, 1)
+
+                        pdf.set_x(info_x)
+                        pdf.set_font('Helvetica', 'I', 10)
+                        pdf.set_text_color(80, 80, 80)
+                        if persona:
+                            pdf.multi_cell(130, 5, persona[:200], 0)
+
+                        if p.get("testimonial_video_gcs_uri"):
+                            pdf.set_x(info_x)
+                            pdf.set_font('Helvetica', '', 8)
+                            pdf.set_text_color(26, 115, 232)
+                            pdf.cell(0, 4, "Video testimonial recorded", 0, 1)
+
+                        pdf.set_y(card_y + 60)
                         pdf.ln(3)
 
             # ==================== #
