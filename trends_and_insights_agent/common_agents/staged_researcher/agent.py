@@ -413,6 +413,10 @@ class ResearchPipelineOrchestrator(BaseAgent):
         """
         state = ctx.session.state
 
+        # If research pipeline already completed, signal end-of-agent
+        if state.get("_research_pipeline_complete"):
+            return len(RESEARCH_STAGES)  # Past all stages — triggers end_of_agent
+
         # Check outputs from each stage to determine where to resume
         # COMPOSE_REPORT produces combined_final_cited_report
         report = state.get("combined_final_cited_report", "")
@@ -459,6 +463,14 @@ class ResearchPipelineOrchestrator(BaseAgent):
         start_index = self._determine_start_index(ctx)
         logger.info(f"[ResearchPipeline] Starting from stage index {start_index} (of {len(RESEARCH_STAGES)})")
 
+        # Already complete — mark end_of_agent immediately
+        if start_index >= len(RESEARCH_STAGES):
+            logger.info("[ResearchPipeline] Already complete — ending agent")
+            if ctx.is_resumable:
+                ctx.set_agent_state(self.name, end_of_agent=True)
+                yield self._create_agent_state_event(ctx)
+            return
+
         pause_invocation = False
 
         for i in range(start_index, len(RESEARCH_STAGES)):
@@ -477,6 +489,11 @@ class ResearchPipelineOrchestrator(BaseAgent):
                 # Direct tool call — no LLM agent needed
                 async for event in self._save_report(ctx):
                     yield event
+                # Mark research pipeline complete so _determine_start_index
+                # doesn't loop back to SAVE_REPORT on next AE wave
+                done_event = self._status_event(ctx, "Research pipeline complete.")
+                done_event.actions.state_delta["_research_pipeline_complete"] = True
+                yield done_event
             elif stage_name == "MERGE_INSIGHTS":
                 # Deterministic merge — no LLM needed, just concatenate
                 async for event in self._merge_insights_deterministic(ctx):
