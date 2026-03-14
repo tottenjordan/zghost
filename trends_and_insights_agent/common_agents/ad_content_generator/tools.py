@@ -1341,7 +1341,24 @@ async def save_final_report_tool(
         pdf.is_back_cover = False
 
         # Save the PDF
-        pdf.output(report_filepath)
+        try:
+            pdf.output(report_filepath)
+        except Exception as pdf_err:
+            logging.warning(f"Branded PDF failed ({pdf_err}), falling back to simple PDF")
+            # Fallback: simple plain-text PDF
+            pdf = FPDF()
+            pdf.set_auto_page_break(auto=True, margin=15)
+            pdf.add_page()
+            pdf.set_font('Helvetica', '', 10)
+            # Write all sections as plain text
+            all_text = f"{processed_report}\n\n{IMG_CREATIVE_STRING}\n\n{VID_CREATIVE_STRING}\n\n{COMMERCIAL_STRING}\n\n{FOCUS_GROUP_STRING}"
+            for line in all_text.split('\n'):
+                safe_line = _sanitize_text(line.strip())
+                if safe_line:
+                    pdf.multi_cell(0, 5, safe_line, 0)
+                else:
+                    pdf.ln(2)
+            pdf.output(report_filepath)
 
         with open(report_filepath, "rb") as f:
             document_bytes = f.read()

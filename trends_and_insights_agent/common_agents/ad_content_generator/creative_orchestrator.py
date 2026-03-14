@@ -258,11 +258,10 @@ class CreativeProductionOrchestrator(BaseAgent):
     async def _generate_images_deterministic(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        """Generate ONE campaign image per wave, deterministically.
+        """Generate ONE campaign image per wave using Imagen API.
 
-        Called as the IMAGE_GEN stage. Generates one image per AE wave to stay
-        within wave budget (~60s). Persists immediately via state_delta so
-        subsequent waves can resume with the next concept.
+        Uses generate_images() which is synchronous but faster than Gemini
+        generate_content with IMAGE modality. Outputs directly to GCS.
         """
         state = ctx.session.state
         product = state.get("target_product", "the product")
@@ -271,7 +270,6 @@ class CreativeProductionOrchestrator(BaseAgent):
         bucket = os.getenv("BUCKET", "")
         MAX_IMAGES = 2
 
-        # Check already-generated images
         existing_imgs = state.get("img_artifact_keys", {})
         if isinstance(existing_imgs, dict):
             existing_imgs = existing_imgs.get("img_artifact_keys", [])
@@ -283,11 +281,10 @@ class CreativeProductionOrchestrator(BaseAgent):
             yield self._status_event(ctx, f"All {MAX_IMAGES} images already generated.")
             return
 
-        # Build concept list
+        # Build concept list (fallback chain)
         vis_concepts = state.get("final_select_vis_concepts", {})
         if isinstance(vis_concepts, dict):
             vis_concepts = vis_concepts.get("final_select_vis_concepts", [])
-
         if not vis_concepts:
             ad_copies = state.get("final_select_ad_copies", {})
             if isinstance(ad_copies, dict):
@@ -303,7 +300,6 @@ class CreativeProductionOrchestrator(BaseAgent):
             else:
                 vis_concepts = [{"concept_name": "product_hero", "description": f"Hero shot of {product}"}]
 
-        # Pad with generic concepts if needed
         generic_concepts = [
             {"concept_name": "lifestyle_shot", "description": f"{product} in a natural lifestyle setting"},
             {"concept_name": "hero_product", "description": f"Studio hero shot of {product}"},
@@ -311,7 +307,6 @@ class CreativeProductionOrchestrator(BaseAgent):
         while len(vis_concepts) < MAX_IMAGES:
             vis_concepts.append(generic_concepts[len(vis_concepts) % len(generic_concepts)])
 
-        # Pick the NEXT concept to generate (skip already-generated)
         concept = vis_concepts[already_generated] if already_generated < len(vis_concepts) else vis_concepts[0]
         concept_name = concept.get("concept_name", "concept") if isinstance(concept, dict) else "concept"
         description = concept.get("description", str(concept)) if isinstance(concept, dict) else str(concept)
@@ -328,47 +323,56 @@ class CreativeProductionOrchestrator(BaseAgent):
 
         try:
             img_client = genai.Client(vertexai=True)
-            response = img_client.models.generate_content(
-                model=config.image_gen_model,
-                contents=prompt,
-                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
+
+            # Use Imagen API — outputs directly to GCS, typically faster
+            from google.genai.types import GenerateImagesConfig as ImgGenConfig
+            response = img_client.models.generate_images(
+                model="imagen-4.0-generate-001",
+                prompt=prompt,
+                config=ImgGenConfig(
+                    number_of_images=1,
+                    output_gcs_uri=bucket,
+                ),
             )
 
-            if not response or not response.candidates or not response.candidates[0].content.parts:
-                yield self._status_event(ctx, "Image gen returned empty — will retry next wave.")
-                return
-
-            for part in response.candidates[0].content.parts:
-                if not (hasattr(part, 'inline_data') and part.inline_data and part.inline_data.data):
-                    continue
-
-                image_bytes = part.inline_data.data
+            if response and response.generated_images:
+                gen_image = response.generated_images[0]
                 safe_name = concept_name.replace(",", "").replace(" ", "_")
                 artifact_key = f"{safe_name}_0.png"
+                gcs_uri = ""
 
-                # Upload to GCS
-                if bucket and gcs_folder:
-                    from .tools import upload_blob_to_gcs
-                    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                        tmp.write(image_bytes)
-                        tmp_path = tmp.name
-                    try:
-                        upload_blob_to_gcs(
-                            source_file_name=tmp_path,
-                            destination_blob_name=os.path.join(gcs_folder, artifact_key),
-                        )
-                    finally:
-                        os.unlink(tmp_path)
+                if gen_image.image and gen_image.image.gcs_uri:
+                    gcs_uri = gen_image.image.gcs_uri
 
-                # Save artifact
-                if ctx.artifact_service:
-                    await ctx.artifact_service.save_artifact(
-                        app_name=ctx.app_name,
-                        user_id=ctx.user_id,
-                        session_id=ctx.session.id,
-                        filename=artifact_key,
-                        artifact=types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
-                    )
+                    # Copy to campaign folder
+                    if bucket and gcs_folder:
+                        try:
+                            from google.cloud import storage as gcs_storage
+                            storage_client = gcs_storage.Client()
+                            bucket_name = bucket.replace("gs://", "")
+                            src_parts = gcs_uri.replace("gs://", "").split("/", 1)
+                            src_bucket = storage_client.bucket(src_parts[0])
+                            src_blob = src_bucket.blob(src_parts[1])
+                            dst_bucket = storage_client.bucket(bucket_name)
+                            src_bucket.copy_blob(src_blob, dst_bucket, os.path.join(gcs_folder, artifact_key))
+                        except Exception as e:
+                            logger.warning(f"[ImageGen] GCS copy failed: {e}")
+
+                elif gen_image.image and gen_image.image.image_bytes:
+                    # Fallback: image returned as bytes
+                    image_bytes = gen_image.image.image_bytes
+                    if bucket and gcs_folder:
+                        from .tools import upload_blob_to_gcs
+                        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                            tmp.write(image_bytes)
+                            tmp_path = tmp.name
+                        try:
+                            upload_blob_to_gcs(
+                                source_file_name=tmp_path,
+                                destination_blob_name=os.path.join(gcs_folder, artifact_key),
+                            )
+                        finally:
+                            os.unlink(tmp_path)
 
                 img_meta = {
                     "artifact_key": artifact_key,
@@ -378,6 +382,8 @@ class CreativeProductionOrchestrator(BaseAgent):
                     "caption": "",
                     "auto_saved": True,
                 }
+                if gcs_uri:
+                    img_meta["gcs_uri"] = gcs_uri
 
                 # Gecko fidelity (best-effort)
                 if bucket and gcs_folder:
@@ -391,12 +397,13 @@ class CreativeProductionOrchestrator(BaseAgent):
                     except Exception:
                         pass
 
-                # Persist immediately via state_delta
                 new_list = list(existing_imgs) + [img_meta]
                 save_event = self._status_event(ctx, f"Image saved: {artifact_key}")
                 save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": new_list}
                 yield save_event
-                return  # One image per wave
+                return
+
+            yield self._status_event(ctx, "Image gen returned empty — will retry next wave.")
 
         except Exception as e:
             logger.warning(f"[ImageGen] Failed: {e}")
