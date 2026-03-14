@@ -362,16 +362,19 @@ class ResearchPipelineOrchestrator(BaseAgent):
                     yield event
             elif stage_name == "PARALLEL_RESEARCH":
                 # Run parallel research with wave-count fallthrough
-                research_waves = state.get("_research_parallel_waves", 0) + 1
-                wave_event = self._status_event(ctx, status_msg)
+                session_state = ctx.session.state
+                research_waves = session_state.get("_research_parallel_waves", 0) + 1
+                wave_event = self._status_event(ctx, f"Parallel research wave {research_waves}/12...")
                 wave_event.actions.state_delta["_research_parallel_waves"] = research_waves
                 yield wave_event
 
                 MAX_RESEARCH_WAVES = 12
                 if research_waves > MAX_RESEARCH_WAVES:
-                    # Exceeded budget — skip to merge with whatever we have
-                    yield self._status_event(ctx, f"Parallel research exceeded {MAX_RESEARCH_WAVES} waves — proceeding with available data")
-                    break  # Move to next stage (MERGE)
+                    # Exceeded budget — run deterministic merge immediately with whatever we have
+                    yield self._status_event(ctx, f"Parallel research exceeded {MAX_RESEARCH_WAVES} waves — merging available data")
+                    async for event in self._merge_insights_deterministic(ctx):
+                        yield event
+                    return  # End wave; _determine_start_index will resume at EVALUATE
 
                 target = self._get_sub_agent(agent_name)
                 if target:
