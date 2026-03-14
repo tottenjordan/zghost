@@ -516,8 +516,8 @@ class ResearchPipelineOrchestrator(BaseAgent):
                     yield self._status_event(ctx, f"Parallel research exceeded {MAX_RESEARCH_WAVES} waves — merging available data")
                     async for event in self._merge_insights_deterministic(ctx):
                         yield event
-                    # If merge still found nothing, force-advance to COMPOSE_REPORT
-                    # to avoid infinite loop of empty merge attempts
+                    # If merge still found nothing, force the entire research pipeline complete
+                    # to avoid endless looping through downstream stages with no data
                     if not ctx.session.state.get("combined_web_search_insights"):
                         fallback_report = (
                             f"# Market Research Report\n\n"
@@ -531,9 +531,10 @@ class ResearchPipelineOrchestrator(BaseAgent):
                         force_event = self._status_event(ctx, "No research insights persisted — using fallback report to unblock pipeline")
                         force_event.actions.state_delta["combined_web_search_insights"] = fallback_report
                         force_event.actions.state_delta["combined_final_cited_report"] = fallback_report
+                        force_event.actions.state_delta["_research_pipeline_complete"] = True
                         yield force_event
-                        logger.warning("[ResearchPipeline] Forced fallback report — output_key state likely lost on AE")
-                    return  # End wave; _determine_start_index will resume at EVALUATE or beyond
+                        logger.warning("[ResearchPipeline] Forced fallback report + pipeline complete — output_key state lost on AE")
+                    return  # End wave
 
                 target = self._get_sub_agent(agent_name)
                 if target:

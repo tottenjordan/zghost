@@ -72,7 +72,7 @@ INITIAL_STATE = {
     "gcs_folder": "",
 }
 
-CAMPAIGN_MESSAGE = """Create a full marketing campaign for Tide Fabric Softener with Hibiscus Scent.
+CAMPAIGN_MESSAGE = """@trends2insights Create a full marketing campaign for Tide Fabric Softener with Hibiscus Scent.
 
 Brand: Tide
 Product: Tide Fabric Softener with Hibiscus Scent
