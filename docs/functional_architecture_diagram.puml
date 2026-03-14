@@ -1,0 +1,46 @@
+@startuml
+skinparam Handwritten false
+skinparam Monochrome false
+skinparam BackgroundColor #f9f9f9
+skinparam Padding 10
+
+title Trends & Insights - Functional Architecture
+
+package "Orchestration" {
+  [Campaign Orchestrator] as Orchestrator #4285F4
+}
+
+package "Services" {
+  [Trends & Insights] as Trends #EA4335
+  [Research Orchestrator] as Research #EA4335
+  [Creative Production\nOrchestrator] as Creative #FBBC05
+  [Focus Group Evaluator] as Eval #34A853
+}
+
+package "Google Cloud" {
+  database "BigQuery" as BQ #4285F4
+  cloud "Cloud Storage" as GCS #4285F4
+  cloud "Vertex AI" as Vertex #4285F4
+}
+
+package "External" {
+  node "YouTube" as YT #White
+}
+
+' Relationships
+Orchestrator --> Trends : 1. Discover
+Orchestrator --> Research : 2. Research
+Orchestrator --> Creative : 3. Generate
+Orchestrator --> Eval : 4. Evaluate
+Orchestrator --> GCS : 5. Save Report
+
+Trends --> BQ : Query
+Research --> YT : Fetch
+Research --> GCS : Save Draft
+
+Creative --> Vertex : Generate Assets
+Eval --> Vertex : Analyze Video
+
+Vertex ..> GCS : Read/Write Assets
+
+@endum

@@ -1,0 +1,55 @@
+@startuml
+skinparam Handwritten false
+skinparam Monochrome false
+skinparam BackgroundColor #f9f9f9
+skinparam Padding 10
+
+title Trends & Insights - Focus Group Evaluator
+
+package "Inputs" {
+  [Final Commercial (MP4)] as Video
+  [Campaign Brief] as Brief
+  [Ad Copy / Concept] as Concept
+}
+
+package "Evaluation Engine" {
+  component "Video Analyzer" as Analyzer {
+    [Gemini Vision] as Vision
+    [Scene Breakdown] as Scenes
+  }
+  
+  component "Focus Group Simulator" as Simulator {
+    actor "Panelist 1 (Gen Z)" as P1
+    actor "Panelist 2 (Millennial)" as P2
+    actor "Panelist 3 (Eco-Conscious)" as P3
+    actor "Panelist 4 (Parent)" as P4
+    actor "Panelist 5 (Skeptical)" as P5
+  }
+}
+
+package "Scoring & Output" {
+  [Scoring Matrix] as Matrix
+  [Go/No-Go Decision] as Decision
+  [Summary Report (PDF)] as Report
+}
+
+' Relationships
+Video --> Analyzer : Feed
+Brief --> Simulator : Persona Setup
+Concept --> Simulator : Persona Setup
+
+Vision --> Scenes : 1. Analyze
+Scenes --> Matrix : 2. Score Visuals
+
+Simulator --> Matrix : 3. Score Qualitative
+
+Matrix --> Decision : 4. Evaluate (Threshold 7.0+)
+Decision --> Report : 5. Generate
+
+P1 ..> Matrix : Score
+P2 ..> Matrix : Score
+P3 ..> Matrix : Score
+P4 ..> Matrix : Score
+P5 ..> Matrix : Score
+
+@endum

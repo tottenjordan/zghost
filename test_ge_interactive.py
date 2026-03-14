@@ -3,6 +3,7 @@
 Unlike e2e_demo_runner.py which pre-populates trends, this tests the TRENDS stage
 that was previously stuck due to "transfer to root_agent" text loop.
 """
+import os
 import time
 from dotenv import load_dotenv
 
@@ -10,10 +11,12 @@ load_dotenv("trends_and_insights_agent/.env")
 
 import vertexai
 
-PROJECT = "wortz-project-352116"
-LOCATION = "us-central1"
-ENGINE_ID = "8788263399906607104"
-RESOURCE_NAME = f"projects/679926387543/locations/{LOCATION}/reasoningEngines/{ENGINE_ID}"
+# Defaults — override via env vars
+PROJECT = os.environ.get("GCP_PROJECT", "wortz-project-352116")
+PROJECT_NUMBER = os.environ.get("GCP_PROJECT_NUMBER", "679926387543")
+LOCATION = os.environ.get("AE_LOCATION", "us-central1")
+ENGINE_ID = os.environ.get("AE_ENGINE_ID", "8788263399906607104")
+RESOURCE_NAME = f"projects/{PROJECT_NUMBER}/locations/{LOCATION}/reasoningEngines/{ENGINE_ID}"
 USER_ID = "ge_interactive_test"
 
 # Minimal initial state — NO pre-populated trends
@@ -80,7 +83,17 @@ def stream_and_print(ae, message, session_id):
 
 
 def check_state(ae, session_id):
-    session = ae.get_session(user_id=USER_ID, session_id=session_id)
+    for attempt in range(3):
+        try:
+            session = ae.get_session(user_id=USER_ID, session_id=session_id)
+            break
+        except Exception as e:
+            if attempt < 2:
+                print(f"  get_session error (attempt {attempt+1}/3), waiting {30*(attempt+1)}s: {str(e)[:80]}")
+                time.sleep(30 * (attempt + 1))
+            else:
+                print(f"  get_session failed after 3 attempts: {e}")
+                return {"has_search_trends": False, "has_yt_trends": False, "report_len": 0}
     state = session.get("state", {}) if isinstance(session, dict) else {}
 
     search = state.get("target_search_trends", {})
@@ -119,35 +132,21 @@ def main():
     session_id = session.get("id") if isinstance(session, dict) else str(session)
     print(f"Session: {session_id}")
 
-    # Step 1: Initial greeting — should trigger TRENDS stage
-    stream_and_print(ae, "Hi, I want to create a campaign for Tide Fabric Softener with Hibiscus Scent targeting Gen Z.", session_id)
+    # Step 1: Initial message — should trigger TRENDS stage with autopilot auto-selection
+    stream_and_print(ae, "Run the full campaign pipeline for Tide Fabric Softener with Hibiscus Scent in autopilot mode.", session_id)
     state = check_state(ae, session_id)
 
-    # Step 2: Select trend 1 (search trend)
-    stream_and_print(ae, "Select trend 1 for search trends", session_id)
-    state = check_state(ae, session_id)
+    # Step 2+: Send "continue" until trends are populated and RESEARCH begins
+    MAX_WAVES = 10
+    for wave in range(MAX_WAVES):
+        if state["has_search_trends"] and state["has_yt_trends"] and state["report_len"] > 0:
+            print(f"\n*** SUCCESS: Trends populated AND research started! ***")
+            break
 
-    # Step 3: Select trend 1 (YouTube trend)
-    stream_and_print(ae, "Select trend 1 for YouTube trends", session_id)
-    state = check_state(ae, session_id)
+        if state["has_search_trends"] and state["has_yt_trends"]:
+            print(f"\n*** Trends populated — orchestrator should advance to RESEARCH ***")
 
-    # Step 4: Confirm selections — this is where the old bug would loop
-    stream_and_print(ae, "Yes, I'm satisfied with these selections. Let's proceed.", session_id)
-    state = check_state(ae, session_id)
-
-    # Step 5: Continue — should advance to RESEARCH (not loop in TRENDS)
-    if state["has_search_trends"] and state["has_yt_trends"]:
-        print("\n*** TRENDS POPULATED — checking if orchestrator advances to RESEARCH ***")
-        stream_and_print(ae, "continue", session_id)
-        state = check_state(ae, session_id)
-
-        if state["report_len"] > 0:
-            print("\n*** SUCCESS: Advanced to RESEARCH stage! ***")
-        else:
-            print("\n*** RESEARCH started but may need more waves ***")
-    else:
-        print("\n*** WARNING: Trends not populated after 4 messages ***")
-        # Try one more continue
+        print(f"\n--- Wave {wave + 2} ---")
         stream_and_print(ae, "continue", session_id)
         state = check_state(ae, session_id)
 
@@ -156,6 +155,8 @@ def main():
     print(f"Search trends populated: {state['has_search_trends']}")
     print(f"YT trends populated: {state['has_yt_trends']}")
     print(f"Reached RESEARCH: {state['report_len'] > 0}")
+    passed = state["has_search_trends"] and state["has_yt_trends"]
+    print(f"TRENDS LOOP FIX: {'PASS' if passed else 'FAIL'}")
     print(f"{'='*60}")
 
 

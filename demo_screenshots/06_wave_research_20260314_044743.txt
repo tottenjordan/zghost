@@ -1,0 +1,54 @@
+[root_agent]: Running market research pipeline...
+[research_orchestrator]: Merging research findings into unified summary...
+[merge_planners]: # Summary of Campaign and Trend Research
+
+## Campaign Guide
+In 2024 and heading into 2025, the laundry and home care landscape is being fundamentally reshaped by Gen Z’s preference for "romanticized" chores, sustainable transparency, and sophisticated, wellness-inspired scents like hibiscus.
+
+### 1. Gen Z Consumer Behavior in 2024: "Self-Care" Laundry
+Gen Z has reframed cleaning from a begrudging chore into a form of **mental wellness and self-care**.
+*   **The "Romanticizing" Trend:** Nearly 49% of Gen Z report looking forward to cleaning, compared to just 18% of older consumers. They use trends like "giving the dishes a bath" to turn mundane tasks into pleasurable moments.
+*   **Performance vs. Simplicity:** While they value results, they prefer **simplicity and versatility**. Three out of four consumers now opt for multi-purpose cleaners over specialized ones.
+*   **Sustainability Paradox:** While 73% are willing to pay more for sustainable products, **price remains the biggest barrier** (cited by 56%). If a product is too expensive, they may prioritize affordability and convenience over eco-claims.
+
+### 2. Hibiscus and Floral Scent Trends
+Hibiscus is perfectly positioned at the intersection of three major 2024 scent trends: **Natural Escapism, Gourmand Fusion, and Wellness**.
+*   **Exotic & Tropical Demand:** There is a surging interest in exotic and tropical profiles (hibiscus, dragon fruit, guava) driven by social media virality.
+*   **"Vivid Florals with Zing":** 2024 trends favor florals that aren't just sweet but have "extra zing" or "sophisticated green" undertones.
+*   **Wellness Connection:** Hibiscus is strongly associated with health and detox (via tea and supplements), making it a "functional" scent that signals home health and personal well-being.
+*   **Long-Lasting Freshness:** 85% of young adults (18-34) prioritize long-lasting scents that provide a "just-washed" feeling all day, significantly higher than older demographics (74%).
+
+### 3. Plant-Based Performance & Legacy Brand Strategies
+Gen Z's attitude toward plant-based cleaning is driven by **transparency over tradition**.
+*   **Performance Expectation:** Modern plant-based formulas using natural enzymes can reduce water usage by up to 20% while matching traditional chemical performance.
+*   **Legacy Brand Strategy:** Successful legacy brands (like Tide) win by "walking the talk." Gen Z is the least trusting generation regarding sustainability claims; they require **measurable impact data** and "quiet sustainability" (integrating eco-benefits without sacrificing premium feel).
+*   **Authentic Content:** Strategies that work include **User-Generated Content (UGC)** and "behind-the-scenes" transparency about sourcing and production.
+
+### 4. Packaging and Brand Loyalty
+Packaging is often the most visible indicator of a brand's values for Gen Z.
+*   **Biodegradable Impact:** 90% of consumers are more likely to purchase from a brand if its packaging is eco-friendly. 
+*   **The "Social Media" Factor:** 39% of consumers are more likely to share a purchase on social media if it features sustainable packaging, providing free "brand buzz."
+*   **Circular Models:** Moving beyond just "recyclable" to "circular" (reusable containers or compostable materials) is the current gold standard for building long-term loyalty.
+
+### 5. Summary of Key Research Findings for Tide Hibiscus
+| Trend Category | Key Insight for Campaign |
+| :--- | :--- |
+| **Scent Profile** | Hibiscus aligns with "Natural Escapism" and "Wellness" trends; emphasize "Vivid Floral" notes. |
+| **Marketing Angle** | Position laundry as "Self-Care" or a "Mental Wellness" moment rather than a chore. |
+| **Sustainability** | Use "Quiet Sustainability"—focus on biodegradable packaging and plant-based efficacy without a "luxury" price hike. |
+| **Digital Strategy** | Leverage TikTok/Instagram for "laundry hacks" and "aesthetic cleaning" content to combat "laundry confusion." |
+| **Packaging** | Highlight biodegradable/compostable elements as a primary driver for brand loyalty and social sharing. |
+
+## Search Trend
+
+
+## YouTube Trends Findings
+The trending video **"Eco Cleaning Hacks"** provides a deep dive into sustainable home maintenance, reflecting a broader consumer shift toward eco-consciousness.
+*   **Main Thesis/Claim:** The video argues that effective home cleaning does not require harsh chemicals. It promotes the idea that "green" cleaning—using natural ingredients or ethically manufactured products—is better for both personal health and the environment without sacrificing performance.
+*   **Key Entities:**
+    *   **Sustainable Cleaning Products:** The primary focus, including natural alternatives (vinegar, baking soda, lemon) and "eco-chic" commercial brands.
+    *   **The Eco-Influencer:** The host who demonstrates the routines, serving as a relatable authority figure for the lifestyle.
+    *   **The Modern Home:** The setting, which emphasizes aesthetic minimalism and a "toxin-free" sanctuary.
+*   **Trend Context:** This video is trending due to the rising **"CleanTok"** and **"Eco-Minimalism"** movements. Consumers are increasingly searching for ways to reduce their plastic waste and chemical exposure, making "sustainable cleaning routines" a high-intent search topic.
+*   **Summary:** The video showcases a series of "hacks" for maintaining a clean home using eco-friendly methods. It combines aesthetic visuals of a clean home with practical advice on switching from traditional detergents to sustainable alternatives. The content emphasizes that cleaning is an act of "wellness," framing product choices (like plant-based scents and biodegradable formulas) as essential components of a healthy lifestyle.
+[research_orchestrator]: Evaluating research quality and identifying gaps...

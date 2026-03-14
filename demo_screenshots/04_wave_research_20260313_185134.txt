@@ -1,0 +1,41 @@
+[root_agent]: Running market research pipeline...
+[research_orchestrator]: Composing final cited research report...
+[combined_report_composer]: # Tide Fabric Softener: Hibiscus Scent Campaign Research Report
+
+## Campaign Guide
+To provide a comprehensive strategy for the Tide Fabric Softener with Hibiscus Scent campaign, this research synthesizes consumer data and market trends relevant to Gen Z and the sustainable laundry sector.
+
+### 1. Gen Z Consumer Preferences & Scent Profiles
+*   **Fragrance as Identity:** For Gen Z, fragrance is a tool for self-expression and emotional wellness rather than just a "clean" smell <cite source="src-2" />. They gravitate toward "clean skin," vanilla, and reimagined florals, such as florals mixed with coconut milk <cite source="src-3" />.
+*   **Hibiscus & Exotic Profiles:** Hibiscus fits the 2024-2025 trend of "Premium & Niche Profiles," evoking luxury and naturality <cite source="src-1" />.
+*   **Willingness to Pay:** Approximately 73% of Gen Z are willing to pay a premium for sustainable products, and 64% will pay more specifically for a scent they enjoy <cite source="src-1" />.
+*   **Aesthetic Minimalism:** There is a heavy focus on the "aesthetic" of cleaning, where premium natural scents like Hibiscus contribute to a serene home environment <cite source="src-1" />.
+
+### 2. Market Reception: Tide vs. Eco-Friendly Brands
+*   **The "Performance Gap":** A primary barrier for traditional eco-brands is the perception that they are less effective on tough stains compared to legacy brands like Tide <cite source="src-4" />.
+*   **Tide's Hybrid Position:** Tide’s "purclean" (65% bio-based) is viewed as a "first step" toward sustainability <cite source="src-6" />. However, Gen Z critics often point to continued use of petrochemicals as "greenwashing" <cite source="src-5" />.
+*   **Growth of "Low-Tox" Movement:** The sustainable cleaning market is projected to reach $110 billion by 2025, driven by health concerns over chemical exposure <cite source="src-24" />.
+
+### 3. Packaging & Sustainability Trends
+*   **Consumer Priorities:** 71% of consumers have chosen a product in the last six months based specifically on its sustainability credentials <cite source="src-11" />.
+*   **The Rise of Refills:** There is growing demand for truly circular models, such as compostable or zero-plastic packaging, rather than just "reduced plastic" <cite source="src-12" />.
+*   **Transparency:** "Clean, simple labels" are a priority for 36% of buyers, who demand to know the purpose of every ingredient <cite source="src-13" />.
+
+## Search Trend: Sustainable Laundry
+There is a rapidly growing interest in eco-friendly laundry products and sustainable cleaning solutions as consumers pivot toward "Low-Tox" living <cite source="src-23" />. Modern consumers now seek a "trifecta" of sustainability, quality, and convenience in their purchasing decisions <cite source="src-15" /> <cite source="src-19" />.
+
+## YouTube Trend: Eco Cleaning Hacks
+YouTube creators are increasingly sharing sustainable cleaning routines and eco-friendly product reviews under the "CleanTok" and "Eco-YouTube" umbrellas <cite source="src-16" />.
+*   **DIY Resurgence:** There is a massive trend toward "DIY Green Cleaning," where creators use household staples like white vinegar and baking soda <cite source="src-16" /> <cite source="src-20" />.
+*   **Motivational Cleaning:** 44% of Gen Z uses cleaning content for motivation and agency, focusing on aesthetic "pours" and before-and-after transformations <cite source="src-14" />.
+*   **Ethical Spending:** Viewers see themselves as "ethical spenders," looking for ways to reduce their carbon footprint through practical demonstrations <cite source="src-16" /> <cite source="src-18" />.
+
+## Key Insights from Research
+*   **Functional Fragrance:** The Hibiscus scent should be positioned as a mood-booster to tap into the wellness-oriented scent trend <cite source="src-15" />.
+*   **Longevity is Critical:** 85% of young adults (18-34) prioritize long-lasting scents, making fragrance duration a key performance metric <cite source="src-13" />.
+*   **The "Clean Home, Clear Mind" Connection:** This wellness trend positions cleaning as a form of self-care and stress reduction rather than a chore <cite source="src-15" />.
+*   **The Challenge of Vinegar:** While vinegar is praised for being biodegradable and hypoallergenic <cite source="src-31" />, its primary drawback is its scent. Tide’s Hibiscus Scent can bridge this gap by offering a superior sensory experience <cite source="src-29" /> <cite source="src-30" />.
+*   **Ingredient Scrutiny:** Consumers are increasingly using apps like "Think Dirty" to track ingredients, pushing brands to eliminate "quats," artificial dyes, and harsh synthetic fragrances <cite source="src-21" /> <cite source="src-22" />.
+[combined_report_composer]: PDF report saved to memory 📝 !!
+[research_orchestrator]: Saving research report as PDF...
+[research_orchestrator]: Research report saved as PDF: draft_research_report_with_citations.pdf

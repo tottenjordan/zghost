@@ -1,0 +1,169 @@
+[root_agent]: Creative pipeline attempt 2/15...
+[root_agent]: Running creative production pipeline (ad copy, visuals, commercial)...
+[creative_production_orchestrator]: Generating ad copy and visual creatives...
+[visual_concept_drafter]: ### Tide Fabric Softener with Hibiscus Scent: Visual Concepts
+
+Following the "Anti-Rickroll" strategy and Gen Z's "Conscious Curator" persona, these visual concepts blend high-end aesthetic trends (Pantone 2025 "Mocha Mousse," technical 3D beauty renders) with platform-specific storytelling.
+
+---
+
+### Concept 1: The Radiant Bloom
+*   **Type:** Image
+*   **Relates to:** `target_search_trends` (Aesthetic Laundry / Fragrance Trends)
+*   **Ad Copy:** "Layer Your Vibe with Reimagined Hibiscus"
+*   **Creative Concept:** A high-fashion, minimalist product "shelfie." The Tide packaging (minimalist cardboard) sits on a mocha-mousse-colored stone pedestal. Instead of a messy jungle, a single, sculptural, "architectural" hibiscus branch with a few vivid red blooms leans into the frame. The lighting is "profile edge lighting," highlighting the texture of the recycled packaging and the velvety petals of the flower. 
+*   **Image Prompt:** 
+    > Professional high-end product photography of Tide Fabric Softener in minimalist, FSC-certified cardboard packaging. The box is placed on a smooth, circular pedestal made of mocha-mousse-colored travertine stone. A single, sculptural hibiscus branch with two vibrant red flowers is elegantly arranged beside the product. Lighting is cinematic side-lighting with deep shadows and soft highlights, creating a "quiet luxury" aesthetic. Background is a muted, earthy clay wall. 8k resolution, shot on 100mm macro lens, ultra-realistic textures of recycled paper and organic flower petals.
+
+---
+
+### Concept 2: The Steady Cycle
+*   **Type:** Video (8 seconds)
+*   **Relates to:** `target_yt_trends` (Rickroll Meme Culture / Reliability)
+*   **Ad Copy:** "No Pranks. Just Performance."
+*   **Creative Concept:** A visually satisfying, rhythmic close-up of a laundry cycle. It counters the "shaky cam" and "clickbait" nature of internet pranks with extreme stability and high-fidelity "commercial" lighting. The movement of the water and fabric is hypnotic and steady—mimicking the "unwavering commitment" theme without using the music, but using the *visual* language of reliability.
+*   **Video Prompt:**
+    > <SUBJECT> Close-up through the glass of a modern, high-tech washing machine drum filled with soft, white cotton fabrics and clear, swirling water. </SUBJECT>
+    > <ACTION> The drum rotates at a steady, rhythmic pace, the fabrics tumbling smoothly in slow motion. Transitions into a macro shot of a single hibiscus petal falling onto the dry, exceptionally soft fabric after the wash. </ACTION>
+    > <SCENE_AND_CONTEXT> A dimly lit, premium laundry room with natural wood accents and a single warm spotlight on the machine. The mood is calm, reliable, and authentic. </SCENE_AND_CONTEXT>
+    > <CAMERA_ANGLE> Eye-level close-up shot focusing on the texture of the tumbling fabric and the clarity of the water. </CAMERA_ANGLE>
+    > <CAMERA_MOVEMENTS> Static shot to start, followed by a slow dolly-in as the petal lands on the fabric. </CAMERA_MOVEMENTS>
+    > <VISUAL_STYLE_AND_AESTHETICS> Cinematic lighting with high contrast between deep shadows and glowing highlights on the water droplets. Vibrant red of the hibiscus petal against the pure white of the cotton. 8K, ultra-realistic. </VISUAL_STYLE_AND_AESTHETICS>
+    > <TEMPORAL_ELEMENTS> Pacing is slow, intentional, and calming. SUPPRESS SUBTITLES.
+
+---
+
+### Concept 3: PlanetCaps™ Revelation
+*   **Type:** Image
+*   **Relates to:** Both Search and YouTube trends (Technical Transparency / "Show me the receipts")
+*   **Ad Copy:** "We Brought the Receipts."
+*   **Creative Concept:** A "Technical Beauty" render common in 2025 skincare marketing. It shows a macro view of fabric fibers, but visualized as crystalline, beautiful structures. Nestled within the fibers are glowing "serum orbs"—the PlanetCaps™ biodegradable scent capsules. This visualizes the *science* in a way that feels premium and transparent, rather than clinical.
+*   **Image Prompt:**
+    > 3D high-tech scientific render of textile fibers at a microscopic level. The fibers are stylized as soft, pearlescent translucent strands. Nested between the fibers are numerous glowing, vibrant red "serum bubbles" or micro-capsules that resemble tiny hibiscus blooms. These capsules are translucent and contain a swirl of golden hibiscus oil. Deep depth of field with beautiful bokeh. The lighting is futuristic, with volumetric light rays hitting the orbs. Aesthetic of advanced biotechnology and eco-luxury.
+
+---
+
+### Concept 4: Self-Care Renewal
+*   **Type:** Video (8 seconds)
+*   **Relates to:** Combined Search and YT trends (#CleanTok / Slow Fashion / Thrift Finds)
+*   **Ad Copy:** "Make Your Thrift Finds Last Forever."
+*   **Creative Concept:** A #CleanTok "ASMR-style" ritual. A hand (Gen Z "Conscious Curator") carefully pulls a perfectly softened, vibrant hibiscus-colored vintage silk slip from a beautiful wicker basket. The movement is gentle and appreciative, focusing on the preservation of a unique find.
+*   **Video Prompt:**
+    > <SUBJECT> A young person with a curated, minimalist aesthetic reaches into a premium wicker laundry basket. </SUBJECT>
+    > <ACTION> They gently lift a delicate, bright red vintage silk slip dress. The fabric flows and shimmers softly in their hands. They bring the fabric close to their face and take a slow, deep breath, smiling gently to represent the fresh hibiscus scent. </ACTION>
+    > <SCENE_AND_CONTEXT> An airy, sun-drenched minimalist bedroom with light-colored linens and a curated olive tree in the corner. "Guava Girl" summer light coming through a window. </SCENE_AND_CONTEXT>
+    > <CAMERA_ANGLE> Medium close-up, focusing on the hands and the movement of the silk. </CAMERA_ANGLE>
+    > <CAMERA_MOVEMENTS> A slow, handheld pan that tracks the upward movement of the fabric, creating a sense of intimacy and realism. </CAMERA_MOVEMENTS>
+    > <VISUAL_STYLE_AND_AESTHETICS> Natural golden hour lighting with soft lens flares. High saturation on the red silk against a muted, beige/cream room palette. "Clean girl" home aesthetic. </VISUAL_STYLE_AND_AESTHETICS>
+    > <TEMPORAL_ELEMENTS> Relaxed, joyful pacing. SUPPRESS SUBTITLES.
+[visual_concept_critic]: As the Creative Director for this campaign, I have evaluated the initial visual drafts. The "Anti-Rickroll" strategy is a brilliant cultural pivot, but the visuals must work hard to bridge the gap between "internet meme" and "premium household staple." 
+
+We are moving away from the "shaky-cam" aesthetic of traditional social media hacks and leaning into **"High-Fidelity Reliability."** By using ultra-macro photography and cinematic lighting, we position Tide as the high-tech, high-trust answer to the "greenwashing" and "clickbait" noise.
+
+Here is the critique and the finalized, high-impact prompt set.
+
+### **Evaluation & Strategic Rationale**
+
+1.  **Visual Appeal & Stopping Power:** We are leveraging the **"Technical Beauty"** trend—traditionally seen in luxury skincare (like La Mer or Dyson)—and applying it to laundry. This creates immediate thumb-stop because it elevates a mundane category to a sensorial experience.
+2.  **Trend Alignment:** 
+    *   **The "Anti-Rickroll":** We use visual "stability" and "unwavering" rhythmic motion as a metaphor for brand reliability.
+    *   **Scent-Maxxing:** We use vibrant, saturated colors (Hibiscus Red) against the 2025 "Mocha Mousse" palette to signal a modern, reimagined floral.
+    *   **CleanTok Aesthetic:** We maintain the minimalist, "shelfie-ready" look that Gen Z curators demand.
+3.  **Platform Optimization:** The images are designed for high-resolution static placements (Instagram/Pinterest), while the videos utilize 8-second loops perfect for TikTok/Reels/YouTube Shorts, focusing on rhythmic "ASMR" qualities.
+4.  **Continuity & Tone:** I have established a specific "Conscious Curator" character profile and a consistent "Mocha Mousse and Hibiscus" color grade to ensure that whether the consumer sees a macro fiber shot or a lifestyle clip, the brand world remains cohesive.
+
+---
+
+### **Finalized Visual Concepts & Prompts**
+
+#### **Concept 1: The Radiant Pedestal**
+*   **Type:** Image
+*   **Trend(s):** Aesthetic Laundry (#CleanTok), "Mocha Mousse" Palette, Scent-Maxxing.
+*   **Creative Concept:** A "Quiet Luxury" product portrait. The Tide packaging is treated like a high-end perfume bottle, emphasizing its sustainable materials and the architectural beauty of the hibiscus.
+*   **Detailed Rationale:** This concept validates the "Shelfie-Ready" ad copy. By placing the product on a stone pedestal, we elevate the brand above "bargain" eco-brands. The use of side-lighting highlights the recycled texture of the box, proving "The Receipts" of sustainability without a single word of text.
+*   **Imagen Prompt:** 
+    > A professional high-end studio product photograph of a Tide Fabric Softener box made from minimalist, matte-finish, FSC-certified recycled cardboard with subtle embossed textures. The box is positioned elegantly on a heavy, circular pedestal of polished Mocha Mousse-colored travertine stone, which has visible organic pores and a soft, matte sheen. To the right, a single, sculptural, architectural hibiscus branch leans into the frame, featuring two large, vibrant, deep-crimson blossoms with velvety petals and long, delicate yellow-tipped stamens. The background is a seamless, curved wall in a muted, earthy clay tone with a soft gradient. The lighting is cinematic "Rembrandt" style side-lighting, creating a dramatic interplay of deep, soft shadows and glowing highlights that accentuate the grain of the recycled paper and the organic curves of the flower. Shot on a 100mm macro lens at f/8 for sharp detail across the product, 8k resolution, ultra-realistic textures, high-fashion aesthetic.
+
+#### **Concept 2: The Unwavering Cycle (The Anti-Rickroll)**
+*   **Type:** Video (8 seconds)
+*   **Trend(s):** Rickroll Meme Culture (Reliability), ASMR Cleaning.
+*   **Creative Concept:** A visually hypnotic, perfectly stable loop of a washing machine cycle. It is the visual antithesis of a "bait-and-switch" prank.
+*   **Detailed Rationale:** This directly supports the "No Pranks. Just Performance" copy. While the Rickroll is about a "let down," this video is about "never letting you down." The rhythmic, high-def motion of the water and fabric creates a sense of profound reliability and peace.
+*   **Veo Prompt:** 
+    > <SUBJECT> A close-up, centered view through the circular glass porthole of a premium, modern matte-black washing machine. Inside, a mix of heavy, high-quality white cotton towels and delicate cream-colored linens are submerged in crystal-clear water. </SUBJECT> <ACTION> The drum rotates in a slow, rhythmic, and perfectly steady clockwise motion. The fabrics tumble with a heavy, satisfying weight, and jewel-like water droplets splash against the glass in slow motion. As the drum slows, a single, vibrant red hibiscus flower petal is seen pressed momentarily against the glass by a soft white towel, highlighting the scent infusion. </ACTION> <SCENE_AND_CONTEXT> A dimly lit, ultra-modern laundry suite with natural oak wood cabinetry and a single warm, focused spotlight hitting the machine's glass. The atmosphere is serene, high-tech, and clinical but warm. </SCENE_AND_CONTEXT> <CAMERA_ANGLE> Direct Eye-level static shot, perfectly centered on the drum to emphasize symmetry and stability. </CAMERA_ANGLE> <CAMERA_MOVEMENTS> Static shot with zero camera shake, maintaining absolute focus on the internal motion of the water and fabric. </CAMERA_MOVEMENTS> <VISUAL_STYLE_AND_AESTHETICS> Cinematic lighting with high contrast; the internal light of the drum makes the white fabrics glow against the dark exterior. 8K resolution, ultra-realistic water physics, shallow depth of field focusing on the texture of the cotton fibers through the glass. </VISUAL_STYLE_AND_AESTHETICS> <TEMPORAL_ELEMENTS> The pacing is slow-motion (60fps played at 24fps) to create a hypnotic, calming effect. SUPPRESS SUBTITLES.
+
+#### **Concept 3: The Micro-Forest (PlanetCaps™ Revelation)**
+*   **Type:** Image
+*   **Trend(s):** Performance Verification, Technical Beauty, Green Trust Gap.
+*   **Creative Concept:** A 3D "Biotech" render of fabric fibers at a microscopic level, showing the scent capsules as beautiful, glowing orbs.
+*   **Detailed Rationale:** This visualizes "The Receipts." It moves the conversation from "marketing fluff" to "scientific efficacy." By making the technology look like a "micro-forest" of pearls, we appeal to the Gen Z desire for products that are both high-tech and nature-inspired.
+*   **Imagen Prompt:** 
+    > A stunning 3D scientific visualization of cotton textile fibers at an extreme microscopic scale. The fibers appear as a dense, intertwined forest of soft, pearlescent, translucent white strands that look like silk ribbons. Nestled deep within these fiber channels are hundreds of glowing, vibrant ruby-red "PlanetCaps" micro-capsules. These capsules are perfectly spherical, translucent, and contain a shimmering, golden-red liquid that resembles hibiscus nectar. Volumetric light rays (God rays) filter through the fiber forest, hitting the capsules and creating a beautiful bokeh effect in the background. The aesthetic is "Advanced Eco-Luxury," blending high-end skincare CGI with botanical biology. Deep depth of field, iridescent highlights on the fibers, 8k resolution, hyper-detailed textures, vibrant and saturated color palette.
+
+#### **Concept 4: The Curator’s Ritual**
+*   **Type:** Video (8 seconds)
+*   **Trend(s):** #CleanTok, Slow Fashion, ThriftTok.
+*   **Creative Concept:** A "Conscious Curator" character interacting with a thrifted silk garment, emphasizing fabric longevity and the sensorial reward of the scent.
+*   **Detailed Rationale:** This targets "Slow Fashion's Best Friend." By showing a character carefully handling a vintage piece, we emphasize that Tide doesn't just "clean"—it "preserves." The character's reaction provides the emotional "mood-lifting" proof of the hibiscus scent.
+*   **Veo Prompt:** 
+    > <SUBJECT> A young person in their early 20s with sun-kissed skin, wearing a minimalist cream linen shirt and delicate gold jewelry, representing the "Conscious Curator." They have a calm, thoughtful expression. </SUBJECT> <ACTION> The person reaches into a hand-woven premium wicker basket and gently lifts a vibrant, hibiscus-red vintage silk slip dress. They hold the fabric with reverence, the silk flowing and shimmering like liquid in the sunlight. They bring the fabric to their nose, closing their eyes and taking a slow, deep, appreciative breath, a subtle and genuine smile forming on their lips. </ACTION> <SCENE_AND_CONTEXT> A bright, airy, minimalist bedroom during the "Golden Hour." The room features light-colored walls, a large Monstera plant in the corner, and soft linen bedding. Warm, honey-colored sunlight streams through a large window, creating soft lens flares. </SCENE_AND_CONTEXT> <CAMERA_ANGLE> Medium close-up, focusing on the person's hands and face as they interact with the garment. </CAMERA_ANGLE> <CAMERA_MOVEMENTS> A very slow, smooth handheld tracking shot that follows the upward movement of the silk, creating an intimate, documentary-style feel. </CAMERA_MOVEMENTS> <VISUAL_STYLE_AND_AESTHETICS> Natural light aesthetic with a "Guava Girl" warmth. High saturation on the red silk against the muted, neutral tones of the room. Soft focus background with beautiful bokeh. 8K resolution, ultra-realistic skin and fabric textures. </VISUAL_STYLE_AND_AESTHETICS> <TEMPORAL_ELEMENTS> Slow, intentional pacing to evoke a sense of self-care and mindfulness. SUPPRESS SUBTITLES.
+[visual_concept_finalizer]: Based on the "Conscious Curator" research and the "Anti-Rickroll" strategic pivot, I have finalized the following four visual concepts. These concepts are designed to navigate the "Green Trust Gap" by replacing digital noise with high-fidelity brand reliability and technical transparency.
+
+---
+
+### **Concept 1: The Radiant Pedestal**
+*   **Type:** Image
+*   **Trend(s):** Aesthetic Laundry (#CleanTok), Pantone 2025 "Mocha Mousse" Palette, Scent-Maxxing.
+*   **Headline:** Sustainability That Fits Your Aesthetic.
+*   **Call-to-Action:** Upgrade Your Aesthetic.
+*   **Social Media Caption:** Finally, a fabric softener that doesn't need to be hidden under the sink. 📦✨ Minimalist packaging, maximalist scent. #AestheticHome #CleanTok #PlasticFree #TideHibiscus
+*   **Creative Concept:** A "Quiet Luxury" product portrait. The Tide packaging is treated like a high-end perfume bottle, emphasizing its sustainable materials and the architectural beauty of the hibiscus.
+*   **Rationale:** This validates the "Shelfie-Ready" trend. By placing the product on a stone pedestal, we elevate the brand above "bargain" eco-brands. The use of side-lighting highlights the recycled texture of the box, providing "The Receipts" of sustainability visually.
+*   **Marketing Impact:** Positions Tide as a premium lifestyle choice, justifying a higher price point for Gen Z consumers who value home aesthetics as much as efficacy.
+*   **Imagen Prompt:** 
+    > A professional high-end studio product photograph of a Tide Fabric Softener box made from minimalist, matte-finish, FSC-certified recycled cardboard with subtle embossed textures. The box is positioned elegantly on a heavy, circular pedestal of polished Mocha Mousse-colored travertine stone, which has visible organic pores and a soft, matte sheen. To the right, a single, sculptural, architectural hibiscus branch leans into the frame, featuring two large, vibrant, deep-crimson blossoms with velvety petals and long, delicate yellow-tipped stamens. The background is a seamless, curved wall in a muted, earthy clay tone with a soft gradient. The lighting is cinematic "Rembrandt" style side-lighting, creating a dramatic interplay of deep, soft shadows and glowing highlights that accentuate the grain of the recycled paper and the organic curves of the flower. Shot on a 100mm macro lens at f/8 for sharp detail across the product, 8k resolution, ultra-realistic textures, high-fashion aesthetic.
+
+---
+
+### **Concept 2: The Unwavering Cycle (The Anti-Rickroll)**
+*   **Type:** Video (8 seconds)
+*   **Trend(s):** Rickroll Meme Culture (Reliability), ASMR Cleaning, Eco-Hacks.
+*   **Headline:** No Pranks. Just Performance.
+*   **Call-to-Action:** Get the Reliable Reward.
+*   **Social Media Caption:** If you're tired of being Rickrolled by "miracle" cleaning hacks, we have the receipts. 🌸 Sustainable efficacy that actually stays on the fabric. #TideHibiscus #AntiRickroll #LaundryRoutine
+*   **Creative Concept:** A visually hypnotic, perfectly stable loop of a washing machine cycle. It is the visual antithesis of a "bait-and-switch" prank—steady, rhythmic, and high-definition.
+*   **Rationale:** Directly supports the "Reliable Reward" strategy. While the Rickroll is about a "let down," this video is about "never letting you down." The rhythmic motion creates a sense of profound reliability and peace.
+*   **Marketing Impact:** Directly addresses "clickbait fatigue" in the eco-cleaning niche, building brand trust through visual stability and performance cues.
+*   **Veo Prompt:** 
+    > <SUBJECT> A close-up, centered view through the circular glass porthole of a premium, modern matte-black washing machine. Inside, a mix of heavy, high-quality white cotton towels and delicate cream-colored linens are submerged in crystal-clear water. </SUBJECT> <ACTION> The drum rotates in a slow, rhythmic, and perfectly steady clockwise motion. The fabrics tumble with a heavy, satisfying weight, and jewel-like water droplets splash against the glass in slow motion. As the drum slows, a single, vibrant red hibiscus flower petal is seen pressed momentarily against the glass by a soft white towel, highlighting the scent infusion. </ACTION> <SCENE_AND_CONTEXT> A dimly lit, ultra-modern laundry suite with natural oak wood cabinetry and a single warm, focused spotlight hitting the machine's glass. The atmosphere is serene, high-tech, and clinical but warm. </SCENE_AND_CONTEXT> <CAMERA_ANGLE> Direct Eye-level static shot, perfectly centered on the drum to emphasize symmetry and stability. </CAMERA_ANGLE> <CAMERA_MOVEMENTS> Static shot with zero camera shake, maintaining absolute focus on the internal motion of the water and fabric. </CAMERA_MOVEMENTS> <VISUAL_STYLE_AND_AESTHETICS> Cinematic lighting with high contrast; the internal light of the drum makes the white fabrics glow against the dark exterior. 8K resolution, ultra-realistic water physics, shallow depth of field focusing on the texture of the cotton fibers through the glass. </VISUAL_STYLE_AND_AESTHETICS> <TEMPORAL_ELEMENTS> The pacing is slow-motion (60fps played at 24fps) to create a hypnotic, calming effect. SUPPRESS SUBTITLES.
+
+---
+
+### **Concept 3: The Micro-Forest (PlanetCaps™ Revelation)**
+*   **Type:** Image
+*   **Trend(s):** Performance Verification, Technical Beauty, Green Trust Gap.
+*   **Headline:** We Brought the Receipts.
+*   **Call-to-Action:** See the Science.
+*   **Social Media Caption:** "Natural" doesn't have to mean "fades in five minutes." We used biotech to make a sustainable scent that actually lasts. 🧬🧪 #EcoFriendly #SustainableLaundry #TideScience
+*   **Creative Concept:** A 3D "Biotech" render of fabric fibers at a microscopic level, showing the PlanetCaps™ scent capsules as beautiful, glowing orbs nestled within the textile.
+*   **Rationale:** This visualizes "The Receipts." It moves the conversation from "marketing fluff" to "scientific efficacy," appealing to the Gen Z desire for products that are both high-tech and nature-inspired.
+*   **Marketing Impact:** Overcomes the primary consumer objection that "natural scents fade fast" by providing a visual explanation for the product's long-lasting performance.
+*   **Imagen Prompt:** 
+    > A stunning 3D scientific visualization of cotton textile fibers at an extreme microscopic scale. The fibers appear as a dense, intertwined forest of soft, pearlescent, translucent white strands that look like silk ribbons. Nestled deep within these fiber channels are hundreds of glowing, vibrant ruby-red "PlanetCaps" micro-capsules. These capsules are perfectly spherical, translucent, and contain a shimmering, golden-red liquid that resembles hibiscus nectar. Volumetric light rays (God rays) filter through the fiber forest, hitting the capsules and creating a beautiful bokeh effect in the background. The aesthetic is "Advanced Eco-Luxury," blending high-end skincare CGI with botanical biology. Deep depth of field, iridescent highlights on the fibers, 8k resolution, hyper-detailed textures, vibrant and saturated color palette.
+
+---
+
+### **Concept 4: The Curator’s Ritual**
+*   **Type:** Video (8 seconds)
+*   **Trend(s):** #CleanTok, Slow Fashion, ThriftTok, Mood-Lifting Scents.
+*   **Headline:** Make Your Thrift Finds Last Forever.
+*   **Call-to-Action:** Protect Your Pieces.
+*   **Social Media Caption:** Treat your thrifted treasures with the respect they deserve. 👗 No waxy residue, just soft, hibiscus-scented perfection. #SlowFashion #ThriftTok #Sustainability #Tide
+*   **Creative Concept:** A "Conscious Curator" character interacting with a thrifted silk garment during "Golden Hour," emphasizing fabric longevity and the sensorial reward of the scent.
+*   **Rationale:** Targets the "Slow Fashion" movement. By showing a character carefully handling a vintage piece, we emphasize that Tide doesn't just "clean"—it "preserves" unique finds without using damaging waxy chemicals.
+*   **Marketing Impact:** Aligns the brand with the "ThriftTok" community and positions the product as a wellness tool for mood regulation through scent.
+*   **Veo Prompt:** 
+    > <SUBJECT> A young person in their early 20s with sun-kissed skin, wearing a minimalist cream linen shirt and delicate gold jewelry, representing the "Conscious Curator." They have a calm, thoughtful expression. </SUBJECT> <ACTION> The person reaches into a hand-woven premium wicker basket and gently lifts a vibrant, hibiscus-red vintage silk slip dress. They hold the fabric with reverence, the silk flowing and shimmering like liquid in the sunlight. They bring the fabric to their nose, closing their eyes and taking a slow, deep, appreciative breath, a subtle and genuine smile forming on their lips. </ACTION> <SCENE_AND_CONTEXT> A bright, airy, minimalist bedroom during the "Golden Hour." The room features light-colored walls, a large Monstera plant in the corner, and soft linen bedding. Warm, honey-colored sunlight streams through a large window, creating soft lens flares. </SCENE_AND_CONTEXT> <CAMERA_ANGLE> Medium close-up, focusing on the person's hands and face as they interact with the garment. </CAMERA_ANGLE> <CAMERA_MOVEMENTS> A very slow, smooth handheld tracking shot that follows the upward movement of the silk, creating an intimate, documentary-style feel. </CAMERA_MOVEMENTS> <VISUAL_STYLE_AND_AESTHETICS> Natural light aesthetic with a "Guava Girl" warmth. High saturation on the red silk against the muted, neutral tones of the room. Soft focus background with beautiful bokeh. 8K resolution, ultra-realistic skin and fabric textures. </VISUAL_STYLE_AND_AESTHETICS> <TEMPORAL_ELEMENTS> Slow, intentional pacing to evoke a sense of self-care and mindfulness. SUPPRESS SUBTITLES.
+[creative_production_orchestrator]: Generating campaign images from visual concepts...
+[creative_production_orchestrator]: No visual concepts — generating images from ad copy descriptions.
+[creative_production_orchestrator]: Generating image 1/2: ad_copy_1...

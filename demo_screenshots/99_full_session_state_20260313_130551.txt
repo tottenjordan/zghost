@@ -1,0 +1,676 @@
+{
+  "yt_web_search_insights": "In 2024, the \"Sunday Reset\" and \"Clean Living\" movements have evolved from simple chores into essential lifestyle rituals centered on mental well-being, sustainability, and sensory experience. For **Tide Fabric Softener with Hibiscus Scent**, this provides a prime opportunity to position itself as a premium, botanically-inspired \"reward\" within these mindful routines.\n\n### 1. Cultural Drivers & Consumer Demographics\n*   **The \"Revival\" & \"Decelerated Dopamine\":** 2024 is defined by a shift from survival to \"revival.\" Consumers are actively \"slowing down\" and seeking \"decelerated dopamine\"\u2014finding joy in small, tangible tasks like laundry that offer a sense of control and immediate satisfaction.\n*   **The Sunday Reset as Mental Health:** No longer just cleaning, the \"Sunday Reset\" is a cultural phenomenon used to combat \"Sunday Scaries.\" It is a restorative ritual where the home is prepared for the week ahead.\n*   **Core Demographics:**\n    *   **Gen Z & Millennials:** Leading the \"non-toxic\" and \"cozy productivity\" trends. They prioritize \"self-liberation\" from digital noise and value products that align with their ethical and aesthetic standards.\n    *   **High-Income Boomers:** A significant market for discretionary home spending, increasingly looking for premium, effective products that support a \"healthspan\" lifestyle.\n    *   **Urban Families:** Seeking \"efficiency + wellness,\" where a product must work perfectly (Tide\u2019s heritage) while feeling like a spa-like upgrade (Hibiscus scent).\n\n### 2. Market Shift Toward \"Clean Living\" & Botanical Scents\n*   **Growth of Eco-Friendly Care:** The eco-friendly household cleaning market is projected to reach **$50.22 billion by 2034**, growing at a CAGR of 6.7%.\n*   **Fragrance as a Differentiator:** Scent has become a crucial \"sensory elevation\" factor. 2024 trends show a move toward \"luxury designer\" signature scents in home care. Consumers are specifically seeking **botanical and natural-inspired fragrances** (like Hibiscus) to create a \"home sanctuary\" environment.\n*   **Sustainable Practicality:** While 60% of consumers want to impact the environment positively, they are becoming \"greenwashed out.\" They now demand **transparency and performance**. Tide\u2019s positioning as a \"heavy-duty\" performer that also offers \"botanical\" benefits bridges the gap between efficacy and eco-consciousness.\n\n### 3. Impact of Professional Organizers & Influencers\n*   **The \"Influencer Hack\" Trend:** TikTok and YouTube creators (e.g., Abby Organizes) have turned cleaning into \"aspirational content.\" Their endorsement of \"non-toxic\" favorites and \"aesthetic\" laundry setups drives massive adoption of specific brands.\n*   **Zero-Waste & Non-Toxic Advocacy:** Influencers are shifting the narrative from \"perfection\" to \"progress.\" They promote \"cozy productivity\" where organizing the laundry room with beautiful, scent-forward products is seen as a form of self-care.\n*   **Bottom-Up Culture:** Trends now \"bubble up\" from niche communities. Brands like Tide can no longer rely on top-down messaging but must engage with these subcultures by showing how their products fit into an \"organized, non-toxic, and beautiful\" lifestyle.\n\n### Strategic Positioning for Tide Hibiscus\n*   **The \"Scented Sanctuary\" Hook:** Position the Hibiscus scent as the \"sensory reward\" for completing a Sunday Reset. \n*   **Performance + Plants:** Leverage Tide\u2019s \"Hero\" archetype (unfailing performance) while introducing the \"Magician\" element of botanical freshness to appeal to the \"Wellness Pragmatist.\"\n*   **Sustainability Focus:** Emphasize the brand's \"Turn to Cold\" campaign and biodegradable/eco-friendly formulations to meet the demand for \"Green Transparency.\"",
+  "brand": "Tide",
+  "key_selling_points": "New Hibiscus Scent. Plant-based formula. 2x cleaning power. Biodegradable packaging. Fresh floral fragrance that lasts.",
+  "gs_web_search_insights": "",
+  "yt_video_analysis": "The trending YouTube content related to **Eco Cleaning Hacks** often features creators like **Abby Organizes**, who provide practical, sustainable alternatives to traditional household chores.\n\n**Analysis of Trending Content:**\n\n*   **Main Thesis/Claim:** The core message focuses on \"Resetting\" the home using non-toxic, eco-friendly methods. The video advocates for consistent, small routines (the \"Sunday Reset\") to maintain a clean environment without relying on harsh chemicals or excessive waste.\n*   **Key Entities:**\n    *   **Abby (Creator):** A professional organizer and influencer who guides viewers through her routine.\n    *   **Natural Ingredients:** The video highlights the use of vinegar, baking soda, and essential oils as primary cleaning agents.\n    *   **Sustainable Tools:** Emphasis is placed on reusable microfiber cloths, glass spray bottles, and compostable sponges.\n*   **Trend Context:** This content is trending due to the rising consumer shift toward **\"Clean Living\"** and **\"Zero-Waste\"** lifestyles. Viewers are increasingly seeking ways to reduce their environmental footprint and minimize exposure to synthetic fragrances and chemicals in their laundry and cleaning products.\n*   **Summary:** The video demonstrates a comprehensive \"Eco-Friendly Sunday Reset\" routine. It covers everything from sustainable laundry practices\u2014such as using cold water and natural additives\u2014to deep-cleaning kitchen surfaces with DIY solutions. The video combines aesthetic \"clean-with-me\" visuals with instructional tips, making sustainable living feel attainable and organized.\n\nThis trend highlights a significant opportunity for **Tide Fabric Softener with Hibiscus Scent** to position itself as a premium, botanically-inspired addition to these mindful cleaning routines, emphasizing its refreshing scent and fabric-care benefits within a \"home sanctuary\" context.",
+  "initial_campaign_queries": "1. Gen Z consumer behavior and preferences for sustainable laundry care and plant-based household products.\n2. Market trends and popularity of hibiscus and exotic floral scents in home care and personal care 2024.\n3. Comparative analysis of eco-friendly fabric softeners: performance vs. sustainability for Gen Z shoppers.\n4. Social media trends and aesthetic lifestyle movements (e.g., \"Clean Girl\" or \"Eco-Luxe\") related to laundry and home scent.\n5. Impact of biodegradable packaging and plant-based certifications on Gen Z purchasing decisions in the CPG sector.\n6. Cultural relevance of long-lasting floral fragrances and \"freshness\" markers for environmentally conscious young adults.",
+  "final_select_ad_copies": {
+    "final_select_ad_copies": [
+      {
+        "trend_ref": "YouTube Trend: \"Sunday Reset\" as a Wellness Ritual.",
+        "name": "The Sunday Reset Essential",
+        "headline": "Your Sunday Reset Just Got a Scented Upgrade.",
+        "rationale": "Taps into the massive #SundayReset trend (500k+ videos) where laundry is a key mental prep ritual for Gen Z.",
+        "body_text": "Transform your laundry mountain into a botanical retreat. Infuse your sheets with the exotic, long-lasting scent of hibiscus and the softest touch for your Monday-ready bedding. Pure plant-based softening power.",
+        "caption": "No \"Sunday Scaries\" here. Just fresh sheets and tropical vibes. \ud83c\udf3a\u2728 #SundayReset #TideHibiscus #LaundryRitual",
+        "call_to_action": "Shop Tide Hibiscus on Amazon."
+      },
+      {
+        "name": "The Sensory Regulation Hook",
+        "trend_ref": "Key Insight: Sensory Regulation & Tactile Comfort.",
+        "headline": "Soft Fabrics. Soft Mind.",
+        "rationale": "Addresses Gen Z's focus on mental health and sensory regulation, positioning fabric softness as a form of self-care.",
+        "body_text": "In a world that feels loud, make your home a sanctuary. Our Hibiscus softener provides the tactile comfort your nervous system craves\u2014making every hoodie and blanket feel like a warm hug.",
+        "caption": "For when the vibes are off but your hoodie is 10/10 soft. \u2601\ufe0f\ud83e\uddd8\u200d\u2640\ufe0f #SensoryCare #CozyAesthetic #TideSoftness",
+        "call_to_action": "Relax with Tide."
+      }
+    ]
+  },
+  "final_select_vis_concepts": {
+    "final_select_vis_concepts": [
+      {
+        "type": "video",
+        "headline": "Your Sunday Reset Just Got a Scented Upgrade.",
+        "rationale": "Directly aligns with the viral #SundayReset trend and the 'Eco-Luxe' aesthetic popular with Gen Z. It positions the product as a key part of an aspirational lifestyle.",
+        "caption": "No \"Sunday Scaries\" here. Just fresh sheets and tropical vibes. \ud83c\udf3a\u2728 #SundayReset #TideHibiscus #LaundryRitual",
+        "creative_explain": "The visual captures the peaceful, organized essence of a 'Sunday Reset' ritual. It uses soft, natural lighting and botanical elements (Hibiscus) to transition the 'chore' of laundry into a high-end wellness experience. The video will bring this to life by showing the gentle motion of the soft fabrics and the blooming of the hibiscus.",
+        "prompt": "A high-aesthetic, cinematic shot of a minimalist, sun-drenched laundry room. A tall glass jar of Tide Hibiscus Fabric Softener sits on a light oak shelf next to a stack of incredibly soft, fluffy white towels. A single, vibrant red hibiscus flower is tucked into the fold of the top towel. Soft morning light creates gentle shadows. 8k resolution, photorealistic, serene atmosphere, 'Clean Girl' aesthetic.",
+        "name": "The Botanical Sunday Reset",
+        "trend_ref": "YouTube Trend: \"Sunday Reset\" as a Wellness Ritual; Search Trend: The Hibiscus Boom.",
+        "call_to_action": "Shop Tide Hibiscus on Amazon."
+      },
+      {
+        "caption": "For when the vibes are off but your hoodie is 10/10 soft. \u2601\ufe0f\ud83e\uddd8\u200d\u2640\ufe0f #SensoryCare #CozyAesthetic #TideSoftness",
+        "type": "video",
+        "headline": "Soft Fabrics. Soft Mind.",
+        "rationale": "Addresses the research insight regarding Gen Z's use of soft fabrics for sensory regulation and anxiety management. It frames the product's functional benefit (softness) as a mental health benefit.",
+        "call_to_action": "Relax with Tide.",
+        "creative_explain": "This concept focuses on the emotional and physical sensation of 'softness' as a form of sensory regulation. The visual will emphasize texture and comfort, using a 'Cozy Aesthetic' to appeal to the user's desire for a 'home sanctuary.' The video will use slow-motion to highlight the tactile nature of the fabric.",
+        "prompt": "A close-up, macro shot of a person's hand gently sinking into a thick, oversized, pastel-colored hoodie that looks exceptionally soft and plush. In the background, out of focus, is a cozy bedroom with warm, amber lighting and a hint of a hibiscus plant. The texture of the fabric is highly detailed. Cinematic lighting, cozy and calming mood, high-fidelity texture.",
+        "trend_ref": "Key Insight: Sensory Regulation & Tactile Comfort; Trend: Cozy Aesthetic.",
+        "name": "The Sensory Sanctuary"
+      }
+    ]
+  },
+  "vid_artifact_keys": {
+    "vid_artifact_keys": []
+  },
+  "_tool_start_ts": 1773407444.910141,
+  "img_artifact_keys": {
+    "img_artifact_keys": [
+      {
+        "fidelity_score": 0.82,
+        "headline": "Soft Fabrics. Soft Mind.",
+        "audience_appeal": "Eco-conscious consumers seeking sensory regulation and tactile comfort as a form of self-care and anxiety management.",
+        "trend": "Key Insight: Sensory Regulation & Tactile Comfort; Trend: Cozy Aesthetic.",
+        "caption": "For when the vibes are off but your hoodie is 10/10 soft. \u2601\ufe0f\ud83e\uddd8\\u200d\u2640\ufe0f #SensoryCare #CozyAesthetic #TideSoftness",
+        "img_prompt": "A close-up, macro shot of a person's hand gently sinking into a thick, oversized, pastel-colored hoodie that looks exceptionally soft and plush. In the background, out of focus, is a bottle of Tide Hibiscus Fabric Softener sitting on a wooden surface next to a blooming hibiscus plant. The texture of the fabric is highly detailed. Cinematic lighting, cozy and calming mood, high-fidelity texture.",
+        "concept": "This concept focuses on the emotional and physical sensation of 'softness' as a form of sensory regulation. The visual emphasizes texture and comfort, using a 'Cozy Aesthetic' to appeal to the user's desire for a 'home sanctuary.'",
+        "rationale_perf": "Addresses the research insight regarding Gen Z's use of soft fabrics for sensory regulation.",
+        "markets_product": "Connects the product's softening benefit directly to the consumer's emotional well-being and need for a peaceful home environment.",
+        "artifact_key": "The_Sensory_Sanctuary_0.png"
+      }
+    ]
+  },
+  "target_yt_trends": {
+    "target_yt_trends": [
+      {
+        "description": "YouTube creators sharing sustainable cleaning routines and eco-friendly product reviews",
+        "title": "Eco Cleaning Hacks"
+      }
+    ]
+  },
+  "commercial_artifact": "",
+  "timer_start": 1773407211.4381182,
+  "campaign_guide_content": "",
+  "_creative_pipeline_attempts": 6,
+  "research_reflection": {
+    "score": 8,
+    "version": 1,
+    "improvements": "1. Update instructions to require a mandatory 'Competitive Benchmarking' section that compares the product against at least three key rivals. 2. Add a requirement for a 'Tactical Implementation' table that maps insights to specific social media channels (e.g., TikTok for 'Sunday Reset' content). 3. Instruct the researcher to prioritize quantitative data (market size, growth percentages, price sensitivity) alongside qualitative trends to address the 'Say-Do' gap more rigorously. 4. Explicitly mandate a 'Risk Assessment' section to address the mentioned 'greenwashing' concerns with specific mitigation strategies."
+  },
+  "request_count": 34,
+  "sources": {
+    "src-5": {
+      "domain": "3bl.com",
+      "short_id": "src-5",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Behavior & Sustainability"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Behavior & Sustainability"
+        }
+      ],
+      "title": "3bl.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEr7_lCxOooxVNY5pjkD7IQbU2yWHdlP6AOwo0bf_vbzmN51EGx-5m4sHQ8tvzEWWaUneYU2y26mJemgUwA58QRQFgI2EHq93ArWw99otmcsV_ajmHLeR0HpzGcBJP4FECMkjVHIEZ3YV7vFk1qt12a9YNveumcnYQACntxmwJfUjA11SLp3RDvOGnpXMTrKorAFnmYsuUQTqWrLbcvJxaX"
+    },
+    "src-20": {
+      "supported_claims": [
+        {
+          "text_segment": "Performance vs. Sustainability",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Performance vs. Sustainability"
+        }
+      ],
+      "short_id": "src-20",
+      "domain": "nbinno.com",
+      "title": "nbinno.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEwvRBUgUszX9EZ4GCxaBoySa7wrmQbYXWpHlkW-gtb-11xG-GLnh2vfJD0tacg42-9_rUGqvcDdR_k5HjJd7HQeLZnyVpkxUN4HSAzMVUprls0npl_K5ugkUZKZSOdD603iBCk3tybn0dfEb5o-BwArKkSVTBRYdIcCvy9oZBxO0nIYmYJHBFyvlw96kUoOEPsPWEMTBiGepPRq-wJbU6uDjLe9mT3U0x0Dg=="
+    },
+    "src-17": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Aesthetic & Lifestyle Movements"
+        },
+        {
+          "text_segment": "*   **\"Eco-Luxe\" & Sensory Rituals:** Laundry is being reimagined as a \"wellness ritual\" rather than a chore.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Brands are \"luxe-ing up\" everyday tasks with prestige-perfume-inspired scents and aesthetic, \"Instagram-ready\" packaging."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cultural Relevance & \"Freshness\""
+        },
+        {
+          "text_segment": "Aesthetic & Lifestyle Movements",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **\"Eco-Luxe\" & Sensory Rituals:** Laundry is being reimagined as a \"wellness ritual\" rather than a chore."
+        },
+        {
+          "text_segment": "Brands are \"luxe-ing up\" everyday tasks with prestige-perfume-inspired scents and aesthetic, \"Instagram-ready\" packaging.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Cultural Relevance & \"Freshness\"",
+          "confidence": 0.5
+        }
+      ],
+      "domain": "trendaroma.com",
+      "short_id": "src-17",
+      "title": "trendaroma.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGbxlHjjh8nMUuLDthHJ-ciew2kVORuMChy7dri2eHoOh8EwiiehoMhQjQQdax58hcPaaor1-Hw_nCP6gWCxd6UK0Yf0EPpMbYrFX_pZs2Ve7PeFovJ0Z-A_a2ZJK9JlB5i4-PxbxBqdoCFMIRpH8hFtqr9fXthxygCBbk1X14i624Lw85YZpDiqMIJwbLWYUbIE58nADqKTEQhIIF2PdqG1KJx4Q=="
+    },
+    "src-9": {
+      "short_id": "src-9",
+      "domain": "jkaromatics.com",
+      "supported_claims": [
+        {
+          "text_segment": "Gen Z Consumer Behavior & Sustainability",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Behavior & Sustainability"
+        }
+      ],
+      "title": "jkaromatics.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHXccV-YnELn5g45Ye6H9bwt-FZ47B2kibtmamJkkkLqUleMQx1IqIfBQYpCQrgr9Y2dmzVF6MIMGQa5oCOBGj7kz3HZqEJ9blZXGvhlRkoARmgDDcVVRb5SAJwLjUgz6d1dkyTp_C6JPxj8Wo8IQcxBh6XmTcPaeyq4itawqFG8MPUttNJWuMb43VfjOPXcmlkUHZ5"
+    },
+    "src-8": {
+      "title": "packagingstrategies.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGHcG46IZtm26v8LRdmMO1Jo6wTD8GzeH8gEzNbolWpnjOoQI4NHH2_xX4bHzTMFnPmGwpBrT7mPkvTdRNTBy-sGJgcP3kNXBgfFLruAOwfwrp_3HGu6pSBg12U0gFDWHl7WZyzDRQ0mG38KKgV1gGAf6D6PrArrxFfPuFuQqnVqtWa2vuBodve8mw2pNG8DzUXuPVs2UpFNiRASGh7B_v5rh2VjVoZ-dCMpi9YAHqX8tZ4X37-T3pzT5A=",
+      "short_id": "src-8",
+      "domain": "packagingstrategies.com",
+      "supported_claims": [
+        {
+          "text_segment": "Gen Z Consumer Behavior & Sustainability",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Gen Z Consumer Behavior & Sustainability",
+          "confidence": 0.5
+        }
+      ]
+    },
+    "src-2": {
+      "title": "newsweek.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQENNnaCfUlYcMOM-ymRue9ke0l8Nr417SAKOKgJcAFjaCLgBwCzAfoBB7HQ1DxLdX67qhDL1HKUqLq07rSwRzsRDxG3R0-CIN95oGb9bwAlVP6rqteVvR1myaCM_m1OQFbKc3uEhAvNI0l4iAWnjsCOOlKDDPTmtbihcEeK0-0CO2XX1H5w_lEqFnPQ_hOghKLEOLtEC18=",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Behavior & Sustainability"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Authenticity & Verification:** This generation is skeptical of \"greenwashing.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Behavior & Sustainability"
+        },
+        {
+          "text_segment": "*   **Authenticity & Verification:** This generation is skeptical of \"greenwashing.\"",
+          "confidence": 0.5
+        }
+      ],
+      "short_id": "src-2",
+      "domain": "newsweek.com"
+    },
+    "src-23": {
+      "supported_claims": [
+        {
+          "text_segment": "Cultural Drivers & Consumer Demographics",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The \"Revival\" & \"Decelerated Dopamine\":** 2024 is defined by a shift from survival to \"revival.\""
+        }
+      ],
+      "domain": "newdigitalage.co",
+      "short_id": "src-23",
+      "title": "newdigitalage.co",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEjVKcwZrQG0RYMWkhHVU6yAogVelM34_0jNW1T28c5rlgvMLl1x5kglafYf-IRTypeq0qIca2HjYixYwQ9TBkYhecwEC3m_MDY4E4SDBjC-7uv9Ff4DygEvxr9Fpxoc7c2R048vaG9z4y1ZlAs8lMn_b7-JzkwcXfIXq62VX3nSPSw_xN2Dk8fayg4q3YRsl1iynCppj5SJrBqAJKGDIA2WJenBA=="
+    },
+    "src-13": {
+      "domain": "accio.com",
+      "short_id": "src-13",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z expects brands to take responsibility for environmental impact, with 94% believing brands should ensure products are environmentally harmless."
+        },
+        {
+          "text_segment": "*   **Authenticity & Verification:** This generation is skeptical of \"greenwashing.\"",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z expects brands to take responsibility for environmental impact, with 94% believing brands should ensure products are environmentally harmless."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Authenticity & Verification:** This generation is skeptical of \"greenwashing.\""
+        }
+      ],
+      "title": "accio.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHWDWHu7jO6E1ZOGxSztqt_YBdpk1F_-OJW-87zCJsqf90Jaw9wDunn8pW_8VRz4HjvubMOIryqJL2xYQieJfvQNMePsQWjFXh7ezYnEcsN7o6pwAjNDoLGh5Ex6kH-9MIxvzXr1ZBLvyaFaMR9fLBkizJrCI7Fo3I="
+    },
+    "src-11": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Non-Negotiable Expectations:** Sustainability is no longer a \"premium feature\" but a baseline."
+        },
+        {
+          "text_segment": "*   **Non-Negotiable Expectations:** Sustainability is no longer a \"premium feature\" but a baseline.",
+          "confidence": 0.5
+        }
+      ],
+      "short_id": "src-11",
+      "domain": "trisonwells.com",
+      "title": "trisonwells.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH2rNTvZShMOmOxL2rOUpBRJkJG_tEWM00cWnLvrlHKIOz88KIRdNvZ6ZZ05cqHSrmZPPW-B0NbXmXjoWVl7lx7n04o0-Jot88fXMSf8_JyJ6Z-A9NLB8BOj45CzqOrii2UAkQkaq9g6C5fqj7vaqMu1ZPf1uiXT1feV5CWGuHcvf3Z_6rPBHIZY75Eqtvlu0V_0Xn2gkqxkgxnr88P"
+    },
+    "src-21": {
+      "title": "dataintelo.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFZxDbbrgih_V7bNWD7lnCIYiVPQFhHouag8vg5demW7SQJtrfQocDXBklU8zWumrYUHztI94hy3j7I45I7_KRpl6t_af851jHfjBjer7bXq5bG3Eq7CLyiTAB85oO3mqGMt9-X-EuInV-vkoxB49dGFSIKHxEAUoGX32zSbsd3kCW2iwH9uxFIcWNyR47l0yqo3HC03w==",
+      "short_id": "src-21",
+      "domain": "dataintelo.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Performance vs. Sustainability"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Performance vs. Sustainability"
+        }
+      ]
+    },
+    "src-3": {
+      "title": "britopian.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGhyfZJc-3bVFaQeh3EJV9k0wlVWuLqGFeCmnPJnuiD52y8HHC4YfTBKMVZJcvqakvjEp1kT5DO0WwoOTWGKINsl_J3XbY7I1Pa_aO4S--YojPDd76w7Ga5g5Fo4i0sJrOnU63pzbwSZxZ8HYI-eSRGJANT",
+      "short_id": "src-3",
+      "domain": "britopian.com",
+      "supported_claims": [
+        {
+          "text_segment": "Gen Z Consumer Behavior & Sustainability",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Values vs. Actions (\"Say-Do\" Gap):** Gen Z is highly environmentally conscious, with 77% stating they avoid brands with poor environmental standards."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Despite this, they are more willing than older generations to pay a premium (up to 10%) for sustainable products if the value is clear."
+        },
+        {
+          "text_segment": "Gen Z Consumer Behavior & Sustainability",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Values vs. Actions (\"Say-Do\" Gap):** Gen Z is highly environmentally conscious, with 77% stating they avoid brands with poor environmental standards."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Despite this, they are more willing than older generations to pay a premium (up to 10%) for sustainable products if the value is clear."
+        }
+      ]
+    },
+    "src-6": {
+      "title": "floraldaily.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHS3o1AwaTxPx1U_4COr4KGlEERb1BD-vFpRcKZgnsAfeR2ybKX6H_p1_PmyiuAN-76slPVmvWK2oEGDcEJ1bNqmWIRqQo8exUx9QjOAwrUmlD5TSDrTjiZ38RjgGAnUoNYB19T0iqadOuzBcRfKgFtmmXIXj9KarSc_u4NeywzBqyeG8YVciWcKdrmbS56KPotruzTSxLsNqsxgjixBjhUFuSwuvson4N8l9fW",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Behavior & Sustainability"
+        },
+        {
+          "text_segment": "Cultural Relevance & \"Freshness\"",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Behavior & Sustainability"
+        },
+        {
+          "text_segment": "Cultural Relevance & \"Freshness\"",
+          "confidence": 0.5
+        }
+      ],
+      "short_id": "src-6",
+      "domain": "floraldaily.com"
+    },
+    "src-7": {
+      "supported_claims": [
+        {
+          "text_segment": "Gen Z Consumer Behavior & Sustainability",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Cultural Relevance & \"Freshness\"",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Gen Z Consumer Behavior & Sustainability",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Cultural Relevance & \"Freshness\"",
+          "confidence": 0.5
+        }
+      ],
+      "short_id": "src-7",
+      "domain": "greenhousegrower.com",
+      "title": "greenhousegrower.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQESYBhT33s3VPtgVQeBhG4Gk6_O39NPRSYBTTuRI51CJp95163GHLqWDpfwjN_awIzObpBY3IIQq2jIrRbxQE3pUUVE4NOpH_jtxuuvuJmnmX1bwfa7N5a487XpTiHCp14YvaLy-HNGl63-cdG-SUBKaGs7LRNRcd_6O1_CQag6PtRk9SQjrHWu4VSzU1rHzbrgakbr-NyAhRaMkpuwo-aBfwhf0BFlZ7TJyeJd28gUTQZeOg=="
+    },
+    "src-28": {
+      "title": "thebrandhopper.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHh-UaEj9Zx1LsCOsOQZbB5QsFPtC1Gqm5U4KUDthoajEw2AgiiJCoo0StHuLk4hed0m7wNqOtxtLVqmpz9zm3kImpdS9CIBwy4_P30xlqja_uZp8hO8fsQTHdJgX4CIX0evZTgi1t6vgs952A-2w7sJDrjAtYCJV86Bhtqt2SCU5zS5emcswXZRJTPz2M1XQ==",
+      "short_id": "src-28",
+      "domain": "thebrandhopper.com",
+      "supported_claims": [
+        {
+          "text_segment": "### Strategic Positioning for Tide Hibiscus",
+          "confidence": 0.5
+        }
+      ]
+    },
+    "src-27": {
+      "title": "researchandmarkets.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEmUKaKvwtZ66q6bQJwF8y9pClqWaMmg_S_eVTLbvM6ZvW6uNGhx50Cvc47azjeMY0MdzYHfqPdCjVE4VC6xNohRPRyA6yoU0ADzfZGILnQ8mlDA4mO082mROfCzB8IxWqS9IW-PO1jKM4_h2q1fN5dGql1FUd_uRAu4uvUNBf8PVs_oDgi78ei5hTZ59FAiGUWGdAk2WbjLXkLMwAS0WpuWra9XmLGcKGA5XW5byDe58wh_Spgu1kfUnV_TZ34UBlPIyHE52W01jV4Oo9JMbN6503k8DHH7WY5SNthEDV5CkyeAW_TBrjiN1z5FRtXxZVdD0xqfRIej3j6eLGLF4zZ8AmC8TVzOHI=",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "2024 trends show a move toward \"luxury designer\" signature scents in home care."
+        }
+      ],
+      "domain": "researchandmarkets.com",
+      "short_id": "src-27"
+    },
+    "src-18": {
+      "short_id": "src-18",
+      "domain": "cleanthesky.com",
+      "supported_claims": [
+        {
+          "text_segment": "Brands are \"luxe-ing up\" everyday tasks with prestige-perfume-inspired scents and aesthetic, \"Instagram-ready\" packaging.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Brands are \"luxe-ing up\" everyday tasks with prestige-perfume-inspired scents and aesthetic, \"Instagram-ready\" packaging.",
+          "confidence": 0.5
+        }
+      ],
+      "title": "cleanthesky.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEBgqMzmERpPmFEPn1g5Nj0eAWLYgWRktZRueoUUEEbX6qscQjqS4BOt_J4tVJfNgpo4-uPT7pPhHA6buponUrUMEo2u5XBz4GtEuM54tFUA6zni2yLsTwM61f2AHS-U51VpDACgr8aQZNpT4iN1UuTWhCX_0nuPJ4="
+    },
+    "src-12": {
+      "domain": "gritdaily.com",
+      "short_id": "src-12",
+      "supported_claims": [
+        {
+          "text_segment": "*   **Non-Negotiable Expectations:** Sustainability is no longer a \"premium feature\" but a baseline.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Performance vs. Sustainability",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Non-Negotiable Expectations:** Sustainability is no longer a \"premium feature\" but a baseline."
+        },
+        {
+          "text_segment": "Performance vs. Sustainability",
+          "confidence": 0.5
+        }
+      ],
+      "title": "gritdaily.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH78k0RvSHnMi7UM-EK6UBsjnWsw1yzKmgrw2-G5tUxo0Wdh9ACD_oEcE8Ea86ySbb6HbHXH8OJ4HjzgwHcq1E7e1WZSZ1EPC1OENxwR7osUk9TwZsUCfQf0IsRC_5CZGlt3pGFp_swYK5gUumnDQsZ65K5dQ=="
+    },
+    "src-19": {
+      "title": "cottoninc.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGzNbbpUzmLcJFVOJD7bEsyvBOWW_R0j4RKtfkgwDDcG2r4FpwINxUb8UuwdRXkfwjRj_LqzJTy09fyApRSeJCFIMAFpGBzqDo9py0Gl_P2FeZDgogJOBbam8ejTdCKYhvyPE4XRlCWZNg_YFTgGOZXmiH-6K9udik-z8R9ByUIg5QNNerqdqQYrRvdQRLO-z7wlFOB4JbRooP4kthh5ELpOG6wTbEp_HjpFscG3Bnxgk5M",
+      "short_id": "src-19",
+      "domain": "cottoninc.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Tactile Comfort:** There is a link between Gen Z\u2019s rising anxiety and their preference for soft, natural fibers (like cotton) and products that provide \"sensory regulation\" through tactile softness."
+        },
+        {
+          "text_segment": "Performance vs. Sustainability",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Tactile Comfort:** There is a link between Gen Z\u2019s rising anxiety and their preference for soft, natural fibers (like cotton) and products that provide \"sensory regulation\" through tactile softness."
+        },
+        {
+          "text_segment": "Performance vs. Sustainability",
+          "confidence": 0.5
+        }
+      ]
+    },
+    "src-1": {
+      "title": "smartlifeco.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE6TFglo5_QylV9KQU2FsjMkGgPLrbVvYIOm2X_1l59ofJvVib6RP5wGnG9nMG0x7DYP7sQ6MgnrDlpEwV7app1J-A2b6Q5atlYkniQchYJ_y770fZ1ikzR-EM8NNzmMXO8d2R2JaRsI8BKjU5533RrlNxGfSDb3IjweO1y0PZ20tDr6DhnbVr2lZ3WUfQ0yKMQeX46Zoc9ixKOnoOMslXwu_6mJjteqUHZxt7XyntQDZV_VeTiFbU=",
+      "short_id": "src-1",
+      "domain": "smartlifeco.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Behavior & Sustainability"
+        },
+        {
+          "text_segment": "*   **Packaging Impact:** 53% of Gen Z have stopped buying a brand due to excessive plastic packaging.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Gen Z Consumer Behavior & Sustainability",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **Packaging Impact:** 53% of Gen Z have stopped buying a brand due to excessive plastic packaging.",
+          "confidence": 0.5
+        }
+      ]
+    },
+    "src-22": {
+      "short_id": "src-22",
+      "domain": "sogreenpack.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Performance vs. Sustainability"
+        },
+        {
+          "text_segment": "Performance vs. Sustainability",
+          "confidence": 0.5
+        }
+      ],
+      "title": "sogreenpack.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEXqQLx8ZBuXzHVTk9qeuwaCoGwMQgubTc6Xo6-nY5x7_CObvT0-5gJKri4BeOLF-mLg4Wg41HVHKCvyHAhPnb7VxaaRBerZEMssBKWxzFfrP1UN6WjH-con8q6IMYZZuPDgmMzwmP86NUgxLMPXoGMGwzxs0pxyiRKPd2T_eDo34PFDTTEvwCaQxP63YtGX30s1iWaNsDGFRm7QylTdAj6_KM22wbk"
+    },
+    "src-15": {
+      "title": "perfumencologne.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGUuWF5HSJSWLX3hqUt9nKfUDyHefLf7hSjKfaioKu6V6EWCiOpYGZbEZ-_8Bf2AvgN2iRdN0VJFBtEe6sDu_99lFN3PF61EwZdPa7TBcNtSk2dbsA_wE_rxjcoEFnIUMA63Q-otnfarnQ-QJxCaG5ULmX6iT378BaEYUKuVjKJAQ==",
+      "supported_claims": [
+        {
+          "text_segment": "Aesthetic & Lifestyle Movements",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **\"Clean Girl\" Aesthetic:** This movement prioritizes hygiene, dewy skin, and \"smelling pristine.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Fragrances that evoke \"freshly done laundry\" or \"springtime\" are core to this lifestyle."
+        },
+        {
+          "text_segment": "Aesthetic & Lifestyle Movements",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **\"Clean Girl\" Aesthetic:** This movement prioritizes hygiene, dewy skin, and \"smelling pristine.\"",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Fragrances that evoke \"freshly done laundry\" or \"springtime\" are core to this lifestyle."
+        }
+      ],
+      "short_id": "src-15",
+      "domain": "perfumencologne.com"
+    },
+    "src-26": {
+      "title": "prophecymarketinsights.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHeumqCASMEG39LnlPeBJzwGcUt_MPZ0-9bSRGohd3TeKBWaDjo_e-0KdV4b_uI4f6QJ7jiuqf58rabTuh-ZJMzufDYWNhVcCQZCCGaFz02ux-vJen6sEpI4FaR5spEBvMA02f5xLc7t08_zqiF5wu3VG-fgtqNJ1Ab6X-XqlbsIhYaXffeuAtkTPeksoCeLzKDBKoNtC1vLnv5748rMo6ElJVjfZc=",
+      "supported_claims": [
+        {
+          "text_segment": "*   **Growth of Eco-Friendly Care:** The eco-friendly household cleaning market is projected to reach **$50.22 billion by 2034**, growing at a CAGR of 6.7%.",
+          "confidence": 0.5
+        }
+      ],
+      "domain": "prophecymarketinsights.com",
+      "short_id": "src-26"
+    },
+    "src-16": {
+      "title": "lemon8-app.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEcFuWEV_z7CHALtfsUm27iTyCKF6dhvoeV41Pjb5xey7qlqc9zsSIlJLX87z9I-RcoY6q9-4i6kAlM8MZsLDWeSEU4lej5BALxKacbPJ3-ul-nP_gFYAf36UJ1OtnRDLOX-QqSJqeje-mrmEu0tyd0JOnmC5ePpp_px-bQQDHG8XWFCQ==",
+      "domain": "lemon8-app.com",
+      "short_id": "src-16",
+      "supported_claims": [
+        {
+          "text_segment": "Aesthetic & Lifestyle Movements",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cultural Relevance & \"Freshness\""
+        },
+        {
+          "text_segment": "Aesthetic & Lifestyle Movements",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cultural Relevance & \"Freshness\""
+        }
+      ]
+    },
+    "src-4": {
+      "title": "accio.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHTb8nyK-1o5boz3cv7pbfZzojNu3jeRFeEsN_QavuOBcKelCQx0d3QwTkKEVFf4OtFMvfxJaexUi4gavT6c9qWtUorHCK4axihFN7opl0d7lMZPeKq1T1NyljcdC0WsSO-fWVmuhJhOsoZl6tREm8b",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Behavior & Sustainability"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Behavior & Sustainability"
+        }
+      ],
+      "domain": "accio.com",
+      "short_id": "src-4"
+    },
+    "src-29": {
+      "supported_claims": [
+        {
+          "text_segment": "### Strategic Positioning for Tide Hibiscus",
+          "confidence": 0.5
+        }
+      ],
+      "domain": "brandstruck.co",
+      "short_id": "src-29",
+      "title": "brandstruck.co",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEMBJYwizhkt-pbdk2XU-SHSblVN_CkS7IYtMpA4qgNfjNgKqpTPv3UKevaouAY7Sl3brp8sxT9BuGEABt4QsMzPXTZQPUgZ3pXXBr0Bjivmk83edqSItc="
+    },
+    "src-24": {
+      "short_id": "src-24",
+      "domain": "forbes.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Cultural Drivers & Consumer Demographics"
+        }
+      ],
+      "title": "forbes.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFjN6W8ypteWLmsEVP56QLhuIJ_O_KyQPBtAYijq1fopDFTeTf4Cdpc2C_b8jUuC43cDB4rE469OpcBagOY10fmGlR-9Mn_rRbTweyYgT0kOurpfgotGhZaNKoweT98-Wi5k5W_5zlW58Of1uOsGWmlQbEu-qVYS4G9RqX5xc-FEqxqC0dO6PENYDMttzFfK021CgPDLvWJ"
+    },
+    "src-10": {
+      "title": "esw.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGerhmjcNMKHBFuCz3DwS3EFs4x2UzIAdAPBrUQ_2r9JgTqkX5UgHbTiZRX1wfPnYWzXTnUSxOlnqZZRU_XT8k7tnXPEgIUwfujd1GXHXwbFfyrv4nVJdn4bMmLJFao3U4qCJCQ1aKSA8n_jDEIMIqAsgVuZc3ukjc=",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Behavior & Sustainability"
+        },
+        {
+          "text_segment": "Aesthetic & Lifestyle Movements",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Wellness Connection:** Home fragrance is now seen as part of holistic health."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Behavior & Sustainability"
+        },
+        {
+          "text_segment": "Aesthetic & Lifestyle Movements",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Wellness Connection:** Home fragrance is now seen as part of holistic health."
+        }
+      ],
+      "short_id": "src-10",
+      "domain": "esw.com"
+    },
+    "src-25": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **High-Income Boomers:** A significant market for discretionary home spending, increasingly looking for premium, effective products that support a \"healthspan\" lifestyle."
+        }
+      ],
+      "short_id": "src-25",
+      "domain": "mckinsey.com",
+      "title": "mckinsey.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGzEsoCtnLvDvg47Ure7zizrw_E9ghRMz2Wq6IB3qtJxQiOTjOIfo0SemGwpka7HKDzciAUle65b-fO5nFvCmWgLKrl5_-9Syjbo0WG6jCCcT45W730oy-3ZCP9ox9VyCtAkrMHS74cmmRyknJViGApQ1S4ezgJ1JeRQZ3mfvi6Vl2EkfGBUf8zhRINzEDPGnhRuSZR28iI2LOq"
+    },
+    "src-14": {
+      "title": "openpr.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFKzvK8uNqxNvZxuWa6OBoQdeN5iuhjElnPsbOO6L0DupLnCJy6-1dkuHCWyyhx43xnIBPyBrHHoOxUHtJxbBAoGozCG7PTEfZmUPUZZzuKrkbbweZqyP93Yf_yVgMUe57bRVNijYVOrj-Z61xczcFZrauamKXnMMJdd9A2nk2RNaPt1RpUCPT7wX36YfHFDRxZsIvl_pJpC4MEf-iIYw==",
+      "supported_claims": [
+        {
+          "text_segment": "*   **The \"Hibiscus Boom\":** The hibiscus market is projected to grow significantly (CAGR of 7.1%), driven by its integration into \"natural\" cosmetics and functional wellness products.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The \"Hibiscus Boom\":** The hibiscus market is projected to grow significantly (CAGR of 7.1%), driven by its integration into \"natural\" cosmetics and functional wellness products."
+        }
+      ],
+      "domain": "openpr.com",
+      "short_id": "src-14"
+    }
+  },
+  "_state_init": true,
+  "autopilot_mode": true,
+  "target_product": "Tide Fabric Softener with Hibiscus Scent",
+  "ad_copy_draft": "Here are 12 culturally relevant ad copy ideas for Tide Fabric Softener with Hibiscus Scent, tailored for a Gen Z, eco-conscious audience and informed by current \"Sunday Reset\" and \"Sustainable Laundry\" trends.\n\n---\n\n### **1. The \"Sunday Reset\" Essential**\n*   **Headline:** Your Sunday Reset Just Got a Scented Upgrade.\n*   **Body Text:** Transform your laundry mountain into a botanical retreat. Infuse your sheets with the exotic, long-lasting scent of hibiscus and the softest touch for your Monday-ready bedding. Pure plant-based softening power.\n*   **Call-to-Action:** Shop Tide Hibiscus on Amazon.\n*   **Trend Reference:** YouTube Trend: \"Sunday Reset\" as a Wellness Ritual.\n*   **Rationale:** Taps into the 500k+ #SundayReset TikTok/YouTube videos where laundry is the cornerstone of weekly mental preparation.\n*   **Social Caption:** No \"Sunday Scaries\" here. Just fresh sheets and tropical vibes. \ud83c\udf3a\u2728 #SundayReset #TideHibiscus #LaundryRitual\n\n---\n\n### **2. The \"Eco-Luxe\" Reality Check**\n*   **Headline:** Sustainable Living, Minus the Sacrifice.\n*   **Body Text:** You shouldn't have to choose between saving the planet and smelling pristine. Get the \"Clean Girl\" aesthetic with a high-performance formula that\u2019s gentle on the earth but heavy on the softening. No greenwashing, just green chemistry.\n*   **Call-to-Action:** Learn More at Tide.com.\n*   **Trend Reference:** Search Trend: Sustainable Laundry.\n*   **Rationale:** Directly addresses the Gen Z \"Say-Do\" gap by emphasizing Tide's high-performance heritage combined with eco-transparency.\n*   **Social Caption:** Green is the new neutral. \ud83c\udf3f High-performance softening meets botanical freshness. #EcoLuxe #SustainableLaundry #TideGreen\n\n---\n\n### **3. The Hibiscus Scent Wardrobe**\n*   **Headline:** Wear the Vibe: The Tropical Scent That Stays.\n*   **Body Text:** Move over, basic \"fresh\" scents. The \"Hibiscus Boom\" is here. Elevate your fabric wardrobe with a luxe, ruby-red floral profile that lasts from wash day to the weekend.\n*   **Call-to-Action:** Find Your Scent at Target.\n*   **Trend Reference:** Search Trend: The Hibiscus Boom / Fragrance Wardrobes.\n*   **Rationale:** Appeals to Gen Z's shift toward using laundry scents as a form of \"fragrance wardrobing\" and emotional expression.\n*   **Social Caption:** If your laundry doesn\u2019t smell like a tropical sanctuary, you\u2019re doing it wrong. \ud83c\udf3a\ud83d\udc5a #FragranceWardrobe #HibiscusScent #TideVibes\n\n---\n\n### **4. The \"Sensory Regulation\" Hook**\n*   **Headline:** Soft Fabrics. Soft Mind.\n*   **Body Text:** In a world that feels loud, make your home a sanctuary. Our Hibiscus softener provides the tactile comfort your nervous system craves\u2014making every hoodie and blanket feel like a warm hug. \n*   **Call-to-Action:** Relax with Tide.\n*   **Trend Reference:** Key Insight: Sensory Regulation & Tactile Comfort.\n*   **Rationale:** Responds to the research regarding Gen Z\u2019s rising anxiety and their preference for soft, natural fibers for emotional comfort.\n*   **Social Caption:** For when the vibes are off but your hoodie is 10/10 soft. \u2601\ufe0f\ud83e\uddd8\u200d\u2640\ufe0f #SensoryCare #CozyAesthetic #TideSoftness\n\n---\n\n### **5. The \"Eco-Hack\" Tutorial**\n*   **Headline:** The Only Laundry Hack You Need.\n*   **Body Text:** Ditch the complicated DIYs. Tide Hibiscus combines plant-based ingredients with the softening power you actually need for cold-water washes. High efficiency meets low environmental impact.\n*   **Call-to-Action:** Shop Eco-Friendly Care.\n*   **Trend Reference:** YouTube Trend: Eco Cleaning Hacks.\n*   **Rationale:** Targets the audience following creators like \"Abby Organizes\" who want efficiency but are skeptical of traditional chemical-heavy brands.\n*   **Social Caption:** A hack that actually works: Softness + Sustainability in one bottle. \ud83e\uddfa\ud83c\udf31 #LaundryHacks #EcoCleaning #TideDifference\n\n---\n\n### **6. The Biophilic Sanctuary**\n*   **Headline:** Bring the Outdoors In.\n*   **Body Text:** Your laundry room deserves an aesthetic. Our Hibiscus scent isn't just a fragrance\u2014it\u2019s biophilic design for your senses. Turn your \"chore\" into a spa-like floral experience.\n*   **Call-to-Action:** Treat Your Home.\n*   **Trend Reference:** Search Trend: Biophilic Design/Clean Home Aesthetic.\n*   **Rationale:** Matches the 2025/2026 design trend of bringing nature into the home through plants and botanical scents.\n*   **Social Caption:** Laundry day? More like a spa day for your clothes. \ud83c\udf3a\ud83d\udec1 #BiophilicDesign #CleanGirlAesthetic #HomeSanctuary\n\n---\n\n### **7. The Longevity Flex**\n*   **Headline:** Smell Fresh Until the Next Wash. Guaranteed.\n*   **Body Text:** Frustrated with scents that fade by lunchtime? Tide Hibiscus is engineered for fragrance longevity. Botanically inspired, performance-driven. Because \"sustainable\" shouldn't mean \"weak.\"\n*   **Call-to-Action:** See the Scent Stats.\n*   **Trend Reference:** Combined Trend: Sustainable Laundry + Performance Longevity.\n*   **Rationale:** Addresses the top consumer frustration: eco-friendly products that lose their scent too quickly.\n*   **Social Caption:** Freshness that actually stays. Even through that 3-hour study session. \ud83d\udcda\u2728 #FragranceLongevity #TideHibiscus #AlwaysFresh\n\n---\n\n### **8. The \"Decelerated Dopamine\" Routine**\n*   **Headline:** Slow Down with the Scent of Hibiscus.\n*   **Body Text:** Find \"decelerated dopamine\" in the simple act of folding laundry. Let the tropical floral notes transport you while our plant-based formula makes your favorite fabrics feel brand new.\n*   **Call-to-Action:** Start Your Ritual.\n*   **Trend Reference:** YouTube Trend: Decelerated Dopamine / Wellness Ritual.\n*   **Rationale:** Connects with the Gen Z desire for mindfulness and finding joy in \"slowing down\" through tangible chores.\n*   **Social Caption:** Finding peace in the fold. \ud83e\uddd8\u200d\u2642\ufe0f\ud83e\uddfa #MindfulCleaning #DopamineMenu #TideRitual\n\n---\n\n### **9. The Performance-First Eco Choice**\n*   **Headline:** Power Meets Petals. \n*   **Body Text:** We didn't just add a floral scent; we reinvented softening. Bio-based surfactants meet the legendary Tide clean. Sustainable enough for your values, strong enough for your workout gear.\n*   **Call-to-Action:** Buy Now.\n*   **Trend Reference:** Search Trend: Sustainable Laundry / Green Chemistry.\n*   **Rationale:** Leverages Tide's \"Hero\" brand archetype while proving it has adapted to \"Green Chemistry\" standards.\n*   **Social Caption:** All the power. None of the compromise. \ud83c\udf38\u26a1 #GreenChemistry #PerformanceLaundry #TideHibiscus\n\n---\n\n### **10. The Warm Minimalist Restock**\n*   **Headline:** Functional. Sustainable. Beautiful.\n*   **Body Text:** For the \"Warm Minimalism\" lover. Tide Hibiscus is the final touch for your organized laundry room. Aesthetic, botanical, and effective\u2014perfect for a clutter-free lifestyle.\n*   **Call-to-Action:** Elevate Your Space.\n*   **Trend Reference:** Search Trend: Warm Minimalism / Aesthetic Restock.\n*   **Rationale:** Fits the visual trend of \"laundry restock\" videos and minimalist home decor that is currently viral.\n*   **Social Caption:** A restock that looks as good as it smells. \ud83d\udd4a\ufe0f\ud83c\udf3a #RestockVlog #WarmMinimalism #TideHome\n\n---\n\n### **11. The \"Turn to Cold\" Campaign Hero**\n*   **Headline:** Cool Wash. Tropical Scent. \n*   **Body Text:** Help the planet by turning to cold water. Tide Hibiscus is specially formulated to work in cold cycles, keeping your fabrics soft and the earth a little greener.\n*   **Call-to-Action:** Pledge to Turn to Cold.\n*   **Trend Reference:** Combined Trend: Eco Cleaning Hacks + Sustainable Laundry.\n*   **Rationale:** Aligns the product with Tide\u2019s established \"Turn to Cold\" sustainability initiative which resonates with climate-conscious Gen Z.\n*   **Social Caption:** Save energy. Save your clothes. Smells like a tropical vacation. \ud83c\udf0d\u2744\ufe0f #TurnToCold #EcoFriendly #TideHibiscus\n\n---\n\n### **12. The Everything-Proof Softness**\n*   **Headline:** Hibiscus Freshness, Heavy-Duty Softness.\n*   **Body Text:** From gym leggings to vintage thrift finds\u2014everything feels better in Hibiscus. Get professional-grade fabric care that respects your eco-priorities.\n*   **Call-to-Action:** Shop Tide Fabric Softener.\n*   **Trend Reference:** YouTube Trend: Sustainable Routine for Urban Families.\n*   **Rationale:** Bridges the gap for high-active or urban consumers who need performance for diverse fabrics but want a botanical feel.\n*   **Social Caption:** Thrifting looks better when it feels this soft. \ud83d\udc55\ud83d\udc8e #ThriftFinds #SustainableStyle #TideHibiscus",
+  "combined_final_cited_report": "# Tide Fabric Softener: The Hibiscus Botanical Ritual Campaign\n\n## Campaign Guide: Engaging the Gen Z Eco-Conscious Consumer\nThis campaign positions **Tide Fabric Softener with Hibiscus Scent** at the intersection of high-performance fabric care and the \"Eco-Luxe\" lifestyle. Gen Z consumers are increasingly skeptical of \"greenwashing\" and demand that brands act as authentic partners in their sustainability journey <cite source=\"src-2\" /><cite source=\"src-13\" />. While 77% of this demographic avoids brands with poor environmental standards, they face a \"Say-Do\" gap driven by economic pressures; however, they remain willing to pay a 10% premium for sustainable products that provide clear, verifiable value <cite source=\"src-3\" />.\n\nSustainability is no longer a premium add-on but a baseline expectation, with 94% of Gen Z believing brands must ensure products are environment

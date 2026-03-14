@@ -100,10 +100,13 @@ Format each panelist's feedback as:
 
 **IMPORTANT**: Only run this step if `commercial_artifact` exists and is non-empty. If there is no commercial, skip directly to Step 6.
 
-After scoring, attempt to generate a short video testimonial for the top 2 panelists using `generate_panelist_testimonial`:
+After scoring, generate a short Ken Burns video testimonial for ALL 3 panelists using `generate_panelist_testimonial`:
 1. Write a 30-50 word spoken testimonial in the panelist's voice summarizing their key feedback
 2. Choose a matching voice_style from: "young_female", "young_male", "mature_female", "mature_male", "british_female"
-3. Call `generate_panelist_testimonial(panelist_name, testimonial_script, voice_style)`
+3. Call `generate_panelist_testimonial(panelist_name, testimonial_script, voice_style)` for each panelist
+4. After ALL panelist testimonials are generated, call `concatenate_panelist_videos` to create a combined focus group reel
+
+The testimonial creates a cinematic Ken Burns zoom effect on the panelist's portrait with their voiceover audio. The reel concatenates all testimonials into a single video.
 
 **If ANY testimonial call fails, do NOT retry. Skip remaining testimonials and proceed directly to Step 6.** The written evaluation is the primary deliverable.
 

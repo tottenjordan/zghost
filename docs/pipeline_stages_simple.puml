@@ -1,0 +1,9 @@
+@startuml
+start
+:Trend Discovery;
+:Market Research;
+:Creative;
+:Evaluation;
+:Reporting;
+stop
+@endum

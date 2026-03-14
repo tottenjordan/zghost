@@ -1,0 +1,13 @@
+[root_agent]: Running market research pipeline...
+[research_orchestrator]: Running parallel research (YouTube, Search, Campaign)...
+[campaign_web_planner]: 1. Gen Z consumer behavior and preferences for sustainable household and laundry products 2024
+2. Market trends and consumer sentiment regarding hibiscus and floral scents in fabric care
+3. Balancing performance and eco-friendliness: Gen Z attitudes toward plant-based cleaning power
+4. Impact of biodegradable packaging on brand loyalty and purchasing decisions among eco-conscious youth
+5. Successful eco-conscious marketing campaigns targeting Gen Z's sustainability values and aesthetic preferences
+6. Analysis of Gen Z's "fresh scent" expectations vs. traditional floral fragrance profiles in home products
+[gs_web_planner]: 1. What are the primary cultural and environmental drivers behind the 2024 surge in searches for sustainable laundry products, and what specific concerns—such as microplastics, water pollution, or chemical sensitivity—are most prominent?
+2. Who are the key market leaders, disruptor brands (e.g., Blueland, Tru Earth, Dirty Labs), and social media influencers driving the "plastic-free" and "zero-waste" laundry movements?
+3. How does the interest in sustainable cleaning intersect with broader lifestyle trends like minimalism, the "Clean Girl" home aesthetic, and the rising popularity of home organization content on TikTok and Instagram?
+4. What is the cultural significance of the transition from traditional heavy plastic jugs to lightweight alternatives like laundry sheets and tablets, and how does this reflect changing consumer priorities regarding domestic labor and environmental responsibility?
+5. How are economic factors, such as the rising cost of energy and water, influencing consumer interest in high-efficiency appliances and cold-water detergent formulations?

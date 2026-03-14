@@ -1,0 +1,7 @@
+@startuml
+package "Google Cloud" {
+  [BigQuery]
+  [Cloud Storage]
+  [Vertex AI]
+}
+@endum

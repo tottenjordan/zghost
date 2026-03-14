@@ -1,0 +1,34 @@
+
+============================================================
+GE STREAM ASSIST E2E RESULTS — 20260314_080134
+============================================================
+  Duration: 9.1 minutes
+  AE Session: 6283408373748596736
+  Campaign: Tide Fabric Softener (Hibiscus) for Gen Z
+
+  QUALITY GATES:
+    Research report: 5226 chars PASS
+    Images: 2 PASS
+    15s Commercial: PASS
+    Focus Group: PASS
+    Final PDF report: 5226 chars PASS
+
+  GE INTEGRATION:
+    Thoughts displayed: 6 waves with thoughts PASS
+    Status chips emitted: 78 chips PASS
+    GE routing (streamAssist): PASS
+
+  STATUS CHIPS (sample):
+    - Running parallel research (YouTube, Search, Campaign)...
+    - Parallel research wave 1/12...
+    - Running parallel research (YouTube, Search, Campaign)...
+    - Parallel research wave 2/12...
+    - Running parallel research (YouTube, Search, Campaign)...
+    - Parallel research wave 3/12...
+    - Merging research findings into unified summary...
+    - Merged 2 research streams (8037 chars)
+    - Evaluating research quality and identifying gaps...
+    - Evaluating research quality...
+
+  OVERALL: PASS
+============================================================

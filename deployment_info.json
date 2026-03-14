@@ -2,5 +2,7 @@
   "resource_name": "projects/679926387543/locations/us-central1/reasoningEngines/8788263399906607104",
   "engine_id": "8788263399906607104",
   "project_id": "wortz-project-352116",
-  "project_number": "679926387543"
+  "project_number": "679926387543",
+  "ge_engine": "gemini-enterprise-17634901_1763490144996",
+  "ge_agent_id": "18371139549217338545"
 }

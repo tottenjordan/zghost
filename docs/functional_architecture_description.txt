@@ -1,0 +1,21 @@
+The system is called 'Trends & Insights'.
+It has the following components:
+1. Campaign Orchestrator (Orchestration): The main entry point.
+2. Trends & Insights (Service): Discovers trends.
+3. Research Orchestrator (Service): Conducts research.
+4. Creative Production Orchestrator (Service): Generates creatives.
+5. Focus Group Evaluator (Service): Evaluates creatives.
+6. BigQuery (Google Cloud): Stores trends data.
+7. Cloud Storage (Google Cloud): Stores artifacts.
+8. Vertex AI (Google Cloud): Provides Gemini models.
+9. YouTube (External): Source of content.
+
+The flow is:
+- Campaign Orchestrator orchestrates the services in order (1. Discover, 2. Research, 3. Generate, 4. Evaluate).
+- Trends & Insights queries BigQuery.
+- Research Orchestrator fetches from YouTube and saves to Cloud Storage.
+- Creative Production Orchestrator generates assets using Vertex AI.
+- Focus Group Evaluator analyzes assets using Vertex AI.
+- Vertex AI reads and writes to Cloud Storage.
+
+The diagram should be Google Cloud branded, modern, and beautiful.

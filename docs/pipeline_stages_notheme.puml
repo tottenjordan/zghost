@@ -1,0 +1,42 @@
+@startuml
+skinparam Handwritten false
+skinparam Monochrome false
+skinparam BackgroundColor #f9f9f9
+skinparam Padding 10
+
+title Trends & Insights - Pipeline Stages
+
+| Trend Discovery |
+| Market Research |
+| Creative |
+| Evaluation |
+| Reporting |
+
+| Trend Discovery |
+start
+#4285F4:Query Trends (BigQuery);
+#4285F4:Filter & Select;
+
+| Market Research |
+#EA4335:Recall Memory (Prior Insights);
+#EA4335:Fetch Content (Google Search/YouTube);
+#EA4335:Analyze & Synthesize;
+#EA4335:Generate Draft Report;
+
+| Creative |
+#FBBC05:Draft Ad Copy (Gemini);
+#FBBC05:Draft Visual Concepts;
+#FBBC05:Generate Images (Imagen);
+#FBBC05:Generate Videos (Veo);
+
+| Evaluation |
+#34A853:Evaluate Commercial (Gemini Vision);
+#34A853:Simulate Focus Group;
+#34A853:Score Visuals & Qualitative;
+
+| Reporting |
+#4285F4:Compile Final PDF Report;
+#4285F4:Save Artifacts to GCS;
+
+stop
+@endum

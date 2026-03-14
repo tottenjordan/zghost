@@ -1,0 +1,39 @@
+[root_agent]: Running market research pipeline...
+[research_orchestrator]: Composing final cited research report...
+[combined_report_composer]: # Research Report: Tide Fabric Softener with Hibiscus Scent
+
+## Campaign Guide: The "Conscious Finish"
+This campaign positions Tide Fabric Softener with Hibiscus Scent as the essential final step in a modern, sustainable laundry routine. By shifting the narrative from a "chore" to a "wellness ritual," the campaign targets Gen Z and Millennial consumers who view home care as a form of mental health maintenance and lifestyle therapy <cite source="src-26" />.
+
+*   **Core Positioning:** "Natural inspiration meets high-performance softness." The Hibiscus scent bridges the "sensory gap" for eco-conscious consumers who find DIY cleaning alternatives like vinegar and baking soda to be lacking in olfactory reward.
+*   **Visual Strategy:** Visuals should leverage the "Botanical Aesthetic" and "Dopamine Decor" trends, featuring macro shots of hibiscus flowers and minimalist, "shelfie-ready" laundry spaces <cite source="src-17" />.
+*   **Narrative Hook:** "You’ve cleaned your home for the planet. Now, treat your senses for yourself." This frames the product as the "Conscious Finish" to a sustainable cycle.
+
+## Search Trends: Sustainable & Functional Cleaning
+Web search data indicates a significant shift in consumer priorities toward eco-friendly and high-performance cleaning solutions.
+*   **Eco-Friendly Dominance:** There is a growing interest in sustainable cleaning and eco-friendly laundry products. Consumers are increasingly searching for non-toxic, antibacterial, and hypoallergenic features, with 45% of consumers seeking these specific attributes <cite source="src-5" />.
+*   **The "Turn to Cold" Movement:** A major trend in energy efficiency is the transition to cold-water washing, which can save households up to $150 annually and reduce energy use by 90% <cite source="src-2" />. Tide is aligning with this by aiming for 3 out of 4 loads in the U.S. and Canada to be washed in cold water by 2030 <cite source="src-6" />.
+*   **Microplastic Awareness:** Growing awareness of microplastics—of which 35% are estimated to come from synthetic fabric laundry—is driving consumers toward more responsible fabric care <cite source="src-1" />.
+
+## YouTube Trends: #CleanTok & Aesthetic Wellness
+YouTube and social media subcultures have transformed laundry from a mundane task into "cleantertainment."
+*   **Lifestyle Therapy:** Trending content features "Clean with Me" routines that emphasize "washing with intention" and using home care as a way to gain mastery and control in a chaotic world <cite source="src-7" /> <cite source="src-26" />.
+*   **Aesthetic Minimalism:** Creators are focusing on "Minimalist Laundry" routines and the use of premium, aesthetically pleasing packaging. 53% of Gen Z consumers have stopped purchasing brands due to excessive plastic, making minimalist and recyclable packaging a primary driver of trust <cite source="src-13" />.
+*   **Sensory Engagement:** Scent is a top priority for creators and viewers alike; 79% of global consumers want their house to smell good as part of their self-care routine, and one in four North American consumers cite fragrance as a primary influence in their home care purchases <cite source="src-28" /> <cite source="src-29" />.
+
+## Key Insights from Research
+
+### Gen Z Purchasing Drivers
+Gen Z's commitment to sustainability is characterized by "economic pragmatism." While they are the most environmentally conscious generation, inflation is making them more money-driven and skeptical of "greenwashing" <cite source="src-11" />. They demand tangible value, data-backed proof (such as EPA Safer Choice or USDA Biobased certifications), and radical transparency in the supply chain <cite source="src-10" /> <cite source="src-14" />.
+
+### The Appeal of Hibiscus
+Hibiscus is identified as a "botanical powerhouse" for 2025, associated with antioxidant properties and emotional wellness <cite source="src-17" />. Consumers are moving away from traditional "clean linen" smells in favor of complex, "fine fragrance-inspired" profiles like hibiscus and sandalwood <cite source="src-18" />. This scent profile sparks emotional engagement, fitting the "cleantertainment" trend where fragrance and texture are used to foster positivity at home <cite source="src-27" />.
+
+### Innovation and Competition
+The competitive landscape features brands like Seventh Generation, Method, and Dropps, which leverage refillable systems and mineral-based softeners <cite source="src-20" />. To compete, Tide is focusing on:
+*   **Packaging Innovation:** Utilizing the Eco-Box (60% less plastic) and striving for 100% recyclable packaging <cite source="src-6" />.
+*   **Formula Performance:** Addressing the "efficacy gap"—the perception that eco-products are less effective—by highlighting that modern sustainable detergents now achieve 80-87% stain removal <cite source="src-5" />.
+*   **Long-Lasting Freshness:** Using microencapsulation technology to provide the long-lasting, nature-inspired fragrance that 70% of global consumers now appreciate more than ever <cite source="src-29" />.
+[combined_report_composer]: PDF report saved to memory 📝 !!
+[research_orchestrator]: Saving research report as PDF...
+[research_orchestrator]: Research report saved as PDF: draft_research_report_with_citations.pdf

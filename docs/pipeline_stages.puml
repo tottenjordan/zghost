@@ -1,0 +1,213 @@
+@startuml
+
+' GCP_BRANDING_APPLIED
+!theme materia
+skinparam backgroundColor #F8F9FA
+skinparam roundCorner 10
+skinparam defaultFontName "Open Sans"
+skinparam DefaultFontSize 12
+skinparam Padding 10
+
+skinparam database {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam component {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam rectangle {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam note {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam collections {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam state {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam activity {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #4285F4
+    FontColor #000
+    Shadowing false
+    BorderThickness 2
+}
+skinparam usecase {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam cloud {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam frame {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam package {
+    BackgroundColor #F8F9FA
+    BorderColor #CCCCCC
+    FontColor #000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam node {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam queue {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+
+
+
+' GCP_BRANDING_APPLIED
+
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000000
+    Shadowing false
+    BorderThickness 1
+}
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+    BackgroundColor #FFFFFF
+    BorderColor #4285F4
+    FontColor #000
+    Shadowing false
+    BorderThickness 2
+}
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+    BackgroundColor #F8F9FA
+    BorderColor #CCCCCC
+    FontColor #000
+    Shadowing false
+    BorderThickness 1
+}
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+
+
+title Trends & Insights - Pipeline Stages
+
+| Trend Discovery |
+| Market Research |
+| Creative |
+| Evaluation |
+| Reporting |
+
+| Trend Discovery |
+start
+#4285F4:Query Trends (BigQuery);
+#4285F4:Filter & Select;
+
+| Market Research |
+#EA4335:Recall Memory (Prior Insights);
+#EA4335:Fetch Content (Google Search/YouTube);
+#EA4335:Analyze & Synthesize;
+#EA4335:Generate Draft Report;
+
+| Creative |
+#FBBC05:Draft Ad Copy (Gemini);
+#FBBC05:Draft Visual Concepts;
+#FBBC05:Generate Images (Imagen);
+#FBBC05:Generate Videos (Veo);
+
+| Evaluation |
+#34A853:Evaluate Commercial (Gemini Vision);
+#34A853:Simulate Focus Group;
+#34A853:Score Visuals & Qualitative;
+
+| Reporting |
+#4285F4:Compile Final PDF Report;
+#4285F4:Save Artifacts to GCS;
+
+stop
+@endum

@@ -1,0 +1,42 @@
+[root_agent]: Creative pipeline attempt 3/15...
+[root_agent]: Running creative production pipeline (ad copy, visuals, commercial)...
+[creative_production_orchestrator]: Generating ad copy and visual creatives...
+[ad_content_generator_agent]: Here is the creative brief for the top 2 ad ideas selected for the **Tide Fabric Softener with Hibiscus Scent** campaign. These concepts are designed to resonate with Gen Z's "Smellmaxxing" and "Nowstalgia" trends while highlighting Tide's sustainable performance.
+
+---
+
+### **Ad Idea 1: The Fragrance Primer Hack**
+*   **Ad Copy:**
+    *   **Headline:** The Ultimate "Smellmaxxing" Hack.
+    *   **Body Text:** Stop layering perfume on top of stale laundry. Use Tide Hibiscus as your "fragrance primer." This solar-floral base pairs perfectly with your favorite vanilla or coconut mists for a 24-hour fragrance halo that actually lasts.
+    *   **Call-to-Action:** Get the Scent Base
+    *   **Social Media Caption:** Your scent layering starts in the washer. 🌸 Use Hibiscus as your base for that all-day tropical glow. No cap, this is the laundry hack you needed. #Smellmaxxing #ScentWardrobe #FragranceBase
+*   **Visual Concept:**
+    *   **Name:** The Scent Wardrobe Ritual
+    *   **Creative Concept:** Treats laundry as "Step 0" of a beauty routine. A lo-fi TikTok aesthetic showing a young person "priming" their clothes with Tide Hibiscus, setting a solar-floral base for perfume layering.
+    *   **Imagen Prompt (Keyframe):** A Gen Z woman with a minimalist aesthetic in a sun-drenched, modern laundry room. Close-up: her hands gently pouring a vibrant pink, iridescent hibiscus fabric softener into a dispenser. Soft natural morning light, shallow depth of field.
+    *   **Veo Prompt (Video):** A vertical TikTok video starting with the pour from the keyframe. Transition to a macro shot of soft linen fabric being lifted from the machine with slight steam. She pulls the fabric to her face and inhales deeply with a look of "sensorial escapism."
+*   **Trend Alignment:** YouTube Trend: "Smellmaxxing" & Scent Layering; "Sanctuary Living."
+*   **Rationale:** Turns a functional product into a beauty tool ("fragrance primer"), making it highly shareable for the ~29% of Gen Z who prioritize personal scent profiles.
+
+---
+
+### **Ad Idea 2: The "Nowstalgia" Escape**
+*   **Ad Copy:**
+    *   **Headline:** A Mental Vacation in Every Load.
+    *   **Body Text:** Escape climate anxiety with a sensory trip to the 90s. Our retro-tropical Hibiscus scent provides a "sensory escape" while our GreenCircle Certified formula reduces your laundry's energy impact by 90%. Clean clothes, clear conscience.
+    *   **Call-to-Action:** Start Your Escape
+    *   **Social Media Caption:** Taking a 15-minute mental vacation to the tropics while my laundry dries. 🏝️ Retro visuals, sustainable stats. #90sAesthetic #Nowstalgia #EcoEscape
+*   **Visual Concept:**
+    *   **Name:** The Nowstalgia Island Escape
+    *   **Creative Concept:** Combats "climate anxiety" by transforming the laundry room into a 90s tropical oasis. Bridges Tide's high-performance science with a nature-inspired mental retreat.
+    *   **Imagen Prompt (Keyframe):** An ultra-realistic 9:16 portrait of a "90s Tropicalia" themed laundry room. Lush tropical leaves and pink hibiscus flowers growing in the corners. A vintage-style "Muted Neon" orange washing machine. Grainy 35mm film texture with soft lens flares.
+    *   **Veo Prompt (Video):** A vertical video using the keyframe image as a reference. The tropical leaves sway gently, and glowing pink scent particles float through the air. A stylish Gen Z person leans against the machine, scrolling through their phone in a relaxed, warm atmosphere.
+*   **Trend Alignment:** Combined Trend: "Nowstalgia" & "Sensorial Escapism."
+*   **Rationale:** Uses "Vicarious Nostalgia" to provide emotional relief. Framing the product as a "mental vacation" elevates a mundane chore into a high-engagement wellness ritual.
+
+---
+
+**Do you approve these 2 ideas, or would you like to make any changes?** Once approved, I will generate the final images and videos.
+[creative_production_orchestrator]: Generating campaign images from visual concepts...
+[creative_production_orchestrator]: Generating image 1/2: concept_0...

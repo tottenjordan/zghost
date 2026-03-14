@@ -1,0 +1,13 @@
+[root_agent]: Running market research pipeline...
+[research_orchestrator]: Running parallel research (YouTube, Search, Campaign)...
+[campaign_web_planner]: 1. Gen Z consumer behavior and sustainability priorities in household cleaning products 2024
+2. Market reception of hibiscus and tropical floral scents in laundry care
+3. Gen Z "CleanTok" trends and the aesthetic appeal of sustainable laundry packaging
+4. Comparison of plant-based fabric softeners versus traditional chemical formulas for eco-conscious buyers
+5. Most effective marketing channels and messaging for reaching Gen Z eco-shoppers with CPG products
+6. Cultural relevance of long-lasting fragrance and "freshness" in Gen Z self-care and home rituals
+[gs_web_planner]: 1. What are the primary environmental and health drivers behind the surge in "sustainable laundry" searches, and how do concerns over microplastics and synthetic fragrances influence this consumer shift?
+2. Which key brands, certification bodies (such as EWG or EPA Safer Choice), and social media influencers are leading the conversation around plastic-free and non-toxic cleaning solutions?
+3. How does the interest in sustainable laundry intersect with broader cultural movements like "zero-waste living," "minimalism," and the "clean girl" aesthetic among Millennial and Gen Z demographics?
+4. What is the relationship between rising energy costs, water conservation initiatives, and the adoption of laundry innovations such as cold-water detergents and wool dryer balls?
+5. In what ways has the "sustainable chore" been redefined on social media platforms as an act of environmental activism or "wellness," and what specific rituals are trending within this space?

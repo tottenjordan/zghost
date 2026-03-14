@@ -1,0 +1,46 @@
+[root_agent]: Running market research pipeline...
+[research_orchestrator]: Composing final cited research report...
+[combined_report_composer]: # Tide Fabric Softener: Hibiscus Scent Campaign Research Report
+
+## Campaign Guide
+The 2024-2025 landscape for fabric care is defined by a shift toward sustainability, sensory indulgence, and authentic digital engagement. For Gen Z, eco-friendly practices are no longer a premium feature but a baseline expectation <cite source="src-2" />.
+
+### Gen Z Consumer Behavior
+*   **Sustainability & Values:** Approximately 70% of Gen Z consumers are willing to pay more for sustainable products, though they remain highly skeptical of "greenwashing" <cite source="src-1" />. They prioritize brands that align with their social values and offer transparent narratives <cite source="src-3" />.
+*   **The Trust Economy:** This demographic trusts micro-influencers (10k–50k followers) over traditional advertisements, viewing them as more relatable <cite source="src-1" />. 
+*   **Digital-First Discovery:** TikTok, Instagram Reels, and YouTube Shorts serve as the primary research tools for this audience before making a purchase <cite source="src-1" />. User-Generated Content (UGC) is critical for building community trust <cite source="src-9" />.
+
+### Scent & Ingredient Trends
+*   **Functional Fragrances:** There is a significant move toward botanical scents like hibiscus that bridge the gap between home care and self-care <cite source="src-4" />. 
+*   **Premiumization:** Consumers are moving away from basic "clean" scents (lemon/pine) toward sophisticated, fine-fragrance-inspired profiles <cite source="src-5" />. 
+*   **Efficacy vs. Plant-Based:** While plant-based formulas are valued, Gen Z loyalty depends on the product meeting traditional performance standards <cite source="src-7" />.
+
+### Innovative Packaging & Cultural Relevance
+*   **Packaging Trends:** 2024 trends include circular materials and the integration of QR codes to allow consumers to scan for sourcing and recycling information <cite source="src-8" />. Refillable systems are also seeing top demand <cite source="src-4" />.
+*   **Cultural Weight of Hibiscus:** Hibiscus is a global symbol of beauty and unity <cite source="src-11" />. In wellness branding, it is linked to "Hyper-Healthy" trends due to its natural antioxidant properties <cite source="src-12" />.
+
+## Search Trend
+The current market reflects a growing interest in eco-friendly laundry products and sustainable cleaning solutions. Consumers are increasingly searching for "low-tox" alternatives that reduce their environmental footprint without sacrificing efficacy. This interest is driven by a desire for "back-to-basics" home maintenance that utilizes natural ingredients like vinegar, baking soda, and botanical essential oils.
+
+## YouTube Trend
+YouTube creators are increasingly sharing "Eco Cleaning Hacks," highlighting a shift toward sustainable cleaning routines.
+
+### The "CleanTok" Phenomenon
+*   **Staged Wellness:** Cleaning has transitioned from a chore to a form of digital self-care and entertainment <cite source="src-14" />.
+*   **Psychological Drivers:** For Gen Z and Millennials, these trends provide a sense of "efficiency thinking" and "self-optimization" through satisfying transformation content <cite source="src-14" />.
+*   **Sustainable Curiosity:** Approximately 44% of users actively seek ideas on how to make their households more sustainable <cite source="src-15" />.
+
+### Video Analysis: "5 Eco-Friendly Cleaning Hacks You Need to Know"
+*   **Main Thesis:** Sustainable cleaning is accessible, cost-effective, and often more effective than chemical-heavy alternatives.
+*   **Natural Heroes:** The trend emphasizes distilled white vinegar, baking soda, and essential oils as the primary tools for a clean home.
+*   **Market Opportunity:** This trend highlights a significant opening for Tide Fabric Softener with Hibiscus Scent, provided the campaign emphasizes botanical inspiration and eco-friendly packaging to appeal to safety-conscious audiences.
+
+## Key Insights from Research
+*   **Market Growth:** The global natural household cleaners market is projected to reach $13.28 billion by 2030, growing at a CAGR of 11.3% <cite source="src-19" />.
+*   **The "Low-Tox" Life:** Awareness of health risks associated with traditional chemicals (parabens, phthalates) is at an all-time high, with consumers seeking products safe for children and pets <cite source="src-22" />.
+*   **Ingredient Transparency:** Nine out of ten consumers now prioritize "clean" formulations and use digital tools to verify product safety <cite source="src-21" />.
+*   **Sensorial Indulgence:** There is high demand for premium, long-lasting fragrances inspired by fine perfumes, such as woody-musky or exotic floral profiles <cite source="src-25" />.
+*   **Strategy for Tide:** To align with 2024 trends, the campaign should highlight hibiscus as a natural, plant-derived essential oil experience <cite source="src-13" />, position the product as free from harsh irritants, and utilize the high-quality, "satisfying" visual style popular in the CleanTok community <cite source="src-14" />.
+[combined_report_composer]: PDF report saved to memory 📝 !!
+[research_orchestrator]: Saving research report as PDF...
+[research_orchestrator]: Research report saved as PDF: draft_research_report_with_citations.pdf

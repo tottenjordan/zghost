@@ -1,0 +1,49 @@
+{
+  "final_report_with_citations": "",
+  "combined_final_cited_report": "",
+  "target_audience": "Gen Z eco-conscious consumers who value sustainable products and fresh scents",
+  "vid_artifact_keys": {
+    "vid_artifact_keys": []
+  },
+  "campaign_guide_content": "",
+  "final_select_vis_concepts": {
+    "final_select_vis_concepts": []
+  },
+  "yt_video_analysis": "YouTube trend analysis: Gen Z audiences are highly engaged with sustainable product content. Key themes: eco-friendly lifestyle, plant-based products, aesthetic packaging, fresh floral scents, laundry hacks that save money and the planet.",
+  "gcs_folder": "2026_03_14_07_38",
+  "target_yt_trends": {
+    "target_yt_trends": [
+      {
+        "title": "Eco Cleaning Hacks",
+        "description": "YouTube creators sharing sustainable cleaning routines and eco-friendly product reviews"
+      }
+    ]
+  },
+  "sources": {},
+  "final_select_ad_copies": {
+    "final_select_ad_copies": []
+  },
+  "target_search_trends": {
+    "target_search_trends": [
+      {
+        "title": "Sustainable Laundry",
+        "description": "Growing interest in eco-friendly laundry products and sustainable cleaning solutions"
+      }
+    ]
+  },
+  "gs_web_search_insights": "",
+  "_state_init": true,
+  "key_selling_points": "New Hibiscus Scent. Plant-based formula. 2x cleaning power. Biodegradable packaging. Fresh floral fragrance that lasts.",
+  "autopilot_mode": true,
+  "target_product": "Tide Fabric Softener with Hibiscus Scent",
+  "img_artifact_keys": {
+    "img_artifact_keys": []
+  },
+  "ui:status_update": "Running parallel research (YouTube, Search, Campaign)...",
+  "combined_web_search_insights": "",
+  "commercial_duration": 15,
+  "brand": "Tide",
+  "yt_web_search_insights": "",
+  "campaign_web_search_insights": "",
+  "commercial_artifact": ""
+}

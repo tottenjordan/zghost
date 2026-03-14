@@ -1,0 +1,15 @@
+[root_agent]: Creative pipeline attempt 1/5...
+[root_agent]: Running creative production pipeline (ad copy, visuals, commercial)...
+[creative_production_orchestrator]: Generating ad copy and visual creatives...
+[ad_content_generator_agent]: Hello! I'm your Ad Content Generator, and I'm here to help you turn your campaign goals into high-impact ad creatives. I specialize in a multi-phase workflow that uses specialized agents to brainstorm ad copy, design visual concepts, and then generate high-quality images and videos tailored specifically for your brand and target audience.
+
+For the **Tide Fabric Softener with Hibiscus Scent** campaign, I'll be following a structured process to ensure we hit the right notes with Gen Z by blending sustainability with that "sensory indulgence" they crave.
+
+Here is the plan:
+1.  **Phase 1: Generate & Select Ad Copy** - I'll work with my copywriting team to create several options and then I'll pick the top 2 that best align with the "CleanTok" aesthetic and "emotional armor" trends we found in research.
+2.  **Phase 2: Generate & Select Visual Concepts** - For those 2 ad copies, I'll design visual concepts that will serve as the blueprint for our image and video generation.
+3.  **Phase 3: Review & Approval** - I'll present a creative brief for your approval (unless we're in autopilot mode).
+4.  **Phase 4: Create the Ads** - Finally, I'll generate a high-fidelity keyframe image for each idea and then use those images to create cinematic videos.
+
+Let's get started with Phase 1!
+

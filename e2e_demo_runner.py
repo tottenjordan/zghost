@@ -6,6 +6,7 @@ keys to decide which stage to run next. On AE, stream_query returns after each
 "wave" of events. This runner simply re-invokes with "continue" and the
 orchestrator automatically resumes from the correct stage.
 """
+import argparse
 import os
 import json
 import time
@@ -16,10 +17,12 @@ load_dotenv("trends_and_insights_agent/.env")
 
 import vertexai
 
-PROJECT = "wortz-project-352116"
-LOCATION = "us-central1"
-ENGINE_ID = "8788263399906607104"
-RESOURCE_NAME = f"projects/679926387543/locations/{LOCATION}/reasoningEngines/{ENGINE_ID}"
+# Defaults — override via CLI args or env vars
+PROJECT = os.environ.get("GCP_PROJECT", "wortz-project-352116")
+PROJECT_NUMBER = os.environ.get("GCP_PROJECT_NUMBER", "679926387543")
+LOCATION = os.environ.get("AE_LOCATION", "us-central1")
+ENGINE_ID = os.environ.get("AE_ENGINE_ID", "8788263399906607104")
+RESOURCE_NAME = f"projects/{PROJECT_NUMBER}/locations/{LOCATION}/reasoningEngines/{ENGINE_ID}"
 USER_ID = "e2e_demo_user"
 SCREENSHOT_DIR = "demo_screenshots"
 
@@ -284,6 +287,24 @@ E2E DEMO RESULTS (CampaignOrchestrator) - {timestamp}
             and status["has_focus_group"] and status["final_report_len"] > 0)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="E2E Demo Runner for Agent Engine")
+    parser.add_argument("--project", default=PROJECT, help="GCP project ID")
+    parser.add_argument("--project-number", default=PROJECT_NUMBER, help="GCP project number")
+    parser.add_argument("--location", default=LOCATION, help="AE location (us-central1, global, etc)")
+    parser.add_argument("--engine-id", default=ENGINE_ID, help="Reasoning Engine ID")
+    parser.add_argument("--max-waves", type=int, default=MAX_WAVES, help="Max re-invocation waves")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    args = parse_args()
+    # Override globals from CLI args
+    PROJECT = args.project
+    PROJECT_NUMBER = args.project_number
+    LOCATION = args.location
+    ENGINE_ID = args.engine_id
+    RESOURCE_NAME = f"projects/{PROJECT_NUMBER}/locations/{LOCATION}/reasoningEngines/{ENGINE_ID}"
+    MAX_WAVES = args.max_waves
     success = run_e2e()
     exit(0 if success else 1)

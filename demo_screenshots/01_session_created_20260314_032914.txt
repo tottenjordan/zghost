@@ -1,0 +1,3 @@
+Session ID: 8160177965338984448
+Engine ID: 8788263399906607104
+Initial State Keys: ['brand', 'target_product', 'target_audience', 'key_selling_points', 'target_search_trends', 'target_yt_trends', 'yt_video_analysis', 'final_select_ad_copies', 'final_select_vis_concepts', 'img_artifact_keys', 'vid_artifact_keys', 'combined_web_search_insights', 'campaign_web_search_insights', 'gs_web_search_insights', 'yt_web_search_insights', 'combined_final_cited_report', 'sources', 'final_report_with_citations', 'autopilot_mode', 'commercial_duration', 'commercial_artifact', 'campaign_guide_content', 'gcs_folder']

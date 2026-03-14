@@ -1,0 +1,60 @@
+@startuml
+!theme spacelab
+skinparam Handwritten false
+skinparam Monochrome false
+skinparam BackgroundColor #f9f9f9
+skinparam BoxPadding 10
+skinparam Padding 10
+
+title Trends & Insights - System Architecture
+
+package "Orchestration Layer" {
+  agent "Campaign\nOrchestrator" as Root #LightBlue
+}
+
+package "Asset Generation Layer" {
+  agent "Creative Production\nOrchestrator" as Creative #LightCyan
+  agent "Ad Content\nGenerator" as AdGen #LightCyan
+  agent "AV Editing\nStudio" as AVStudio #LightCyan
+}
+
+package "Research Layer" {
+  agent "Research\nOrchestrator" as Research #LightYellow
+  agent "Trends &\nInsights" as Trends #LightYellow
+}
+
+package "Evaluation Layer" {
+  agent "Focus Group\nEvaluator" as Eval #LightGreen
+}
+
+package "External Services" {
+  cloud "Google Cloud Storage" as GCS #White
+  database "BigQuery" as BQ #White
+  node "YouTube" as YT #White
+  node "Google Search" as GS #White
+  cloud "Veo / Gemini / Lyria" as AI #White
+  cloud "Vertex AI / Agent Engines (Memory Bank)" as AE #White
+}
+
+' Relationships
+Root --> Trends : 1. Discover Trends
+Root --> Research : 2. Research
+Root --> Creative : 3. Generate Assets
+Root --> Eval : 4. Evaluate
+Root --> GCS : 5. Save Report
+
+Research --> AE : 1. Recall Memory
+Trends --> BQ : 2. Discover Trends
+Research --> YT : 3. Parallel Research
+Research --> GS : 3. Parallel Research
+Research --> GCS : 4. Save Draft
+
+Creative --> AdGen : Delegate
+Creative --> AVStudio : Delegate
+AdGen --> AI : Generate Images
+AVStudio --> AI : Generate Video/Audio
+
+Eval --> GCS : Read Assets
+Eval --> AI : Analyze Video
+
+@endum

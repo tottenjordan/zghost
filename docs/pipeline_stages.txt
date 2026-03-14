@@ -1,0 +1,26 @@
+Trends & Insights - Pipeline Stages
+
+- Lane: Trend Discovery
+  - Query Trends (BigQuery)
+  - Filter & Select
+
+- Lane: Market Research
+  - Recall Memory (Prior Insights)
+  - Fetch Content (Google Search/YouTube)
+  - Analyze & Synthesize
+  - Generate Draft Report
+
+- Lane: Creative
+  - Draft Ad Copy (Gemini)
+  - Draft Visual Concepts
+  - Generate Images (Imagen)
+  - Generate Videos (Veo)
+
+- Lane: Evaluation
+  - Evaluate Commercial (Gemini Vision)
+  - Simulate Focus Group
+  - Score Visuals & Qualitative
+
+- Lane: Reporting
+  - Compile Final PDF Report
+  - Save Artifacts to GCS

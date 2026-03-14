@@ -9,8 +9,40 @@ from ...shared_libraries.config import config
 from ...shared_libraries import callbacks
 from ...shared_libraries.disclosure import disclose_capabilities
 from ...skills.skill_loader import load_skill_from_dir
-from .tools import analyze_commercial_video, generate_panelist_portrait, generate_panelist_testimonial
+from google.adk.tools.base_tool import BaseTool
+from google.adk.tools import ToolContext
+
+from .tools import analyze_commercial_video, generate_panelist_portrait, generate_panelist_testimonial, concatenate_panelist_videos
 from .prompts import FOCUS_GROUP_INSTR
+
+
+async def _skip_portrait_on_autopilot(
+    tool: BaseTool, args: dict, tool_context: ToolContext
+) -> dict | None:
+    """Skip portrait/testimonial generation in autopilot mode to save waves.
+
+    These tools frequently fail on AE and the LLM retries despite the prompt
+    saying not to, wasting waves. Return synthetic responses immediately.
+    """
+    if not tool_context.state.get("autopilot_mode"):
+        return None  # Let tool run normally in interactive mode
+
+    tool_name = tool.name
+    if tool_name == "generate_panelist_portrait":
+        name = args.get("panelist_name", "Panelist")
+        return {
+            "status": "skipped",
+            "reason": "Portrait generation skipped in autopilot mode",
+            "panelist_name": name,
+        }
+    elif tool_name == "generate_panelist_testimonial":
+        name = args.get("panelist_name", "Panelist")
+        return {
+            "status": "skipped",
+            "reason": "Testimonial generation skipped in autopilot mode",
+            "panelist_name": name,
+        }
+    return None
 
 # Load this skill's own SKILL.md for self-contained documentation
 _skill_dir = pathlib.Path(__file__).parent
@@ -30,12 +62,14 @@ focus_group_evaluator_agent = Agent(
         analyze_commercial_video,
         generate_panelist_portrait,
         generate_panelist_testimonial,
+        concatenate_panelist_videos,
         disclose_capabilities,
         _skill_toolset,
     ],
     output_key="focus_group_evaluation",
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
+    before_tool_callback=_skip_portrait_on_autopilot,
     before_model_callback=callbacks.rate_limit_callback,
     after_agent_callback=callbacks.after_agent_skill_reflection,
 )

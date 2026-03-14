@@ -1,0 +1,60 @@
+@startuml
+!theme spacelab
+skinparam Handwritten false
+skinparam Monochrome false
+skinparam BackgroundColor #f9f9f9
+skinparam Padding 10
+
+title Trends & Insights - AV Editing Studio
+
+package "Input Assets" {
+  [Script / Storyboard] as Script
+  [Silent Video Clips (Veo)] as Clips
+  [Reference Images] as Refs
+}
+
+package "Audio Generation" {
+  [Voice-Over (Chirp 3 HD)] as VO
+  [Dialogue (Chirp 3 HD)] as Dialogue
+  [Music (Lyria 2)] as Music
+  [Sound Effects] as SFX
+}
+
+package "Processing" {
+  component "Parallel Clip Generator" as Generator {
+    [Transition Frames] as Trans
+    [Clip Renderer] as Renderer
+  }
+  component "Audio Mixer" as Mixer {
+    [Audio Balancer] as Balancer
+    [Music Ducker] as Ducker
+  }
+}
+
+package "Output" {
+  [Final Commercial (MP4)] as Final
+}
+
+' Relationships
+Script --> Generator : Directs
+Refs --> Generator : Condition
+Clips --> Generator : Input
+
+Generator --> Trans : 1. Generate
+Trans --> Renderer : 2. Seed
+Renderer --> Clips : 3. Produce
+
+Script --> VO : Narration
+Script --> Dialogue : Characters
+
+VO --> Mixer
+Dialogue --> Mixer
+Music --> Mixer
+SFX --> Mixer
+
+Balancer --> Ducker : 1. Mix
+Ducker --> Final : 2. Merge with Video
+
+Clips --> Final : Merge with Audio
+
+@endum

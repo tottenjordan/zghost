@@ -1,0 +1,57 @@
+[root_agent]: Running market research pipeline...
+[research_orchestrator]: Composing final cited research report...
+[combined_report_composer]: # Tide Fabric Softener: Hibiscus Scent Campaign Research Report
+
+## Campaign Guide: Gen Z & The Sustainable Laundry Market
+The transition of a legacy brand like Tide into the eco-conscious fabric softener space requires a deep understanding of the Gen Z demographic, which views sustainability as a non-negotiable lifestyle choice rather than a passing trend <cite source="src-17" />. 
+
+### Gen Z Consumer Preferences
+*   **Sustainability & Ethics:** Approximately **66–73% of Gen Z consumers** are willing to pay a premium for products that are ethically sourced or sustainable <cite source="src-13" /><cite source="src-17" />. They prioritize biodegradable ingredients and minimal packaging, such as concentrated formulas or plastic-free sheets <cite source="src-7" /><cite source="src-11" />.
+*   **Financial Pragmatism:** A emerging trend for 2025 is "financial pragmatism." Due to economic pressures, this cohort increasingly expects sustainability to be a standard feature at no extra cost, rather than a luxury upgrade <cite source="src-8" /><cite source="src-17" />.
+*   **Performance vs. Planet:** While 90% of Gen Z consumers vocalize a preference for eco-packaging, their actual purchasing behavior is dictated by performance <cite source="src-10" /><cite source="src-16" />. If an eco-friendly product cannot match the "stain-fighting" or softening power of legacy brands, consumers often revert to traditional products <cite source="src-20" />.
+
+### Hibiscus & Floral Scent Trends
+*   **Natural Escapism:** In 2025, there is a surging demand for "botanical escapism"—scents that evoke nature and wellness <cite source="src-18" />. Hibiscus is specifically trending across personal care and home categories due to its association with detox, natural remedies, and exotic aesthetics <cite source="src-19" />.
+*   **Scent Longevity:** Consumers seek long-lasting fragrance without environmental harm <cite source="src-20" />. Technologies like **biodegradable microencapsulation** (e.g., PlanetCaps™) are becoming essential to deliver scent longevity in eco-friendly formulas <cite source="src-20" />.
+
+### Competitive Landscape
+*   **Method:** Known for "aesthetic-first" packaging and plant-based softening, often featuring vibrant scents like Ginger Mango <cite source="src-21" />.
+*   **Seventh Generation:** A leader in "clean" credentials, offering 97% plant-based dryer sheets and maintaining strong B Corp trust markers <cite source="src-22" /><cite source="src-37" />.
+*   **DTC Innovators:** Brands like Earth Breeze and Blueland are disrupting the market by removing bulky plastic jugs entirely and focusing on ultra-compact, plastic-free shipping <cite source="src-30" />.
+
+---
+
+## Search Trend: Market Drivers & Regulatory Shifts
+The broader market for sustainable cleaning is undergoing a massive transformation, projected to reach **$110 billion by 2025** <cite source="src-3" /><cite source="src-26" />.
+
+### Environmental & Health Drivers
+*   **The "Low-Tox" Movement:** There is a significant shift toward products that prioritize health safety, specifically those that are non-toxic and paraben-free, to avoid "petrochemical shadows" <cite source="src-27" />.
+*   **Microplastic Regulations:** Regulatory changes are acting as a catalyst for innovation. For instance, France has mandated microplastic filters in all new washing machines starting in **January 2025**, driving consumer awareness regarding fiber shedding and chemical additives <cite source="src-33" />.
+*   **Resource Conservation:** Cultural shifts toward cold-water washing (to save energy) and short-cycle detergents are redefining what consumers expect from fabric enhancers <cite source="src-32" />.
+
+### Trusted Entities
+Consumers look for specific "trust markers" when evaluating green claims. **B Corp status**, **EPA Safer Choice**, and **EWG ratings** remain the gold standards for verifying non-toxic and ethical claims <cite source="src-37" />. While Tide faces scrutiny for its legacy use of petrochemicals, its pivot toward **Tide Purclean** (75% bio-based) and **Tide Evo** (plastic-free tiles) positions the brand as a "skeptical supporter's" choice <cite source="src-20" />.
+
+---
+
+## YouTube Trend: The Rise of #CleanTok & Sustainable Routines
+Social media, particularly YouTube and TikTok, has transformed cleaning from a chore into a form of "wellness" and "self-care" <cite source="src-1" /><cite source="src-6" />.
+
+### The Power of #CleanTok
+*   **Cultural Dominance:** #CleanTok has amassed nearly **150 billion views**, significantly outperforming traditional lifestyle categories like #BeautyTok <cite source="src-2" />. More than half of TikTok users report purchasing a household product after seeing it on the platform <cite source="src-2" />.
+*   **Aesthetic Cleaning:** Consumers, particularly Gen Z, are heavily influenced by "TikTok-able" laundry routines. This involves the use of glass jars, minimalist branding, and "oddly satisfying" demonstrations <cite source="src-17" /><cite source="src-23" />.
+*   **Mental Health Connection:** There is a growing trend of "in-the-flow" cleaning—shorter, frequent bursts of tidying that provide an emotional boost and a sense of control <cite source="src-6" />.
+
+### DIY vs. Commercial Eco-Friendly Solutions
+Creators are increasingly sharing "Eco Cleaning Hacks" that promote DIY alternatives (vinegar, baking soda, citric acid) as cost-effective and safe <cite source="src-5" />. However, a gap remains for commercial products like **Tide Hibiscus** to provide the same "low-tox" peace of mind with superior professional-grade performance and a more sophisticated sensory experience than vinegar-based DIYs <cite source="src-5" />.
+
+---
+
+## Key Insights from Research
+*   **Authenticity is Paramount:** Gen Z can "spot greenwashing a mile away." Marketing for the Hibiscus scent must provide "receipts, not rhetoric," using specific data on water saved or CO2 reduced <cite source="src-9" /><cite source="src-12" />.
+*   **The Sensory "Hook":** The Hibiscus scent should be positioned as a **multi-sensory experience** that provides a "spa-like" feel to the home, countering the sterile, chemical smell of traditional detergents <cite source="src-18" /><cite source="src-19" />.
+*   **Minimalist Packaging:** There is a significant opportunity for the Hibiscus Fabric Softener to lead with innovative, low-plastic packaging to satisfy the "Laundry Minimalist" trend—consumers seeking to reduce "Material Overhead" and bulky plastic waste <cite source="src-28" /><cite source="src-34" />.
+*   **Performance Bridge:** The campaign should emphasize that choosing a "green" product does not mean sacrificing the signature Tide cleaning power that consumers trust <cite source="src-20" />.
+[combined_report_composer]: PDF report saved to memory 📝 !!
+[research_orchestrator]: Saving research report as PDF...
+[research_orchestrator]: Research report saved as PDF: draft_research_report_with_citations.pdf

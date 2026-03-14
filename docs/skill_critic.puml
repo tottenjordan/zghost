@@ -1,0 +1,52 @@
+@startuml
+skinparam Handwritten false
+skinparam Monochrome false
+skinparam BackgroundColor #FFFFFF
+skinparam Shadowing false
+skinparam Padding 10
+skinparam BoxPadding 10
+
+' Participant Styles
+skinparam ParticipantBackgroundColor #4285F4
+skinparam ParticipantBorderColor #3367D6
+skinparam ParticipantFontColor #FFFFFF
+
+' Actor Styles
+skinparam ActorBackgroundColor #EA4335
+skinparam ActorBorderColor #B32015
+
+' Database Styles
+skinparam DatabaseBackgroundColor #FBBC05
+skinparam DatabaseBorderColor #D08700
+
+' Arrow Styles
+skinparam ArrowColor #5F6368
+skinparam ArrowThickness 1.5
+
+' LifeLine Styles
+skinparam LifeLineBorderColor #5F6368
+skinparam LifeLineBackgroundColor #E8F0FE
+
+
+title Skill Critic Agent Flow
+
+actor "Developer / System" as User
+participant "Skill Critic Agent" as Critic
+participant "Skill Evolution Tools" as Tools
+database "Memory Bank" as DB
+
+User -> Critic: Trigger Evaluation
+Critic -> DB: Load Skill Output
+Critic -> Critic: Score (Actionability, Novelty, Specificity)
+Critic -> Critic: Generate Critique (Strengths, Weaknesses, Improvements)
+
+alt If requested to improve
+  Critic -> Tools: reflect_and_improve_skill
+  Tools -> Tools: Update Instructions
+  Tools -> DB: Save New Version
+  Critic --> User: Return Improved Skill
+else Just evaluate
+  Critic --> User: Return Critique
+end
+
+@endum

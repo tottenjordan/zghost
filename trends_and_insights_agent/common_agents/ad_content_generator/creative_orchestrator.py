@@ -32,7 +32,7 @@ from google.adk.utils.context_utils import Aclosing
 from google.adk.utils.feature_decorator import experimental
 
 from ...shared_libraries.config import config
-from ...shared_libraries.utils import upload_blob_to_gcs
+from ...shared_libraries.utils import upload_blob_to_gcs, download_blob
 from ...shared_libraries import callbacks
 from ...shared_libraries.fidelity_eval.gecko import evaluate as gecko_evaluate
 from ...skills.focus_group.tools import analyze_commercial_video
@@ -42,7 +42,7 @@ logger = logging.getLogger("google_adk." + __name__)
 
 MAX_COMMERCIAL_RETRIES = 2
 AV_STUDIO_MAX_RUNS = 3  # Max AV_STUDIO invocations before deterministic commercial
-AE_WAVE_POLL_BUDGET = 45  # seconds to poll Veo within a single AE wave
+AE_WAVE_POLL_BUDGET = 55  # seconds to poll Veo within a single AE wave
 
 # --- Commercial QA Agent ---
 commercial_qa_agent = Agent(
@@ -79,11 +79,37 @@ Be concise. Focus on actionable quality feedback.""",
 
 
 CREATIVE_STAGES = [
-    ("AD_CREATIVE", "ad_content_generator_agent", "Generating ad copy and visual creatives..."),
+    ("AD_CREATIVE", "ad_content_generator_agent", "Orchestrating ad generation..."),
     ("IMAGE_GEN", "standalone_image_generator", "Generating campaign images from visual concepts..."),
     ("AV_STUDIO", "av_editing_studio_agent", "Producing commercial in AV editing studio..."),
     ("COMMERCIAL_QA", "commercial_qa_agent", "Evaluating commercial quality with Gecko..."),
 ]
+
+
+def _creative_stage_message(stage_name: str, state: dict) -> str:
+    """Build dynamic, CEO-friendly status messages for creative sub-stages."""
+    product = state.get("target_product", "the product")
+    audience = state.get("target_audience", "consumers")
+    duration = state.get("commercial_duration", 15)
+    msgs = {
+        "AD_CREATIVE": (
+            f"Brainstorming ad concepts for {product} — drafting headlines, "
+            f"copy variations, and visual concepts tailored for {audience}."
+        ),
+        "IMAGE_GEN": (
+            f"Rendering hero images for {product} — translating visual concepts into "
+            f"high-quality campaign photography with cinematic lighting."
+        ),
+        "AV_STUDIO": (
+            f"Directing a {duration}s video commercial for {product} — "
+            f"generating cinematic footage with Veo to bring the campaign to life."
+        ),
+        "COMMERCIAL_QA": (
+            f"Quality-checking the {product} commercial — scoring visual fidelity, "
+            f"brand alignment, and production quality."
+        ),
+    }
+    return msgs.get(stage_name, f"Running {stage_name}...")
 
 
 @experimental
@@ -146,10 +172,19 @@ class CreativeProductionOrchestrator(BaseAgent):
             return
 
         state = ctx.session.state
+
+        # Handle interactive concept selection response
+        if state.get("_awaiting_concept_selection"):
+            async for event in self._handle_concept_selection(ctx):
+                yield event
+            # After selection, fall through to normal pipeline
+
         # Determine start from session state (robust across AE invocations)
         start_index = self._determine_start_index(ctx)
         av_attempts = 0
         pause_invocation = False
+        # Track av_runs locally — state.get() returns stale snapshot within a single invocation
+        av_runs_local = state.get("_av_studio_runs", 0)
 
         logger.info(f"[CreativeProduction] Starting from stage index {start_index} (of {len(CREATIVE_STAGES)})")
 
@@ -165,7 +200,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                 ctx.set_agent_state(self.name, agent_state=ps)
                 yield self._create_agent_state_event(ctx)
 
-            yield self._status_event(ctx, status_msg)
+            yield self._status_event(ctx, _creative_stage_message(stage_name, dict(state)))
 
             # IMAGE_GEN: deterministic image generation (no LLM agent)
             if stage_name == "IMAGE_GEN":
@@ -181,14 +216,15 @@ class CreativeProductionOrchestrator(BaseAgent):
                 has_pending_op = any(k.startswith("_pending") for k in clips_cache)
 
                 if not has_pending_op:
-                    av_runs = state.get("_av_studio_runs", 0) + 1
+                    av_runs_local += 1
+                    av_runs = av_runs_local
                     track_event = self._status_event(
                         ctx, f"Deterministic AV studio attempt {av_runs}/{AV_STUDIO_MAX_RUNS}..."
                     )
                     track_event.actions.state_delta["_av_studio_runs"] = av_runs
                     yield track_event
                 else:
-                    av_runs = state.get("_av_studio_runs", 0)
+                    av_runs = av_runs_local
                     yield self._status_event(ctx, f"Resuming Veo clip generation (attempt {av_runs}/{AV_STUDIO_MAX_RUNS})...")
 
                 commercial_generated = False
@@ -214,6 +250,14 @@ class CreativeProductionOrchestrator(BaseAgent):
                 # else: will retry on next wave
                 continue
 
+            # COMMERCIAL_QA: skip in autopilot (focus group evaluates anyway)
+            if stage_name == "COMMERCIAL_QA" and state.get("autopilot_mode"):
+                qa_skip_event = self._status_event(ctx, "Autopilot: skipping commercial QA (focus group will evaluate)")
+                qa_skip_event.actions.state_delta["commercial_qa_result"] = "PASS (autopilot — skipped)"
+                yield qa_skip_event
+                i += 1
+                continue
+
             # Run the sub-agent
             target = self._get_sub_agent(agent_name)
             if target:
@@ -225,6 +269,40 @@ class CreativeProductionOrchestrator(BaseAgent):
 
                 if pause_invocation:
                     return
+
+            # After AD_CREATIVE, handle visual concept selection
+            if stage_name == "AD_CREATIVE":
+                vis_concepts = state.get("final_select_vis_concepts", {})
+                if isinstance(vis_concepts, dict):
+                    vis_concepts = vis_concepts.get("final_select_vis_concepts", [])
+                if not vis_concepts:
+                    # Try draft visual concepts
+                    drafts = state.get("draft_vis_concepts", [])
+                    if not drafts:
+                        drafts = state.get("visual_concept_drafts", [])
+                    if drafts:
+                        if state.get("autopilot_mode"):
+                            # Auto-select top concepts
+                            auto_concepts = drafts[:2] if isinstance(drafts, list) else [drafts]
+                            auto_event = self._status_event(ctx, f"Auto-selected {len(auto_concepts)} visual concepts from drafts")
+                            auto_event.actions.state_delta["final_select_vis_concepts"] = {"final_select_vis_concepts": auto_concepts}
+                            yield auto_event
+                        else:
+                            # Interactive mode: present concepts for user selection
+                            concept_list = []
+                            for idx, d in enumerate(drafts if isinstance(drafts, list) else [drafts]):
+                                name = d.get("name", d.get("concept", f"Concept {idx+1}")) if isinstance(d, dict) else str(d)
+                                desc = d.get("description", "")[:150] if isinstance(d, dict) else ""
+                                concept_list.append(f"  {idx+1}. {name}" + (f" — {desc}" if desc else ""))
+                            concepts_text = "\n".join(concept_list)
+                            prompt_event = self._status_event(
+                                ctx,
+                                f"Visual concepts ready for review:\n{concepts_text}\n\n"
+                                f"Reply with the concept numbers you want (e.g. '1, 3'), or 'all' to use all concepts."
+                            )
+                            prompt_event.actions.state_delta["_awaiting_concept_selection"] = True
+                            yield prompt_event
+                            return  # Pause — user will respond, next wave resumes
 
             # After COMMERCIAL_QA, check if retry is needed
             if stage_name == "COMMERCIAL_QA":
@@ -255,13 +333,52 @@ class CreativeProductionOrchestrator(BaseAgent):
                 return agent
         return None
 
+    async def _handle_concept_selection(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """Process user's concept selection response in interactive mode."""
+        state = ctx.session.state
+        user_msg = ""
+        if ctx.user_content and ctx.user_content.parts:
+            for part in ctx.user_content.parts:
+                if hasattr(part, "text") and part.text:
+                    user_msg = part.text.strip().lower()
+                    break
+
+        drafts = state.get("draft_vis_concepts", [])
+        if not drafts:
+            drafts = state.get("visual_concept_drafts", [])
+        if not isinstance(drafts, list):
+            drafts = [drafts]
+
+        selected = []
+        if "all" in user_msg or "continue" in user_msg or not user_msg:
+            selected = drafts[:2]
+        else:
+            # Parse comma-separated numbers like "1, 3" or "1 3"
+            import re
+            nums = re.findall(r"\d+", user_msg)
+            for n in nums:
+                idx = int(n) - 1
+                if 0 <= idx < len(drafts):
+                    selected.append(drafts[idx])
+            if not selected:
+                selected = drafts[:2]
+
+        clear_event = self._status_event(
+            ctx, f"Selected {len(selected)} visual concept(s) for image generation and commercial production."
+        )
+        clear_event.actions.state_delta["final_select_vis_concepts"] = {"final_select_vis_concepts": selected}
+        clear_event.actions.state_delta["_awaiting_concept_selection"] = False
+        yield clear_event
+
     async def _generate_images_deterministic(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        """Generate ONE campaign image per wave using Imagen API.
+        """Generate ALL campaign images (up to MAX_IMAGES) in one wave using Gemini Flash Image.
 
-        Uses generate_images() which is synchronous but faster than Gemini
-        generate_content with IMAGE modality. Outputs directly to GCS.
+        Uses generate_content() with response_modalities=["IMAGE"]. Loops through
+        remaining concepts and generates each image sequentially within a single wave.
         """
         state = ctx.session.state
         product = state.get("target_product", "the product")
@@ -307,107 +424,102 @@ class CreativeProductionOrchestrator(BaseAgent):
         while len(vis_concepts) < MAX_IMAGES:
             vis_concepts.append(generic_concepts[len(vis_concepts) % len(generic_concepts)])
 
-        concept = vis_concepts[already_generated] if already_generated < len(vis_concepts) else vis_concepts[0]
-        concept_name = concept.get("concept_name", "concept") if isinstance(concept, dict) else "concept"
-        description = concept.get("description", str(concept)) if isinstance(concept, dict) else str(concept)
+        for img_idx in range(already_generated, MAX_IMAGES):
+            concept = vis_concepts[img_idx] if img_idx < len(vis_concepts) else vis_concepts[0]
+            concept_name = concept.get("concept_name", "concept") if isinstance(concept, dict) else "concept"
+            description = concept.get("description", str(concept)) if isinstance(concept, dict) else str(concept)
 
-        prompt = (
-            f"Professional advertising photography for {product}. "
-            f"Concept: {description[:300]}. "
-            f"Target audience: {audience}. "
-            f"High quality, cinematic lighting, lifestyle aesthetic. "
-            f"No text, no logos, no watermarks."
-        )
-
-        yield self._status_event(ctx, f"Generating image {already_generated + 1}/{MAX_IMAGES}...")
-
-        try:
-            img_client = genai.Client(vertexai=True)
-
-            # Use Imagen API — outputs directly to GCS, typically faster
-            from google.genai.types import GenerateImagesConfig as ImgGenConfig
-            response = img_client.models.generate_images(
-                model="imagen-4.0-generate-001",
-                prompt=prompt,
-                config=ImgGenConfig(
-                    number_of_images=1,
-                    output_gcs_uri=bucket,
-                ),
+            prompt = (
+                f"Professional advertising photography for {product}. "
+                f"Concept: {description[:300]}. "
+                f"Target audience: {audience}. "
+                f"High quality, cinematic lighting, lifestyle aesthetic. "
+                f"No text, no logos, no watermarks."
             )
 
-            if response and response.generated_images:
-                gen_image = response.generated_images[0]
-                safe_name = concept_name.replace(",", "").replace(" ", "_")
-                artifact_key = f"{safe_name}_0.png"
-                gcs_uri = ""
+            yield self._status_event(ctx, f"Generating image {img_idx + 1}/{MAX_IMAGES}...")
 
-                if gen_image.image and gen_image.image.gcs_uri:
-                    gcs_uri = gen_image.image.gcs_uri
+            try:
+                img_client = genai.Client(vertexai=True)
 
-                    # Copy to campaign folder
-                    if bucket and gcs_folder:
-                        try:
-                            from google.cloud import storage as gcs_storage
-                            storage_client = gcs_storage.Client()
-                            bucket_name = bucket.replace("gs://", "")
-                            src_parts = gcs_uri.replace("gs://", "").split("/", 1)
-                            src_bucket = storage_client.bucket(src_parts[0])
-                            src_blob = src_bucket.blob(src_parts[1])
-                            dst_bucket = storage_client.bucket(bucket_name)
-                            src_bucket.copy_blob(src_blob, dst_bucket, os.path.join(gcs_folder, artifact_key))
-                        except Exception as e:
-                            logger.warning(f"[ImageGen] GCS copy failed: {e}")
+                response = img_client.models.generate_content(
+                    model=config.image_gen_model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_modalities=["IMAGE"],
+                    ),
+                )
 
-                elif gen_image.image and gen_image.image.image_bytes:
-                    # Fallback: image returned as bytes
-                    image_bytes = gen_image.image.image_bytes
-                    if bucket and gcs_folder:
-                        from .tools import upload_blob_to_gcs
-                        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                            tmp.write(image_bytes)
-                            tmp_path = tmp.name
-                        try:
-                            upload_blob_to_gcs(
-                                source_file_name=tmp_path,
-                                destination_blob_name=os.path.join(gcs_folder, artifact_key),
-                            )
-                        finally:
-                            os.unlink(tmp_path)
+                if response and response.candidates and response.candidates[0].content.parts:
+                    for part in response.candidates[0].content.parts:
+                        if hasattr(part, 'inline_data') and part.inline_data and part.inline_data.data:
+                            image_bytes = part.inline_data.data
+                            safe_name = concept_name.replace(",", "").replace(" ", "_")
+                            artifact_key = f"{safe_name}_0.png"
+                            gcs_uri = ""
 
-                img_meta = {
-                    "artifact_key": artifact_key,
-                    "img_prompt": prompt[:500],
-                    "concept": concept_name,
-                    "headline": "",
-                    "caption": "",
-                    "auto_saved": True,
-                }
-                if gcs_uri:
-                    img_meta["gcs_uri"] = gcs_uri
+                            if bucket and gcs_folder:
+                                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                                    tmp.write(image_bytes)
+                                    tmp_path = tmp.name
+                                try:
+                                    upload_blob_to_gcs(
+                                        source_file_name=tmp_path,
+                                        destination_blob_name=os.path.join(gcs_folder, artifact_key),
+                                    )
+                                    gcs_uri = f"{bucket}/{gcs_folder}/{artifact_key}"
+                                finally:
+                                    os.unlink(tmp_path)
 
-                # Gecko fidelity (best-effort)
-                if bucket and gcs_folder:
-                    try:
-                        fidelity_score = gecko_evaluate(
-                            prompt=state.get("key_selling_points", product),
-                            media_uri=f"{bucket}/{gcs_folder}/{artifact_key}",
-                            media_type="image",
-                        )
-                        img_meta["fidelity_score"] = fidelity_score
-                    except Exception:
-                        pass
+                            img_meta = {
+                                "artifact_key": artifact_key,
+                                "img_prompt": prompt[:500],
+                                "concept": concept_name,
+                                "headline": "",
+                                "caption": "",
+                                "auto_saved": True,
+                            }
+                            if gcs_uri:
+                                img_meta["gcs_uri"] = gcs_uri
 
-                new_list = list(existing_imgs) + [img_meta]
-                save_event = self._status_event(ctx, f"Image saved: {artifact_key}")
-                save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": new_list}
-                yield save_event
-                return
+                            # Gecko fidelity (best-effort)
+                            if bucket and gcs_folder:
+                                try:
+                                    fidelity_score = gecko_evaluate(
+                                        prompt=state.get("key_selling_points", product),
+                                        media_uri=f"{bucket}/{gcs_folder}/{artifact_key}",
+                                        media_type="image",
+                                    )
+                                    img_meta["fidelity_score"] = fidelity_score
+                                except Exception:
+                                    pass
 
-            yield self._status_event(ctx, "Image gen returned empty — will retry next wave.")
+                            new_list = list(existing_imgs) + [img_meta]
+                            existing_imgs = new_list  # Update for next iteration
+                            save_event = self._status_event(ctx, f"Image saved: {artifact_key}")
+                            save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": new_list}
+                            # Save as ADK artifact for inline display
+                            if ctx.artifact_service:
+                                try:
+                                    version = await ctx.artifact_service.save_artifact(
+                                        app_name=ctx.app_name, user_id=ctx.user_id,
+                                        session_id=ctx.session.id, filename=artifact_key,
+                                        artifact=types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+                                    )
+                                    save_event.actions.artifact_delta[artifact_key] = version
+                                    logger.info(f"[ImageGen] Saved artifact: {artifact_key} v{version}")
+                                except Exception as e:
+                                    logger.warning(f"[ImageGen] Failed to save artifact: {e}")
+                            else:
+                                logger.warning(f"[ImageGen] No artifact_service on ctx — cannot save {artifact_key}")
+                            yield save_event
+                            break  # Got one image from this concept
+                else:
+                    yield self._status_event(ctx, f"Image {img_idx + 1} returned empty — will retry next wave.")
 
-        except Exception as e:
-            logger.warning(f"[ImageGen] Failed: {e}")
-            yield self._status_event(ctx, f"Image gen failed: {str(e)[:100]} — will retry.")
+            except Exception as e:
+                logger.warning(f"[ImageGen] Failed: {e}")
+                yield self._status_event(ctx, f"Image gen failed: {str(e)[:100]} — will retry.")
 
     async def _generate_commercial_deterministic(
         self, ctx: InvocationContext
@@ -552,9 +664,33 @@ class CreativeProductionOrchestrator(BaseAgent):
                         break
 
             if clip_uri:
+                # Copy video from Veo output path to session's gcs_folder
+                final_gcs_uri = clip_uri
+                art_fname = f"commercial_{duration}s.mp4"
+                source_blob = clip_uri.replace(f"gs://{bucket_name}/", "")
+                video_bytes = None
+                try:
+                    video_bytes = download_blob(bucket_name=bucket_name, source_blob_name=source_blob)
+                    if gcs_folder and bucket:
+                        dest_blob = f"{gcs_folder}/{art_fname}"
+                        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+                            tmp.write(video_bytes)
+                            tmp_path = tmp.name
+                        try:
+                            upload_blob_to_gcs(
+                                source_file_name=tmp_path,
+                                destination_blob_name=dest_blob,
+                            )
+                            final_gcs_uri = f"{bucket}/{dest_blob}"
+                            logger.info(f"[DetAV] Copied commercial to {final_gcs_uri}")
+                        finally:
+                            os.unlink(tmp_path)
+                except Exception as e:
+                    logger.warning(f"[DetAV] Could not copy commercial to gcs_folder: {e}")
+
                 commercial_data = {
-                    "artifact_key": f"commercial_{duration}s.mp4",
-                    "gcs_uri": clip_uri,
+                    "artifact_key": art_fname,
+                    "gcs_uri": final_gcs_uri,
                     "metadata": {
                         "title": f"{duration}s commercial for {product}",
                         "scene_descriptions": [
@@ -569,13 +705,25 @@ class CreativeProductionOrchestrator(BaseAgent):
                         "deterministic_av_studio": True,
                     },
                 }
-                event = self._status_event(ctx, f"Commercial generated: {clip_uri}")
+                event = self._status_event(ctx, f"Commercial generated: {final_gcs_uri}")
                 event.actions.state_delta["commercial_artifact"] = commercial_data
                 event.actions.state_delta["_commercial_clips"] = {}
+                # Save as ADK artifact for inline display
+                if ctx.artifact_service and video_bytes:
+                    try:
+                        version = await ctx.artifact_service.save_artifact(
+                            app_name=ctx.app_name, user_id=ctx.user_id,
+                            session_id=ctx.session.id, filename=art_fname,
+                            artifact=types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
+                        )
+                        event.actions.artifact_delta[art_fname] = version
+                    except Exception as e:
+                        logger.warning(f"[DetAV] Failed to save commercial artifact: {e}")
                 yield event
                 logger.info(f"[DetAV] Commercial saved: {clip_uri}")
             else:
                 # CRITICAL: Clear pending op so retry counter can increment
+                logger.warning(f"[DetAV] No generated_videos. result={operation.result}")
                 clear_event = self._status_event(ctx, "Veo completed but no video URI returned — will retry")
                 clear_event.actions.state_delta["_commercial_clips"] = {}
                 yield clear_event

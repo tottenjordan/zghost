@@ -1,0 +1,504 @@
+{
+  "campaign_guide_content": "",
+  "final_select_vis_concepts": {
+    "final_select_vis_concepts": [
+      {
+        "headline": "Pure Innovation. Zero Plastic.",
+        "prompt": "An ultra-realistic, high-fashion editorial product photograph of three square, textured laundry tiles with a compressed-fiber appearance in eggshell white. They are artfully stacked on a raw, jagged-edged gray slate stone slab. Beside them sits a minimalist amber glass bottle with a matte black dropper cap. A single dried sprig of lavender and a pink hibiscus petal rest on the slate. Background is muted, earthy sage green. Natural side lighting creates soft, elongated shadows. 35mm lens, deep depth of field. Mood is \"Grit meets Green.\" 8k resolution, minimalist luxury aesthetic.",
+        "call_to_action": "Join the Revolution",
+        "type": "image",
+        "creative_explain": "A high-end editorial product shot that positions waterless laundry tiles as \"scientific artifacts.\" It blends raw textures like slate and stone with minimalist glass elements to create an \"Honest and Transparent\" visual language.",
+        "name": "The Biotech Tile Manifesto",
+        "rationale": "Addresses the \"Zero Waste\" movement by making plastic-free living look aspirational and high-design rather than a \"sacrifice.\" It aligns with current Gen Z interior trends of \"Grounded Neutrality.\"",
+        "trend_ref": "Zero Waste, Grounded Neutrality, Biotech Luxury, Grit meets Green, Waterless Formats",
+        "caption": "The future of clean isn't found in a plastic jug. \ud83d\udeab\ud83e\uddf4 Our waterless laundry tiles combine raw nature with biotech precision for a powerful, plastic-free wash. Better for your home, better for the planet. #ZeroWaste #PlasticFree #GritMeetsGreen #SustainableLiving"
+      },
+      {
+        "name": "The Biotech Hibiscus Bloom",
+        "rationale": "Taps into the Gen Z \"Skinification\" trend and the craving for ASMR/satisfying visuals. It positions the product as a premium, scientifically-backed alternative to \"cheap\" chemical cleaners.",
+        "trend_ref": "#CleanTok, #SundayReset, Biotech Beauty, Skinification of Fabric Care, Moodscaping",
+        "caption": "Upgrade your laundry from a chore to a skincare-inspired ritual. \ud83c\udf3a\u2728 Our biotech formula extracts the pure essence of Wild Hibiscus to treat your clothes like your skin. High-performance meets high-aesthetic. #CleanTok #SundayReset #BiotechBeauty #SustainableLuxury",
+        "creative_explain": "This concept visualizes the \"Lab-to-Luxury\" journey, treating laundry detergent as a \"serum\" for fabrics. It uses macro-cinematography to show a hibiscus flower\u2019s essence dissolving into pearlescent, hydrating suds within a laboratory-grade vessel.",
+        "headline": "Serum-Grade Clean. Nature-Identical Freshness.",
+        "prompt": "<SUBJECT> A single, hyper-realistic, deep magenta hibiscus flower with delicate, velvet-textured petals. <ACTION> The flower is suspended in a minimalist glass vessel. As the camera zooms in, the flower\u2019s edges glow with soft amber light, and its essence dissolves into swirling, pearlescent white soap suds with the viscosity of a facial serum. <SCENE_AND_CONTEXT> A \"Biotech Luxury\" setting with a muted, earthy olive green background. Soft \"Golden Hour\" lighting filters through a frosted window. <CAMERA_ANGLE> Extreme macro close-up. <CAMERA_MOVEMENTS> A slow, hypnotic zoom-in. <VISUAL_STYLE_AND_AESTHETICS> Cinematic film look, shallow depth of field, creamy bokeh. Deep magenta, pearlescent white, and muted olive palette. SUPPRESS SUBTITLES. <TEMPORAL_ELEMENTS> Slow-motion (120fps).",
+        "call_to_action": "Experience the Ritual",
+        "type": "video"
+      }
+    ]
+  },
+  "gcs_folder": "2026_03_13_05_29",
+  "target_audience": "Gen Z eco-conscious consumers who value sustainable products and fresh scents",
+  "commercial_artifact": "",
+  "final_select_ad_copies": {
+    "final_select_ad_copies": [
+      {
+        "trend_ref": "Zero Waste, Plant Not Plastic, Waterless Formats, Microplastic Awareness",
+        "call_to_action": "Join the Revolution",
+        "caption": "Heavy plastic jugs are so last season. \ud83d\udeab\ud83e\uddf4 Switch to the future of clean with our waterless tiles. Better for your clothes, better for the ocean. \ud83c\udf0a #ZeroWaste #PlasticFree #Innovation #EcoFriendly",
+        "body_text": "Stop the cycle of plastic waste. Our new waterless laundry tiles come in 100% biodegradable packaging, delivering a powerful clean with zero footprint. No heavy jugs, no microplastics, just pure, sustainable innovation. Because the future of clean is plastic-free. Join the 'Plant Not Plastic' movement today.",
+        "headline": "Pure Clean. Zero Plastic.",
+        "name": "The Zero-Waste Revolution",
+        "rationale": "Directly addresses the high anxiety around microplastics and the 'Plant Not Plastic' campaign found in research. It positions the product as a leader in the Zero Waste movement with innovative, waterless formats."
+      },
+      {
+        "name": "The Floral Self-Care Ritual",
+        "headline": "Floral Freshness, Naturally Redefined.",
+        "rationale": "Taps into the Gen Z trend of 'romanticizing' chores as self-care while highlighting the exotic hibiscus scent profile identified in research. It aligns with the demand for aesthetic, plant-based cleaning.",
+        "call_to_action": "Elevate Your Wash",
+        "trend_ref": "#CleanTok, #SundayReset, Sustainable Laundry, Exotic Floral Scents",
+        "body_text": "Experience the refreshing scent of wild hibiscus and exotic florals with every wash. Our plant-based formula isn't just a cleaning product; it's a sensory escape that respects the planet. Join the #SundayReset revolution and transform your laundry chore into a self-care ritual. Purely clean, naturally vibrant, and 100% Gen Z approved.",
+        "caption": "Laundry day just became the best part of your week. \ud83c\udf3a\u2728 Ditch the chemicals and embrace the floral power of nature. #EcoCleaning #FloralFresh #SustainableLiving #GenZStyle"
+      }
+    ]
+  },
+  "timer_start": 1773379764.9092891,
+  "autopilot_mode": true,
+  "target_product": "Tide Fabric Softener with Hibiscus Scent",
+  "commercial_duration": 15,
+  "final_report_with_citations": "",
+  "ui:status_update": "Retrieving saved project artifacts for display in the workspace",
+  "url_to_short_id": {
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG2IHDx77B1_9JNrrjjI1HRQqeaWWpijHOSOWLd_uAdSeX6xfNucbyq9JQoCCcazayI6oSQqGCaNdJ33bEvbGzFqwNgdKayIKPIotpYp2wgI41j_qR2U9YrNmYOciQ1PMNfjNGS18HiIjpr": "src-3",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFNHid2HtS-kZMbYdyQdh3ASFg60G_YT1Rpnea6iT5r6FyUJtECRKZz0ArRtcj8HdszGtu193QAD_8aWH31SVR94qeQO6yaKoMIP7PUTdqGNz8mtWifU_xXzG0vHY6svDHUW9uzLLFbosOTIz9Roo0RVRsXM7-P8cKgJvxabm0OdOun-KtJu9P9Lk86goR4iA==": "src-13",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF6p8DxlF-Us636B7fNiTL1MfHdc0vfDSLcXwwQH9ISC5RpPC8pVSJqx5fMKM6zjccLk4N19nTGI34YLQfWW6fTdNedJEFS2HhnHziz5cbZFb7oIKSe6hf4FDn7UI79LbhhjEMFGzLhFRg1BfOfKvP5-w4=": "src-20",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHxAl4WnwvT8AxfeXQwnxJWTBIC4xSXDSvcI5bUR1RuLg-SV8zUymWKI0deh5JDaTkJVb2WGJHyN86Ohw4lpHWuGv2PPrLHi6037FReHSjLeGPN9C6f51oVaXnM79UpLZHjul6yZU-wfhn04exbp4n5XrWCdEQitgnB3OxOeef2UZIxYEFqerUlvr6r": "src-18",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEk3f0jwQtBjGH7filKpv848uj61UI9O817C7i8dDnH5ome0tQ2ljuxDYTXri-lqI-XTuMdPYhnHZXmqcIN3SPLk0ljk73Kr0jv6-G2tWxwMCq1YKF4Vqi9FxJyZbxUHTXyXHEnnPvlUVVxereiTVteIk2wQzwEOTJIWp4nS9bcoXyMnlRP2mIDQUBAZzFo5VH00VXA6qDeF_RRjQ4MChei3FbXf59M5g==": "src-23",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHV1QkOtJ7C2ojYqwFiR0BXQzs1WVbctCeLawxMIPyXtGXhNhEddWo1FJ3WEGHS_tJN15LZzamffE9aRuo2nE3V_Ja84FZosZBOStB4Ku0mdAeFC9jr_cpCxVdk7_2gWDa4hyIuZ1iozobgIf9pZ17-cttuRCXQbng-iY2Kfx-jkos=": "src-4",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHFaAgLS8R5PfOIDABw1MGqqduHX2TKFz6Th1Zm-02g-xOozx8XzUPvj-qHUdcRVToo6uhsIk1YP20S5JEslQBEw0-MuzjdfzpR0hya7ggV9hEujJo1a7hCU_SsY0rddJ1aobOHhVZb5BwwS6rGjdu9jRfC6-yI7VdNKDEBfLVb6liKzBie6-6pa-iH": "src-24",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEuFTH1tMnwyoLMvM1Qet9JQByG1B_qc9u_gqYxXt9CrkLBE4027v3B54BT5Yid5VcMFadNNsnJke2L2i8gTog-7AwAPqOYC19Sn67zLEI3OyELsWcHTi23NGpcSx1CZ6M4vhLclrhIaSPYFgezM7H-19sEQb1tN6f4qLYbZ2blJRFMwRZB83Kqqol_yR0=": "src-17",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE2bH2NEZAnsnI-8ahkaGn5_OIIG1vYc4ZPB1YqrapLZxW3gNGoHQd_E6-nZVt15NlR2jWro6n9COo_DW5pc71M8HCIG_UPHAZOY8isXc5SSTgoCZKitCAzxDxr_JKCIBpPt7ZeOlNWlNHDTcPrrA6R": "src-14",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGiwWq2PHg0TS_RatDjkok26IyBVAihH2fegGBbznncTDGXvkfrQuaPxNd3JRUgIhGuu0vaYnswqI1ME02m-5xtcuzJXnruROXuteiXrSGP7K7wSysJpQ7-XvDLqHH473M_0ve46l_rBLlsV7uC_HKDBBnv0eyX_Pgn6NhpOGmKHpwsUZ6MkdcaairSKTZa2q52W6YI13bSYLRU4649dChihGxybIQ=": "src-7",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGB50EJlHC-dl9sPWhhYCAWDv5W1Q4QzCil7oCFno2Q8jg7WAFf7aJv1UJUdsPCHKg1ZPVbCKruLz0tolgdjpqtJWVhBQ9DuP6fJ8aMhTgYe8TAJlBneWhTNQ3Dv7jzyoirbEdB3RxSHHQ53FgeeZBoOt6G5cGbSOzqOwd56pX3zP57YOm-o0vsntBa-YlGTBatpLBg8QGADi0StdQP2FHMvE04LMQ3OQzkMZJfl2wqLC1z0BF2dHFx8eP-cYWSUr-9Bv7ExMkhJs3UQQ==": "src-1",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF3B4yLmfMLQ1P7REBj3eI6H19GWqrcX9iEEzcQ8mdUGjptZUE9W38iMtTksCwKZoO7pozI5KqSOLrEQ1fjf3k1VAoZNLXo-3SaHHFDPJwAHZCBK1sQ_rrjPdD2GJJEpFixHq6uIFu_9FveloS_xmOv0zYywWm3AH4zh1bG2L6hlO7ntTf6otosjWASdlTua9peenweFgIQNrCWpXkB4neRmLfQO81k_gB6aur_qmWpAjDXhcS87nkIFhwSU2LTboQ=": "src-22",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGtf0y9nYMabORGGAKwbyQjrMP1ws_gD_Z-aFmCtgyhY_TpE94PSxhcTyXEOsLhGCAXEKdUVJ6mMY-6U-R-w2xfUKavV_oKiaChaom1GwOjvu78AfYmkhSezHo6S4W8EjC-LlFFQGqCDL9FvC_D_OBmry39pJB18gD5E28bkjw0Wqc=": "src-11",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFVWkp8F6zDNNoRD9AQRx7YAZs5z7m_PqbOiJ3PDNW1iAVSiwYmlwYd84B-M9FKS_vjP6vCipz7lT8XVXXmUq9AjXQsOt9QRfhc4YPKU0jeL0tX7OJcinq0GOxFYdrdvRewXSqtTnWyWHi4xxwq0XB-Zjak62qXehPlkTzIO6daeyvCZ0t0pF71_gaRae9T0w==": "src-6",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFnV9-msbObBxYaxc9Cea0UiCERhF_qVVWkj-omPm7gf3cvIdj7s6zs8rtg73lP4KRG4V2M3a-KlJpG9zsTEEIuRydHm-TuDhl9kYoOEMAEs0z-Q5JITHygJfkP1FPbh8r7b7gO4amDBgF89X6SuW-rhiuU8K9P4UozkNDrEKQKTWPYLLY5ode7XXSKQRYPUgXt3j92TTPM_R0AqlbC": "src-2",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFk1v7cpB2m-aloCDn8ltCmaAHJRtNe9HNUL_w1S_SiUSnJpTxe2yupo34VZCz0ob6EO_He_PQ2PbX_OY98gVFRg87VayYa8EMu1vZFuQ3IPkTqt3MPWmPlhiLEMmHVatOPpLIYhqc8H1OAPb-qsCuqBufsAor2034m9M79674_7fmYA0ls6kY-u0rEzAicX3P_GbJZaQ==": "src-12",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGd2BfB-DMdUBJis7RnbvKsRlOKNxf5orSkJ9unJnOo2YxYujRmq6AEEZ5-9F0U_af5ljFJ7nGp7ENygPdsd-C-xjaXFueJPvJuRM-7Hk6astOlPWJiDy0XBy1m17cT7qPNjPCOjwo=": "src-5",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQER8zgJ_aV_UXZyEiaCZK2RE5j5U1ATPPTdSQ4d7PSwdic9DeVtxhaDg370cGGtuPlDXaOvjt2YiqpGNkUWO4nPeSzQNXEGLYMEtS5jV5IXbXZt18XvSLfaVDOmH97iBR-VMFtj2i1RaknzTstEaUMDS_kyPoKLz5zMv9lD2btCSmapbkQPZNhW5oHZ1-Yg4MbFF9esdU8APMDZHUbe7jnBY4HH19grnFkwOg7ezoxHmXKYmFbkqmB8SQ==": "src-9",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGIAz6xtxDYR4ePN1qmWUsjRZKCGhKOxonv70hR7sf-7YkhhhzfWes-jBP7TbLaLnIM1VcuXnezNNMNx48shFuiJFihl1v6Z_hoIId8GIMMjjAju-GURgZBZGNw6Ugea_3TivGR2of5Q935Jp3nj4bBmRyMlv-uK0Vr7SQs9yG80FMDH7Xuk8Y7Q5Xfw6nay6OtBaOuod2hxqRXsP_p": "src-10",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFeyWLqN91Nsl1Kq4yl_sYjFa8GZd0osCXTYP8VLJ4M69brx1UNOZRHHdqhhA_Z4t7-QZ-DD2hGbFFa5-VptGVz-4hmBGYoRBpAWwoIUZAV_w7IAosshw8VQM_eKMq_0EhAldoGatsIHxihtQezadcXIg==": "src-8",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEhXU7S6Vz2LHe69DYj0lF5ots0sRESimGgiI7dWK76iVFXRN_ljMIHjauPPDL7Mvropf2LHWLgaMdXAKzHg5Z0j_2_BA7IajVTdJKDiiRVVaSvQIkLo8S3MYSRtrzXQPW7fO7GT21ZYzoOJnDw3mCPuz4hYT2L-zdk1YWfIPAsESpzrkcFU-Mk22JgJY7Qtov1WETl7KQ=": "src-16",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHqLTtwjfmNBQwgyFZewg0xNQqWNSa7174s7XbE68WTHZ1eLtJ_czMyJzmHhdXxYZJ6io0cEPgoMSWC6LI3fr_IQw7-yp7pqGFR_4RusOmHzWHKVm8BC5vwpponnMq2pF7J7W8RJniEDEWcAESYky9_ELg_rkhHHS345tnnPmQFxNXsWBeyZoYDt579_ugt": "src-15",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFbNfTa_7uSAjZBhWp1DhcESTysfuPK4Z9I01nheBDMi3yJo6cWjFigdWcVYbFxj9E6PlntYxw7IkCsy5yJG9eZLJAWEMJfHYOWKe237gzypF2M_8ipOQMk7nLbrqvJ-2hVufB4EXIsxZvMGGw6rrCafOYCorKNRRBxUwMpDqxwTyugJBgKkHFEmmk4YHzDzgZQfLp3Oefa-s7bQ31J3m6ca5LZIzHRwmIYSC76qm0wAsRQyoVlf6VYwJ1qiJMK6K7LbP0F": "src-21",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEbQV8ujXWcvSkJB2Lq4GWfJ2wSvScuxO5YlchJB3lD5MMDalCbrKxYd2RDVchf4PgosHS7tVQvq5plyd0jTsXiHSa8NZaS4i_Ee6cQ6eN1fY3mFIrItACyKk9aMzcXxpC0qtVmPVjTVqwrBcX1lRGtbkAyakQa-tEFz_Y4sk01dgY=": "src-19"
+  },
+  "sources": {
+    "src-8": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Ecover:** Holds a significant global market share (approx. 8%) in the eco-friendly segment [7]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Ecover:** Holds a significant global market share (approx. 8%) in the eco-friendly segment [7]."
+        }
+      ],
+      "title": "accio.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFeyWLqN91Nsl1Kq4yl_sYjFa8GZd0osCXTYP8VLJ4M69brx1UNOZRHHdqhhA_Z4t7-QZ-DD2hGbFFa5-VptGVz-4hmBGYoRBpAWwoIUZAV_w7IAosshw8VQM_eKMq_0EhAldoGatsIHxihtQezadcXIg==",
+      "short_id": "src-8",
+      "domain": "accio.com"
+    },
+    "src-1": {
+      "short_id": "src-1",
+      "domain": "georgiacottoncommission.org",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "New campaigns like **\"Plant Not Plastic\"** emphasize that these fibers enter the food chain and human organs, making the issue personal and urgent [21, 24]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "New campaigns like **\"Plant Not Plastic\"** emphasize that these fibers enter the food chain and human organs, making the issue personal and urgent [21, 24]."
+        }
+      ],
+      "title": "georgiacottoncommission.org",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGB50EJlHC-dl9sPWhhYCAWDv5W1Q4QzCil7oCFno2Q8jg7WAFf7aJv1UJUdsPCHKg1ZPVbCKruLz0tolgdjpqtJWVhBQ9DuP6fJ8aMhTgYe8TAJlBneWhTNQ3Dv7jzyoirbEdB3RxSHHQ53FgeeZBoOt6G5cGbSOzqOwd56pX3zP57YOm-o0vsntBa-YlGTBatpLBg8QGADi0StdQP2FHMvE04LMQ3OQzkMZJfl2wqLC1z0BF2dHFx8eP-cYWSUr-9Bv7ExMkhJs3UQQ=="
+    },
+    "src-21": {
+      "short_id": "src-21",
+      "domain": "othilapak.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Minimalist packaging that conveys \"honesty\" and \"transparency\" builds trust [1, 5]."
+        }
+      ],
+      "title": "othilapak.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFbNfTa_7uSAjZBhWp1DhcESTysfuPK4Z9I01nheBDMi3yJo6cWjFigdWcVYbFxj9E6PlntYxw7IkCsy5yJG9eZLJAWEMJfHYOWKe237gzypF2M_8ipOQMk7nLbrqvJ-2hVufB4EXIsxZvMGGw6rrCafOYCorKNRRBxUwMpDqxwTyugJBgKkHFEmmk4YHzDzgZQfLp3Oefa-s7bQ31J3m6ca5LZIzHRwmIYSC76qm0wAsRQyoVlf6VYwJ1qiJMK6K7LbP0F"
+    },
+    "src-15": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Fragrance as Self-Expression:** For Gen Z, scent is a \"fragrance wardrobe\" used to express mood and identity rather than a single signature scent [21]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Shift from \"Classics\":** Traditional scents like \"cut grass\" or \"sandalwood\" are less popular."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z prefers **experimental and nostalgic profiles**, including **cherry blossom, vanilla, and \"clean skin\"** [16, 23]."
+        }
+      ],
+      "title": "walesonline.co.uk",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHqLTtwjfmNBQwgyFZewg0xNQqWNSa7174s7XbE68WTHZ1eLtJ_czMyJzmHhdXxYZJ6io0cEPgoMSWC6LI3fr_IQw7-yp7pqGFR_4RusOmHzWHKVm8BC5vwpponnMq2pF7J7W8RJniEDEWcAESYky9_ELg_rkhHHS345tnnPmQFxNXsWBeyZoYDt579_ugt",
+      "short_id": "src-15",
+      "domain": "walesonline.co.uk"
+    },
+    "src-2": {
+      "short_id": "src-2",
+      "domain": "trisonwells.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Health & Transparency:** A \"real need for safety\" has emerged as consumers move away from \"sneaky\" synthetic fragrances and endocrine-disrupting chemicals (like NPEs or phosphates) toward plant-based, non-toxic alternatives [10, 22, 25]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Tide (Evo):** A major conventional player pivoting with FSC-certified recyclable paper packaging and waterless \"tiles\" [10]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Health & Transparency:** A \"real need for safety\" has emerged as consumers move away from \"sneaky\" synthetic fragrances and endocrine-disrupting chemicals (like NPEs or phosphates) toward plant-based, non-toxic alternatives [10, 22, 25]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Tide (Evo):** A major conventional player pivoting with FSC-certified recyclable paper packaging and waterless \"tiles\" [10]."
+        }
+      ],
+      "title": "trisonwells.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFnV9-msbObBxYaxc9Cea0UiCERhF_qVVWkj-omPm7gf3cvIdj7s6zs8rtg73lP4KRG4V2M3a-KlJpG9zsTEEIuRydHm-TuDhl9kYoOEMAEs0z-Q5JITHygJfkP1FPbh8r7b7gO4amDBgF89X6SuW-rhiuU8K9P4UozkNDrEKQKTWPYLLY5ode7XXSKQRYPUgXt3j92TTPM_R0AqlbC"
+    },
+    "src-20": {
+      "short_id": "src-20",
+      "domain": "ominatural.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Biodegradable & Minimalist Design:** Gen Z looks for clear labeling of **post-consumer recycled (PCR) content, sugarcane-based plastics, or biodegradable components** [5]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Interactive Features:** QR codes and AR experiences on packaging can transform a static product into a \"dynamic brand channel,\" encouraging user-generated content (UGC) as fans film themselves \"walking the talk\" [5]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Authenticity is key\u2014Gen Z expects brands to provide data-backed proof of their environmental impact rather than just \"green language\" [5, 24]."
+        }
+      ],
+      "title": "ominatural.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF6p8DxlF-Us636B7fNiTL1MfHdc0vfDSLcXwwQH9ISC5RpPC8pVSJqx5fMKM6zjccLk4N19nTGI34YLQfWW6fTdNedJEFS2HhnHziz5cbZFb7oIKSe6hf4FDn7UI79LbhhjEMFGzLhFRg1BfOfKvP5-w4="
+    },
+    "src-17": {
+      "short_id": "src-17",
+      "domain": "mirror.co.uk",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Shift from \"Classics\":** Traditional scents like \"cut grass\" or \"sandalwood\" are less popular."
+        }
+      ],
+      "title": "mirror.co.uk",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEuFTH1tMnwyoLMvM1Qet9JQByG1B_qc9u_gqYxXt9CrkLBE4027v3B54BT5Yid5VcMFadNNsnJke2L2i8gTog-7AwAPqOYC19Sn67zLEI3OyELsWcHTi23NGpcSx1CZ6M4vhLclrhIaSPYFgezM7H-19sEQb1tN6f4qLYbZ2blJRFMwRZB83Kqqol_yR0="
+    },
+    "src-14": {
+      "short_id": "src-14",
+      "domain": "accio.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Fragrance as Self-Expression:** For Gen Z, scent is a \"fragrance wardrobe\" used to express mood and identity rather than a single signature scent [21]."
+        }
+      ],
+      "title": "accio.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE2bH2NEZAnsnI-8ahkaGn5_OIIG1vYc4ZPB1YqrapLZxW3gNGoHQd_E6-nZVt15NlR2jWro6n9COo_DW5pc71M8HCIG_UPHAZOY8isXc5SSTgoCZKitCAzxDxr_JKCIBpPt7ZeOlNWlNHDTcPrrA6R"
+    },
+    "src-24": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Anti-Greenwashing Sentiment:** This generation is highly skeptical; **88% of Gen Z does not trust standard ESG or eco-friendly claims** and will \"cancel\" brands they perceive as performative [24]."
+        }
+      ],
+      "title": "mckinsey.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHFaAgLS8R5PfOIDABw1MGqqduHX2TKFz6Th1Zm-02g-xOozx8XzUPvj-qHUdcRVToo6uhsIk1YP20S5JEslQBEw0-MuzjdfzpR0hya7ggV9hEujJo1a7hCU_SsY0rddJ1aobOHhVZb5BwwS6rGjdu9jRfC6-yI7VdNKDEBfLVb6liKzBie6-6pa-iH",
+      "short_id": "src-24",
+      "domain": "mckinsey.com"
+    },
+    "src-12": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Sustainability as a Non-Negotiable:** Approximately **62% of Gen Z prefer sustainable brands**, and up to **73% are willing to pay a premium** for eco-friendly products [10, 26]."
+        }
+      ],
+      "title": "retailistmag.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFk1v7cpB2m-aloCDn8ltCmaAHJRtNe9HNUL_w1S_SiUSnJpTxe2yupo34VZCz0ob6EO_He_PQ2PbX_OY98gVFRg87VayYa8EMu1vZFuQ3IPkTqt3MPWmPlhiLEMmHVatOPpLIYhqc8H1OAPb-qsCuqBufsAor2034m9M79674_7fmYA0ls6kY-u0rEzAicX3P_GbJZaQ==",
+      "short_id": "src-12",
+      "domain": "retailistmag.com"
+    },
+    "src-23": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Minimalist packaging that conveys \"honesty\" and \"transparency\" builds trust [1, 5]."
+        }
+      ],
+      "title": "sld.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEk3f0jwQtBjGH7filKpv848uj61UI9O817C7i8dDnH5ome0tQ2ljuxDYTXri-lqI-XTuMdPYhnHZXmqcIN3SPLk0ljk73Kr0jv6-G2tWxwMCq1YKF4Vqi9FxJyZbxUHTXyXHEnnPvlUVVxereiTVteIk2wQzwEOTJIWp4nS9bcoXyMnlRP2mIDQUBAZzFo5VH00VXA6qDeF_RRjQ4MChei3FbXf59M5g==",
+      "short_id": "src-23",
+      "domain": "sld.com"
+    },
+    "src-18": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "These scents are viewed as \"sensory delights\" that differentiate the laundry experience [22]."
+        }
+      ],
+      "title": "fychemgroup.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHxAl4WnwvT8AxfeXQwnxJWTBIC4xSXDSvcI5bUR1RuLg-SV8zUymWKI0deh5JDaTkJVb2WGJHyN86Ohw4lpHWuGv2PPrLHi6037FReHSjLeGPN9C6f51oVaXnM79UpLZHjul6yZU-wfhn04exbp4n5XrWCdEQitgnB3OxOeef2UZIxYEFqerUlvr6r",
+      "short_id": "src-18",
+      "domain": "fychemgroup.com"
+    },
+    "src-13": {
+      "short_id": "src-13",
+      "domain": "opeepl.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "However, price remains a significant barrier for some (56% cited cost as a deterrent) [11]."
+        }
+      ],
+      "title": "opeepl.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFNHid2HtS-kZMbYdyQdh3ASFg60G_YT1Rpnea6iT5r6FyUJtECRKZz0ArRtcj8HdszGtu193QAD_8aWH31SVR94qeQO6yaKoMIP7PUTdqGNz8mtWifU_xXzG0vHY6svDHUW9uzLLFbosOTIz9Roo0RVRsXM7-P8cKgJvxabm0OdOun-KtJu9P9Lk86goR4iA=="
+    },
+    "src-11": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The \"Cleaning Generation\":** Gen Z is redefining cleaning from a chore to a form of **self-care and mental wellness** [15]."
+        }
+      ],
+      "title": "personalcareinsights.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGtf0y9nYMabORGGAKwbyQjrMP1ws_gD_Z-aFmCtgyhY_TpE94PSxhcTyXEOsLhGCAXEKdUVJ6mMY-6U-R-w2xfUKavV_oKiaChaom1GwOjvu78AfYmkhSezHo6S4W8EjC-LlFFQGqCDL9FvC_D_OBmry39pJB18gD5E28bkjw0Wqc=",
+      "short_id": "src-11",
+      "domain": "personalcareinsights.com"
+    },
+    "src-7": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Microfiber Mitigation:** Use of **Guppyfriend** bags or specialized filters to capture microplastics before they enter wastewater [9]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Microfiber Mitigation:** Use of **Guppyfriend** bags or specialized filters to capture microplastics before they enter wastewater [9]."
+        }
+      ],
+      "title": "lndry.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGiwWq2PHg0TS_RatDjkok26IyBVAihH2fegGBbznncTDGXvkfrQuaPxNd3JRUgIhGuu0vaYnswqI1ME02m-5xtcuzJXnruROXuteiXrSGP7K7wSysJpQ7-XvDLqHH473M_0ve46l_rBLlsV7uC_HKDBBnv0eyX_Pgn6NhpOGmKHpwsUZ6MkdcaairSKTZa2q52W6YI13bSYLRU4649dChihGxybIQ=",
+      "short_id": "src-7",
+      "domain": "lndry.com"
+    },
+    "src-16": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Fragrance as Self-Expression:** For Gen Z, scent is a \"fragrance wardrobe\" used to express mood and identity rather than a single signature scent [21]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Shift from \"Classics\":** Traditional scents like \"cut grass\" or \"sandalwood\" are less popular."
+        }
+      ],
+      "title": "somersetlive.co.uk",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEhXU7S6Vz2LHe69DYj0lF5ots0sRESimGgiI7dWK76iVFXRN_ljMIHjauPPDL7Mvropf2LHWLgaMdXAKzHg5Z0j_2_BA7IajVTdJKDiiRVVaSvQIkLo8S3MYSRtrzXQPW7fO7GT21ZYzoOJnDw3mCPuz4hYT2L-zdk1YWfIPAsESpzrkcFU-Mk22JgJY7Qtov1WETl7KQ=",
+      "short_id": "src-16",
+      "domain": "somersetlive.co.uk"
+    },
+    "src-19": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "\"Aesthetic Cleaning\" and Influencer Culture"
+        }
+      ],
+      "title": "goodnet.org",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEbQV8ujXWcvSkJB2Lq4GWfJ2wSvScuxO5YlchJB3lD5MMDalCbrKxYd2RDVchf4PgosHS7tVQvq5plyd0jTsXiHSa8NZaS4i_Ee6cQ6eN1fY3mFIrItACyKk9aMzcXxpC0qtVmPVjTVqwrBcX1lRGtbkAyakQa-tEFz_Y4sk01dgY=",
+      "short_id": "src-19",
+      "domain": "goodnet.org"
+    },
+    "src-6": {
+      "short_id": "src-6",
+      "domain": "thecooldown.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The \"No-Wash\" / \"Low-Wash\" Movement:** A growing community advocating for airing out, spot-cleaning, or freezing clothes instead of machine washing to extend garment life and save resources [15, 18]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The \"No-Wash\" / \"Low-Wash\" Movement:** A growing community advocating for airing out, spot-cleaning, or freezing clothes instead of machine washing to extend garment life and save resources [15, 18]."
+        }
+      ],
+      "title": "thecooldown.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFVWkp8F6zDNNoRD9AQRx7YAZs5z7m_PqbOiJ3PDNW1iAVSiwYmlwYd84B-M9FKS_vjP6vCipz7lT8XVXXmUq9AjXQsOt9QRfhc4YPKU0jeL0tX7OJcinq0GOxFYdrdvRewXSqtTnWyWHi4xxwq0XB-Zjak62qXehPlkTzIO6daeyvCZ0t0pF71_gaRae9T0w=="
+    },
+    "src-10": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z Consumer Trends & Sustainable Laundry"
+        }
+      ],
+      "title": "fabklean.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGIAz6xtxDYR4ePN1qmWUsjRZKCGhKOxonv70hR7sf-7YkhhhzfWes-jBP7TbLaLnIM1VcuXnezNNMNx48shFuiJFihl1v6Z_hoIId8GIMMjjAju-GURgZBZGNw6Ugea_3TivGR2of5Q935Jp3nj4bBmRyMlv-uK0Vr7SQs9yG80FMDH7Xuk8Y7Q5Xfw6nay6OtBaOuod2hxqRXsP_p",
+      "short_id": "src-10",
+      "domain": "fabklean.com"
+    },
+    "src-4": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Health & Transparency:** A \"real need for safety\" has emerged as consumers move away from \"sneaky\" synthetic fragrances and endocrine-disrupting chemicals (like NPEs or phosphates) toward plant-based, non-toxic alternatives [10, 22, 25]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Health & Transparency:** A \"real need for safety\" has emerged as consumers move away from \"sneaky\" synthetic fragrances and endocrine-disrupting chemicals (like NPEs or phosphates) toward plant-based, non-toxic alternatives [10, 22, 25]."
+        }
+      ],
+      "title": "substack.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHV1QkOtJ7C2ojYqwFiR0BXQzs1WVbctCeLawxMIPyXtGXhNhEddWo1FJ3WEGHS_tJN15LZzamffE9aRuo2nE3V_Ja84FZosZBOStB4Ku0mdAeFC9jr_cpCxVdk7_2gWDa4hyIuZ1iozobgIf9pZ17-cttuRCXQbng-iY2Kfx-jkos=",
+      "short_id": "src-4",
+      "domain": "substack.com"
+    },
+    "src-22": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Minimalist packaging that conveys \"honesty\" and \"transparency\" builds trust [1, 5]."
+        }
+      ],
+      "title": "theorganicmagazine.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF3B4yLmfMLQ1P7REBj3eI6H19GWqrcX9iEEzcQ8mdUGjptZUE9W38iMtTksCwKZoO7pozI5KqSOLrEQ1fjf3k1VAoZNLXo-3SaHHFDPJwAHZCBK1sQ_rrjPdD2GJJEpFixHq6uIFu_9FveloS_xmOv0zYywWm3AH4zh1bG2L6hlO7ntTf6otosjWASdlTua9peenweFgIQNrCWpXkB4neRmLfQO81k_gB6aur_qmWpAjDXhcS87nkIFhwSU2LTboQ=",
+      "short_id": "src-22",
+      "domain": "theorganicmagazine.com"
+    },
+    "src-5": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Scientists & Academics:** Figures like **Professor Judith Weis** (Rutgers University) are prominent in educating the public on microplastic shedding [24]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Scientists & Academics:** Figures like **Professor Judith Weis** (Rutgers University) are prominent in educating the public on microplastic shedding [24]."
+        }
+      ],
+      "title": "youtube.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGd2BfB-DMdUBJis7RnbvKsRlOKNxf5orSkJ9unJnOo2YxYujRmq6AEEZ5-9F0U_af5ljFJ7nGp7ENygPdsd-C-xjaXFueJPvJuRM-7Hk6astOlPWJiDy0XBy1m17cT7qPNjPCOjwo=",
+      "short_id": "src-5",
+      "domain": "youtube.com"
+    },
+    "src-3": {
+      "short_id": "src-3",
+      "domain": "ecos.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Health & Transparency:** A \"real need for safety\" has emerged as consumers move away from \"sneaky\" synthetic fragrances and endocrine-disrupting chemicals (like NPEs or phosphates) toward plant-based, non-toxic alternatives [10, 22, 25]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The \"No-Wash\" / \"Low-Wash\" Movement:** A growing community advocating for airing out, spot-cleaning, or freezing clothes instead of machine washing to extend garment life and save resources [15, 18]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **ECOS:** A long-standing leader with over 120 Safer Choice-certified products [6, 8]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Health & Transparency:** A \"real need for safety\" has emerged as consumers move away from \"sneaky\" synthetic fragrances and endocrine-disrupting chemicals (like NPEs or phosphates) toward plant-based, non-toxic alternatives [10, 22, 25]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The \"No-Wash\" / \"Low-Wash\" Movement:** A growing community advocating for airing out, spot-cleaning, or freezing clothes instead of machine washing to extend garment life and save resources [15, 18]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **ECOS:** A long-standing leader with over 120 Safer Choice-certified products [6, 8]."
+        }
+      ],
+      "title": "ecos.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG2IHDx77B1_9JNrrjjI1HRQqeaWWpijHOSOWLd_uAdSeX6xfNucbyq9JQoCCcazayI6oSQqGCaNdJ33bEvbGzFqwNgdKayIKPIotpYp2wgI41j_qR2U9YrNmYOciQ1PMNfjNGS18HiIjpr"
+    },
+    "src-9": {
+      "short_id": "src-9",
+      "domain": "anthropocenemagazine.org",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The \"Behavioral Immune System\":** Interestingly, research shows a conflict between \"sustainability\" and \"disgust,\" where people wash more often than needed due to a primal fear of being \"unclean,\" a psychological barrier that \"low-wash\" movements are actively trying to normalize [18]."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The \"Behavioral Immune System\":** Interestingly, research shows a conflict between \"sustainability\" and \"disgust,\" where people wash more often than needed due to a primal fear of being \"unclean,\" a psychological barrier that \"low-wash\" movements are actively trying to normalize [18]."
+        }
+      ],
+      "title": "anthropocenemagazine.org",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQER8zgJ_aV_UXZyEiaCZK2RE5j5U1ATPPTdSQ4d7PSwdic9DeVtxhaDg370cGGtuPlDXaOvjt2YiqpGNkUWO4nPeSzQNXEGLYMEtS5jV5IXbXZt18XvSLfaVDOmH97iBR-VMFtj2i1RaknzTstEaUMDS_kyPoKLz5zMv9lD2btCSmapbkQPZNhW5oHZ1-Yg4MbFF9esdU8APMDZHUbe7jnBY4HH19grnFkwOg7ezoxHmXKYmFbkqmB8SQ=="
+    }
+  },
+  "brand": "Tide",
+  "combined_final_cited_report": "",
+  "combined_web_search_insights": "",
+  "initial_campaign_queries": "1. Gen Z consumer trends and preferences for sustainable laundry detergents and floral scent profiles.\n2. Market research on the popularity of hibiscus and exotic floral fragrances in home care products for younger demographics.\n3. How Gen Z eco-conscious consumers prioritize plant-based ingredients versus cleaning performance in household products.\n4. Successful marketing strategies for promoting biodegradable packaging to Gen Z on social media platforms.\n5. Cultural relevance of \"aesthetic cleaning\" and sustainable home care rituals among Gen Z influencers.\n6. Analysis of Gen Z's perception of traditional laundry brands like Tide moving into the eco-friendly space.",
+  "final_visual_concepts": "Based on the refined \"Biotech Luxury\" and \"Grit meets Green\" creative direction, here are the finalized visual concepts for the ad campaign. These concepts are designed to resonate with Gen Z's preference for sensory rituals, environmental transparency, and high-aesthetic home care.\n\n---\n\n### **1. Concept Name: The Biotech Hibiscus Bloom**\n*   **Type:** Video (9:16)\n*   **Trend(s):** #CleanTok, #SundayReset, Biotech Beauty, Skinification of Fabric Care, Moodscaping.\n*   **Headline:** Serum-Grade Clean. Nature-Identical Freshness.\n*   **Call-to-Action:** Experience the Ritual\n*   **Social Media Caption:** Upgrade your laundry from a chore to a skincare-inspired ritual. \ud83c\udf3a\u2728 Our biotech formula extracts the pure essence of Wild Hibiscus to treat your clothes like your skin. High-performance meets high-aesthetic. #CleanTok #SundayReset #BiotechBeauty #SustainableLuxury\n*   **Creative Concept Explanation:** This concept visualizes the \"Lab-to-Luxury\" journey, treating laundry detergent as a \"serum\" for fabrics. It uses macro-cinematography to show a hibiscus flower\u2019s essence dissolving into pearlescent, hydrating suds within a laboratory-grade vessel.\n*   **Rationale for Target Audience Appeal:** Taps into the Gen Z \"Skinification\" trend and the craving for ASMR/satisfying visuals. It positions the product as a premium, scientifically-backed alternative to \"cheap\" chemical cleaners.\n*   **Market Impact:** Markets the product's high-end floral scent profile and plant-based, non-toxic ingredients through a lens of \"Biotech Luxury,\" justifying a premium price point.\n*   **Draft Veo Prompt:** \n    > **<SUBJECT>** A single, hyper-realistic, deep magenta hibiscus flower with delicate, velvet-textured petals. **<ACTION>** The flower is suspended in a minimalist glass vessel. As the camera zooms in, the flower\u2019s edges glow with soft amber light, and its essence dissolves into swirling, pearlescent white soap suds with the viscosity of a facial serum. **<SCENE_AND_CONTEXT>** A \"Biotech Luxury\" setting with a muted, earthy olive green background. Soft \"Golden Hour\" lighting filters through a frosted window. **<CAMERA_ANGLE>** Extreme macro close-up. **<CAMERA_MOVEMENTS>** A slow, hypnotic zoom-in. **<VISUAL_STYLE_AND_AESTHETICS>** Cinematic film look, shallow depth of field, creamy bokeh. Deep magenta, pearlescent white, and muted olive palette. SUPPRESS SUBTITLES. **<TEMPORAL_ELEMENTS>** Slow-motion (120fps).\n\n---\n\n### **2. Concept Name: The Biotech Tile Manifesto**\n*   **Type:** Image (4:5)\n*   **Trend(s):** Zero Waste, Grounded Neutrality, Biotech Luxury, Grit meets Green, Waterless Formats.\n*   **Headline:** Pure Innovation. Zero Plastic.\n*   **Call-to-Action:** Join the Revolution\n*   **Social Media Caption:** The future of clean isn't found in a plastic jug. \ud83d\udeab\ud83e\uddf4 Our waterless laundry tiles combine raw nature with biotech precision for a powerful, plastic-free wash. Better for your home, better for the planet. #ZeroWaste #PlasticFree #GritMeetsGreen #SustainableLiving\n*   **Creative Concept Explanation:** A high-end editorial product shot that positions waterless laundry tiles as \"scientific artifacts.\" It blends raw textures like slate and stone with minimalist glass elements to create an \"Honest and Transparent\" visual language.\n*   **Rationale for Target Audience Appeal:** Addresses the \"Zero Waste\" movement by making plastic-free living look aspirational and high-design rather than a \"sacrifice.\" It aligns with current Gen Z interior trends of \"Grounded Neutrality.\"\n*   **Market Impact:** Directly highlights the innovative, waterless format and biodegradable nature of the product, positioning it as a leader in the \"Plant Not Plastic\" movement.\n*   **Draft Imagen Prompt:** \n    > An ultra-realistic, high-fashion editorial product photograph of three square, textured laundry tiles with a compressed-fiber appearance in eggshell white. They are artfully stacked on a raw, jagged-edged gray slate stone slab. Beside them sits a minimalist amber glass bottle with a matte black dropper cap. A single dried sprig of lavender and a pink hibiscus petal rest on the slate. Background is muted, earthy sage green. Natural side lighting creates soft, elongated shadows. 35mm lens, deep depth of field. Mood is \"Grit meets Green.\" 8k resolution, minimalist luxury aesthetic.\n\n---\n\n### **3. Concept Name: The Crystalline Ocean Morph**\n*   **Type:** Video (9:16)\n*   **Trend(s):** Microplastic Awareness, Plant Not Plastic, Marine Hues, Nature-Inspired Nostalgia.\n*   **Headline:** Wash for the Water.\n*   **Call-to-Action:** Protect Our Oceans\n*   **Social Media Caption:** Every wash matters. \ud83c\udf0a Purely plant-based and 100% microplastic-free, our formula ensures that what cleans your clothes keeps our oceans crystalline. Choose the \"Plant Not Plastic\" path. #SaveTheOceans #MicroplasticFree #EcoFriendly #SustainableLaundry\n*   **Creative Concept Explanation:** A visual metaphor connecting clean laundry to ocean health. A macro-view of high-quality organic cotton fabric seamlessly morphs into a pristine, plastic-free ocean wave crashing over a healthy seabed.\n*   **Rationale for Target Audience Appeal:** Directly addresses \"microplastic anxiety\" through a beautiful, optimistic metaphor rather than fear-based messaging. It reinforces the product's environmental safety and purity.\n*   **Market Impact:** Markets the product\u2019s core environmental benefit\u2014protecting water systems\u2014by visually demonstrating the link between the laundry room and the natural world.\n*   **Draft Veo Prompt:** \n    > **<SUBJECT>** A high-detail, macro-view of a white, organic cotton bedsheet. **<ACTION>** The fabric ripples like liquid, then the white threads seamlessly morph into the crest of a clear, crystalline ocean wave. The wave crashes softly, revealing a plastic-free seabed with green kelp and silver fish. **<SCENE_AND_CONTEXT>** Transition from a sun-drenched white laundry room to a vast, open ocean under a clear blue sky. **<CAMERA_ANGLE>** Starts close-up, transitions to medium wide-angle. **<CAMERA_MOVEMENTS>** Continuous, smooth dolly-out. **<VISUAL_STYLE_AND_AESTHETICS>** Hyper-realistic, 8K, \"Marine Hues\" of teal and turquoise. Bright and optimistic lighting. No plastic debris visible. SUPPRESS SUBTITLES. **<TEMPORAL_ELEMENTS>** Fluid, rhythmic pace.",
+  "target_search_trends": {
+    "target_search_trends": [
+      {
+        "title": "Sustainable Laundry",
+        "description": "Growing interest in eco-friendly laundry products and sustainable cleaning solutions"
+      }
+    ]
+  },
+  "key_selling_points": "New Hibiscus Scent. Plant-based formula. 2x cleaning power. Biodegradable packaging. Fresh floral fragrance that lasts.",
+  "img_artifact_keys": {
+    "img_artifact_keys": [
+      {
+        "concept": "A visual metaphor connecting clean laundry to ocean health. A macro-view of high-quality organic cotton fabric seamlessly morphs into a pristine, plastic-free ocean wave crashing over a healthy seabed.",
+        "markets_product": "Markets the product\u2019s core environmental benefit\u2014protecting water systems\u2014by visually demonstrating the link between the laundry room and the natural world.",
+        "fidelity_score": 0.85,
+        "caption": "Every wash matters. \ud83c\udf0a Purely plant-based and 100% microplastic-free, our formula ensures that what cleans your clothes keeps our oceans crystalline. Choose the 'Plant Not Plastic' path. #SaveTheOceans #MicroplasticFree #EcoFriendly #SustainableLaundry",
+        "rationale_perf": "Powerful visual metaphor for environmental impact.",
+        "artifact_key": "The_Crystalline_Ocean_Morph_1739345731.png",
+        "audience_appeal": "Directly addresses 'microplastic anxiety' through a beautiful, optimistic metaphor rather than fear-based messaging. It reinforces the product's environmental safety and purity.",
+        "trend": "Microplastic Awareness, Plant Not Plastic, Marine Hues, Nature-Inspired Nostalgia",
+        "img_prompt": "An ultra-realistic, high-detail macro-view of a white, organic cotton bedsheet with a visible, high-quality weave. Bright, natural daylight creates a fresh, clean atmosphere. Minimalist setting, 8k resolution, photorealistic.",
+        "headline": "Wash for the Water."
+      }
+    ]
+  },
+  "initial_yt_queries": "1. Cultural impact and growth of \"CleanTok\" aesthetics on sustainable and zero-waste cleaning habits in 2024.\n2. Consumer market trends: The shift from traditional chemical cleaners to DIY and refillable eco-friendly household products.\n3. The intersection of cost-of-living concerns and the demand for non-toxic, sustainable home maintenance routines.",
+  "campaign_web_search_insights": "Based on the initial research for the campaign guide, here is a detailed summary of Gen Z consumer trends and preferences in the sustainable laundry and home care market for 2024-2025.\n\n### 1. Gen Z Consumer Trends & Sustainable Laundry\n*   **The \"Cleaning Generation\":** Gen Z is redefining cleaning from a chore to a form of **self-care and mental wellness** [15]. They often \"romanticize\" mundane tasks through social media trends like \"Sunday Reset\" or \"Giving the dishes a bath\" [9, 15].\n*   **Sustainability as a Non-Negotiable:** Approximately **62% of Gen Z prefer sustainable brands**, and up to **73% are willing to pay a premium** for eco-friendly products [10, 26]. However, price remains a significant barrier for some (56% cited cost as a deterrent) [11].\n*   **Performance vs. Eco-Consciousness:** While they prioritize plant-based and non-toxic ingredients, Gen Z also values **simplicity and efficiency**. They favor multi-purpose cleaners (75% of consumers) and products that deliver \"visible results\" without complex routines [15].\n\n### 2. Scent Profiles: Hibiscus and Exotic Florals\n*   **Fragrance as Self-Expression:** For Gen Z, scent is a \"fragrance wardrobe\" used to express mood and identity rather than a single signature scent [21].\n*   **Shift from \"Classics\":** Traditional scents like \"cut grass\" or \"sandalwood\" are less popular. Gen Z prefers **experimental and nostalgic profiles**, including **cherry blossom, vanilla, and \"clean skin\"** [16, 23].\n*   **Emerging Exotic Trends:** There is a growing demand for exotic and unique blends such as **hibiscus, coconut, ylang-ylang, and cardamom** [22]. These scents are viewed as \"sensory delights\" that differentiate the laundry experience [22].\n\n### 3. \"Aesthetic Cleaning\" and Influencer Culture\n*   **#CleanTok & Visual Satisfaction:** Influencers like Auri Kananen (\"Queen of Cleaning\") and Go Clean Co drive the \"aesthetic cleaning\" trend, emphasizing **ASMR sounds, tingly visuals, and \"before-and-after\" transformations** [9, 19].\n*   **Natural Product Advocacy:** Influencers frequently highlight DIY or natural swaps (e.g., vinegar, baking soda) and promote brands like **Blueland and Grove Collaborative** for their environmental commitment [7, 19].\n*   **Digital-to-Physical Journey:** Gen Z often discovers products on TikTok or Instagram and will buy scented products **without smelling them first** based on viral recommendations [16, 23, 25].\n\n### 4. Packaging and Social Media Marketing\n*   **Biodegradable & Minimalist Design:** Gen Z looks for clear labeling of **post-consumer recycled (PCR) content, sugarcane-based plastics, or biodegradable components** [5]. Minimalist packaging that conveys \"honesty\" and \"transparency\" builds trust [1, 5].\n*   **Interactive Features:** QR codes and AR experiences on packaging can transform a static product into a \"dynamic brand channel,\" encouraging user-generated content (UGC) as fans film themselves \"walking the talk\" [5].\n*   **Anti-Greenwashing Sentiment:** This generation is highly skeptical; **88% of Gen Z does not trust standard ESG or eco-friendly claims** and will \"cancel\" brands they perceive as performative [24].\n\n### 5. Perception of Traditional Brands (e.g., Tide)\n*   **Adaptation to Eco-Space:** Traditional brands like Tide are moving toward **zero-manufacturing-waste, 100% renewable electricity**, and innovative formats like the \"Eco-Box\" (75% less plastic) [27].\n*   **The Trust Gap:** While traditional brands are innovating, Gen Z often compares these moves against \"native\" sustainable brands. Authenticity is key\u2014Gen Z expects brands to provide data-backed proof of their environmental impact rather than just \"green language\" [5, 24].\n\nThis research will now be utilized by the **market_research_analyst** to perform a deeper competitive analysis and technical deep dive into the specific ingredients and market share of these floral and sustainable trends.",
+  "vid_artifact_keys": {
+    "vid_artifact_keys": [
+      {
+        "rationale_perf": "Powerful visual metaphor for environmental impact.",
+        "audience_appeal": "Directly addresses 'microplastic anxiety' through a beautiful, optimistic metaphor rather than fear-based messaging. It reinforces the product's environmental safety and purity.",
+        "artifact_key": "The_Crystalline_Ocean_Morph_(No_Ref)_0.mp4",
+        "trend": "Microplastic Awareness, Plant Not Plastic, Marine Hues, Nature-Inspired Nostalgia",
+        "headline": "Wash for the Water.",
+        "vid_prompt": "<SUBJECT> A high-detail, macro-view of a white, organic cotton bedsheet. <ACTION> The fabric ripples like liquid, then the white threads seamlessly morph into the crest of a clear, crystalline ocean wave. The wave crashes softly, revealing a plastic-free seabed with green kelp and silver fish. <SCENE_AND_CONTEXT> Transition from a sun-drenched white laundry room to a vast, open ocean under a clear blue sky. <CAMERA_ANGLE> Starts close-up, transitions to medium wide-angle. <CAMERA_MOVEMENTS> Continuous, smooth dolly-out. <VISUAL_STYLE_AND_AESTHETICS> Hyper-realistic, 8K, 'Marine Hues' of teal and turquoise. Bright and optimistic lighting. No plastic debris visible. SUPPRESS SUBTITLES. <TEMPORAL_ELEMENTS> Fluid, rhythmic pace.",
+        "concept": "A visual metaphor connecting clean laundry to ocean health. A macro-view of high-quality organic cotton fabric seamlessly morphs into a pristine, plastic-free ocean wave crashing over a healthy seabed.",
+        "markets_product": "Markets the product\u2019s core environmental benefit\u2014protecting water systems\u2014by visually demonstrating the link between the laundry room and the natural world.",
+        "caption": "Every wash matters. \ud83c\udf0a Purely plant-based and 100% microplastic-free, our formula ensures that what cleans your clothes keeps our oceans crystalline. Choose the 'Plant Not Plastic' path. #SaveTheOceans #MicroplasticFree #EcoFriendly #SustainableLaundry"
+      }
+    ]
+  },
+  "_state_init": true,
+  "initial_gs_queries": "1. What 

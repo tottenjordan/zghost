@@ -1,0 +1,42 @@
+[root_agent]: Running creative production pipeline (ad copy, visuals, commercial)...
+[creative_production_orchestrator]: Generating ad copy and visual creatives...
+[ad_content_generator_agent]: ### Creative Brief: Tide Hibiscus Scent Campaign
+
+Here are the top 2 ad ideas I've selected based on current market research and consumer trends. Each idea is designed to produce a high-impact keyframe image and a corresponding video using that image as a reference.
+
+---
+
+#### **Ad Idea 1: The Soft Power Aesthetic**
+*   **Ad Copy:**
+    *   **Headline:** Soft Power: The New Aesthetic of Clean.
+    *   **Body Text:** Experience the evolution of CleanTok with Tide's new Hibiscus Scent Fabric Softener. Our 75% bio-based formula delivers botanical realism and high-performance softness without the waxy buildup. Perfect for cold-water cycles and your most delicate activewear.
+    *   **Call-to-Action:** Shop the Botanical Collection
+    *   **Social Media Caption:** Upgrade your 'Clean Girl' aesthetic with the scent of 2025. 🌺✨ #TideHibiscus #SustainableLuxury #CleanTok #SoftPower
+*   **Visual Concept:**
+    *   **Name:** The Soft Power Portrait
+    *   **Creative Concept:** A high-fashion "Minimalist Maximalist" product portrait. It treats the Tide bottle as a luxury elixir, using a singular, oversized hibiscus flower to represent "Botanical Realism."
+    *   **Imagen Prompt:** A premium, architectural Tide Fabric Softener bottle crafted from a heavy, frosted glass-textured polymer... [detailed description of bottle and oversized hibiscus flower with Sunset Amber lighting].
+    *   **Veo Prompt:** [Video version focusing on the same aesthetic, emphasizing the "Soft Power" of the product in a minimalist setting].
+*   **Trend Alignment:** CleanTok, Soft Power Aesthetic, Sustainable Luxury, 75% Bio-Based Transparency.
+*   **Rationale:** This subverts laundry category norms by treating the product like a luxury perfume, appealing to the Gen Z desire for "shelf-worthy" and intentional home goods.
+
+---
+
+#### **Ad Idea 2: Cold-Water Botanical Realism**
+*   **Ad Copy:**
+    *   **Headline:** Vibrant Nature, Cold-Water Fresh.
+    *   **Body Text:** Don't let cold water mute your freshness. Tide's Hibiscus Scent is bio-designed to release vibrant, nature-identical fragrance even in energy-saving cycles. It's mineral-cutting freshness that doesn't compromise on performance.
+    *   **Call-to-Action:** Experience Cold-Water Freshness
+    *   **Social Media Caption:** Eco-friendly never smelled this bold. 🌍🌺 Discover the cold-water scent technology that’s changing the game. #TideEco #HibiscusFresh #ColdWaterWash
+*   **Visual Concept:**
+    *   **Name:** Cold-Water Botanical Bloom
+    *   **Creative Concept:** An abstract, "Biophilic" visualization of scent technology. It shows hibiscus petals "blooming" and dissolving inside a cold-water wash cycle to represent fragrance release.
+    *   **Imagen Prompt:** [Detailed macro shot of the product and hibiscus elements designed to serve as a reference for the video bloom effect].
+    *   **Veo Prompt:** SUPPRESS SUBTITLES. Ethereal, translucent hibiscus petals... inside the stainless steel drum of a washing machine, as crisp, clear cold water ripples... [describing the blooming fragrance molecules].
+*   **Trend Alignment:** Cold-Water Scent Release, Botanical Realism, Eco-Anxiety, Mineral-Cutting Freshness.
+*   **Rationale:** Directly addresses the "Cold-Water Challenge" identified in research, visually proving that sustainability doesn't mean a loss in sensory experience.
+
+---
+
+**Do you approve of these concepts, or would you like to make any changes before I generate the final creatives?**
+[creative_production_orchestrator]: Producing commercial in AV editing studio...

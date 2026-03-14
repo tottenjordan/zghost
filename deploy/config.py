@@ -16,6 +16,7 @@ class DeployConfig:
     agentspace_location: str = "global"
     agentspace_app_id: str = "gemini-enterprise-17634901_1763490144996"
     reasoning_engine_id: str = ""
+    ge_agent_id: str = ""
     display_name: str = "trends2insights"
     description: str = "Finding the intersection of brand, product, and audience."
     instructions: str = "Use this agent for marketing research, trend analysis, and ad creative generation. It finds trending topics, conducts web research, and generates ad creatives with images and videos."
@@ -42,6 +43,9 @@ class DeployConfig:
             with open(path) as f:
                 info = json.load(f)
             config.reasoning_engine_id = info.get("engine_id", config.reasoning_engine_id)
+            config.ge_agent_id = info.get("ge_agent_id", config.ge_agent_id)
+            if info.get("ge_engine"):
+                config.agentspace_app_id = info["ge_engine"]
             if not config.project_number and info.get("project_number"):
                 config.project_number = info["project_number"]
         return config

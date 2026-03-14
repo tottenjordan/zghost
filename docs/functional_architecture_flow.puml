@@ -1,0 +1,42 @@
+@startuml
+skinparam Handwritten false
+skinparam Monochrome false
+skinparam BackgroundColor #f9f9f9
+skinparam Padding 10
+
+title Trends & Insights - Functional Flow
+
+| Orchestration |
+| Services |
+| Data |
+
+| Orchestration |
+start
+:Campaign Orchestrator;
+
+| Services |
+:Trends & Insights Agent;
+| Data |
+:Query BigQuery;
+
+| Services |
+:Research Orchestrator;
+| Data |
+:Fetch from YouTube;
+:Save to Cloud Storage;
+
+| Services |
+:Creative Production Orchestrator;
+| Data |
+:Generate Assets (Vertex AI);
+:Save to Cloud Storage;
+
+| Services |
+:Focus Group Evaluator;
+| Data |
+:Analyze Video (Vertex AI);
+
+| Orchestration |
+:Compile Final Report;
+stop
+@endum

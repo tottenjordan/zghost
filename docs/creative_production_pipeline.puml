@@ -1,0 +1,68 @@
+@startuml
+!theme spacelab
+skinparam Handwritten false
+skinparam Monochrome false
+skinparam BackgroundColor #f9f9f9
+skinparam Padding 10
+
+title Trends & Insights - Creative Production Pipeline
+
+| User |
+| Platform (Orchestrator) |
+| Research |
+| Copywriter (AI) |
+| Critic (AI) |
+| Visuals (AI) |
+
+| User |
+start
+:Select Trends;
+:Provide Campaign Brief;
+
+| Platform (Orchestrator) |
+:Launch Pipeline;
+
+| Research |
+:Conduct Multi-Source Research;
+:Synthesize Insights;
+:Save Draft Report;
+
+| Platform (Orchestrator) |
+:Trigger Creative Generation;
+
+| Copywriter (AI) |
+Partition "Ad Copy Loop" {
+  :Draft 10-12 Ideas;
+}
+
+| Critic (AI) |
+Partition "Ad Copy Loop" {
+  :Evaluate & Filter;
+  :Select Top 6-8;
+}
+
+| Platform (Orchestrator) |
+:Select Final Top 2 Ad Copies;
+
+| Visuals (AI) |
+Partition "Visual Concepts Loop" {
+  :Draft Visual Concepts;
+}
+
+| Critic (AI) |
+Partition "Visual Concepts Loop" {
+  :Evaluate Visuals;
+  :Refine Prompts;
+}
+
+| Visuals (AI) |
+:Generate Final Images;
+:Generate Final Videos (Veo);
+
+| Platform (Orchestrator) |
+:Save Artifacts to GCS;
+
+| User |
+:Review Final Campaign;
+stop
+@endum

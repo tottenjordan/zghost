@@ -1,0 +1,536 @@
+{
+  "focus_group_evaluation": "Based on the AI video analysis and simulated focus group feedback, here is the full evaluation for the **Tide Fabric Softener with Hibiscus Scent** commercial.\n\n---\n\n### **1. Video Production Analysis**\nThe commercial was analyzed for technical quality, character consistency, and brand integration.\n\n*   **Visual Aesthetic:** The production utilizes a high-end \"Golden Hour\" aesthetic with sun-drenched lighting and warm earth tones, perfectly aligning with the \"CleanTok\" and \"Aesthetic Laundry\" trends.\n*   **Character Consistency:** The character (a woman with a black bob in a cream-textured shirt) remains stable across all scenes, with natural-looking interactions and expressions.\n*   **Narrative Flow:** The story follows a logical progression: **Discovery** (picking up the bottle) \u2192 **Trial** (smelling the scent) \u2192 **Result** (smelling fresh laundry) \u2192 **Branding** (hero shot with hibiscus flowers).\n*   **Product Visibility:** Tide branding is clearly legible and front-and-center throughout the 30-second spot, particularly in the final \"hero\" composition.\n\n---\n\n### **2. Focus Group Simulation**\n\n#### **Panelist 1: Maya Chen, 22, Environmental Science Student & CleanTok Enthusiast**\n| Category | Score (1-10) | Feedback |\n| :--- | :--- | :--- |\n| Visual Quality | 9 | The sun-drenched, \"Golden Hour\" aesthetic is perfect. It looks exactly like the satisfying cleaning videos I watch on TikTok. |\n| Narrative Consistency | 8 | The flow from picking up the bottle to smelling the fresh laundry is simple and logical. The character stays consistent throughout. |\n| Trend Relevance | 9 | It taps into the \"aesthetic laundry\" trend perfectly. The focus on the hibiscus flowers at the end feels very \"botanical\" and modern. |\n| Product Integration | 10 | The Tide bottle is the star of every shot. It feels very natural in the laundry room setting, not forced. |\n| Emotional Impact | 8 | It's very calming and aspirational. It makes the chore of laundry feel like a nice self-care ritual. |\n| Audience Appeal | 9 | This is highly shareable content for Gen Z. It hits all the right visual cues for the \"Conscious Curator\" vibe. |\n\n#### **Panelist 2: Jordan Williams, 19, Sustainable Fashion Advocate**\n| Category | Score (1-10) | Feedback |\n| :--- | :--- | :--- |\n| Visual Quality | 8 | Very crisp and high-def. The lighting makes everything look premium and clean, which is cool for a laundry ad. |\n| Narrative Consistency | 7 | It's a bit of a traditional \"commercial\" narrative, but it's clear and the character is relatable. |\n| Trend Relevance | 7 | It's a nice vibe, though I'd love to see a bit more of the \"Anti-Rickroll\" or \"receipts\" messaging we talked about in the research. |\n| Product Integration | 9 | You definitely know it's a Tide ad. The final shot with the hibiscus flowers is a great way to show the scent profile. |\n| Emotional Impact | 7 | It's a pleasant watch. It feels reliable, which is important for a brand like Tide. |\n| Audience Appeal | 8 | It appeals to the crowd that wants their clothes (especially thrifted finds) to smell fresh and stay soft. |\n\n#### **Panelist 3: Sofia Rodriguez, 24, Graphic Designer & Zero-Waste Advocate**\n| Category | Score (1-10) | Feedback |\n| :--- | :--- | :--- |\n| Visual Quality | 10 | As a designer, I love the composition and the use of bokeh. The color palette\u2014warm woods and vibrant hibiscus\u2014is beautiful. |\n| Narrative Consistency | 9 | Very coherent. The transitions are smooth, and the character's interaction with the product feels authentic. |\n| Trend Relevance | 8 | Aligns well with the shift toward \"reimagined florals\" and botanical freshness. It feels very 2025. |\n| Product Integration | 9 | The product is integrated beautifully into a high-end, minimalist environment. It doesn't feel like a \"cheap\" eco-brand. |\n| Emotional Impact | 9 | It feels very premium and sensorial. It makes me want to experience that hibiscus scent for myself. |\n| Audience Appeal | 8 | Very appealing for the \"Conscious Curator\" who wants their household products to look and smell great. |\n\n---\n\n### **3. Summary Report**\n\n#### **Average Scores**\n*   **Visual Quality:** 9.0\n*   **Narrative Consistency:** 8.0\n*   **Trend Relevance:** 8.0\n*   **Product Integration:** 9.3\n*   **Emotional Impact:** 8.0\n*   **Audience Appeal:** 8.3\n\n#### **Overall Commercial Score: 8.45 / 10**\n*(Weighted Average: Visual 20%, Narrative 20%, Trend 15%, Product 15%, Emotional 15%, Audience 15%)*\n\n#### **Top 3 Strengths**\n1.  **Premium Aesthetic:** The \"Golden Hour\" lighting and high-fidelity visuals elevate the brand to a \"Quiet Luxury\" level, perfectly matching the Gen Z \"CleanTok\" aesthetic.\n2.  **Character Consistency:** The character's presence is stable and relatable, with a logical story arc that focuses on the sensory experience of the product.\n3.  **Natural Product Integration:** The Tide bottle is the hero of the commercial without feeling overly promotional, integrated seamlessly into an aspirational laundry environment.\n\n#### **Top 3 Areas for Improvement**\n1.  **Explicit Strategic Narrative:** While the \"reliability\" is implied by the visual stability, lean more explicitly into the \"Anti-Rickroll\" theme (e.g., a quick text overlay: \"No Pranks. Just Performance.\").\n2.  **Visible \"Receipts\":** To fully close the \"Green Trust Gap,\" consider a brief frame showing the EPA Safer Choice logo or a \"Plant-Based\" callout.\n3.  **Dynamic Transitions:** While the hard cuts are clean, adding a more rhythmic or ASMR-focused transition between the \"trial\" and \"result\" phases could increase engagement.\n\n#### **Predicted Uplift Potential: Very High**\nThe commercial perfectly captures the visual language of the target audience's favorite digital niches (#CleanTok, #AestheticHome). By combining Tide's legacy of reliability with a modern, botanical-focused scent and premium aesthetic, the campaign is positioned to cut through digital noise and build genuine trust with eco-conscious Gen Z consumers.\n\n---\n\n### **4. Final Recommendation**\n\nMy recommendation is **GO**.\n\nThe commercial achieved a weighted score of **8.45**, well above the 7.0 threshold. It is a visually stunning, strategically sound piece of content that aligns with current trends and addresses the core psychological drivers of the target audience. The production value is high enough to compete with top-tier lifestyle brands, and the product integration is flawless. The campaign is ready for deployment.",
+  "final_visual_concepts": "Based on the \"Conscious Curator\" research and the \"Anti-Rickroll\" strategic pivot, I have finalized the following four visual concepts. These concepts are designed to navigate the \"Green Trust Gap\" by replacing digital noise with high-fidelity brand reliability and technical transparency.\n\n---\n\n### **Concept 1: The Radiant Pedestal**\n*   **Type:** Image\n*   **Trend(s):** Aesthetic Laundry (#CleanTok), Pantone 2025 \"Mocha Mousse\" Palette, Scent-Maxxing.\n*   **Headline:** Sustainability That Fits Your Aesthetic.\n*   **Call-to-Action:** Upgrade Your Aesthetic.\n*   **Social Media Caption:** Finally, a fabric softener that doesn't need to be hidden under the sink. \ud83d\udce6\u2728 Minimalist packaging, maximalist scent. #AestheticHome #CleanTok #PlasticFree #TideHibiscus\n*   **Creative Concept:** A \"Quiet Luxury\" product portrait. The Tide packaging is treated like a high-end perfume bottle, emphasizing its sustainable materials and the architectural beauty of the hibiscus.\n*   **Rationale:** This validates the \"Shelfie-Ready\" trend. By placing the product on a stone pedestal, we elevate the brand above \"bargain\" eco-brands. The use of side-lighting highlights the recycled texture of the box, providing \"The Receipts\" of sustainability visually.\n*   **Marketing Impact:** Positions Tide as a premium lifestyle choice, justifying a higher price point for Gen Z consumers who value home aesthetics as much as efficacy.\n*   **Imagen Prompt:** \n    > A professional high-end studio product photograph of a Tide Fabric Softener box made from minimalist, matte-finish, FSC-certified recycled cardboard with subtle embossed textures. The box is positioned elegantly on a heavy, circular pedestal of polished Mocha Mousse-colored travertine stone, which has visible organic pores and a soft, matte sheen. To the right, a single, sculptural, architectural hibiscus branch leans into the frame, featuring two large, vibrant, deep-crimson blossoms with velvety petals and long, delicate yellow-tipped stamens. The background is a seamless, curved wall in a muted, earthy clay tone with a soft gradient. The lighting is cinematic \"Rembrandt\" style side-lighting, creating a dramatic interplay of deep, soft shadows and glowing highlights that accentuate the grain of the recycled paper and the organic curves of the flower. Shot on a 100mm macro lens at f/8 for sharp detail across the product, 8k resolution, ultra-realistic textures, high-fashion aesthetic.\n\n---\n\n### **Concept 2: The Unwavering Cycle (The Anti-Rickroll)**\n*   **Type:** Video (8 seconds)\n*   **Trend(s):** Rickroll Meme Culture (Reliability), ASMR Cleaning, Eco-Hacks.\n*   **Headline:** No Pranks. Just Performance.\n*   **Call-to-Action:** Get the Reliable Reward.\n*   **Social Media Caption:** If you're tired of being Rickrolled by \"miracle\" cleaning hacks, we have the receipts. \ud83c\udf38 Sustainable efficacy that actually stays on the fabric. #TideHibiscus #AntiRickroll #LaundryRoutine\n*   **Creative Concept:** A visually hypnotic, perfectly stable loop of a washing machine cycle. It is the visual antithesis of a \"bait-and-switch\" prank\u2014steady, rhythmic, and high-definition.\n*   **Rationale:** Directly supports the \"Reliable Reward\" strategy. While the Rickroll is about a \"let down,\" this video is about \"never letting you down.\" The rhythmic motion creates a sense of profound reliability and peace.\n*   **Marketing Impact:** Directly addresses \"clickbait fatigue\" in the eco-cleaning niche, building brand trust through visual stability and performance cues.\n*   **Veo Prompt:** \n    > <SUBJECT> A close-up, centered view through the circular glass porthole of a premium, modern matte-black washing machine. Inside, a mix of heavy, high-quality white cotton towels and delicate cream-colored linens are submerged in crystal-clear water. </SUBJECT> <ACTION> The drum rotates in a slow, rhythmic, and perfectly steady clockwise motion. The fabrics tumble with a heavy, satisfying weight, and jewel-like water droplets splash against the glass in slow motion. As the drum slows, a single, vibrant red hibiscus flower petal is seen pressed momentarily against the glass by a soft white towel, highlighting the scent infusion. </ACTION> <SCENE_AND_CONTEXT> A dimly lit, ultra-modern laundry suite with natural oak wood cabinetry and a single warm, focused spotlight hitting the machine's glass. The atmosphere is serene, high-tech, and clinical but warm. </SCENE_AND_CONTEXT> <CAMERA_ANGLE> Direct Eye-level static shot, perfectly centered on the drum to emphasize symmetry and stability. </CAMERA_ANGLE> <CAMERA_MOVEMENTS> Static shot with zero camera shake, maintaining absolute focus on the internal motion of the water and fabric. </CAMERA_MOVEMENTS> <VISUAL_STYLE_AND_AESTHETICS> Cinematic lighting with high contrast; the internal light of the drum makes the white fabrics glow against the dark exterior. 8K resolution, ultra-realistic water physics, shallow depth of field focusing on the texture of the cotton fibers through the glass. </VISUAL_STYLE_AND_AESTHETICS> <TEMPORAL_ELEMENTS> The pacing is slow-motion (60fps played at 24fps) to create a hypnotic, calming effect. SUPPRESS SUBTITLES.\n\n---\n\n### **Concept 3: The Micro-Forest (PlanetCaps\u2122 Revelation)**\n*   **Type:** Image\n*   **Trend(s):** Performance Verification, Technical Beauty, Green Trust Gap.\n*   **Headline:** We Brought the Receipts.\n*   **Call-to-Action:** See the Science.\n*   **Social Media Caption:** \"Natural\" doesn't have to mean \"fades in five minutes.\" We used biotech to make a sustainable scent that actually lasts. \ud83e\uddec\ud83e\uddea #EcoFriendly #SustainableLaundry #TideScience\n*   **Creative Concept:** A 3D \"Biotech\" render of fabric fibers at a microscopic level, showing the PlanetCaps\u2122 scent capsules as beautiful, glowing orbs nestled within the textile.\n*   **Rationale:** This visualizes \"The Receipts.\" It moves the conversation from \"marketing fluff\" to \"scientific efficacy,\" appealing to the Gen Z desire for products that are both high-tech and nature-inspired.\n*   **Marketing Impact:** Overcomes the primary consumer objection that \"natural scents fade fast\" by providing a visual explanation for the product's long-lasting performance.\n*   **Imagen Prompt:** \n    > A stunning 3D scientific visualization of cotton textile fibers at an extreme microscopic scale. The fibers appear as a dense, intertwined forest of soft, pearlescent, translucent white strands that look like silk ribbons. Nestled deep within these fiber channels are hundreds of glowing, vibrant ruby-red \"PlanetCaps\" micro-capsules. These capsules are perfectly spherical, translucent, and contain a shimmering, golden-red liquid that resembles hibiscus nectar. Volumetric light rays (God rays) filter through the fiber forest, hitting the capsules and creating a beautiful bokeh effect in the background. The aesthetic is \"Advanced Eco-Luxury,\" blending high-end skincare CGI with botanical biology. Deep depth of field, iridescent highlights on the fibers, 8k resolution, hyper-detailed textures, vibrant and saturated color palette.\n\n---\n\n### **Concept 4: The Curator\u2019s Ritual**\n*   **Type:** Video (8 seconds)\n*   **Trend(s):** #CleanTok, Slow Fashion, ThriftTok, Mood-Lifting Scents.\n*   **Headline:** Make Your Thrift Finds Last Forever.\n*   **Call-to-Action:** Protect Your Pieces.\n*   **Social Media Caption:** Treat your thrifted treasures with the respect they deserve. \ud83d\udc57 No waxy residue, just soft, hibiscus-scented perfection. #SlowFashion #ThriftTok #Sustainability #Tide\n*   **Creative Concept:** A \"Conscious Curator\" character interacting with a thrifted silk garment during \"Golden Hour,\" emphasizing fabric longevity and the sensorial reward of the scent.\n*   **Rationale:** Targets the \"Slow Fashion\" movement. By showing a character carefully handling a vintage piece, we emphasize that Tide doesn't just \"clean\"\u2014it \"preserves\" unique finds without using damaging waxy chemicals.\n*   **Marketing Impact:** Aligns the brand with the \"ThriftTok\" community and positions the product as a wellness tool for mood regulation through scent.\n*   **Veo Prompt:** \n    > <SUBJECT> A young person in their early 20s with sun-kissed skin, wearing a minimalist cream linen shirt and delicate gold jewelry, representing the \"Conscious Curator.\" They have a calm, thoughtful expression. </SUBJECT> <ACTION> The person reaches into a hand-woven premium wicker basket and gently lifts a vibrant, hibiscus-red vintage silk slip dress. They hold the fabric with reverence, the silk flowing and shimmering like liquid in the sunlight. They bring the fabric to their nose, closing their eyes and taking a slow, deep, appreciative breath, a subtle and genuine smile forming on their lips. </ACTION> <SCENE_AND_CONTEXT> A bright, airy, minimalist bedroom during the \"Golden Hour.\" The room features light-colored walls, a large Monstera plant in the corner, and soft linen bedding. Warm, honey-colored sunlight streams through a large window, creating soft lens flares. </SCENE_AND_CONTEXT> <CAMERA_ANGLE> Medium close-up, focusing on the person's hands and face as they interact with the garment. </CAMERA_ANGLE> <CAMERA_MOVEMENTS> A very slow, smooth handheld tracking shot that follows the upward movement of the silk, creating an intimate, documentary-style feel. </CAMERA_MOVEMENTS> <VISUAL_STYLE_AND_AESTHETICS> Natural light aesthetic with a \"Guava Girl\" warmth. High saturation on the red silk against the muted, neutral tones of the room. Soft focus background with beautiful bokeh. 8K resolution, ultra-realistic skin and fabric textures. </VISUAL_STYLE_AND_AESTHETICS> <TEMPORAL_ELEMENTS> Slow, intentional pacing to evoke a sense of self-care and mindfulness. SUPPRESS SUBTITLES.",
+  "brand": "Tide",
+  "_av_studio_runs": 1,
+  "gs_web_search_insights": "",
+  "commercial_duration": 15,
+  "gcs_folder": "2026_03_13_23_25",
+  "sources": {
+    "src-20": {
+      "short_id": "src-20",
+      "title": "scento.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHlIhC7ayyLgUhLfpcsv2MVv-6-BePau_4yC8H5btcBm23hKP214nwC73kAsSn1tCDJ_vFH6hL2CDTP-ChKb7pBGV7T4sE33S8nEyFXnD5iI8Nb1T-XhV2dDFLMAmXR76CQ1ftzxVa98Y4Q6v8QBGvVdBjJp_0vxfrVdoDMKXwAX_lg",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The Solution:** Use of **biotechnology** (microbial fermentation) to produce \"nature-identical\" fragrance molecules."
+        }
+      ],
+      "domain": "scento.com"
+    },
+    "src-15": {
+      "domain": "youtube.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Sustainability as Revenue:** By 2025, **30% of cleaning industry revenue** is projected to come from green products."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Scent & Wellness:** Cleaning is increasingly viewed as a \"self-care\" ritual."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Sustainability as Revenue:** By 2025, **30% of cleaning industry revenue** is projected to come from green products."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Scent & Wellness:** Cleaning is increasingly viewed as a \"self-care\" ritual."
+        }
+      ],
+      "title": "youtube.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH6L723WW6Asgn05aOM4HJSIZjhjUrApAgc0aMd7x_2MqSgiMFN6QCyT-Mxb0RLndb7B28A6qHuM0IFPi81mXlVLZydB5jcP12tPVnELanAbKPrld_sOge0bxyF9NcUaqfeYQcdPok=",
+      "short_id": "src-15"
+    },
+    "src-14": {
+      "domain": "youtube.com",
+      "short_id": "src-14",
+      "title": "youtube.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHzWFt9q_wPnzjYOxYmoxQQu5NthntzuruygARyfShdo4r5MKBpFJ7ezM12BYmQ5YgthnASBwoRbrtTV5MNWI-GcmgzhVwcwYDu0LfSPe9_x5xvOUgMZuEmjQ2e_Oy4Ar73i1Jc",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "There is a growing \"show me the receipts\" mentality where consumers look for:"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Scent & Wellness:** Cleaning is increasingly viewed as a \"self-care\" ritual."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "There is a growing \"show me the receipts\" mentality where consumers look for:"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Scent & Wellness:** Cleaning is increasingly viewed as a \"self-care\" ritual."
+        }
+      ]
+    },
+    "src-18": {
+      "domain": "trisonwells.com",
+      "short_id": "src-18",
+      "title": "trisonwells.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFdU9OxAYzvrOkZ4gTwaau54pjE1Vfz0s1cTdkVvOSojez-SpRAryTniTgSisUFSA8JpYvFdiwUaXghk1cHmbKjLgvB_7TWd7ABvmNzB7eWRw05KX3ydmloTfoc641JUroWGrDdcGGtL8sR5LzHWeoCoJZ8OiYzHiOP5oUeMHu-4qOTUvt6-OPPt7mSOcypgWqGaAPnHxDFRH0z4EEV",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The \"Waterless\" Surge:** Gen Z sentiment is shifting toward laundry sheets and concentrates because liquid detergents are up to 90% water, increasing carbon footprints during transport."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "|\n| **Sustainability** | Plastic-free & Waterless | Highlight **Concentrated Formats** (Tide Evo tiles) and FSC-certified recyclable cardboard packaging."
+        }
+      ]
+    },
+    "src-5": {
+      "title": "freeyourself.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQExv1bTJqiK6FaNOv9UToPvsygESChVD-QQe2UFnpkzHKVBiDvlH5ESs-YRURfCSsIkhAVJXPNqcoD6c4MLV9Y-tSw58Lp86RCqqN2O8hD40oZVIzizr2xf-gV9m_5Pg_XAEGWt5AuF2HbX-j9Aggdt2PFwufOiPraS",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Scent-Maxxing:** There is a trend toward layering scents."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Scent-Maxxing:** There is a trend toward layering scents."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Scent-Maxxing:** There is a trend toward layering scents."
+        }
+      ],
+      "short_id": "src-5",
+      "domain": "freeyourself.com"
+    },
+    "src-10": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Tactical Nuance:** Rickrolling in \"how-to\" spaces thrives because users are actively seeking solutions."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Trust Crisis:** Approximately **53% of environmental claims** in some markets have been found to be ambiguous or baseless."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Shift in Verification:** Modern eco-conscious consumers (particularly Gen Z and Millennials) are moving away from trusting \"stamps and logos\" toward **ingredient transparency**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Scent & Wellness:** Cleaning is increasingly viewed as a \"self-care\" ritual."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Efficiency & Performance:** A critical insight for Tide is that consumers will not \"trade off\" performance for sustainability."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "| **Pillar** | **Strategy** | **Campaign Action** |\n| :--- | :--- | :--- |\n| **Authenticity** | Counter Clickbait | Position Tide Hibiscus as the \"Reliable Reward.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Tactical Nuance:** Rickrolling in \"how-to\" spaces thrives because users are actively seeking solutions."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Trust Crisis:** Approximately **53% of environmental claims** in some markets have been found to be ambiguous or baseless."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Shift in Verification:** Modern eco-conscious consumers (particularly Gen Z and Millennials) are moving away from trusting \"stamps and logos\" toward **ingredient transparency**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Scent & Wellness:** Cleaning is increasingly viewed as a \"self-care\" ritual."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Efficiency & Performance:** A critical insight for Tide is that consumers will not \"trade off\" performance for sustainability."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "| **Pillar** | **Strategy** | **Campaign Action** |\n| :--- | :--- | :--- |\n| **Authenticity** | Counter Clickbait | Position Tide Hibiscus as the \"Reliable Reward.\""
+        }
+      ],
+      "title": "youtube.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFzWeHy1db1eLRPHhkFA4aSHJyyLFyZ8KpnZZtVcCSDGXBpVkb7f9-CZ9guzHv0Zj-Io-x1fzZ33GJ6ONB91KvmYUESNsYdfbqci7IHPoES87ms9HN28tDFmKSre6eB29wQQwd85vU=",
+      "short_id": "src-10",
+      "domain": "youtube.com"
+    },
+    "src-17": {
+      "domain": "youtube.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "| **Pillar** | **Strategy** | **Campaign Action** |\n| :--- | :--- | :--- |\n| **Authenticity** | Counter Clickbait | Position Tide Hibiscus as the \"Reliable Reward.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "| **Pillar** | **Strategy** | **Campaign Action** |\n| :--- | :--- | :--- |\n| **Authenticity** | Counter Clickbait | Position Tide Hibiscus as the \"Reliable Reward.\""
+        }
+      ],
+      "title": "youtube.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGIfBF0VXw3VCDcmou7bbPgb1NkiW1vwJPqrd4Qp2incy5jC05UNetCb8YN0tUgLAkS0M-DZmyyK06HQ03aGgeP43seFdOZkByqjwAbujHBfNtjACydxaJkSsStEpXevDLGrC4MZkE=",
+      "short_id": "src-17"
+    },
+    "src-11": {
+      "short_id": "src-11",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Consumer Sentiment and the \"Green Trust Gap\"\nThe \"Rickroll\" phenomenon mirrors a more serious issue in the household cleaning industry: **Greenwashing**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "There is a growing \"show me the receipts\" mentality where consumers look for:"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Consumer Sentiment and the \"Green Trust Gap\"\nThe \"Rickroll\" phenomenon mirrors a more serious issue in the household cleaning industry: **Greenwashing**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "There is a growing \"show me the receipts\" mentality where consumers look for:"
+        }
+      ],
+      "title": "askditto.io",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFEVZJXsgdGnm6eT1O_U4Fcyl785I__ZdpalxW5P_xTAKdMVgOqVsFgMs1IVrDBCCxdZS4uA1cfyMndPWGn7K1jdlySnCB2IY9_tPhZsQuyvm6cnEAJ1OKmXvHChvIL9ZAqeD42OWbTamK5ol-7ca9piqSBWQ-06_XXEJpYg6429KUMKN35_pxuLw==",
+      "domain": "askditto.io"
+    },
+    "src-9": {
+      "domain": "justgreenorganic.co.uk",
+      "short_id": "src-9",
+      "title": "justgreenorganic.co.uk",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGua4T0AU9CFbehXkbMiR25qwdM08jdak6kRlIaRmoTtLowoYxJEkctuFpLs729It63CzsVl0Uu46-AbmekgiJD6-4KwujCIBhXjnvtaBfVtoLKzfr7a_bRigxyjzzpgW9k_15vVtcIDmq-C_lBWTPVsg7NcG0lk_weLse9cO26Qd7vAsidLZdcS7DV30A8q16caFJ9kq_CBuRWCdesSk7o6E0Pjz_xrFE=",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "|\n| **Formula** | Plant-based, biodegradable, effective | Highlight fabric longevity and \"no waxy residue.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "|\n| **Formula** | Plant-based, biodegradable, effective | Highlight fabric longevity and \"no waxy residue.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "|\n| **Formula** | Plant-based, biodegradable, effective | Highlight fabric longevity and \"no waxy residue.\""
+        }
+      ]
+    },
+    "src-4": {
+      "domain": "hollandaromatics.com",
+      "short_id": "src-4",
+      "title": "hollandaromatics.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFpi8NhSGNBek5hhSxOOwOzSR4bFm9P-6_tZWN_HniExrZ36W5utuQ1BX4HUI7fawD43_R4B7oDlN-ppBhjZASw91h_hq2GfvXNZP8l1M0AXMuEuOsP0NifVbbD3d5vm0ZfYQJFv269X011yQIkIx_DvU8JepaeiUx2945bJYUhIaa9hafCZBfq3VU1yHJa1j35Whwz0LE9w5tA-VAfpw==",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Scents that evoke \"the magic of nature,\" \"calm,\" or \"renewal\" are trending."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Scents that evoke \"the magic of nature,\" \"calm,\" or \"renewal\" are trending."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Scents that evoke \"the magic of nature,\" \"calm,\" or \"renewal\" are trending."
+        }
+      ]
+    },
+    "src-8": {
+      "domain": "sogreenpack.com",
+      "short_id": "src-8",
+      "title": "sogreenpack.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF4pHtDsTm_aX_gEBVn1QCfIqNr4ixPCmbh8pj0nH1Fg8s1uA4Xof_gN_PtFSpN02CM7_Gf_ViVVTRpk9qOzme3i_qb7FEWYCkMZvj04FVVKdGapN197qTh-pHzjU7m6TH0LR803xcoh_vb6tOW3WBwsr6wOhoAlETP7Ce2dtABv2HB0EELYmYAv32EeKliEQSZiNN_BTcbCInpbOYSpTe-YSYqTOA=",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging & Plastic-Free Initiatives"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging & Plastic-Free Initiatives"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging & Plastic-Free Initiatives"
+        }
+      ]
+    },
+    "src-7": {
+      "short_id": "src-7",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging & Plastic-Free Initiatives"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Clear labeling such as **\"plastic-free,\" \"biodegradable,\" or \"recyclable\"** is a major driver of brand loyalty."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Aesthetics & Shareability:** For digital natives, the product's visual appeal on a shelf or in an \"unboxing\" video matters."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Sustainable packaging that looks **minimalist, modern, or premium** can justify a higher price point and encourage social media sharing."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging & Plastic-Free Initiatives"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Clear labeling such as **\"plastic-free,\" \"biodegradable,\" or \"recyclable\"** is a major driver of brand loyalty."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Aesthetics & Shareability:** For digital natives, the product's visual appeal on a shelf or in an \"unboxing\" video matters."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Sustainable packaging that looks **minimalist, modern, or premium** can justify a higher price point and encourage social media sharing."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging & Plastic-Free Initiatives"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Clear labeling such as **\"plastic-free,\" \"biodegradable,\" or \"recyclable\"** is a major driver of brand loyalty."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Aesthetics & Shareability:** For digital natives, the product's visual appeal on a shelf or in an \"unboxing\" video matters."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Sustainable packaging that looks **minimalist, modern, or premium** can justify a higher price point and encourage social media sharing."
+        }
+      ],
+      "title": "allpapertube.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEq4xUgTX2szD8K43FpetwnxGRJLIocKZRJ022XDesaJnfLMShST4RUPJ-rF9FvRSi4F35qI517urjCLlCxlJW1aYmxuT7In-4eotvuuIZ0s2FGH9x3pL5HHSxiGjg8ADtrRo_yWVwUYy5BwwwmYUBocDPAaxOo4-UuiUOugQ==",
+      "domain": "allpapertube.com"
+    },
+    "src-21": {
+      "domain": "mairfragrance.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The Solution:** Use of **biotechnology** (microbial fermentation) to produce \"nature-identical\" fragrance molecules."
+        }
+      ],
+      "title": "mairfragrance.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFiWp92tp_7zpY0rpQ_pQac3H0uSfwcSVfvhEplelAIbG-N3Qjqv41JilhPW8z1XMLZcwVPUWOJjURhKt2cc6BV5b3TudeeOSQS8f5yER9mSMrX6HhN5ma767YtrChD9IRl_C-xPEs2PN8UiOKkVAbW24YEGj4kLQRZOq4zXNNW_h_Wf9WxxChmhQJgQZgQqJFEDcDsY8AjK2HZ30s9PXFtQ8xuidjbulTid7qPrlJal8c=",
+      "short_id": "src-21"
+    },
+    "src-16": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "If an eco-friendly product doesn't clean effectively, users resort to \"compensating behaviors\" (overdosing, rewashing), which creates more waste."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "If an eco-friendly product doesn't clean effectively, users resort to \"compensating behaviors\" (overdosing, rewashing), which creates more waste."
+        }
+      ],
+      "title": "trellis.net",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGJNR9bFtN27PFROnJnq0r7nhzhoV1cCsnjXHqmFryrbZ-VePeJMi6oSMykJ7wl-dmv18kogtXaTbDX6DQif5CuE1XKiSoVTYcbfCytuuv7AEtKUoriPPw6UXZHbjlYJ80M2vxOn_8SASyK1Cs7Syeq7jGHaNE9AOq9ajtd6caL-iVxyn4LSmkWgalA4StJEz0=",
+      "short_id": "src-16",
+      "domain": "trellis.net"
+    },
+    "src-3": {
+      "title": "fragrancesoil.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG5rQrBV_WxeKonkj60vweeb_1POcfldVUQvN3mgrKKwj2zd80fX5E6H8HPglYE24-diJEt4H8Fus8AA0BqPKr9TiH3JK-u53D0ZUAAEN98azZCOGTKXJag2Ciy_uRXbd8wWbwSdSN75h6rkdn27_GUjxdCx4Xuh80DtgK3WK91Ff-SpOcad5oHzM5Brz6VL-VyvbMAwOIT5XBIRwFASlTV",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Mood & Wellness:** Fragrance is increasingly viewed as a tool for **self-care and mood regulation**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Scents that evoke \"the magic of nature,\" \"calm,\" or \"renewal\" are trending."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "### Summary Table for Campaign Strategy\n| Feature | Gen Z Expectation | Tide Hibiscus Strategy |\n| :--- | :--- | :--- |\n| **Scent** | Fresh, non-powdery, mood-boosting | Position Hibiscus as a vibrant, natural \"mood-lifter.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Mood & Wellness:** Fragrance is increasingly viewed as a tool for **self-care and mood regulation**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Scents that evoke \"the magic of nature,\" \"calm,\" or \"renewal\" are trending."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "### Summary Table for Campaign Strategy\n| Feature | Gen Z Expectation | Tide Hibiscus Strategy |\n| :--- | :--- | :--- |\n| **Scent** | Fresh, non-powdery, mood-boosting | Position Hibiscus as a vibrant, natural \"mood-lifter.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Mood & Wellness:** Fragrance is increasingly viewed as a tool for **self-care and mood regulation**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Scents that evoke \"the magic of nature,\" \"calm,\" or \"renewal\" are trending."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "### Summary Table for Campaign Strategy\n| Feature | Gen Z Expectation | Tide Hibiscus Strategy |\n| :--- | :--- | :--- |\n| **Scent** | Fresh, non-powdery, mood-boosting | Position Hibiscus as a vibrant, natural \"mood-lifter.\""
+        }
+      ],
+      "short_id": "src-3",
+      "domain": "fragrancesoil.com"
+    },
+    "src-19": {
+      "domain": "leadventgrp.com",
+      "short_id": "src-19",
+      "title": "leadventgrp.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGfR7i2rLP9hFF2UoFMN1viVagy7ysAlTqOZpJPpr7UASKNInLTNOoUZYv-oPzx1j98sc8gmahLdqn1BlmxZ7uX6PaxqUnRdPUyXBmX91nLsUFo1BIQegC1S3bfRVapy4y41cckRYNOBEa5fN6CtNeibCHIlc-bwXVcrjT0u-DxA9nur0oi_BV7GN45E7_W_zs398a05uvI-1YT",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The Solution:** Use of **biotechnology** (microbial fermentation) to produce \"nature-identical\" fragrance molecules."
+        }
+      ]
+    },
+    "src-6": {
+      "short_id": "src-6",
+      "title": "ecos.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHhYUfhE1Pzmb4yvOUeqTCL94c7prXpug2jOieM3R9S1L15g9JLc312cFtg2nSNbjOTwQNhipQuef8VvoGQnl4MtZXaSV-wBfH3JQlNb6scKDOBvoxJqcGrQtnK-llh7AEdDu_CfTPXQNMrFvBroXu-ZYTfhq9v051Ms7HGxwVFXwmABd3iU5unfUJ_QnQpJgBIX7B4meKdMGI=",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Performance Expectations for Plant-Based Care"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Performance Expectations for Plant-Based Care"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Performance Expectations for Plant-Based Care"
+        }
+      ],
+      "domain": "ecos.com"
+    },
+    "src-1": {
+      "domain": "foopak.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Research indicates that **62% of Gen Z shoppers prefer sustainable brands**, and up to **73% are willing to pay more** (often a 10% premium) for sustainable products."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Research indicates that **62% of Gen Z shoppers prefer sustainable brands**, and up to **73% are willing to pay more** (often a 10% premium) for sustainable products."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Research indicates that **62% of Gen Z shoppers prefer sustainable brands**, and up to **73% are willing to pay more** (often a 10% premium) for sustainable products."
+        }
+      ],
+      "title": "foopak.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGU61wrAy1anLgMGY6jwe3RBu3N25k_B5jlFFhJ-8TMie6jJgOv_FiNLAiwzIEW0UN73USIAqK71TmvekqZ9zMAfT3t0eJg6iBtjb79f7thvIoYzoZVCmpO_UzWkgk0Qm3MFFbKqvtH2LHxXuq-PSGtR9oyrDjzVVVdKXGYvzQpfBd5-0nMxwRCLvFp",
+      "short_id": "src-1"
+    },
+    "src-13": {
+      "title": "oreateai.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGGR82VOFqf-UaNjiEvPrxtY0DZmPdMDbKfXduVPRrbCXQKarKH7oIYz5VPADlsWXe__9-qoWhzIjGOd2TT3grg-hYOC6-JateOY0N2gp2JS6kpK2BqAPjv5Ow2oXCWFzbhihpDq5VnOxzPoB_2dBGIMIWM3looGb0Cza_QJ9ok1tcJ4L4CG0sbMSPMroDzrBGuVFlSEVv5explO2jz3Td6uLP8lmt-sP62QQ7zS5OzQ9IBJ0fghHaonXXOcrphl9JJ",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Consequently, only about **one in five consumers** actually believe brand claims regarding environmental efforts without further proof."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Consequently, only about **one in five consumers** actually believe brand claims regarding environmental efforts without further proof."
+        }
+      ],
+      "short_id": "src-13",
+      "domain": "oreateai.com"
+    },
+    "src-12": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Trust Crisis:** Approximately **53% of environmental claims** in some markets have been found to be ambiguous or baseless."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Trust Crisis:** Approximately **53% of environmental claims** in some markets have been found to be ambiguous or baseless."
+        }
+      ],
+      "title": "diva-portal.org",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF-BIqdnZCmPSWdrh_TVMheWp3X4vmJ70vqx2YfEdkU1EXr9bCN6b7q2tpiXu6FuMSwLDDa9XQ9y9uGC3FqcuQsY5l7BoeeTed59Nvl8bpyq_FfuaUZ1g2iQkFJzDy9wiJ-uosghPbc-h6xFVyGj7GN0wDZpa6s1mACQ-5Bkw==",
+      "short_id": "src-12",
+      "domain": "diva-portal.org"
+    },
+    "src-2": {
+      "title": "seigellconsultants.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFHvGFJ9R6CeTGQlGsvp6BpQJoLzizug4BEt3CGGaFuDhO02guAAzz8ZYIy4AsQ3CmvpizgkC_pDsWkzuUe4bv_KlcNbYoXi1O-TW6YV4P3Dk__pbL0LlRM0WvZHDlKhEQ95_9vOxJv06fogMtotw9112bBsLLuTaZ1KQfLD6wOVoG-h83Al0Qv9GO2UjQTcqkVEt8MtYf9ZVdIcVSd4vir3VTzj54=",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "They respond better to **User-Generated Content (UGC)**, behind-the-scenes storytelling, and brands that \"walk the talk.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging & Plastic-Free Initiatives"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Social Commerce:** Gen Z discovers products primarily through **TikTok, Instagram Reels, and YouTube**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "They respond better to **User-Generated Content (UGC)**, behind-the-scenes storytelling, and brands that \"walk the talk.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging & Plastic-Free Initiatives"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Social Commerce:** Gen Z discovers products primarily through **TikTok, Instagram Reels, and YouTube**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "They respond better to **User-Generated Content (UGC)**, behind-the-scenes storytelling, and brands that \"walk the talk.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging & Plastic-Free Initiatives"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Social Commerce:** Gen Z discovers products primarily through **TikTok, Instagram Reels, and YouTube**."
+        }
+      ],
+      "short_id": "src-2",
+      "domain": "seigellconsultants.com"
+    }
+  },
+  "img_artifact_keys": {
+    "img_artifact_keys": [
+      {
+        "artifact_key": "ad_copy_1_0.png",
+        "concept": "ad_copy_1",
+        "img_prompt": "Professional campaign photography for Tide Fabric Softener with Hibiscus Scent. Visual concept: {'name': 'The Anti-Rickroll (The Reliable Reward)', 'body_text': 'Tired of \"eco-hacks\" that don\\'t actually clean? We\u2019ve seen the Rickrolls too. Meet Tide Hibiscus: the sustainable softener that never lets you down. Real plant-based power. Real long-lasting scent. No bait-and-switch.', 'caption': 'I. Target audience: Gen Z eco-conscious consumers who value sustainable products and fresh scents. High q",
+        "headline": "",
+        "caption": "",
+        "auto_saved": true
+      }
+    ]
+  },
+  "visual_draft": "### Tide Fabric Softener with Hibiscus Scent: Visual Concepts\n\nFollowing the \"Anti-Rickroll\" strategy and Gen Z's \"Conscious Curator\" persona, these visual concepts blend high-end aesthetic trends (Pantone 2025 \"Mocha Mousse,\" technical 3D beauty renders) with platform-specific storytelling.\n\n---\n\n### Concept 1: The Radiant Bloom\n*   **Type:** Image\n*   **Relates to:** `target_search_trends` (Aesthetic Laundry / Fragrance Trends)\n*   **Ad Copy:** \"Layer Your Vibe with Reimagined Hibiscus\"\n*   **Creative Concept:** A high-fashion, minimalist product \"shelfie.\" The Tide packaging (minimalist cardboard) sits on a mocha-mousse-colored stone pedestal. Instead of a messy jungle, a single, sculptural, \"architectural\" hibiscus branch with a few vivid red blooms leans into the frame. The lighting is \"profile edge lighting,\" highlighting the texture of the recycled packaging and the velvety petals of the flower. \n*   **Image Prompt:** \n    > Professional high-end product photography of Tide Fabric Softener in minimalist, FSC-certified cardboard packaging. The box is placed on a smooth, circular pedestal made of mocha-mousse-colored travertine stone. A single, sculptural hibiscus branch with two vibrant red flowers is elegantly arranged beside the product. Lighting is cinematic side-lighting with deep shadows and soft highlights, creating a \"quiet luxury\" aesthetic. Background is a muted, earthy clay wall. 8k resolution, shot on 100mm macro lens, ultra-realistic textures of recycled paper and organic flower petals.\n\n---\n\n### Concept 2: The Steady Cycle\n*   **Type:** Video (8 seconds)\n*   **Relates to:** `target_yt_trends` (Rickroll Meme Culture / Reliability)\n*   **Ad Copy:** \"No Pranks. Just Performance.\"\n*   **Creative Concept:** A visually satisfying, rhythmic close-up of a laundry cycle. It counters the \"shaky cam\" and \"clickbait\" nature of internet pranks with extreme stability and high-fidelity \"commercial\" lighting. The movement of the water and fabric is hypnotic and steady\u2014mimicking the \"unwavering commitment\" theme without using the music, but using the *visual* language of reliability.\n*   **Video Prompt:**\n    > <SUBJECT> Close-up through the glass of a modern, high-tech washing machine drum filled with soft, white cotton fabrics and clear, swirling water. </SUBJECT>\n    > <ACTION> The drum rotates at a steady, rhythmic pace, the fabrics tumbling smoothly in slow motion. Transitions into a macro shot of a single hibiscus petal falling onto the dry, exceptionally soft fabric after the wash. </ACTION>\n    > <SCENE_AND_CONTEXT> A dimly lit, premium laundry room with natural wood accents and a single warm spotlight on the machine. The mood is calm, reliable, and authentic. </SCENE_AND_CONTEXT>\n    > <CAMERA_ANGLE> Eye-level close-up shot focusing on the texture of the tumbling fabric and the clarity of the water. </CAMERA_ANGLE>\n    > <CAMERA_MOVEMENTS> Static shot to start, followed by a slow dolly-in as the petal lands on the fabric. </CAMERA_MOVEMENTS>\n    > <VISUAL_STYLE_AND_AESTHETICS> Cinematic lighting with high contrast between deep shadows and glowing highlights on the water droplets. Vibrant red of the hibiscus petal against the pure white of the cotton. 8K, ultra-realistic. </VISUAL_STYLE_AND_AESTHETICS>\n    > <TEMPORAL_ELEMENTS> Pacing is slow, intentional, and calming. SUPPRESS SUBTITLES.\n\n---\n\n### Concept 3: PlanetCaps\u2122 Revelation\n*   **Type:** Image\n*   **Relates to:** Both Search and YouTube trends (Technical Transparency / \"Show me the receipts\")\n*   **Ad Copy:** \"We Brought the Receipts.\"\n*   **Creative Concept:** A \"Technical Beauty\" render common in 2025 skincare marketing. It shows a macro view of fabric fibers, but visualized as crystalline, beautiful structures. Nestled within the fibers are glowing \"serum orbs\"\u2014the PlanetCaps\u2122 biodegradable scent capsules. This visualizes the *science* in a way that feels premium and transparent, rather than clinical.\n*   **Image Prompt:**\n    > 3D high-tech scientific render of textile fibers at a microscopic level. The fibers are stylized as soft, pearlescent translucent strands. Nested between the fibers are numerous glowing, vibrant red \"serum bubbles\" or micro-capsules that resemble tiny hibiscus blooms. These capsules are translucent and contain a swirl of golden hibiscus oil. Deep depth of field with beautiful bokeh. The lighting is futuristic, with volumetric light rays hitting the orbs. Aesthetic of advanced biotechnology and eco-luxury.\n\n---\n\n### Concept 4: Self-Care Renewal\n*   **Type:** Video (8 seconds)\n*   **Relates to:** Combined Search and YT trends (#CleanTok / Slow Fashion / Thrift Finds)\n*   **Ad Copy:** \"Make Your Thrift Finds Last Forever.\"\n*   **Creative Concept:** A #CleanTok \"ASMR-style\" ritual. A hand (Gen Z \"Conscious Curator\") carefully pulls a perfectly softened, vibrant hibiscus-colored vintage silk slip from a beautiful wicker basket. The movement is gentle and appreciative, focusing on the preservation of a unique find.\n*   **Video Prompt:**\n    > <SUBJECT> A young person with a curated, minimalist aesthetic reaches into a premium wicker laundry basket. </SUBJECT>\n    > <ACTION> They gently lift a delicate, bright red vintage silk slip dress. The fabric flows and shimmers softly in their hands. They bring the fabric close to their face and take a slow, deep breath, smiling gently to represent the fresh hibiscus scent. </ACTION>\n    > <SCENE_AND_CONTEXT> An airy, sun-drenched minimalist bedroom with light-colored linens and a curated olive tree in the corner. \"Guava Girl\" summer light coming through a window. </SCENE_AND_CONTEXT>\n    > <CAMERA_ANGLE> Medium close-up, focusing on the hands and the movement of the silk. </CAMERA_ANGLE>\n    > <CAMERA_MOVEMENTS> A slow, handheld pan that tracks the upward movement of the fabric, creating a sense of intimacy and realism. </CAMERA_MOVEMENTS>\n    > <VISUAL_STYLE_AND_AESTHETICS> Natural golden hour lighting with soft lens flares. High saturation on the red silk against a muted, beige/cream room palette. \"Clean girl\" home aesthetic. </VISUAL_STYLE_AND_AESTHETICS>\n    > <TEMPORAL_ELEMENTS> Relaxed, joyful pacing. SUPPRESS SUBTITLES.",
+  "initial_campaign_queries": "1. Gen Z consumer behavior and purchasing drivers for sustainable laundry and home care products 2024.\n2. Trending fragrance profiles in fabric care: consumer appeal of hibiscus and long-lasting floral scents among younger demographics.\n3. Performance expectations for plant-based fabric softeners: balancing cleaning power with eco-friendly ingredient labels.\n4. Culturally relevant marketing strategies for sustainable household brands targeting Gen Z on social media.\n5. The impact of biodegradable packaging and plastic-free initiatives on brand loyalty for CPG brands.\n6. Analysis of Gen Z's \"eco-anxiety\" and how plant-based product claims influence their daily routine choices.",
+  "research_reflection": {
+    "version": 1,
+    "score": 8.5,
+    "improvements": "Update the research instructions to include a mandatory 'Product Specification' phase. Specifically, add a rule that for CPG (C

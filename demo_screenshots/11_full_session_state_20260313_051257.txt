@@ -1,0 +1,456 @@
+{
+  "commercial_duration": 30,
+  "ui:status_update": "Loading saved project artifacts for display and review",
+  "initial_yt_queries": "1. Public and industry reception of Google Gemini vs OpenAI GPT-4 and its impact on the \"AI arms race\" narrative.\n2. Cultural and behavioral shifts in human-computer interaction driven by the rise of native multimodal AI models.\n3. The evolution of search engine technology and consumer expectations following the integration of generative AI like Gemini.",
+  "target_audience": "",
+  "url_to_short_id": {
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGddl65eJLjM1lttvkbuRG95w-E6iwIQmyR2PKCWJAljntTLbye5VaFhPXoS5jugpBC9tm3x-TZcuvV33dKqYLXEi7RdyRI7isU5Xuj9Elo7vuU69B8LUKaAwuV0USdpYGspSXi3sdNxKc1W8P7EEuCYJJmtLGIccG-yT5lGPODHuj5YHkANCSyneI0Q3WUIdGhW94jYQKJAnUKwiVhed2E": "src-21",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF5Nq9319Z-89LPLPWyDfAbs4dPxck3tdEbN-UzMk7z5LNDv18lPZmdS1jT2OI9ssZxSSnSMrzGfx4uVjRl1t9-wMqAgxTIRkj_jPFkl81Mi82pfXvtD6aPNTwDigP9YfXNFcjvD0TdU82WzjK4mfo1wXJFWivuFqplPmTGqbFieWBITgEs7AZFsg==": "src-22",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGNcq04g7bgTPbnsquhyfP-Sol6HzR4MRvhzWGtJe01GhuyqoNtjRMAVUVAwvw2VPDZrwSGilTHiqe1QMzwZqE2iVNoZa6HgcDbQlgXmYwDZ8cyIt87Qvq830XY6UfHaQjzPD1I5HAKYGn_Qo87icsbMMdXPJOSI-TcnY4NZj5RPHvECNvksS3FIQ==": "src-15",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFmLzK3e06W0LHJ6ib1U9muTEixJ3nD2uEBZfp35tRK3PAjLxLIjvBbSgsa3fGDlLdvYSJnQwKN271eehPVrKvBJuE6mA2JExGX4Taj9d9UwkgehYJ_fLFX6rVwPndX5zYr7FpBDJrFISfPCk9e8K5YBA==": "src-8",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF2NHX1qckoZeybb_z3uusfXWm2Nopyl9D5zkRwnHSXNzmFzpwqKQDWA-98ogD2MfpzneQakrxr4b_-r0nM22nWi34zUv_86PeVXD8ExKKQPMukfq7hwTfKLyccconDB6nePbRs5M55pU0szID72c3hdGLfqsPaNphD8-LRZqvrNhzsyaso5a9Z6Q==": "src-13",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFvdgFnbDEW4ogfNG0geJXBoLkpLnaBazHmoBErI2NG7Q0l56EJzKs16ZE2wJgbU-ji8eG0uARJwhIq0CKHCLuFCDnkHs-PyHtd35njPoEQGwWVLxmaabMK2uCJwOm-qn40KOMAnBHx-FNCMhqNIEWKzUfJcCesnuVcNIiZHnuC34yU4aMu-fbgOOi6XOq-rooH3A==": "src-6",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEmB82oe8YC_lvcxGiuT_oD2aT-p0z54HDp34K3V6dzY_K1pTTW2FZm1FfbrNExJdZqKjRWpPz6_Fvl1oYeZCgYZdnkw5mobLnl5E3qxjos-Im5LfHPcE0ALrhlndeywU96I3TPzQwIFxdYO5o92O4WTwgxSlPUjeW-KqWJrQdG8kO3": "src-7",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHZ6H6Y5SSkFAtytBx7qIePQIcWRy8aJPyhuhUsj0WbAdCT_kTtkkWawOs3NVAxcUdf9Xp1Y7_cxAVO8_9_fYl3wYmFdatnr7oq44d-BCTcC0PPCcFEs1uBeMIJHAC5nrh-74csU_zTA8tJJlwuqkOX9JI5ASWeHk4NetXeAQ1BKQeY2XPw": "src-12",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQELhCqHVAx5BQJRvzDTNkzTkvlsnZSBdORvxIMvzvTzFiIl-2lSpMgWnU5W3qnEbWERM0EOzSA94i33UMrLT5sttWWkta6Gay4Boy2U5-5xCPSpz2Wf6RG0U9I5e0qObVTmiHWQlDWB7N0ZBBYqRECXot5jkuQG-YZ8ufybJuJyjc8=": "src-16",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHXu-CY1kEJclnNVQlC6fgj2yeFWLp8NN8gDMfDpZgV9T2lamoEjRqWHLNn57FMFgmRwBR6QByn5BLMjfW4k1t_Ikl7U3grFp9zTk3WQCV246K9xz8vOf1f-xEuz7ApD7lfzEHrMuZkjnNdaqVNWbfNzwA=": "src-14",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEdXdZr2x9bFIpHfwhnJyi-9HSVd6biIP52AYkabD3I4n-kY-wxUZ_fXqPl-xY_8nMHeygTAeN3D5Re9cJzj6isn8uhjeKe1hXyWZbmweRqoNnk-An5GnzEAclONIO4nSP_E2WUyw==": "src-11",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGaebESOWesJwSQQu6yn_6g2Qxo3jffSG9SUH92BE76FHxgbyNPUDbPQ-cGf4KnaCXBBBOr2O_jba9BChj-PASgs1uOH595wxhwc6y5rXaswieWLsZhwrUfRhB0LOCNs8I1FD1pMh-koqDeS2Scwm2-jGlLRBQp1X4NNRuJuig4bPZ4bhZB7oBkmyGVZ1r1ZuecLUZvUW9kRjbsIFl8CkVx4YcxH4-84qFKFzapKwpCeN0=": "src-1",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGu0fTsCcLR78WYBuzRIupEH8P2PQlFnwT57-UkeVHiOhOhERg00AdOYHtZkPBkCYOV-o2sONeiuoKrHYn5GRbXEaXfgKYm_kNQM_rBvW5F6whuV0-E-DcaWhbQFEtbkPO3aowpV9ukH9X2gt4EPc1juAoVvtcnzMQHhPUnkBUpFbXS4fIb_l7xg4nW9zgS6KY-vSh0BKTvV1g5XkDzKCZf22m3": "src-3",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE_EVUIodx-HZZCixd-Io73VXlZc_bV0oERt4oOdNfVOa-6PlG3baFuRWU4gTlCu7hi3wVsJ5kF8LPsIpZBkY8_BpjSa63IY3oDrfNM9N5KmmKqHt4T4_RZkoqaPKXDWedWzyfQzEbSm8FOtvDCSX00PTQAMicGoZBv7L9rcb8ayk_d_8WbSCM3zRYueXOfbEHy1BWZt6Jh1Iz6CQRUqZDsSynpbLem-i84X_8-A3GsGpE16qsL_fWIsxvCGQ4k8d5dlw==": "src-23",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEPnUOZh5zVXlD51oJw0ekIere0VWAHojQN3xGTmGg7v6fc4MZrulrvv5yaXreoG4eFMEyyt8Rb4li__E5OBRQX3xyGURNrXOAVMVY6KSuXphKfm9RsyTpP3OcIT5I=": "src-2",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEmvof4A3p-HLkW2u_Sb1kd8JLp5dJrd3-dppImVlTmpbTIbE68rjP_t8CSYlgnjCMit4njQizyXagzAkqyNoHWFbPaPFDelzMhY-gspK-lErv_kjX-pzenIsDgsxG4Xvb10gEI00JdEgAxMIsxs1cWQiHD": "src-4",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGtvlCACovIO1Jn5HF60VR-7vF0nMP-vbwDp5_WYk075eAou0tSofYOxgxcnzaVS3BQ8oDRjByDSLU5BZIkC-aEJ8pIk09gMqvgOg3j16wHao4i8-3CfltsKq9V0cpRUv-AXrIMVw==": "src-20",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGfGPiCLz4Ith1feD1VdabAzAdYfJVxuZp-sRpEhmSMt4T8bsdzKidKFJgqiDz5IixL90k0_p8g6cfLCWcxWITnPinVCcSo6xgDArCOFpelKJxEE3mPaCKLg8oBIBxid2aKoQYAiQ==": "src-9",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHyRRZDznuxXP08-P7gA1rjqqK2d2uf5BgZDghVRJ8yZpGZ2pWa2Uv0psQ7vIYdeCVs4tA5NxYE8B9AiBVgGNMyJkB8ULrUzVmFgxlUCbatnq4qlWphnyt_t5jYYPy0zFmbHRf4mvR-Va3ZGayx2h_uw1bCzdPYu_IHwJwUgP1tRzM6xW-ku9vKMY9cQxFrSrmyqUHCJORO": "src-18",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE5URwcpkCGQkG-Om4_oYybUAbMR2teClohKNioxOrqPEygOc_ezG3KUfi9x6FZbMME3YiKuCWdPE8f8-ea-O2V2VKyPZY-wu2fdGG-EJC-raqJj5erNB43wdexzNJA_d_-xAkY-Q==": "src-5",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFL1IMNBhQ6c4KmUYlxTRK-PdoOy52n3dLUeC4xRcMCr7C7eYXv2TLoOIu7JUiAKEUHpDyeI0MZRZZX2o6LqOtYQ2WczdT7QtKRnarkSE7N730NZmJJjH4RQkPkf2o3uCYAXzOrK_BMIJOgxZNpc2yhW-7D8afo9WVYpHbwfGIWuURR_459cYc=": "src-19",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGY3IAtrjT7Nl58O3G7oGbZDAbFHIA8khM2QnOIhJsfHQwmEEDs9mSPAIJ-tyyKMSb1OtRZcHht0U5ndqcMBL1PVBiqkkpOupATNq9MH44lf2WqtF-Rga4PIvYjgaChmGHx9zVqxpIlTTaJB7i_KXzw1ZAKC6OvryF7yjpeibzGmz6ZkwQE9dUhgMAXU4zoE9oMZrgu6Ryb7FMqTaI=": "src-17",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHqKHZoXhs9-eRTInf1f4yZjd5cbF5voWtncrs1VnA4wTA0lJWPvycBMP6tmmaYQhoClADhE7Or0Lw1aytC-SFI2s7aNdlYe2M_ug542Z8yI3pkSdBQ8GTji8yH_WvytZt391I=": "src-10"
+  },
+  "final_report_with_citations": "",
+  "autopilot_mode": false,
+  "visual_draft": "Based on the current 2026 search trends toward **\"Dark Mode\" living**, the rise of the **\"Brain Rot\"** conversation regarding digital overstimulation, and the YouTube trend of **native multimodal AI assistance (Gemini)**, here are three visual concepts designed for your organic energy drink campaign.\n\nThese concepts bridge the gap between \"wellness as a status\" and the high-tech, AI-driven environment of the modern high-performer.\n\n### Visual Concept 1: The Bio-Hacker\u2019s Botanical Sanctuary\n*   **Type:** Image\n*   **Relates to Trends:** Prioritizing Prevention, Nature-Inspired \"Distilled\" Aesthetics.\n*   **Connects to Ad Copy:** *The Clean Energy Revolution* (\"Pure Energy. No Compromise.\")\n*   **Creative Concept:** This concept uses the \"Bio-Hacker\" design trend\u2014moving away from aggressive energy drink branding toward pharmaceutical-grade minimalism. It positions the drink as a sophisticated tool for mental clarity, set in a peaceful, natural office environment that embodies the \"Distilled\" aesthetic of 2026.\n*   **Gemini-3-Pro-Image-Preview Prompt:** \n    > A professional high-end lifestyle photograph of a sleek organic energy drink can on a minimalist recycled oak desk. The can is matte white with a central, shimmering holographic embossed green leaf logo that catches the morning sun. In the background, a \"living office\" with lush blurred monstera leaves and soft, warm sunlight streaming through a window. The atmosphere is calm, clean, and premium. Shallow depth of field, 8k resolution, photorealistic, distilled aesthetic.\n\n---\n\n### Visual Concept 2: The Neural Flow Reset\n*   **Type:** Video (8 seconds)\n*   **Relates to Trends:** Brain Rot, YouTube: Native Multimodal AI (Assistant vibe), Functional Consumption.\n*   **Connects to Ad Copy:** *The Peak Performance Flow* (\"Fuel Your Flow, Not Your Burnout.\")\n*   **Creative Concept:** A \"visual metaphor\" for overcoming \"Brain Rot.\" It shows the transition from a chaotic, multi-window digital overwhelm to a state of clear \"neural flow\" using cinematic, AI-inspired visual effects. It mimics the feel of an AI assistant \"organizing\" a user's mind.\n*   **Veo-3.1-Fast-Generate-001 Prompt:**\n    > <SUBJECT> A young creative professional with tired eyes sitting at a desk in a dark moody studio. </SUBJECT>\n    > <ACTION> The character is surrounded by frantic, glitching holographic screens representing 'brain rot'. They take a slow, intentional sip of an organic energy drink with a glowing indigo rim. As they exhale, the glitches instantly transform into calm, fluid, golden neural lines that orbit gracefully around their head. </ACTION>\n    > <SCENE_AND_CONTEXT> A high-tech 'Dark Mode' home office. The lighting shifts from a harsh blue digital flicker to a warm, vibrant amber glow. </SCENE_AND_CONTEXT>\n    > <CAMERA_ANGLE> Close-up on the character's face, transitioning to a slow dolly out to a medium shot as the chaos settles into flow. </CAMERA_ANGLE>\n    > <VISUAL_STYLE_AND_AESTHETICS> Cinematic film look, high-contrast, bioluminescent effects, sophisticated tech-noir palette. SUPPRESS SUBTITLES. </VISUAL_STYLE_AND_AESTHETICS>\n\n---\n\n### Visual Concept 3: The Offline Luxury\n*   **Type:** Video (8 seconds)\n*   **Relates to Trends:** Dark Mode Living Subculture, \"Standing on Business\" (integrity/intent), H2H Authenticity.\n*   **Connects to Ad Copy:** *The Clean Energy Revolution* (\"Energy that aligns with your wellness.\")\n*   **Creative Concept:** This targets the \"Dark Mode\" living subculture\u2014Gen Z\u2019s rebellion against 24/7 connectivity. It uses the \"Human-to-Human\" (H2H) trend, favoring raw, analog textures (35mm film) over digital perfection. It frames the drink as a companion for \"offline\" recovery and focused hobbyism.\n*   **Veo-3.1-Fast-Generate-001 Prompt:**\n    > <SUBJECT> A person with a calm, focused expression in a dimly lit, cozy library-style room. </SUBJECT>\n    > <ACTION> They firmly close a laptop, 'standing on business' by ending the workday. They reach for an unpainted aluminum energy drink can. When they crack it open, a subtle, ethereal green mist (organic essence) curls into the air. They lean back and open a thick physical book. </ACTION>\n    > <SCENE_AND_CONTEXT> Interior 'Dark Mode' setting at night. Warm flickering candlelight and a crackling fireplace in the background provide the only light. </SCENE_AND_CONTEXT>\n    > <CAMERA_MOVEMENTS> A slow, cinematic pan left, following the hand from the closed laptop to the refreshing drink. </CAMERA_MOVEMENTS>\n    > <VISUAL_STYLE_AND_AESTHETICS> 35mm black and white film aesthetic with heavy grain and raw authenticity. High-contrast lighting. Feels like an intimate, analog moment. SUPPRESS SUBTITLES. </VISUAL_STYLE_AND_AESTHETICS>",
+  "target_product": "",
+  "combined_web_search_insights": "",
+  "combined_final_cited_report": "",
+  "target_search_trends": {
+    "target_search_trends": []
+  },
+  "initial_gs_queries": "1. What are the current top breakout Google Search trends globally and what specific news stories or viral moments triggered them?\n2. Who are the key figures, organizations, or influencers currently dominating search interest and what is their relationship to today's trending topics?\n3. What is the cultural and societal significance behind the most recent spikes in search behavior, and how do they reflect current consumer sentiment?\n4. Are there any emerging subcultures, slang terms, or community-driven events currently trending that align with mainstream search data?\n5. How do the latest trending search terms relate to major upcoming industry events, product launches, or seasonal milestones?",
+  "gcs_folder": "2026_03_13_05_13",
+  "campaign_web_search_insights": "Based on the initial research for the campaign guide, here is a detailed synthesis of the market landscape, consumer profiles, and creative opportunities for organic energy drinks.\n\n### 1. Market Analysis & Consumer Sentiment\nThe global organic energy drink market is experiencing robust growth, valued at approximately **$5 billion to $7.3 billion in 2024/2025**, with a projected CAGR of **8-10.2%** through 2033 [1, 4, 12, 13].\n*   **Current Landscape:** Consumers are moving away from \"traditional\" energy drinks associated with synthetic caffeine, excessive sugar, and artificial additives. There is a strong \"Prioritizing Prevention\" trend where beverages are viewed as functional tools for holistic well-being rather than just \"buzz\" [1, 3, 6].\n*   **Sentiment:** Sentiment is increasingly critical toward \"clean labels.\" Nearly **29% of consumers** actively check labels for functional claims like electrolytes, vitamins, and adaptogens [6]. There is a notable \"anti-sugar\" sentiment, with 30% of consumers specifically seeking low-sugar or sugar-free options [12].\n\n### 2. Psychographic & Behavioral Profile: Ideal Audience (Gen Z & Millennials)\n*   **Psychographics:**\n    *   **Holistic Health:** They view health as a balance of mental, emotional, and physical wellness. Mental health and mindfulness are \"very high priorities\" for 42% of this demographic [7, 10, 11, 23].\n    *   **Values-Driven:** They prioritize brands that demonstrate transparency, sustainability, and ethical sourcing [4, 7, 30].\n    *   **High Burnout:** Self-reported levels of burnout are high, leading to a \"food as mood\" behavior where they use specific products to de-stress or regain focus [11, 20].\n*   **Behaviors:**\n    *   **Social Sourcing:** They turn to TikTok (e.g., #FitTok) and Instagram for wellness advice and product recommendations [2, 9, 22].\n    *   **Functional Consumption:** 50% of Gen Z consumers view food/drink primarily as \"fuel\" and are more concerned with protein and functional benefits than calorie counting [21].\n    *   **\"Third Place\" Fitness:** They frequent gyms and fitness classes not just for health, but as \"third places\" to build community and stave off loneliness [22].\n\n### 3. Competitive Analysis: Key Selling Points vs. Industry Standards\n| Feature | Traditional Standard (e.g., Red Bull, Monster) | Organic Energy Drink KSP |\n| :--- | :--- | :--- |\n| **Ingredients** | Synthetic caffeine, taurine, artificial colors, high HFCS [13, 14] | Green tea, yerba mate, botanical extracts, natural sugars (or Stevia/Erythritol) [1, 14] |\n| **Energy Delivery** | Immediate \"spike and crash\" [13] | \"Balanced and sustained\" energy release [14] |\n| **Packaging** | Standard aluminum cans (mostly) | Sustainable, highly recyclable, or biodegradable packaging [1, 27, 30] |\n| **Positioning** | Extreme sports, gaming, \"hustle\" culture [13, 14] | Wellness, productivity, mindfulness, and \"clean\" lifestyle [1, 3, 4] |\n\n### 4. Cultural Trends & Social Triggers\n*   **\"Mindful Caffeine\":** A shift toward \"intentional\" energy\u2014drinking for a specific cognitive task rather than reflexive consumption [3, 13].\n*   **Wellness as Status:** Posting \"aesthetic\" wellness routines (e.g., \"That Girl\" aesthetic) on social media where the brand of the drink acts as a lifestyle badge [2, 7, 27].\n*   **The \"Sober Curious\" Movement:** As younger generations drink less alcohol (20% less per capita than Millennials at the same age), organic energy drinks are serving as sophisticated \"adult\" alternatives for social settings [10, 16].\n*   **Social Triggers:** Use of \"real magic\" moments (connection), \"have a break\" challenges (mental health), and sustainability transparency [26].\n\n### 5. Primary Pain Points Addressed\n*   **Mental Fatigue & Burnout:** Addressing the \"mentally drained\" feeling caused by excessive screen time and high-pressure professional environments [11].\n*   **The \"Jitters\" & Sleep Disruption:** Consumers want energy without the anxiety or the inability to sleep later that comes from synthetic stimulants [1, 9].\n*   **Guilt of Consumption:** Solving the conflict between needing energy and wanting to avoid \"unhealthy\" processed ingredients [1, 15].\n*   **Lack of Convenience:** Providing a \"grab-and-go\" solution that still fits a strict organic/clean diet [1, 12, 14].\n\n### 6. Case Studies & Creative Themes\n*   **Theme: \"Radical Transparency\":** Brands like **Clif Bar** and **KIND** have seen success by \"calling out\" industry standards and highlighting ingredient purity [19].\n*   **Theme: \"The Daily Ritual\":** **Blue Bottle** and **Stonyfield** focus on the \"story\" behind the product\u2014sourcing, small batches, and the \"why\" [30].\n*   **Successful Formats:**\n    *   **Personalization:** Spotify Wrapped-style data visualization of wellness habits [26].\n    *   **Community Challenges:** TikTok challenges (e.g., Chobani or Premier Protein) that integrate the product into a fun, relatable activity [30].\n    *   **Behind-the-Scenes:** Showcasing the production facility or the \"farmers behind the ingredients\" to build trust [25, 30].",
+  "_tool_name": "load_artifacts",
+  "timer_start": 1773378789.996862,
+  "_tool_start_ts": 1773379211.0278172,
+  "img_artifact_keys": {
+    "img_artifact_keys": [
+      {
+        "trend": "Brain Rot, High Burnout, Functional Consumption",
+        "audience_appeal": "Highly relatable for the 'Brain Rot' and 'High Burnout' concerns of Gen Z and Millennial audiences.",
+        "caption": "Stop the 'Brain Rot' and find your flow. \ud83e\udde0\u2728 Our organic blend is crafted for mental clarity and sustained peak performance. #MentalClarity #PeakPerformance #OrganicFocus",
+        "img_prompt": "A young creative professional with tired eyes sitting at a desk in a dark moody studio, surrounded by frantic, glitching holographic screens representing 'brain rot'. The lighting is a harsh blue digital flicker. Close-up on the character's face. Cinematic film look, high-contrast, tech-noir palette.",
+        "concept": "Visually represents the digital overwhelm of 'Brain Rot' and the calming, focusing power of the organic energy drink.",
+        "headline": "Fuel Your Flow, Not Your Burnout.",
+        "fidelity_score": 0.88,
+        "markets_product": "Positions the drink as a functional solution to digital fatigue and burnout.",
+        "artifact_key": "The_Neural_Flow_Reset_image_1.png",
+        "rationale_perf": "Leverages a highly trending cultural term ('Brain Rot') to gain attention."
+      }
+    ]
+  },
+  "target_yt_trends": {
+    "target_yt_trends": []
+  },
+  "commercial_artifact": "",
+  "sources": {
+    "src-9": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "1) | OpenAI (GPT-4o/5."
+        },
+        {
+          "text_segment": "|\n| **Primary Risk** | Reliability/hallucination controversies in early launches.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "1) | OpenAI (GPT-4o/5.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "|\n| **Primary Risk** | Reliability/hallucination controversies in early launches.",
+          "confidence": 0.5
+        }
+      ],
+      "domain": "wikipedia.org",
+      "short_id": "src-9",
+      "title": "wikipedia.org",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGfGPiCLz4Ith1feD1VdabAzAdYfJVxuZp-sRpEhmSMt4T8bsdzKidKFJgqiDz5IixL90k0_p8g6cfLCWcxWITnPinVCcSo6xgDArCOFpelKJxEE3mPaCKLg8oBIBxid2aKoQYAiQ=="
+    },
+    "src-18": {
+      "title": "consulting.us",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHyRRZDznuxXP08-P7gA1rjqqK2d2uf5BgZDghVRJ8yZpGZ2pWa2Uv0psQ7vIYdeCVs4tA5NxYE8B9AiBVgGNMyJkB8ULrUzVmFgxlUCbatnq4qlWphnyt_t5jYYPy0zFmbHRf4mvR-Va3ZGayx2h_uw1bCzdPYu_IHwJwUgP1tRzM6xW-ku9vKMY9cQxFrSrmyqUHCJORO",
+      "short_id": "src-18",
+      "domain": "consulting.us",
+      "supported_claims": [
+        {
+          "text_segment": "Mental health and mindfulness are \"very high priorities\" for 42% of this demographic [7, 10, 11, 23].",
+          "confidence": 0.5
+        }
+      ]
+    },
+    "src-2": {
+      "supported_claims": [
+        {
+          "text_segment": "*   **Cultural Perspectives:** Research indicates that cultural background significantly dictates AI preferences.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "For instance, Western users typically prefer AI to be a **controlled tool** with little autonomy, while Chinese users often seek a **connection** with AI, preferring models that can act spontaneously and participate in social situations [22, 23].",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Cultural Perspectives:** Research indicates that cultural background significantly dictates AI preferences."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "For instance, Western users typically prefer AI to be a **controlled tool** with little autonomy, while Chinese users often seek a **connection** with AI, preferring models that can act spontaneously and participate in social situations [22, 23]."
+        }
+      ],
+      "domain": "arxiv.org",
+      "short_id": "src-2",
+      "title": "arxiv.org",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEPnUOZh5zVXlD51oJw0ekIere0VWAHojQN3xGTmGg7v6fc4MZrulrvv5yaXreoG4eFMEyyt8Rb4li__E5OBRQX3xyGURNrXOAVMVY6KSuXphKfm9RsyTpP3OcIT5I="
+    },
+    "src-8": {
+      "supported_claims": [
+        {
+          "text_segment": "1) | OpenAI (GPT-4o/5.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "1) | OpenAI (GPT-4o/5."
+        }
+      ],
+      "short_id": "src-8",
+      "domain": "prompthackers.co",
+      "title": "prompthackers.co",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFmLzK3e06W0LHJ6ib1U9muTEixJ3nD2uEBZfp35tRK3PAjLxLIjvBbSgsa3fGDlLdvYSJnQwKN271eehPVrKvBJuE6mA2JExGX4Taj9d9UwkgehYJ_fLFX6rVwPndX5zYr7FpBDJrFISfPCk9e8K5YBA=="
+    },
+    "src-20": {
+      "supported_claims": [
+        {
+          "text_segment": "Cultural Trends & Social Triggers",
+          "confidence": 0.5
+        }
+      ],
+      "short_id": "src-20",
+      "domain": "youtube.com",
+      "title": "youtube.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGtvlCACovIO1Jn5HF60VR-7vF0nMP-vbwDp5_WYk075eAou0tSofYOxgxcnzaVS3BQ8oDRjByDSLU5BZIkC-aEJ8pIk09gMqvgOg3j16wHao4i8-3CfltsKq9V0cpRUv-AXrIMVw=="
+    },
+    "src-5": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Agentic E-commerce:** Search is evolving into action."
+        },
+        {
+          "text_segment": "*   **Agentic E-commerce:** Search is evolving into action.",
+          "confidence": 0.5
+        }
+      ],
+      "short_id": "src-5",
+      "domain": "youtube.com",
+      "title": "youtube.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE5URwcpkCGQkG-Om4_oYybUAbMR2teClohKNioxOrqPEygOc_ezG3KUfi9x6FZbMME3YiKuCWdPE8f8-ea-O2V2VKyPZY-wu2fdGG-EJC-raqJj5erNB43wdexzNJA_d_-xAkY-Q=="
+    },
+    "src-17": {
+      "title": "mckinsey.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGY3IAtrjT7Nl58O3G7oGbZDAbFHIA8khM2QnOIhJsfHQwmEEDs9mSPAIJ-tyyKMSb1OtRZcHht0U5ndqcMBL1PVBiqkkpOupATNq9MH44lf2WqtF-Rga4PIvYjgaChmGHx9zVqxpIlTTaJB7i_KXzw1ZAKC6OvryF7yjpeibzGmz6ZkwQE9dUhgMAXU4zoE9oMZrgu6Ryb7FMqTaI=",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Mental health and mindfulness are \"very high priorities\" for 42% of this demographic [7, 10, 11, 23]."
+        }
+      ],
+      "short_id": "src-17",
+      "domain": "mckinsey.com"
+    },
+    "src-22": {
+      "domain": "ablemkr.com",
+      "short_id": "src-22",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Primary Pain Points Addressed"
+        }
+      ],
+      "title": "ablemkr.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF5Nq9319Z-89LPLPWyDfAbs4dPxck3tdEbN-UzMk7z5LNDv18lPZmdS1jT2OI9ssZxSSnSMrzGfx4uVjRl1t9-wMqAgxTIRkj_jPFkl81Mi82pfXvtD6aPNTwDigP9YfXNFcjvD0TdU82WzjK4mfo1wXJFWivuFqplPmTGqbFieWBITgEs7AZFsg=="
+    },
+    "src-11": {
+      "title": "youtube.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEdXdZr2x9bFIpHfwhnJyi-9HSVd6biIP52AYkabD3I4n-kY-wxUZ_fXqPl-xY_8nMHeygTAeN3D5Re9cJzj6isn8uhjeKe1hXyWZbmweRqoNnk-An5GnzEAclONIO4nSP_E2WUyw==",
+      "supported_claims": [
+        {
+          "text_segment": "| Early-mover advantage and superior logic/reasoning.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "| Early-mover advantage and superior logic/reasoning.",
+          "confidence": 0.5
+        }
+      ],
+      "domain": "youtube.com",
+      "short_id": "src-11"
+    },
+    "src-15": {
+      "title": "marketreportanalytics.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGNcq04g7bgTPbnsquhyfP-Sol6HzR4MRvhzWGtJe01GhuyqoNtjRMAVUVAwvw2VPDZrwSGilTHiqe1QMzwZqE2iVNoZa6HgcDbQlgXmYwDZ8cyIt87Qvq830XY6UfHaQjzPD1I5HAKYGn_Qo87icsbMMdXPJOSI-TcnY4NZj5RPHvECNvksS3FIQ==",
+      "domain": "marketreportanalytics.com",
+      "short_id": "src-15",
+      "supported_claims": [
+        {
+          "text_segment": "*   **Current Landscape:** Consumers are moving away from \"traditional\" energy drinks associated with synthetic caffeine, excessive sugar, and artificial additives.",
+          "confidence": 0.5
+        }
+      ]
+    },
+    "src-13": {
+      "title": "technavio.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF2NHX1qckoZeybb_z3uusfXWm2Nopyl9D5zkRwnHSXNzmFzpwqKQDWA-98ogD2MfpzneQakrxr4b_-r0nM22nWi34zUv_86PeVXD8ExKKQPMukfq7hwTfKLyccconDB6nePbRs5M55pU0szID72c3hdGLfqsPaNphD8-LRZqvrNhzsyaso5a9Z6Q==",
+      "supported_claims": [
+        {
+          "text_segment": "*   **Current Landscape:** Consumers are moving away from \"traditional\" energy drinks associated with synthetic caffeine, excessive sugar, and artificial additives.",
+          "confidence": 0.5
+        }
+      ],
+      "short_id": "src-13",
+      "domain": "technavio.com"
+    },
+    "src-19": {
+      "title": "mckinsey.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFL1IMNBhQ6c4KmUYlxTRK-PdoOy52n3dLUeC4xRcMCr7C7eYXv2TLoOIu7JUiAKEUHpDyeI0MZRZZX2o6LqOtYQ2WczdT7QtKRnarkSE7N730NZmJJjH4RQkPkf2o3uCYAXzOrK_BMIJOgxZNpc2yhW-7D8afo9WVYpHbwfGIWuURR_459cYc=",
+      "domain": "mckinsey.com",
+      "short_id": "src-19",
+      "supported_claims": [
+        {
+          "text_segment": "*   **\"Third Place\" Fitness:** They frequent gyms and fitness classes not just for health, but as \"third places\" to build community and stave off loneliness [22].",
+          "confidence": 0.5
+        }
+      ]
+    },
+    "src-12": {
+      "title": "polarismarketresearch.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHZ6H6Y5SSkFAtytBx7qIePQIcWRy8aJPyhuhUsj0WbAdCT_kTtkkWawOs3NVAxcUdf9Xp1Y7_cxAVO8_9_fYl3wYmFdatnr7oq44d-BCTcC0PPCcFEs1uBeMIJHAC5nrh-74csU_zTA8tJJlwuqkOX9JI5ASWeHk4NetXeAQ1BKQeY2XPw",
+      "supported_claims": [
+        {
+          "text_segment": "*   **Current Landscape:** Consumers are moving away from \"traditional\" energy drinks associated with synthetic caffeine, excessive sugar, and artificial additives.",
+          "confidence": 0.5
+        }
+      ],
+      "domain": "polarismarketresearch.com",
+      "short_id": "src-12"
+    },
+    "src-23": {
+      "title": "medium.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE_EVUIodx-HZZCixd-Io73VXlZc_bV0oERt4oOdNfVOa-6PlG3baFuRWU4gTlCu7hi3wVsJ5kF8LPsIpZBkY8_BpjSa63IY3oDrfNM9N5KmmKqHt4T4_RZkoqaPKXDWedWzyfQzEbSm8FOtvDCSX00PTQAMicGoZBv7L9rcb8ayk_d_8WbSCM3zRYueXOfbEHy1BWZt6Jh1Iz6CQRUqZDsSynpbLem-i84X_8-A3GsGpE16qsL_fWIsxvCGQ4k8d5dlw==",
+      "supported_claims": [
+        {
+          "text_segment": "*   **Community Challenges:** TikTok challenges (e.g., Chobani or Premier Protein) that integrate the product into a fun, relatable activity [30].",
+          "confidence": 0.5
+        }
+      ],
+      "short_id": "src-23",
+      "domain": "medium.com"
+    },
+    "src-1": {
+      "short_id": "src-1",
+      "domain": "adriitsolutions.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "The following research synthesis provides an in-depth analysis of the current AI landscape, specifically focusing on the competition between Google Gemini and OpenAI\u2019s GPT series, the shift toward native multimodality, and the resulting evolution in search technology and human-computer interaction."
+        },
+        {
+          "text_segment": "| Early-mover advantage and superior logic/reasoning.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "| High-speed \"Omni\" interaction; excels in real-time voice."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "The following research synthesis provides an in-depth analysis of the current AI landscape, specifically focusing on the competition between Google Gemini and OpenAI\u2019s GPT series, the shift toward native multimodality, and the resulting evolution in search technology and human-computer interaction."
+        },
+        {
+          "text_segment": "| Early-mover advantage and superior logic/reasoning.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "| High-speed \"Omni\" interaction; excels in real-time voice.",
+          "confidence": 0.5
+        }
+      ],
+      "title": "adriitsolutions.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGaebESOWesJwSQQu6yn_6g2Qxo3jffSG9SUH92BE76FHxgbyNPUDbPQ-cGf4KnaCXBBBOr2O_jba9BChj-PASgs1uOH595wxhwc6y5rXaswieWLsZhwrUfRhB0LOCNs8I1FD1pMh-koqDeS2Scwm2-jGlLRBQp1X4NNRuJuig4bPZ4bhZB7oBkmyGVZ1r1ZuecLUZvUW9kRjbsIFl8CkVx4YcxH4-84qFKFzapKwpCeN0="
+    },
+    "src-10": {
+      "short_id": "src-10",
+      "domain": "beebom.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "| Early-mover advantage and superior logic/reasoning."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "| Early-mover advantage and superior logic/reasoning."
+        }
+      ],
+      "title": "beebom.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHqKHZoXhs9-eRTInf1f4yZjd5cbF5voWtncrs1VnA4wTA0lJWPvycBMP6tmmaYQhoClADhE7Or0Lw1aytC-SFI2s7aNdlYe2M_ug542Z8yI3pkSdBQ8GTji8yH_WvytZt391I="
+    },
+    "src-21": {
+      "title": "zpenergy.co.za",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGddl65eJLjM1lttvkbuRG95w-E6iwIQmyR2PKCWJAljntTLbye5VaFhPXoS5jugpBC9tm3x-TZcuvV33dKqYLXEi7RdyRI7isU5Xuj9Elo7vuU69B8LUKaAwuV0USdpYGspSXi3sdNxKc1W8P7EEuCYJJmtLGIccG-yT5lGPODHuj5YHkANCSyneI0Q3WUIdGhW94jYQKJAnUKwiVhed2E",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Primary Pain Points Addressed"
+        }
+      ],
+      "short_id": "src-21",
+      "domain": "zpenergy.co.za"
+    },
+    "src-16": {
+      "short_id": "src-16",
+      "domain": "smartbrief.com",
+      "supported_claims": [
+        {
+          "text_segment": "*   **Holistic Health:** They view health as a balance of mental, emotional, and physical wellness.",
+          "confidence": 0.5
+        }
+      ],
+      "title": "smartbrief.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQELhCqHVAx5BQJRvzDTNkzTkvlsnZSBdORvxIMvzvTzFiIl-2lSpMgWnU5W3qnEbWERM0EOzSA94i33UMrLT5sttWWkta6Gay4Boy2U5-5xCPSpz2Wf6RG0U9I5e0qObVTmiHWQlDWB7N0ZBBYqRECXot5jkuQG-YZ8ufybJuJyjc8="
+    },
+    "src-3": {
+      "title": "creativestrategies.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGu0fTsCcLR78WYBuzRIupEH8P2PQlFnwT57-UkeVHiOhOhERg00AdOYHtZkPBkCYOV-o2sONeiuoKrHYn5GRbXEaXfgKYm_kNQM_rBvW5F6whuV0-E-DcaWhbQFEtbkPO3aowpV9ukH9X2gt4EPc1juAoVvtcnzMQHhPUnkBUpFbXS4fIb_l7xg4nW9zgS6KY-vSh0BKTvV1g5XkDzKCZf22m3",
+      "domain": "creativestrategies.com",
+      "short_id": "src-3",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **\"AI Mode\" & Deep Search:** By 2025, Google introduced \"AI Mode\" for power users, featuring **query fan-out** (breaking one complex question into multiple sub-searches) and **Deep Search** for multi-step research [9, 13]."
+        },
+        {
+          "text_segment": "*   **\"AI Mode\" & Deep Search:** By 2025, Google introduced \"AI Mode\" for power users, featuring **query fan-out** (breaking one complex question into multiple sub-searches) and **Deep Search** for multi-step research [9, 13].",
+          "confidence": 0.5
+        }
+      ]
+    },
+    "src-4": {
+      "short_id": "src-4",
+      "domain": "intech.am",
+      "supported_claims": [
+        {
+          "text_segment": "*   **\"AI Mode\" & Deep Search:** By 2025, Google introduced \"AI Mode\" for power users, featuring **query fan-out** (breaking one complex question into multiple sub-searches) and **Deep Search** for multi-step research [9, 13].",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "| Early-mover advantage and superior logic/reasoning.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **\"AI Mode\" & Deep Search:** By 2025, Google introduced \"AI Mode\" for power users, featuring **query fan-out** (breaking one complex question into multiple sub-searches) and **Deep Search** for multi-step research [9, 13].",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "| Early-mover advantage and superior logic/reasoning.",
+          "confidence": 0.5
+        }
+      ],
+      "title": "intech.am",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEmvof4A3p-HLkW2u_Sb1kd8JLp5dJrd3-dppImVlTmpbTIbE68rjP_t8CSYlgnjCMit4njQizyXagzAkqyNoHWFbPaPFDelzMhY-gspK-lErv_kjX-pzenIsDgsxG4Xvb10gEI00JdEgAxMIsxs1cWQiHD"
+    },
+    "src-7": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Agentic E-commerce:** Search is evolving into action."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "| Early-mover advantage and superior logic/reasoning."
+        },
+        {
+          "text_segment": "*   **Agentic E-commerce:** Search is evolving into action.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "| Early-mover advantage and superior logic/reasoning.",
+          "confidence": 0.5
+        }
+      ],
+      "domain": "clickz.com",
+      "short_id": "src-7",
+      "title": "clickz.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEmB82oe8YC_lvcxGiuT_oD2aT-p0z54HDp34K3V6dzY_K1pTTW2FZm1FfbrNExJdZqKjRWpPz6_Fvl1oYeZCgYZdnkw5mobLnl5E3qxjos-Im5LfHPcE0ALrhlndeywU96I3TPzQwIFxdYO5o92O4WTwgxSlPUjeW-KqWJrQdG8kO3"
+    },
+    "src-14": {
+      "title": "accio.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHXu-CY1kEJclnNVQlC6fgj2yeFWLp8NN8gDMfDpZgV9T2lamoEjRqWHLNn57FMFgmRwBR6QByn5BLMjfW4k1t_Ikl7U3grFp9zTk3WQCV246K9xz8vOf1f-xEuz7ApD7lfzEHrMuZkjnNdaqVNWbfNzwA=",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Current Landscape:** Consumers are moving away from \"traditional\" energy drinks associated with synthetic caffeine, excessive sugar, and artificial additives."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "There is a notable \"anti-sugar\" sentiment, with 30% of consumers specifically seeking low-sugar or sugar-free options [12]."
+        }
+      ],
+      "short_id": "src-14",
+      "domain": "accio.com"
+    },
+    "src-6": {
+      "short_id": "src-6",
+      "domain": "springhillmarketing.co.uk",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Agentic E-commerce:** Search is evolving into action."
+        },
+        {
+          "text_segment": "*   **Agentic E-commerce:** Search is evolving into action.",
+          "confidence": 0.5
+        }
+      ],
+      "title": "springhillmarketing.co.uk",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFvdgFnbDEW4ogfNG0geJXBoLkpLnaBazHmoBErI2NG7Q0l56EJzKs16ZE2wJgbU-ji8eG0uARJwhIq0CKHCLuFCDnkHs-PyHtd35njPoEQGwWVLxmaabMK2uCJwOm-qn40KOMAnBHx-FNCMhqNIEWKzUfJcCesnuVcNIiZHnuC34yU4aMu-fbgOOi6XOq-rooH3A=="
+    }
+  },
+  "campaign_guide_content": "",
+  "request_count": 11,
+  "_state_init": true,
+  "yt_web_search_insights": "The following research synthesis provides an in-depth analysis of the current AI landscape, specifically focusing on the competition between Google Gemini and OpenAI\u2019s GPT series, the shift toward native multimodality, and the resulting evolution in search technology and human-computer interaction.\n\n### 1. The \"AI Arms Race\": Google Gemini vs. OpenAI GPT-4/5\nThe competition between Google and OpenAI has shifted from simple text generation to **agentic autonomy** and **deep reasoning**.\n\n*   **Benchmark Wars:** While Gemini Ultra initially claimed superiority in 30 of 32 academic benchmarks (notably achieving 90.0% on MMLU vs. GPT-4\u2019s 86.4%), real-world testing reveals a nuanced divide [3, 4].\n    *   **Gemini Strengths:** Excels in **creative writing**, **multimodal reasoning** (interpreting video/audio natively), and **coding tasks** (HumanEval scores of 74.4% vs. GPT-4's 67.0%) [2, 4].\n    *   **OpenAI Strengths:** Consistently outperforms Gemini in **commonsense reasoning** (HellaSwag benchmark of 95.3% vs. Gemini's 87.8%) and logical \"Apple tests\" where Gemini frequently falters [4].\n*   **The \"Code Red\" Shift:** Industry analysts note a strategic \"code red\" at OpenAI as Google leverages its massive distribution edge (Search, Android, YouTube) to accelerate Gemini adoption. Conversely, OpenAI faces pressure due to a lack of integrated ecosystems like Gmail or Maps [20].\n*   **Next-Gen Models (2025-2026):** By late 2025, the race evolved into \"Deep Research\" capabilities. Google\u2019s **Gemini 3 Deep Think** and OpenAI\u2019s **GPT-5.2** were launched within hours of each other, both focusing on multi-hour autonomous reasoning workflows and agentic task execution (e.g., autonomous software engineering) [14, 21].\n\n### 2. Native Multimodality: Cultural and Behavioral Shifts\nThe transition to **native multimodality**\u2014where models are trained on text, images, audio, and video simultaneously rather than using separate \"plug-ins\"\u2014is fundamentally altering human-computer interaction (HCI).\n\n*   **From Tools to Assistants:** Users are shifting from \"query-based\" interactions to \"behavioral\" ones. In one real-world observation, power users reported moving from hourly ChatGPT usage to \"everyday\" Gemini usage due to its seamless integration into mobile (Android) and workspace environments [20].\n*   **Intuitive HCI:** Multimodal AI allows for \"Human-Centric UIs\" that process speech, gestures, and facial expressions simultaneously. This is expected to be integrated into **70% of customer interactions by 2025**, moving away from rigid keyboards and touchscreens toward adaptive interfaces that gauge urgency through voice tone and visual cues [7, 8].\n*   **Cultural Perspectives:** Research indicates that cultural background significantly dictates AI preferences. For instance, Western users typically prefer AI to be a **controlled tool** with little autonomy, while Chinese users often seek a **connection** with AI, preferring models that can act spontaneously and participate in social situations [22, 23].\n\n### 3. The Evolution of Search: From Links to \"AI Overviews\"\nSearch is no longer just about information retrieval; it has become **intelligent assistance**.\n\n*   **Search Generative Experience (SGE):** Now known as **AI Overviews**, this integration has reduced search latency by 40% for complex queries. Users now receive synthesized answers directly on the results page, reducing the need to click through to external websites [6, 10].\n*   **\"AI Mode\" & Deep Search:** By 2025, Google introduced \"AI Mode\" for power users, featuring **query fan-out** (breaking one complex question into multiple sub-searches) and **Deep Search** for multi-step research [9, 13].\n*   **Agentic E-commerce:** Search is evolving into action. Through projects like **Project Mariner**, users can now perform \"agentic tasks\" such as booking travel or completing checkouts directly through the search interface, leveraging personal context from Gmail and Calendar [13].\n*   **Publisher Impact:** This shift has created a \"landscape of fewer links,\" potentially reducing organic traffic for publishers and forcing a strategic reevaluation of SEO toward \"AI Optimization\" (utilizing tools like Performance Max) [6, 10].\n\n### Summary of Strategic Implications\n| Feature | Google Gemini (Ultra/3.1) | OpenAI (GPT-4o/5.2) |\n| :--- | :--- | :--- |\n| **Core Advantage** | Ecosystem integration (YouTube, Workspace, Android). | Early-mover advantage and superior logic/reasoning. |\n| **Multimodality** | Native; excels in video and creative audio synthesis. | High-speed \"Omni\" interaction; excels in real-time voice. |\n| **Search Role** | Deeply integrated into \"AI Overviews\" and \"AI Mode.\" | Partnered with Microsoft (Bing) and Apple (Siri). |\n| **Primary Risk** | Reliability/hallucination controversies in early launches. | Subscription fragility and lack of native data sources. |",
+  "brand": "",
+  "key_selling_points": "",
+  "gs_web_search_insights": "As of mid-March 2026, global search trends and consumer behaviors reflect a significant intersection of major sporting events, rapid advancements in artificial intelligence, and a cultural shift toward \"offline\" luxury and niche community-building.\n\n### 1. Top Breakout Global Search Trends & Triggers\nGlobal search behavior in March 2026 is dominated by a mix of high-stakes sports, entertainment milestones, and viral social moments:\n*   **Sports Milestones:** The **Indian Wells Open 2026** triggered massive search spikes as Jack Draper knocked out Novak Djokovic, while Carlos Alcaraz advanced. In the U.S., the **NBA** dominates search, particularly regarding **Luka Don\u010di\u0107\u2019s $50K fine** and LeBron James' absence from the Lakers' lineup.\n*   **Viral Social & News Moments:** An emotional video of a **Kerala SBI employee\u2019s farewell** went viral globally, reflecting a search interest in workplace sentiment. Political search spikes were driven by a **Maharashtra Vidhan Bhavan bomb threat** and high-level talks between India and Iran regarding the **Strait of Hormuz**.\n*   **Entertainment Launches:** **\"Scream 7\"** debuted with franchise-best box office numbers ($60M+), leading to significant search interest in Neve Campbell and first reviews. **Ryan Gosling\u2019s** move into the *Star Wars* franchise and **Carey Mulligan\u2019s** upcoming *Narnia* film are also major breakout topics.\n\n### 2. Key Figures & Organizations Dominating Search\nInterest is concentrated around athletes, high-profile actors, and tech leadership:\n*   **Athletes:** **Luka Don\u010di\u0107** and **LeBron James** (NBA), **Hardik Pandya** (cricket controversy), and **Jack Draper** (tennis) are currently the most searched individual figures.\n*   **Celebrities:** **Ryan Gosling**, **Carey Mulligan**, and **Jim Carrey** (following a rare public appearance at the C\u00e9sar Awards) are leading entertainment searches.\n*   **Organizations:** **Google** itself is a major search term as it tests new \"AI Mode\" shopping ad formats. **Nielsen** and **IAB** are prominent in business searches due to the 2026 Upfront and NewFront planning series.\n\n### 3. Cultural & Societal Significance\nCurrent search patterns reflect a **\"Sentiment Paradox\"**:\n*   **Economic Disconnect:** U.S. consumer confidence hit a multi-year high (91.2) in February 2026 due to a Supreme Court ruling that provided temporary price relief from tariffs. However, the \"Expectations Index\" remains low, showing deep-seated anxiety about policy volatility in a midterm election year.\n*   **Intentional Indulgence:** Despite financial stress, 71% of consumers are searching for \"small indulgences\" as a coping mechanism, shifting from \"hustle culture\" to \"soft wellness.\"\n*   **AI as a Trusted Guide:** Roughly 25% of consumers now use **Generative AI shopping tools** to guide purchases, though 71% express concerns about data privacy and the need for a \"human touch\" in complex decisions.\n\n### 4. Emerging Subcultures & Slang\nA \"quiet rebellion\" against algorithm fatigue is driving new community behaviors:\n*   **\"Dark Mode\" Living:** A rising youth subculture prioritizes \"going offline\" as a luxury. This includes a return to **\"mall rat\" culture** (physical social spaces) and invite-only digital micro-communities.\n*   **2026 Slang:** \n    *   **\"Standing on Business\":** Following through on one's word or maintaining professional integrity.\n    *   **\"Motion\":** Making significant financial progress or \"moving smart.\"\n    *   **\"Crash Out\":** Losing emotional control or acting recklessly.\n    *   **\"Brain Rot\":** The feeling of over-consuming digital content, used self-awarely by Gen Z/Alpha.\n\n### 5. Upcoming Milestones & Industry Events\n*   **IAB NewFronts (March 25):** For the first time, this event has moved to March, focusing on the convergence of **AI-powered measurement** and streaming (FAST/AVOD) platforms.\n*   **Agentic Workflows:** Industry research points to 2026 as the year AI shifts from \"copywriting features\" to **\"full agents\"** that handle end-to-end process design (procurement, compliance, and customer support).\n*   **H-1B Visa FY 2027:** Search interest is spiking for the new **$100K fee and wage-weighted lottery** system that just went live.",
+  "yt_video_analysis": "Based on the analysis of the trending video [The AI Revolution: Google's \"Gemini\" Explained](https://www.youtube.com/watch?v=Kz6pM0vXvC0), here is the summary of the content:\n\n*   **Main Thesis/Claim:** The video explores the launch and capabilities of Google's Gemini, positioning it as a pivotal moment in the AI arms race. It argues that Gemini represents a shift from text-only models to native multimodality, potentially surpassing existing competitors in reasoning and creative tasks.\n*   **Key Entities:**\n    *   **Google/DeepMind:** The developers behind the model.\n    *   **Gemini (Ultra, Pro, Nano):** The suite of AI models being discussed, ranging from mobile-integrated versions to high-end enterprise solutions.\n    *   **OpenAI/GPT-4:** The primary competitor used as a benchmark for performance comparison.\n*   **Trend Context:** This video is trending due to the massive public interest in the \"AI Wars,\" the technical breakthrough of native multimodality, and the broader implications for how humans will interact with technology and search engines in the near future.\n*   **Summary:** The video provides a comprehensive breakdown of Google\u2019s Gemini model. It highlights Gemini's ability to seamlessly process and combine different types of information\u2014including text, code, audio, image, and video. It details the three versions of the model, showcases real-world applications like advanced coding assistance and multimodal reasoning, and discusses the competitive landscape of the AI industry.\n\n***\n\n**Status Update:** The YouTube analysis is complete. Transferring to the **research_orchestrator** to synthesize these insights with current market data and generate the `combined_final_cited_report`.",
+  "initial_campaign_queries": "1. Market analysis and current consumer sentiment for [target_product] in the current landscape.\n2. Detailed psychographic and behavioral profile of the ideal [target_audience].\n3. Competitive analysis of [key_selling_points] versus industry standards and alternative solutions.\n4. Cultural trends, memes, and social triggers currently resonating with [target_audience].\n5. Identifying the primary pain points of [target_audience] that the [target_product] effectively addresses.\n6. Case studies and high-performing creative themes for advertising [target_product] to similar demographics.",
+  "final_select_ad_copies": {
+    "final_select_ad_copies": [
+      {
+        "trend_ref": "Brain Rot, High Burnout, Functional Consumption",
+        "name": "The Peak Performance Flow",
+        "rationale": "Directly addresses the 'Brain Rot' and 'High Burnout' consumer pain points, offering a functional benefit (focus) that resonates with Gen Z and Millennial audiences.",
+        "headline": "Fuel Your Flow, Not Your Burnout.",
+        "body_text": "Fuel your focus without the burnout. Our organic blend is designed for the modern high-performer who values mental clarity and holistic

@@ -1,0 +1,44 @@
+[root_agent]: Creative pipeline attempt 3/15...
+[root_agent]: Running creative production pipeline (ad copy, visuals, commercial)...
+[creative_production_orchestrator]: Generating ad copy and visual creatives...
+[ad_content_generator_agent]: ### **Draft Creative Brief: Tide Fabric Softener with Hibiscus Scent (2026 Campaign)**
+
+I have selected the top 2 ad ideas for the Tide Hibiscus campaign. Each idea is designed to resonate with 2026 Gen Z trends, specifically targeting the "performance vs. planet" tension and the "Fragrance Bang" movement. Each concept will produce a **keyframe image** and a **high-definition video** using that image as a reference.
+
+---
+
+### **Idea 1: The Urban Druid**
+*   **Trend Alignment:** 2026 Fragrance Trend (Urban Druid/Nature Reclaiming); Gorpcore Fashion; Biophilic Design.
+*   **Rationale:** This concept moves Tide from a utility "laundry room" product to a "lifestyle" category. It positions the hibiscus scent as a niche, high-fashion botanical profile rather than a generic floral, appealing to the aesthetic-driven Gen Z segment.
+*   **Ad Copy:**
+    *   **Headline:** Nature Reclaimed. Softness Refined.
+    *   **Body Text:** In a world of concrete and glass, find your grounding. Tide Hibiscus isn’t just a scent; it’s the "Urban Druid" vibe for your wardrobe. High-performance softening meets sharp, biotech botanicals.
+    *   **Call-to-Action:** Enter Your Green Era.
+    *   **Social Media Caption:** POV: You want to smell like a hidden botanical garden in the middle of a brutalist city. 🌿🏙️ #UrbanDruid #TideHibiscus #SustainableStyle
+*   **Visual Concept:**
+    *   **Name:** The Urban Druid
+    *   **Creative Explanation:** A cinematic juxtaposition of "Brutalist Urbanism" and "Biophilic Softness." Oversized, hyper-realistic hibiscus flowers bloom from concrete cracks in a minimalist courtyard as a Gen Z individual in technical gear inhales the scent.
+    *   **Imagen Prompt (Keyframe):** A high-resolution 9:16 vertical image in a 2026 "Urban Druid" aesthetic. A 22-year-old with a sharp, chiseled jawline and sleek obsidian bob stands in a brutalist concrete courtyard wearing a matte slate-grey technical utility vest. Giant, hyper-realistic hibiscus flowers in vibrant magenta and coral bloom from cracks in the concrete at their feet. Moody twilight lighting.
+    *   **Veo Prompt (Video):** A cinematic 9:16 vertical video. Slow dolly-in as the giant hibiscus flowers from the reference image bloom rapidly, climbing grey pillars. Tactile, slightly grainy film style. The subject closes their eyes in a meditative expression, inhaling deeply.
+
+---
+
+### **Idea 2: The Scent Layering "Base Note"**
+*   **Trend Alignment:** 2026 Beauty Trend (Smellmaxxing/Scent Layering); Functional Wellness (Neuro-Beauty).
+*   **Rationale:** Repositions fabric softener as a "beauty step" for the "PerfumeTok" audience. The high-tech, abstract visual style provides the "Technical Transparency" needed to prove the performance of plant-based formulas.
+*   **Ad Copy:**
+    *   **Headline:** The Secret to Your Signature Scent.
+    *   **Body Text:** Fragrance 101: It starts with your laundry. Use Tide Hibiscus as your "neo-floral" base layer. It enhances your perfume rather than fighting it. Transparent, radiant, and soulful.
+    *   **Call-to-Action:** Build Your Scent.
+    *   **Social Media Caption:** My signature scent? It’s a layer of Hibiscus and my favorite perfume. You're welcome. 💅🌸 #Smellmaxxing #FragranceLayering #NeoFloral
+*   **Visual Concept:**
+    *   **Name:** The Scent Layering "Base Note"
+    *   **Creative Explanation:** An abstract "Inside-the-Fiber" journey. The camera travels through a forest of white cotton fibers as a bioluminescent magenta liquid flows through them, causing the fibers to glow as they are "locked" with scent.
+    *   **Imagen Prompt (Keyframe):** A high-resolution 9:16 vertical image, extreme macro perspective. A forest of white cotton fibers that look like soft, snowy mountain ranges. A glowing, pearlescent magenta liquid (Tide Hibiscus) flows through the fibers like a river of light, causing them to glow with a soft bioluminescence.
+    *   **Veo Prompt (Video):** Cinematic 9:16 vertical video. The camera travels through the fiber forest from the reference image as the river of light flows. Transitions via whip-pan to a person misting perfume over a freshly laundered technical vest. Dreamcore aesthetic, soft hazy lighting, shimmering lens flares.
+
+---
+
+**Do you approve of these 2 ad ideas, or would you like to make any changes before I generate the final creatives?**
+[creative_production_orchestrator]: Generating campaign images from visual concepts...
+[creative_production_orchestrator]: Generating image 1/2: concept_0...

@@ -1,0 +1,50 @@
+@startuml
+skinparam Handwritten false
+skinparam Monochrome false
+skinparam BackgroundColor #FFFFFF
+skinparam Shadowing false
+skinparam Padding 10
+skinparam BoxPadding 10
+
+' Participant Styles
+skinparam ParticipantBackgroundColor #4285F4
+skinparam ParticipantBorderColor #3367D6
+skinparam ParticipantFontColor #FFFFFF
+
+' Actor Styles
+skinparam ActorBackgroundColor #EA4335
+skinparam ActorBorderColor #B32015
+
+' Database Styles
+skinparam DatabaseBackgroundColor #FBBC05
+skinparam DatabaseBorderColor #D08700
+
+' Arrow Styles
+skinparam ArrowColor #5F6368
+skinparam ArrowThickness 1.5
+
+' LifeLine Styles
+skinparam LifeLineBorderColor #5F6368
+skinparam LifeLineBackgroundColor #E8F0FE
+
+
+title Trends & Insights Agent Flow
+
+actor "User" as User
+participant "Trends & Insights Agent" as Agent
+participant "Tools" as Tools
+database "Session State" as State
+
+User -> Agent: Start Session
+Agent -> Tools: get_daily_gtrends
+Tools --> Agent: Google Trends
+Agent -> Tools: get_youtube_trends
+Tools --> Agent: YouTube Trends
+Agent -> Tools: save_search_trends_to_session_state
+Agent -> Tools: save_yt_trends_to_session_state
+State -> State: Update State
+Agent -> Tools: memorize
+Tools --> Agent: Memorized
+Agent --> User: Return Summary
+
+@endum

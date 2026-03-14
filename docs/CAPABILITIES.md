@@ -61,7 +61,7 @@ Conducts multi-source market research across the selected Google Search trends, 
 - **Memory recall:** Retrieves prior campaign insights from Memory Bank (Vertex AI Agent Engine) to enrich the analysis
 - **Enhanced search:** Executes follow-up queries via Google Search grounding, integrating new findings with prior insights
 - **Report composition:** Generates a polished, in-line cited report organized by Campaign Guide, Search Trend, YouTube Trend, and Key Insights
-- **Artifact save:** Exports the report as a PDF artifact to Google Cloud Storage
+- **Artifact save:** Exports the report as a PDF artifact to Google Cloud Storage (`gs://{BUCKET}/{gcs_folder}/reports/`)
 
 ### Key Tools
 
@@ -102,7 +102,7 @@ Takes the research report and selected trends, then produces a complete set of a
   - For each concept: generates a keyframe image first, then passes it as a reference image to the video generator
   - This reference image workflow ensures visual continuity between the still and the motion asset
   - **Gecko fidelity evaluation** runs automatically after every image generation, scoring product representation accuracy (0.0-1.0) using Vertex AI rubric-based metrics. Based on [Gecko: Versatile Text Embeddings Distilled from Large Language Models](https://arxiv.org/abs/2404.16820) (Lee, Dai, Ren et al., 2024) and adapted from the [product-fidelity-eval](https://github.com/behardja/product-fidelity-eval) framework. Images scoring below 0.7 are automatically regenerated with refined prompts informed by the failing verdict descriptions.
-  - Saves all metadata (headline, caption, rationale, prompts, fidelity score) alongside each artifact
+  - Saves all metadata (headline, caption, rationale, prompts, fidelity score) alongside each artifact in GCS (`gs://{BUCKET}/{gcs_folder}/`).
 
 ### Key Tools
 
@@ -200,6 +200,102 @@ Provides instant, structured creative feedback that traditionally requires recru
 
 ---
 
+---
+
+## 6. Gemini Enterprise Integration
+
+**API:** Discovery Engine `streamAssist` (v1alpha)
+**Deployment:** `deploy_to_ae.py --step all --update`
+
+### What It Does
+
+Exposes the full campaign pipeline through Google's Gemini Enterprise (Agentspace) interface, providing an enterprise-grade chat experience with real-time thinking visualization, status chips at each pipeline stage, and artifact display for generated images, videos, and reports.
+
+### How It Works
+
+- **Agent Engine deployment:** The `CampaignOrchestrator` (BaseAgent state machine) is deployed as a Vertex AI Reasoning Engine via `deploy_to_ae.py`
+- **GE registration:** An agent entry is created in the Discovery Engine that maps to the reasoning engine. Registration is idempotent — if an agent with the same display name exists, it is skipped
+- **streamAssist routing:** The `agentsSpec.agentSpecs[].agentId` field in the streamAssist request body explicitly routes queries to the registered ADK agent. Without this field, GE answers with generic Gemini knowledge instead of delegating to the reasoning engine
+- **Status chips:** The orchestrator emits `state_delta["ui:status_update"]` at each pipeline stage transition (e.g., "Running market research pipeline...", "Generating campaign images..."). GE surfaces these as real-time status chips in the chat interface
+- **Thinking display:** LLM agents produce `thought` parts that GE displays as collapsible thinking sections, showing the agent's reasoning process
+- **Wave-safe execution:** AE invocations return after each "wave" of events. The GE client re-invokes with "continue" and the deterministic orchestrator resumes from the correct pipeline stage based on session state
+
+### Key Configuration
+
+| Setting | Value | Source |
+|---------|-------|--------|
+| AE Engine ID | `8788263399906607104` | `deployment_info.json` |
+| GE Engine | `gemini-enterprise-17634901_1763490144996` | `deployment_info.json` |
+| GE Agent ID | `3607510876288067860` | `deployment_info.json` |
+| DE Location | `global` | Default for GE |
+| AE Location | `us-central1` | Reasoning engine region |
+
+### streamAssist API Reference
+
+**Endpoint:** `POST https://global-discoveryengine.googleapis.com/v1alpha/projects/{PROJECT_NUMBER}/locations/global/collections/default_collection/engines/{GE_ENGINE}/assistants/default_assistant:streamAssist`
+
+**Request body:**
+```json
+{
+  "query": {"text": "user message"},
+  "agentsSpec": {"agentSpecs": [{"agentId": "GE_AGENT_ID"}]},
+  "session": "projects/{PROJECT_NUMBER}/locations/global/collections/default_collection/engines/{GE_ENGINE}/sessions/-"
+}
+```
+
+**Response structure (streaming JSON):**
+```json
+{
+  "answer": {
+    "state": "IN_PROGRESS | SUCCEEDED",
+    "replies": [{
+      "groundedContent": {
+        "content": {
+          "text": "agent response text",
+          "thought": true
+        }
+      }
+    }]
+  },
+  "sessionInfo": {
+    "session": "projects/.../sessions/SESSION_ID"
+  }
+}
+```
+
+- Use `sessions/-` to auto-create a new session
+- For follow-up messages, use the session ID from the response's `sessionInfo.session` field
+- `agentsSpec` is **required** for reliable agent routing
+
+### Deployment (Turnkey)
+
+```bash
+# Deploy everything: Agent Engine + Gemini Enterprise registration
+source trends_and_insights_agent/.env
+uv run python deploy_to_ae.py --step all --update
+```
+
+This single command:
+1. Updates the ADK agent on Agent Engine (or creates new if first deploy)
+2. Registers the agent with Gemini Enterprise (idempotent)
+3. Saves all IDs to `deployment_info.json`
+
+### E2E Test
+
+```bash
+# Full pipeline test via AE + streamAssist verification
+source trends_and_insights_agent/.env
+uv run python tests/test_ge_stream_assist_e2e.py
+```
+
+Quality gates: research >500 chars, commercial, focus group, PDF report, thoughts displayed, status chips emitted, GE routing confirmed.
+
+### Business Value
+
+Brings the full campaign pipeline into an enterprise-ready interface that executives and marketing teams can use directly — no CLI or API knowledge required. Status chips provide real-time visibility into pipeline progress, and thinking display builds trust by showing the agent's reasoning at each step.
+
+---
+
 ## Architecture
 
 The system is built as a hierarchy of specialized agents orchestrated by a root agent. Each capability operates as an independent skill that can be invoked in sequence or on demand.
@@ -209,18 +305,9 @@ root_agent (orchestrator)
   |-- trends_and_insights_agent      [Trend Discovery]
   |-- research_orchestrator          [Market Research]
   |     |-- combined_research_pipeline
-  |     |     |-- parallel research (YT + GS + Campaign)
-  |     |     |-- quality evaluation
-  |     |     |-- memory recall + enhanced search
-  |     |     +-- report composition
-  |     +-- report_saver_agent
-  |-- ad_content_generator_agent     [Ad Creative]
-  |     |-- ad_creative_pipeline (draft -> critique)
-  |     |-- visual_generation_pipeline (draft -> critique -> finalize)
-  |     +-- visual_generator (image + video production)
-  |-- av_editing_studio_agent        [AV Studio]
-  +-- focus_group_evaluator_agent    [Focus Group]
-```
+![Trends & Insights Platform Architecture](system_architecture.png)
+
+![Creative Production Pipeline Workflow](creative_production_pipeline.png)
 
 For detailed architecture diagrams, see `functional_architecture_diagram.png` and `gcp_architecture_diagram.png` in the project root.
 
@@ -242,8 +329,8 @@ For detailed architecture diagrams, see `functional_architecture_diagram.png` an
 | Campaign memory | Vertex AI Agent Engine Memory Bank |
 | Object storage | Google Cloud Storage |
 | Secrets management | Google Cloud Secret Manager |
-| Agent framework | Google ADK v1.4.2+ |
-| Deployment | Google Cloud Run / Vertex AI Agent Engine |
+| Agent framework | Google ADK v1.25.1 |
+| Deployment | Vertex AI Agent Engine + Gemini Enterprise (Discovery Engine) |
 
 ---
 
@@ -253,8 +340,8 @@ For detailed architecture diagrams, see `functional_architecture_diagram.png` an
 
 ```bash
 # Install dependencies
-pip install -U poetry
-poetry install
+pip install uv
+uv sync
 
 # Set environment variables in trends_and_insights_agent/.env
 # Required: GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, BUCKET, YT_SECRET_MNGR_NAME
@@ -266,11 +353,12 @@ poetry install
 #   Frontend:   cd frontend && npm run dev (port 5173)
 ```
 
-### Deploy to Agent Engine
+### Deploy to Agent Engine + Gemini Enterprise
 
 ```bash
-# Export requirements and deploy
-python deploy_to_ae.py
+# Deploy everything (Agent Engine + GE registration)
+source trends_and_insights_agent/.env
+uv run python deploy_to_ae.py --step all --update
 ```
 
 ### Autopilot Mode

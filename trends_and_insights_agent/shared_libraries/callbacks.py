@@ -49,12 +49,12 @@ TOOL_STATUS_MESSAGES = {
 TOOL_DESCRIPTIONS = {
     "get_daily_gtrends": "fetches today's trending Google Search topics",
     "get_youtube_trends": "fetches currently trending YouTube videos",
-    "google_search": "searches the web for specific information",
-    "generate_image": "generates an image using AI",
-    "generate_video": "generates a video using AI",
+    "google_search": "searches the web for market research insights on consumer trends and brand positioning",
+    "generate_image": "generates a product advertising image using Gemini Flash Image AI",
+    "generate_video": "generates a commercial video clip using Veo AI",
     "save_draft_report_artifact": "saves a draft research report as PDF",
     "save_creatives_and_research_report": "compiles the final campaign report",
-    "analyze_youtube_videos": "analyzes YouTube video content",
+    "analyze_youtube_videos": "analyzes trending YouTube video content for audience insights and cultural relevance",
     "save_yt_trends_to_session_state": "saves selected YouTube trends",
     "save_search_trends_to_session_state": "saves selected search trends",
     "save_img_artifact_key": "saves image artifact metadata",
@@ -64,8 +64,8 @@ TOOL_DESCRIPTIONS = {
     "memorize": "saves information to memory",
     "load_artifacts": "loads saved artifacts for display",
     "preload_memory": "loads campaign memories from memory bank",
-    "recall_prior_insights": "retrieves prior campaign insights from memory bank",
-    "evaluate_media_fidelity": "evaluates image fidelity against product description using Gecko scoring",
+    "recall_prior_insights": "retrieves historical campaign learnings and audience preferences from memory bank",
+    "evaluate_media_fidelity": "evaluates visual brand consistency and product accuracy using Gecko AI scoring",
     "transfer_to_agent": "transfers control to another agent",
     "combined_research_pipeline": "runs the full research pipeline",
 }
@@ -142,7 +142,7 @@ async def before_tool_status_callback(
     tool_name = tool.name
 
     # Track tool start time for duration logging
-    tool_context.state["_tool_start_ts"] = time.time()
+    tool_context.state["_tool_start_ts"] = time.monotonic()
     tool_context.state["_tool_name"] = tool_name
 
     # Generate contextual status via LLM or fall back to static
@@ -170,7 +170,7 @@ async def after_tool_status_callback(
     start_ts = tool_context.state.get("_tool_start_ts")
     tool_name = tool_context.state.get("_tool_name", tool.name)
     if start_ts:
-        duration = time.time() - start_ts
+        duration = time.monotonic() - start_ts
         logging.info(f"[TOOL_DURATION] {tool_name} completed in {duration:.1f}s")
 
     # Surface fidelity evaluation results

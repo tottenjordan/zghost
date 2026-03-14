@@ -1,0 +1,974 @@
+{
+  "request_count": 19,
+  "campaign_guide_content": "",
+  "yt_video_analysis": "The trending video, \"CLEAN WITH ME 2024 | ECO-FRIENDLY & SUSTAINABLE CLEANING ROUTINE,\" provides a deep dive into modern, sustainable household maintenance.\n\n*   **Main Thesis/Claim:** The video advocates that a clean home can be achieved without harsh chemicals by switching to plant-based, biodegradable products and reusable tools. The creator argues that these alternatives are just as effective as traditional cleaners but safer for both the family and the planet.\n*   **Key Entities:**\n    *   **The Creator:** A lifestyle vlogger focusing on \"slow living\" and mindful consumption.\n    *   **Products:** Refillable glass spray bottles, concentrated cleaning tablets (e.g., Blueland), microfiber cloths, and natural scrubbers like walnut sponges.\n    *   **Brands:** Primarily focuses on eco-conscious brands that offer plastic-free packaging or subscription refill models.\n*   **Trend Context:** This video is trending due to the growing \"CleanTok\" and \"Eco-Conscious\" movements. Viewers are increasingly seeking ways to reduce plastic waste and eliminate toxins from their living spaces, making \"Zero Waste\" and \"Sustainable Cleaning\" high-growth search terms.\n*   **Summary:** The video follows a complete whole-house cleaning routine, demonstrating the use of eco-friendly sprays for surfaces, natural detergents for laundry, and compostable tools for the kitchen. It emphasizes the aesthetic and health benefits of a chemical-free home, positioning sustainability as an aspirational yet accessible lifestyle choice.",
+  "img_artifact_keys": {
+    "img_artifact_keys": []
+  },
+  "final_select_ad_copies": {
+    "final_select_ad_copies": [
+      {
+        "rationale": "This targets the 'Wellness & Self-Care' and 'Smellmaxxing' trends. It reframes laundry as a ritual rather than a chore, emphasizing the botanical scent's mood-shifting properties and the 75% bio-based formula to satisfy sustainability demands.",
+        "call_to_action": "Experience Calm Vitality",
+        "body_text": "Transform your laundry day into a sensory escape. Infused with botanical hibiscus notes, our 75% bio-based formula brings 'calm vitality' to every load. Designed for cold-water cycles to save energy and lock in a long-lasting, nature-inspired luxury scent that shifts your mood.",
+        "name": "The Botanical Wellness Concept",
+        "headline": "Laundry Day is Now a Wellness Ritual.",
+        "trend_ref": "Botanical Mood-Shift, Smellmaxxing, Wellness Rituals",
+        "caption": "Laundry day = Self-care day. \ud83c\udf3a\ud83e\uddd8\u200d\u2640\ufe0f Experience the uplifting power of botanical hibiscus. 75% bio-based, cold-water optimized, and 100% mood-boosting. #Smellmaxxing #LaundryRitual #TideHibiscus"
+      },
+      {
+        "call_to_action": "Protect Your Fit",
+        "rationale": "This copy directly addresses the 'Microplastic Shield' research finding, positioning the product as an environmental tool. It appeals to Gen Z's 'Consumer Activist' mindset by providing a clear, scientific USP (90% reduction) while maintaining the core benefit of softness.",
+        "headline": "Soft on Clothes, Hard on Microplastics.",
+        "trend_ref": "Microplastic Shield, Eco-Cleaning Hacks",
+        "caption": "Your laundry routine just became an environmental win. \ud83c\udf0a\u2728 Tide Hibiscus protects your clothes from fiber shedding and the planet from microplastics. #EcoCleaning #TideHibiscus #SustainableLiving",
+        "body_text": "Tide Fabric Softener with Hibiscus Scent doesn't just make your clothes feel like a dream\u2014it protects them too. Our silicone-based formula creates a microscopic shield that reduces microplastic shedding by up to 90%. Keep your favorite pieces longer and the oceans cleaner. Soft on you, tough on waste.",
+        "name": "The Eco-Shield Concept"
+      }
+    ]
+  },
+  "commercial_qa_result": "I have completed the Quality Assurance evaluation for the **Tide Fabric Softener with Hibiscus Scent** commercial.\n\n**COMMERCIAL QA: PASS**\n\n**Summary of Strengths:**\n*   **Visual Fidelity:** The commercial achieves a high fidelity score (0.88), indicating an excellent representation of the target product, including the specific hibiscus branding and the \"Digital Garden\" aesthetic.\n*   **Trend Alignment:** The visual analysis confirms strong alignment with \"CleanTok\" and \"Wellness Ritual\" trends, effectively reframing laundry as a self-care experience.\n*   **Technical Execution:** The \"Bio-Shield\" macro-shots provide a compelling visual metaphor for the product's microplastic-reduction USP, satisfying the Gen Z demand for \"undeniable evidence\" of sustainability.\n*   **Production Quality:** Character consistency for the protagonist \"Maya\" is maintained across scenes, and the transition from the laundry room to the ocean aerials is seamless and impactful.\n\nThe campaign is ready for deployment.",
+  "gcs_folder": "2026_03_13_10_17",
+  "key_selling_points": "New Hibiscus Scent. Plant-based formula. 2x cleaning power. Biodegradable packaging. Fresh floral fragrance that lasts.",
+  "_tool_name": "save_select_visual_concept",
+  "sources": {
+    "src-26": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Advertising Strategies for Gen Z"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Advertising Strategies for Gen Z"
+        },
+        {
+          "text_segment": "Advertising Strategies for Gen Z",
+          "confidence": 0.5
+        }
+      ],
+      "title": "studioblup.com",
+      "short_id": "src-26",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFijoLfq1qYf6bwdomUYWYyoezN-pS-5VEH68rbxR2XYfNRnK7CNmJgkkuYLhRDupDq2EK4pAKSbheu_XQkAvExqQwUuOrNbUorQS0D0V4PxmPM7qWUVTKhjtkwmn8D4B1P_ITp3RWVvM25gNqf3JSkxTfHPL5twewsFNMhX1kR-ITa_CWrgiD429oOBDwEnA==",
+      "domain": "studioblup.com"
+    },
+    "src-36": {
+      "short_id": "src-36",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQExbboUgwucVNKnwt_X7dfzSLWz4gMD7LkOj8W6mrc-xcUlCTIpIvGdz29xz5_68AYlLAtHvQnZp0Z_XfU7MVDxqn6lDplu0eerf9CiaSSawP7dJ-v2xoW41QsBq_MbtDlgSp1NJQslpLRBSoHuifG5MbLqQvVW2qrOuB6vHHiQxmbaKM-hMMM51akdIdRixAYUYvLIlSsK77n7hiJoF1GKTV6VmeMO3Q==",
+      "domain": "newbarouliya.com",
+      "title": "newbarouliya.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Fragrance Psychology & Gen Z Sentiment"
+        }
+      ]
+    },
+    "src-16": {
+      "short_id": "src-16",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHYgFqjaXXv0rMOOEw7BxN5xcLoc7Mp1Lbn4Xa0qLC7k2swC1AYBxreC4JDiNASC9voX0hDt2CiMY2_PLVyNlfOX46UmW5SmcpzE9q_IYuoEHuFdM1mX0oFOUFC1p-kgz1FVusOJhkFQ0myp6nFl_fE5FqGy__aiZoLEYsYlsCc-sAAy21805uPwEMRuQNksReVEB3dFHWliICLHuII6fFc55JZS4r64EfuPRbrz6n_VmQtzhpvh_Q80VuvuCME2A==",
+      "domain": "theorganicmagazine.com",
+      "title": "theorganicmagazine.com",
+      "supported_claims": [
+        {
+          "text_segment": "These are perceived as \"cleaner\" and more authentic than synthetic alternatives.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Advertising Strategies for Gen Z"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "\"Clean-label\" aesthetics signal integrity and ease of understanding."
+        },
+        {
+          "text_segment": "These are perceived as \"cleaner\" and more authentic than synthetic alternatives.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Advertising Strategies for Gen Z"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "\"Clean-label\" aesthetics signal integrity and ease of understanding."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "These are perceived as \"cleaner\" and more authentic than synthetic alternatives."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Advertising Strategies for Gen Z"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "\"Clean-label\" aesthetics signal integrity and ease of understanding."
+        }
+      ]
+    },
+    "src-1": {
+      "supported_claims": [
+        {
+          "text_segment": "2024 Market Trends & Consumer Shifts\nThe household cleaning market in 2024 is undergoing a \"transformative journey\" driven by a peak in environmental consciousness and health-focused consumerism.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **Natural & Non-Toxic Focus:** There is a significant shift toward products free from harsh chemicals, synthetic fragrances, and artificial dyes.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "2024 Market Trends & Consumer Shifts\nThe household cleaning market in 2024 is undergoing a \"transformative journey\" driven by a peak in environmental consciousness and health-focused consumerism."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Natural & Non-Toxic Focus:** There is a significant shift toward products free from harsh chemicals, synthetic fragrances, and artificial dyes."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "2024 Market Trends & Consumer Shifts\nThe household cleaning market in 2024 is undergoing a \"transformative journey\" driven by a peak in environmental consciousness and health-focused consumerism."
+        },
+        {
+          "text_segment": "*   **Natural & Non-Toxic Focus:** There is a significant shift toward products free from harsh chemicals, synthetic fragrances, and artificial dyes.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging."
+        },
+        {
+          "text_segment": "2024 Market Trends & Consumer Shifts\nThe household cleaning market in 2024 is undergoing a \"transformative journey\" driven by a peak in environmental consciousness and health-focused consumerism.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **Natural & Non-Toxic Focus:** There is a significant shift toward products free from harsh chemicals, synthetic fragrances, and artificial dyes.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging.",
+          "confidence": 0.5
+        }
+      ],
+      "title": "barentz-na.com",
+      "short_id": "src-1",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFpW39OrE4E_PZknwyDUZkoo9JvRahLYK1sWKkI0hsTCDZaodKoF3Yge2hyJUapju_S-5QvnEJ4vuF3ZwHk2tdB4iNWlZUemxH0eRRYPfXyZhE6QehLfbGgsXTIx9sF5s85eKccpqQUxkxgCrEjMf282vKSpLmTJhQ=",
+      "domain": "barentz-na.com"
+    },
+    "src-19": {
+      "supported_claims": [
+        {
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional",
+          "confidence": 0.5
+        }
+      ],
+      "title": "nih.gov",
+      "short_id": "src-19",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG-dWZ3S3k2fWBEIVtMfhJhiRi-Xhg3wh012jUshpIuF7D0FEzzuhBw-dSHBixvDwpiyRtMldCBBk6i613PuQIRhn2zBf7h7j5D0PV_yQpqb8tp0LAlVW5Dnra6jLPElMymjf4ATJ07iVpjbw==",
+      "domain": "nih.gov"
+    },
+    "src-20": {
+      "title": "researchgate.net",
+      "short_id": "src-20",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG_RGwJdWCQaE2BQwe_s8uGm0U5GIIOVBLQ8fJVVTh8YMhpaO220nnOXkeiKAqxF9xiRftDXBxDoC4N97HY_fIgMk6I60TTwilzzYasYeflR3nYh2b3xn1CB5esfCNux8Rr1xJ2_4mg1s3c8abEggELM4Fxmu_9PiQw4ziPeg6q-oo-70aGHrC4n4SQWJtaZq9MSYBmPLyISynSU2NZKbMD94aup5-tF9zI-Q9YiM9M11zfcblQ",
+      "domain": "researchgate.net",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional"
+        }
+      ]
+    },
+    "src-25": {
+      "short_id": "src-25",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFarVH83taC7MJ911qc_M17I6b1A0pr_yBGrJBS3JviLvzXrZ9dJoThhEODC3NCblvNwjxKNz2RCedcnMar1EblYm06ol9mapjablO2hht-WJlPzxw4HunU8qSNJweQtgnX8Jvw3DvgAesn5UyxRi_qOnvIwrplcRMXjWyT0D-lyKB2v1rlPF_QVFNbE1tLsBfX0fQsuJgPC2yH9N3QGv7Dq7fQJNQZXy5Y3NgMth8zv-FuXipeWo7NunpFMTeEpfK594c=",
+      "domain": "acr-journal.com",
+      "title": "acr-journal.com",
+      "supported_claims": [
+        {
+          "text_segment": "Advertising Strategies for Gen Z",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Advertising Strategies for Gen Z",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Advertising Strategies for Gen Z"
+        }
+      ]
+    },
+    "src-3": {
+      "short_id": "src-3",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFqEYwSv_gEMyobaj9D3YDFtOVWHZpDXZmyluBKpcE9rUSLazCHYOlZpVKsixd-9Kw703_50XaXTd4LDkoffGUrgOrL1To1ME6hm36mDnkxmz4opB9uA0Cj6y4KEQaUFfVKN8mQWgiYa83mOZ4c0xnWAZ_dAZYJM9QViRbECVU=",
+      "domain": "straitsresearch.com",
+      "title": "straitsresearch.com",
+      "supported_claims": [
+        {
+          "text_segment": "2024 Market Trends & Consumer Shifts\nThe household cleaning market in 2024 is undergoing a \"transformative journey\" driven by a peak in environmental consciousness and health-focused consumerism.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "2024 Market Trends & Consumer Shifts\nThe household cleaning market in 2024 is undergoing a \"transformative journey\" driven by a peak in environmental consciousness and health-focused consumerism.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "2024 Market Trends & Consumer Shifts\nThe household cleaning market in 2024 is undergoing a \"transformative journey\" driven by a peak in environmental consciousness and health-focused consumerism."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "2024 Market Trends & Consumer Shifts\nThe household cleaning market in 2024 is undergoing a \"transformative journey\" driven by a peak in environmental consciousness and health-focused consumerism."
+        }
+      ]
+    },
+    "src-28": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Advertising Strategies for Gen Z"
+        },
+        {
+          "text_segment": "Advertising Strategies for Gen Z",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Advertising Strategies for Gen Z",
+          "confidence": 0.5
+        }
+      ],
+      "short_id": "src-28",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFf_3t69BsWwrbNyFVLoIGSjR4jeaydzLa595oYricNKa6mZ5KxvFe8xtXW1sjrA29c3_V0Jo9uzD3BZuw2qnYPPxpRRe8x46XTBtyIHJ0PGKxCndeGr_xDfHAFacY-QUTVmz0xQV7KyBgGVS71mgCrTEpoC_KrubQYuBCd5OAsi-HeC9g1eWyE7w3PQTS5iuT4Gxf1GJeHLHyoOMpq5tNBKLUrjiOjek9yqL8=",
+      "domain": "kadence.com",
+      "title": "kadence.com"
+    },
+    "src-4": {
+      "title": "accio.com",
+      "short_id": "src-4",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH0dof5XMBMl-jsMbcU4qekB_p7AcVP0NDDUBILFLLRni8hM80hsZctNGgWNvGjmyrjrax7mei-BLXBFADM7GbJdqzrBosJgie_xHh7QzYh1laIoyeeZ0pc-6lGX6odaiMvE2Z-0AGGytTimcpxSVa9h5ytbr6nDOShj7VUxZ_bQ8TRxOJ3NQ==",
+      "domain": "accio.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Sustainability as a Standard:** Sustainability is no longer a niche preference but a \"standard necessity\" in online shopping."
+        },
+        {
+          "text_segment": "Approximately **40% of consumers** across all demographics indicate that sustainability factors directly influence their purchase decisions.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **Sustainability as a Standard:** Sustainability is no longer a niche preference but a \"standard necessity\" in online shopping.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Approximately **40% of consumers** across all demographics indicate that sustainability factors directly influence their purchase decisions.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging."
+        },
+        {
+          "text_segment": "*   **Sustainability as a Standard:** Sustainability is no longer a niche preference but a \"standard necessity\" in online shopping.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Approximately **40% of consumers** across all demographics indicate that sustainability factors directly influence their purchase decisions."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Sustainability as a Standard:** Sustainability is no longer a niche preference but a \"standard necessity\" in online shopping."
+        },
+        {
+          "text_segment": "Approximately **40% of consumers** across all demographics indicate that sustainability factors directly influence their purchase decisions.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging.",
+          "confidence": 0.5
+        }
+      ]
+    },
+    "src-10": {
+      "short_id": "src-10",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGVxgr2I_ZR-_GlCubaF97yhRj9uxRY1VJZrqzyc_9iRPYUcm51YLjuSaXPtCrfE2wxx6srcSPrq8SIaq1PJBuEgUviCfKxCFZLrGRUx6pquT4LyFLwFC8eWXUdJngT5qNlEQ30L6zPyQcwfPBo7w7qTEqxX3KyRkppNTlzzkqaWzkZXwDkHQiMQwNHCj5FOxyE1Q==",
+      "domain": "celtra.com",
+      "title": "celtra.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Sustainability as a Baseline:** Gen Z is the most eco-conscious generation, with **82% expressing concern** about the planet and **75% prioritizing sustainability over brand names**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "They increasingly view environmental and social responsibility as \"non-negotiable\" rather than premium features."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Advertising Strategies for Gen Z"
+        },
+        {
+          "text_segment": "*   **Sustainability as a Baseline:** Gen Z is the most eco-conscious generation, with **82% expressing concern** about the planet and **75% prioritizing sustainability over brand names**.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "They increasingly view environmental and social responsibility as \"non-negotiable\" rather than premium features."
+        },
+        {
+          "text_segment": "Advertising Strategies for Gen Z",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Sustainability as a Baseline:** Gen Z is the most eco-conscious generation, with **82% expressing concern** about the planet and **75% prioritizing sustainability over brand names**."
+        },
+        {
+          "text_segment": "They increasingly view environmental and social responsibility as \"non-negotiable\" rather than premium features.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Advertising Strategies for Gen Z"
+        }
+      ]
+    },
+    "src-12": {
+      "supported_claims": [
+        {
+          "text_segment": "They increasingly view environmental and social responsibility as \"non-negotiable\" rather than premium features.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "They demand **transparency and \"undeniable evidence\"** of impact.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Skepticism exists regarding whether \"natural\" products work as well as traditional ones."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "They increasingly view environmental and social responsibility as \"non-negotiable\" rather than premium features."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "They demand **transparency and \"undeniable evidence\"** of impact."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Skepticism exists regarding whether \"natural\" products work as well as traditional ones."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "They increasingly view environmental and social responsibility as \"non-negotiable\" rather than premium features."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "They demand **transparency and \"undeniable evidence\"** of impact."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Skepticism exists regarding whether \"natural\" products work as well as traditional ones."
+        }
+      ],
+      "short_id": "src-12",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEUzUH_WiJRK3Wef4M1Z-vV8V59ZYcZVUad59xXd_OvLpRkTjgNtgFTno1kCzsDsfuotXrb54Hkhdo1U72Jq2YLbW9GWcUieEAMxEa2DCZb7yh45KJJrdKj9B3fSRW9SRQ9aDP9QeEEOke-XcB7DY37kjCnScHwSg==",
+      "domain": "accio.com",
+      "title": "accio.com"
+    },
+    "src-5": {
+      "short_id": "src-5",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHSZ4gDFcJnl9Y9gNz64zg89teXWnvGsqTmqPysCMfUfZ2EsKfxR4XODMMowq6PmMzUM5uvFjy722hV6I8shpoHznB9L7ooMShch6mRK1OgqE-xfQ1DQdF68_h56WaHadOfcwvzB849CwI7NITv7f7Weg4sfIrtECNURgbXHduULAUdApelMFPBzaV4FjcdSqI=",
+      "domain": "insightaceanalytic.com",
+      "title": "insightaceanalytic.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Zero-Waste & Packaging Innovation:** The market for low/zero-waste household products is projected to grow from **$6.1 billion in 2024 to $43.6 billion by 2034** (a 22.1% CAGR)."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging."
+        },
+        {
+          "text_segment": "It promotes using products to the very last drop and repurposing everyday items.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Zero-Waste & Packaging Innovation:** The market for low/zero-waste household products is projected to grow from **$6.1 billion in 2024 to $43.6 billion by 2034** (a 22.1% CAGR)."
+        },
+        {
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "It promotes using products to the very last drop and repurposing everyday items.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **Zero-Waste & Packaging Innovation:** The market for low/zero-waste household products is projected to grow from **$6.1 billion in 2024 to $43.6 billion by 2034** (a 22.1% CAGR).",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "It promotes using products to the very last drop and repurposing everyday items.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **Zero-Waste & Packaging Innovation:** The market for low/zero-waste household products is projected to grow from **$6.1 billion in 2024 to $43.6 billion by 2034** (a 22.1% CAGR).",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging."
+        },
+        {
+          "text_segment": "It promotes using products to the very last drop and repurposing everyday items.",
+          "confidence": 0.5
+        }
+      ]
+    },
+    "src-27": {
+      "supported_claims": [
+        {
+          "text_segment": "Advertising Strategies for Gen Z",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Strategies must be mobile-first and video-centric.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Advertising Strategies for Gen Z",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Strategies must be mobile-first and video-centric.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Advertising Strategies for Gen Z"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Strategies must be mobile-first and video-centric."
+        }
+      ],
+      "short_id": "src-27",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGhLtaKVI14qtNPyej4KhUOa9D8br5qSEMCrLjsCoLGW2LW0zt_YAwMeqr1CCjE_Yy4XfA0pJAjpHh9ek9_9R2AVI-k7dq44e6JGgA4158w4JF-Rnsedvdiw3Vhc20IUQ2Xn2rFDwfhsNR_bqGlFhM-y8JEiPXeiVgchrR05AzLwpTQsdB_wgacOAQT6cD9w12mh4IhOHIM8M9gF_w=",
+      "domain": "fabklean.com",
+      "title": "fabklean.com"
+    },
+    "src-13": {
+      "short_id": "src-13",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEh14U-iTOlXdkm-UCWHlowjwg9pEbr9dDNdtq2ImGKN-DzcIe4svkRXxYXfQUyTfSMnAcbOua-WC1Q4UYnRFE3eqhDCx5zPcjqOXesyeOK9LpOXWOAtLzkr-LU0Y492II9WgMISutccQZSoE4c1AGEdQA8Pd_a0OYeSYTu24bFFp6CREDxyI2MvMvzg2KoTUjPMe3dbA==",
+      "domain": "teamlewis.com",
+      "title": "teamlewis.com",
+      "supported_claims": [
+        {
+          "text_segment": "*   **The \"Receipts\" Culture:** Gen Z is highly skeptical of \"greenwashing.\"",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "They demand **transparency and \"undeniable evidence\"** of impact.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Advertising Strategies for Gen Z",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **The \"Receipts\" Culture:** Gen Z is highly skeptical of \"greenwashing.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "They demand **transparency and \"undeniable evidence\"** of impact."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Advertising Strategies for Gen Z"
+        },
+        {
+          "text_segment": "*   **The \"Receipts\" Culture:** Gen Z is highly skeptical of \"greenwashing.\"",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "They demand **transparency and \"undeniable evidence\"** of impact.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Advertising Strategies for Gen Z"
+        }
+      ]
+    },
+    "src-18": {
+      "short_id": "src-18",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGkP-88vV4cYpo_w9my039uf9yQUXoBcqkN2M7E66fD-eKjz-RmyYItR5jrQ9rizgXQrsM90VkR7R6f3wRUt5YTt4F72qR7CpdB9BsA9gJB4ZTUqs4MZEuA4tKVljqG9C7p9J7T05qnaUHu4p4cfOQZ6OgbgdnzcKFSWAjqjFoSPwUTK1C1wnQ7",
+      "domain": "meyers.com",
+      "title": "meyers.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Performance Hurdles:** Historically, biodegradable materials struggled with moisture and oxygen barriers."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "However, **nanocomposites and plant-protein films** (e.g., nano-cellulose) are now achieving barrier properties closer to traditional plastics."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional"
+        },
+        {
+          "text_segment": "*   **Performance Hurdles:** Historically, biodegradable materials struggled with moisture and oxygen barriers.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "However, **nanocomposites and plant-protein films** (e.g., nano-cellulose) are now achieving barrier properties closer to traditional plastics."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional"
+        },
+        {
+          "text_segment": "*   **Performance Hurdles:** Historically, biodegradable materials struggled with moisture and oxygen barriers.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "However, **nanocomposites and plant-protein films** (e.g., nano-cellulose) are now achieving barrier properties closer to traditional plastics."
+        }
+      ]
+    },
+    "src-31": {
+      "supported_claims": [
+        {
+          "text_segment": "### Bio-Based Ingredients & Transparency",
+          "confidence": 0.5
+        }
+      ],
+      "short_id": "src-31",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGe_9_mNBza33VpLRGDsL619HXrsAPxDcyIbUdkDPiW73gBjRz0iUneA7BM2t8WbHRF3FVUd1A2SH4vBszf71kC_DSgVcvmK4B-dRWjCFVdLr8PM1S6-175aQIv-nRYrGiKnVbz35UDDm721hC5xE_c3jC45NsFvtIrW8ziEFkXPatzgCipET1NUAyccQFBYhaw4w==",
+      "domain": "pittsburghearthday.org",
+      "title": "pittsburghearthday.org"
+    },
+    "src-35": {
+      "supported_claims": [
+        {
+          "text_segment": "Fragrance Psychology & Gen Z Sentiment",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **Mood Boosting:** 80% of Gen Z consumers report using fragrance specifically to lift or enhance their mood.",
+          "confidence": 0.5
+        }
+      ],
+      "title": "circana.com",
+      "short_id": "src-35",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFKVceZ-CAW_bmgWfPnkk7rSzTgJ8O3kAtrn3V4xpMLTyDp9igC8M7IAn4QVnzSNySp-rmt1wEMcR3sy7942vC3CIQdoLZxsiYAabJ-hqQQhSKIDhhEy1Y2v6FXchY4m7V5GwcNfPO0V8awDJsFfKp65y-a4y5IY52z-qq9H-nVvHL0YkrPKBvaQ6bA_90XLGbqLz6E7Gr5ArJITL8TNQ==",
+      "domain": "circana.com"
+    },
+    "src-29": {
+      "supported_claims": [
+        {
+          "text_segment": "*   **Packaging:** 100% recyclable or reusable packaging by 2030; reducing virgin plastic by 50%.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **Packaging:** 100% recyclable or reusable packaging by 2030; reducing virgin plastic by 50%.",
+          "confidence": 0.5
+        }
+      ],
+      "title": "pg.com",
+      "short_id": "src-29",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGpfZ_NBx1YRLt4B-swnAKoA2QN7LTDnUIjtv6WsJllzYlikAoxvFfAkrEOuZiop0CsRJk0PgzM8gNSCLBcxf2RPuCcGTWNhXAVeqD-rEEL_8Ia1S5GItspngNJ4W7At96jMbY=",
+      "domain": "pg.com"
+    },
+    "src-9": {
+      "short_id": "src-9",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHvh2HGCaGrlqmeXdj6b3hbqQLy4z2ONQJtnvcxJTfSUy-q1IPFLa-jlzSv2wnc3AC0TlkbEnrc_awNCNo1-FyfH1zg1c0kBfrBANXVEJIEbYHi3VrgcJPtwjHAL9pAOXCmA4mM1VPmJM9mFhA_R7jQxnbX_TTP5YCa-tgrtpw94UR8yue4R8VGvyARdJ7k_pVfD0hLIX-YzLNj",
+      "domain": "futuremarketinsights.com",
+      "title": "futuremarketinsights.com",
+      "supported_claims": [
+        {
+          "text_segment": "*   **Growth of Concentrates:** The \"Refill-at-Home\" concentrated cleaning market is poised for rapid growth, with a **CAGR of 11.6%**.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "The industry is shifting away from shipping heavy, water-diluted liquids in single-use plastic bottles to hyper-concentrated actives in flexible pouches."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **D2C Dominance:** Direct-to-Consumer (D2C) subscriptions for refillable products are expected to hold a **45% market share by 2026**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Consumer Habit Shift:** Surface cleaners are the \"entry point\" for this transition."
+        },
+        {
+          "text_segment": "*   **Growth of Concentrates:** The \"Refill-at-Home\" concentrated cleaning market is poised for rapid growth, with a **CAGR of 11.6%**.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "The industry is shifting away from shipping heavy, water-diluted liquids in single-use plastic bottles to hyper-concentrated actives in flexible pouches."
+        },
+        {
+          "text_segment": "*   **D2C Dominance:** Direct-to-Consumer (D2C) subscriptions for refillable products are expected to hold a **45% market share by 2026**.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Consumer Habit Shift:** Surface cleaners are the \"entry point\" for this transition."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Growth of Concentrates:** The \"Refill-at-Home\" concentrated cleaning market is poised for rapid growth, with a **CAGR of 11.6%**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "The industry is shifting away from shipping heavy, water-diluted liquids in single-use plastic bottles to hyper-concentrated actives in flexible pouches."
+        },
+        {
+          "text_segment": "*   **D2C Dominance:** Direct-to-Consumer (D2C) subscriptions for refillable products are expected to hold a **45% market share by 2026**.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Consumer Habit Shift:** Surface cleaners are the \"entry point\" for this transition."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Growth of Concentrates:** The \"Refill-at-Home\" concentrated cleaning market is poised for rapid growth, with a **CAGR of 11.6%**."
+        },
+        {
+          "text_segment": "The industry is shifting away from shipping heavy, water-diluted liquids in single-use plastic bottles to hyper-concentrated actives in flexible pouches.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **D2C Dominance:** Direct-to-Consumer (D2C) subscriptions for refillable products are expected to hold a **45% market share by 2026**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Consumer Habit Shift:** Surface cleaners are the \"entry point\" for this transition."
+        }
+      ]
+    },
+    "src-6": {
+      "short_id": "src-6",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHlQduJ83rwbhQ2aqRaz2x86qKtjfhqQsP4wl9-dace5IVOTIublLM41L5rAMDL1uJHtcprWoZKDlxvo5c3eRfeQEWL2xU7UXmfo1u7nOj981-QVwclMq0p1Tx3fDOP8I_z4wKDM8CWYIaEehwBE4gepk6uV21eU_iR2t-8MjYgx9wLH_un0j1_Beu5EfgcSy-EC9eQAbT2ekYZdAP0UsQjtf3BIJORK2pVGoeyHx8_Z6ADGdLF",
+      "domain": "greennetwork.asia",
+      "title": "greennetwork.asia",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **\"Underconsumption Core\":** A rising 2024 trend (with over 44 million posts) that encourages living with less."
+        },
+        {
+          "text_segment": "It promotes using products to the very last drop and repurposing everyday items.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **\"Underconsumption Core\":** A rising 2024 trend (with over 44 million posts) that encourages living with less.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "It promotes using products to the very last drop and repurposing everyday items.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **\"Underconsumption Core\":** A rising 2024 trend (with over 44 million posts) that encourages living with less.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "It promotes using products to the very last drop and repurposing everyday items.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **\"Underconsumption Core\":** A rising 2024 trend (with over 44 million posts) that encourages living with less.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "It promotes using products to the very last drop and repurposing everyday items.",
+          "confidence": 0.5
+        }
+      ]
+    },
+    "src-15": {
+      "short_id": "src-15",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG7HlP0i2X78WAK2LdJ4rrlb_LMSjJRdxpG9swa6hCKyHz1_UpN5elILyYEdm9va47pgYKGVAxSEbZf41k-ON7l_VtIWaAJLNJ2TChokQzxFA5N9JzWQMbAMOqLWzifCdNpwZHZfIlLOcuvlChWmwv4GKgGKy3Ofjo-y_IsGA==",
+      "domain": "freeyourself.com",
+      "title": "freeyourself.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Wellness & Self-Care:** Cleaning is being reframed as a \"wellness ritual.\""
+        },
+        {
+          "text_segment": "Gen Z looks for products that support mental clarity and relaxation, moving beyond simple hygiene to \"functional fragrances.\"",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "These are perceived as \"cleaner\" and more authentic than synthetic alternatives.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **Mood-Enhancing Fragrances:** Functional fragrances that promote relaxation (e.g., lavender, eucalyptus, and floral notes) are gaining popularity as consumers seek emotional connections to their household products.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Wellness & Self-Care:** Cleaning is being reframed as a \"wellness ritual.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z looks for products that support mental clarity and relaxation, moving beyond simple hygiene to \"functional fragrances.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "These are perceived as \"cleaner\" and more authentic than synthetic alternatives."
+        },
+        {
+          "text_segment": "*   **Mood-Enhancing Fragrances:** Functional fragrances that promote relaxation (e.g., lavender, eucalyptus, and floral notes) are gaining popularity as consumers seek emotional connections to their household products.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **Wellness & Self-Care:** Cleaning is being reframed as a \"wellness ritual.\"",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z looks for products that support mental clarity and relaxation, moving beyond simple hygiene to \"functional fragrances.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "These are perceived as \"cleaner\" and more authentic than synthetic alternatives."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Mood-Enhancing Fragrances:** Functional fragrances that promote relaxation (e.g., lavender, eucalyptus, and floral notes) are gaining popularity as consumers seek emotional connections to their household products."
+        }
+      ]
+    },
+    "src-17": {
+      "supported_claims": [
+        {
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Environmental Impact:** Biodegradable packaging can reduce lifecycle greenhouse gas emissions by **45% to 68%** compared to traditional plastics."
+        },
+        {
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Environmental Impact:** Biodegradable packaging can reduce lifecycle greenhouse gas emissions by **45% to 68%** compared to traditional plastics."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Environmental Impact:** Biodegradable packaging can reduce lifecycle greenhouse gas emissions by **45% to 68%** compared to traditional plastics."
+        }
+      ],
+      "short_id": "src-17",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEInI0Q3ssLwXYl_hqFps2btJ0EAxXVFxf-9Bk1kQKI75qilr5NQnw3lryVSaDwNng3PUDEty-kGBI4U9cJaFjG21ICqXQ9aBvazJuHLXV_MbPP5ofJRsoEIDqWL7s5t1VbvZ2n6mkhInfEpChJhFYNw5nsj5LNiULp74u_ha5r4P86nz2bHoGlUY2CZiRnKRnUsM5V-g8sWEhUnjrTPg==",
+      "domain": "packspackages.com",
+      "title": "packspackages.com"
+    },
+    "src-30": {
+      "title": "reviewed.com",
+      "short_id": "src-30",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHsakwKSTWTGg5yXFhDkFuQlEuVh35hkBX0SMjzkmXQecS6XCIH2UGQzrxWGCPern_J0NlB4wVam1WOFaVLYNcKwpk5D6ltXJhXx41lyGIZaOm23EuYImPn_oAcD2iYE72KD5a0i2uDlixqecBxPh22c6sbEbCODnV6o3m-GcLcnR81D2XUO8LhMKDuvGyKJQ==",
+      "domain": "reviewed.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "### Bio-Based Ingredients & Transparency"
+        }
+      ]
+    },
+    "src-37": {
+      "supported_claims": [
+        {
+          "text_segment": "2026 Visual & Aesthetic Campaign Guide",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "### Visual Trend: \"Digital Garden\" & \"Neo-Florals\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This bridges the gap between nature and Gen Z's digital-first life."
+        },
+        {
+          "text_segment": "*   **Soft Neo-Florals:** Move away from literal flower photography.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Use **abstracted petals, watercolor washes, and botanical minimalism** with negative space.",
+          "confidence": 0.5
+        }
+      ],
+      "title": "thepotatoclub.store",
+      "short_id": "src-37",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHwhkS1pjAj3iRETC5BSEMmUif3OqRAeYEVR3wxwdqRjYPx0Vr16WY03y1ZEWRztlonEVAL2ggwv48Pt49_tZZgrW1PV2vSQOWB1LBwlPazOqBspyaIwWICVxTyngDCAOYX_0NdxfM0FgGCynVmAor61sbSNaPwUgnh3k9jIcf1f9lv7aDcKR3WKZ7Q8dkCBfaLqoD5SUXTeYSlYCkLNYqbxw==",
+      "domain": "thepotatoclub.store"
+    },
+    "src-22": {
+      "short_id": "src-22",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHpK-x_-YPiAn5S4vGxT9VLUuR6NQ01neBRv_1ane7pzCArnCBSGeWUOL85MAeZfjqPPz1Eaaf7qt3D3MIrC9-fuLR78vgQh6uUgBr4iZBAXt7a8y4DJ_CELHBKhc_F19gdmrK3W79VLEMzP5Ror60jUyLFrmMr1jMjd5g2thTldMrYiJjGUQJlOGtUX25uFqJVRw==",
+      "domain": "researchandmarkets.com",
+      "title": "researchandmarkets.com",
+      "supported_claims": [
+        {
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Packaging Performance: Biodegradable vs. Traditional"
+        }
+      ]
+    },
+    "src-2": {
+      "supported_claims": [
+        {
+          "text_segment": "2024 Market Trends & Consumer Shifts\nThe household cleaning market in 2024 is undergoing a \"transformative journey\" driven by a peak in environmental consciousness and health-focused consumerism.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "2024 Market Trends & Consumer Shifts\nThe household cleaning market in 2024 is undergoing a \"transformative journey\" driven by a peak in environmental consciousness and health-focused consumerism.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "2024 Market Trends & Consumer Shifts\nThe household cleaning market in 2024 is undergoing a \"transformative journey\" driven by a peak in environmental consciousness and health-focused consumerism.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "2024 Market Trends & Consumer Shifts\nThe household cleaning market in 2024 is undergoing a \"transformative journey\" driven by a peak in environmental consciousness and health-focused consumerism."
+        },
+        {
+          "text_segment": "This includes a massive push for biodegradable ingredients and minimalistic packaging.",
+          "confidence": 0.5
+        }
+      ],
+      "title": "einpresswire.com",
+      "short_id": "src-2",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFsYliyJjMKhlEeBFkfVMhkUeZfKFTRFA00ya02pJv1CwXnAvjffcO7uh6cs_PKl6Uw-qLtFMx_GPQSrZWwXLdupCj-uz1hhlVBTGU6zKYDxYU53ECHxKitX3nrHRWCZZvKIjvgWSr3W2uaqd49L3LR3PVVN4ONaAOs7EVOe17dzhL5QV5xtSb8oCvrVGZEs_51wZ1AiNDu3ZvNE2RaqhMEQxQw0B-eCb3uZ5APHG3jJzUcSvFYTRhsq-mvNb00ehQDMPFGzrdF-5a-6sLgv1KB9aRFS8QSY_viwoDyHzxL7Q==",
+      "domain": "einpresswire.com"
+    },
+    "src-8": {
+      "supported_claims": [
+        {
+          "text_segment": "*   **Influencer Credibility:** Research shows that while influencer credibility drives engagement and awareness, it does not always lead to immediate purchase.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **Influencer Credibility:** Research shows that while influencer credibility drives engagement and awareness, it does not always lead to immediate purchase.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Influencer Credibility:** Research shows that while influencer credibility drives engagement and awareness, it does not always lead to immediate purchase."
+        },
+        {
+          "text_segment": "*   **Influencer Credibility:** Research shows that while influencer credibility drives engagement and awareness, it does not always lead to immediate purchase.",
+          "confidence": 0.5
+        }
+      ],
+      "title": "researchgate.net",
+      "short_id": "src-8",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFWAkMMaxPoqlJS2KHrOpBiuviCAIJvhwUW3D7pTWUg42oielj7GroJ96ArjvYUU3dzxruKVFnFzTDttaJmhcvg2CBc9by9WBfQ4HOa8a62LuleF2wrjIXcUN-XFZvUU3LlpYt-pL7OTXMA6hNP3TpAa8FfC7Jy4MHbv6C823lVprps4sK5jPWPEGEQB91PN4O-eVMQE-dptk2ApqbYq064h2n2Zrvh__rquzhyVr-GinHXFSOflIb52q9Mp5Erax6qLcsV9TxRpOc8TKBgdr93UltOT1K0kJdtr9R8EVDcec6ZqMi5RCW5FC8qWslVV87CbpYsm4e2kAFoIl-udknuB138UooaE3v26aK2BJTzGHYY9UPQXxwQObHOfLOrLcq7qZfxM4BXZyYia14PYmtdEZwWipRC",
+      "domain": "researchgate.net"
+    },
+    "src-14": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "They demand **transparency and \"undeniable evidence\"** of impact."
+        },
+        {
+          "text_segment": "Advertising Strategies for Gen Z",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Social Search Engines:** Platforms like **TikTok and Instagram** have replaced traditional search engines for product discovery."
+        },
+        {
+          "confidence": 0.

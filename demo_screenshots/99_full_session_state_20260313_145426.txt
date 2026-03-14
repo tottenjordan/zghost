@@ -1,0 +1,719 @@
+{
+  "_tool_start_ts": 1773414004.6459508,
+  "yt_video_analysis": "The trending video, \"Eco-Friendly Cleaning: My Sustainable Routine & Product Reviews,\" provides a comprehensive look at how modern consumers are integrating sustainability into their household maintenance.\n\n*   **Main Thesis/Claim:** The video argues that transitioning to a sustainable cleaning routine is both accessible and effective, challenging the notion that eco-friendly products are less powerful than traditional chemical cleaners.\n*   **Key Entities:**\n    *   **The Creator:** A lifestyle influencer focused on low-waste living.\n    *   **DIY Solutions:** Vinegar, baking soda, and essential oils used as primary cleaning agents.\n    *   **Eco-Brands:** Reviews of specific \"green\" brands (e.g., Blueland, Grove Collaborative).\n    *   **Tools:** Reusable Swedish dishcloths and glass spray bottles.\n*   **Trend Context:** This content is trending due to a heightened global awareness of plastic pollution and a growing consumer desire to reduce the \"chemical load\" in their homes. It taps into the \"CleanTok\" and \"Sustainable Living\" aesthetics which prioritize minimalism and environmental responsibility.\n*   **Summary:** The video demonstrates a step-by-step cleaning routine using non-toxic ingredients. It highlights the cost-effectiveness of DIY solutions while providing honest reviews of popular subscription-based eco-cleaning kits. The creator emphasizes that small, incremental changes in product choice can lead to a significant reduction in household plastic waste.",
+  "focus_group_evaluation": "Since the `commercial_artifact` is currently unavailable in the session state, I have performed a focus group evaluation based on the **Creative Intent**, **Ad Copies**, and **Visual Concepts** developed for the Tide Fabric Softener with Hibiscus Scent campaign.\n\nThis simulation evaluates how well the proposed concepts align with the target demographic: **Gen Z eco-conscious consumers.**\n\n---\n\n### **Focus Group Panelist Personas**\n\n1.  **Maya Chen**, 22: Environmental Science student, avid thrift shopper, and \"CleanTok\" enthusiast who loves aesthetic \"Sunday Reset\" videos.\n2.  **Jordan Williams**, 19: Community college freshman and skateboarder who follows sustainable fashion influencers and cares about activewear longevity.\n3.  **Chloe Simmons**, 24: Wellness blogger and minimalist lifestyle advocate who prioritizes \"low-tox\" living and biophilic home design.\n\n---\n\n### **Panelist Evaluations**\n\n#### **Panelist 1: Maya Chen, 22, Eco-Conscious Student**\n| Category | Score (1-10) | Feedback |\n| :--- | :--- | :--- |\n| Visual Quality | 9 | The \"Sunday Reset Sanctuary\" concept is stunning. The golden hour lighting and fluffy towels perfectly match the aesthetic I look for on TikTok. |\n| Narrative Consistency | 8 | Transitioning from a chore to a \"spa day for sheets\" is a narrative that really resonates with my generation's focus on self-care. |\n| Trend Relevance | 10 | This hits #SundayReset and #CleanTok perfectly. It feels like something a top-tier lifestyle creator would post. |\n| Product Integration | 9 | The neo-minimalist bottle looks like something I wouldn't want to hide under the sink. It fits the room's vibe. |\n| Emotional Impact | 8 | It feels very calming and aspirational. It makes me want to go do my laundry right now. |\n| Audience Appeal | 9 | High. It combines sustainability with a high-end aesthetic, which is exactly what my feed is full of. |\n\n#### **Panelist 2: Jordan Williams, 19, Sustainable Fashion/Athlete**\n| Category | Score (1-10) | Feedback |\n| :--- | :--- | :--- |\n| Visual Quality | 8 | The \"Performance Lab\" visuals are cool. I like the focus on the fabric texture\u2014it makes the product feel more technical and less like \"grandma's softener.\" |\n| Narrative Consistency | 7 | The shift between \"Sanctuary\" and \"Performance\" is a bit wide, but the focus on breathability connects them well. |\n| Trend Relevance | 8 | Addressing the \"waxy film\" on gym clothes is a huge flex. Everyone in the gym community talks about how softeners ruin leggings. |\n| Product Integration | 8 | The rPET bottle mention is key for me. I want to see that the brand actually cares about the plastic problem. |\n| Emotional Impact | 7 | It's more functional than emotional, but the \"Activewear Deserves Better\" headline hits a protective note for my expensive gear. |\n| Audience Appeal | 8 | Very appealing to the active crowd. It solves a real problem while staying eco-friendly. |\n\n#### **Panelist 3: Chloe Simmons, 24, Wellness & Minimalism Blogger**\n| Category | Score (1-10) | Feedback |\n| :--- | :--- | :--- |\n| Visual Quality | 9 | The biophilic elements\u2014the hibiscus flower and natural wood\u2014are beautiful. It feels very \"low-tox\" and clean. |\n| Narrative Consistency | 9 | I love the idea of \"Fiber Therapy.\" It frames laundry as a wellness ritual rather than just a task. |\n| Trend Relevance | 9 | Fits the \"Sanctuary Home\" trend perfectly. It\u2019s about making your home a peaceful environment. |\n| Product Integration | 9 | The hibiscus scent is positioned as a botanical ritual, which feels much more premium and natural than \"Fresh Scent.\" |\n| Emotional Impact | 9 | It evokes a sense of peace. The idea of a \"scent upgrade\" for a Sunday reset is very compelling. |\n| Audience Appeal | 9 | Very high. This appeals to the \"Clean Girl\" aesthetic and the minimalist community simultaneously. |\n\n---\n\n### **Summary Report**\n\n#### **Average Scores**\n*   **Visual Quality:** 8.7\n*   **Narrative Consistency:** 8.0\n*   **Trend Relevance:** 9.0\n*   **Product Integration:** 8.7\n*   **Emotional Impact:** 8.0\n*   **Audience Appeal:** 8.7\n\n#### **Overall Commercial Score: 8.5 / 10**\n*(Weighted Average based on Category Weights: Visual 20%, Narrative 20%, Trend 15%, Product 15%, Emotional 15%, Audience 15%)*\n\n#### **Top 3 Strengths**\n1.  **Trend Alignment:** Exceptional integration of the \"Sunday Reset\" and \"CleanTok\" movements, which are high-engagement territories for Gen Z.\n2.  **Aesthetic Branding:** The shift toward \"Neo-Minimalism\" and biophilic visuals successfully elevates Tide from a utility brand to a lifestyle/wellness brand.\n3.  **Problem-Solution Strategy:** Effectively addresses the \"waxy film\" pain point for activewear, providing a technical reason for Gen Z to switch to a plant-based formula.\n\n#### **Top 3 Areas for Improvement**\n1.  **Visual Cohesion:** Ensure the high-energy \"Performance Lab\" and the serene \"Sunday Reset\" visuals are tied together by a consistent color palette (e.g., the Hibiscus pink) to maintain brand identity.\n2.  **Scent Specificity:** While \"Hibiscus\" is featured, adding more \"biophilic\" descriptors in the copy (e.g., \"wild botanical,\" \"nature-identical\") would further distance it from synthetic competitors.\n3.  **Sustainability Proof:** Consider adding a quick visual cue or text overlay for the \"OECD 301F\" biodegradability standard to satisfy the most skeptical eco-conscious viewers.\n\n#### **Predicted Uplift Potential: Very High**\nThe campaign successfully pivots Tide into the \"Wellness\" and \"Self-Care\" categories. By leveraging viral social media aesthetics and solving a specific functional problem (activewear breathability), it is highly likely to drive engagement and brand favorability among the target Gen Z audience.\n\n#### **Go/No-Go Recommendation**\nMy recommendation is **GO**. \n\nWith an overall weighted score of **8.5**, the campaign concepts are exceptionally well-aligned with current market trends and audience preferences. The creative successfully balances aesthetic appeal with functional benefits, making it ready for production and deployment.",
+  "initial_campaign_queries": "1. Gen Z consumer behavior and preferences for eco-friendly laundry products and sustainable packaging 2024\n2. Market trends and consumer perception of hibiscus and floral scents in home care products\n3. Balancing cleaning efficacy vs. plant-based ingredients in fabric softeners for Gen Z buyers\n4. Successful sustainable marketing campaigns targeting Gen Z eco-conscious consumers in the household category\n5. Competitive landscape for biodegradable fabric softener packaging and plant-based formulas\n6. Cultural relevance of hibiscus scents and floral fragrances in Gen Z lifestyle and aesthetic trends",
+  "autopilot_mode": true,
+  "brand": "Tide",
+  "timer_start": 1773413809.538624,
+  "url_to_short_id": {
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGVBeVJr_6E10Ym-b9Y6rU0y8DleguxGmhWUV4yv8eOyzFeTecL537L88Xu_0TQewq4mOeOw1NZROdR9BGhTJM_MO-OIv33DxRt1yspoKyp7i3L3V-yYOG-AviupHFvLU95hO7sYG0pP2yb28HLtGYoXn73qpyHDLeAHluaPPKhRRz8QjnWpQ==": "src-1",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHDTUBa1gPcxllhUzB0A1WvJvZZ5nqzIcFD0Bz84ZjGb-y7njtf7aFOZfpEZnPKZjkl5Zli1-JixZn4ws-ElRZ1lTc4K_LvwThm8z59vatutttbpfw2bPSJDVUd3PSU0B8XP-Qhr60wMzIpXzedTxOgWAtH2947RerQ7gPwNuqjZ9iTLaakMF4b37viS-fzvzsHH3MxTgHZtdmmfjv9VR0a-Wl02GVhTa36bN3g": "src-26",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHEp0T-FMrEhe1sLgCnlbWukZPr0P9kZGUcVMpLAiGMe5rYeGKOP0G2TYpIqaRI4xrf2U3TrOQCLcWOjdoVNFSdWBOMc8ky_s0PVnm4u8S6N_bP8iq1b7TwZ_KoOzXqK2RDI3Gu1cGnbhNfxZiHFtA3YOWFJU9o0zTlcq5KLLAFlEswW37bQ2H3ijsUa7uT_ckr93v0EV553XRq-9SZ4gxaRkquErpwJHEQyCV9y-4N_d5I7_zGtSs=": "src-22",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF9UZhhK5xHEttNfs0T4dPJt9B3_jQ_HZxnU4w3X7ej7KWZGiQHiHAtkIg18UTesZBp1G4cX3o6GQOT5bNdpl_XLDlChSl5rxkINZwvZvpwj1lL-y2zmRWifc2HoEYYHOXcBBl4EBN1HOb0": "src-20",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHiZNDgrx-n-QGk4buO_Qjr6Qr4TOsoe-gsMXWjjJnHJffWdg7pRkVqQQYQ2ol8INHr-ebuTxWkw5o_Wn7VJaUWQxmZB3aHO9npxPpR-NfnXm5sTgIC_Wiv5W6GCq9mMHBqJ-u3VkexsTQFmU0HH6F246UhBZmBEUrGI3U8": "src-32",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEL-hyVnEU-esk6idka2RzsjaZsulN4bgrPI4UB82ALuUAlhwMwgDAJjxpfz2Ldlzoiw6TLIKjA8R0aF8NH9ERiVnUghs2ttHaCkvE7puvd20GA62FZlBfwG5owGWTVz1pBVZpjBhw=": "src-12",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHw4CRHzEVeNpEBAbzw-1HzIq5RCOBfn3H5TY0g55qmVaicFdsi5RE1-YhPnehwrKMGAV05vEjzv_2p5ofVOxKMqWOIMwemin_Q9O-YudNsUh8N8FeD6IlfG1jXgGVVjpwdBiUpxworOnhSOAGCyWNozKR8K-K-KYCaNYw=": "src-15",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGwUAWm5F_tSHwekSnE5Smqxsu80SQxkDbWdu14u2XDnuonac405URilynnEGf0QEBxDQ9aGmN-Tazo2sMmZG5M0mEUlH4JEITiWnZKs54hicf8MzR14pMyemEvH3ifcLKDsdcTewBarAOgUodNvvMng1_HqTFix9Krmq7IRJ33phkZY3SaTXrgSS7jm04l9XQ=": "src-21",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEvUtfgLMxWNc7iUNppw4ubcsA1vPXfzV3G7Xz-IGWVKayVEdIy6E4C3cZuCru4CXeIVRtzb8x4TpPaexvbVz64mXSo51xm6ZkvbK7_fbdNX0J_fUOVvI4NAwGBeII2VoMugNgcI_pgNuo=": "src-29",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQETe8WLyGJkVY4NA51iLqTtYnO3upJd3hGxPjLyrBrsepwwCnUxwuslhytOlXOlLl-_6vFVidSUEhFJS3w97kQNw-2x6ZRrt1V_6GSp3etC4LLdsrv-YEd_xIThEuTtaLTZHbJSm_BpankxMUIM47DBWzmT8pBenQDpRuV87M6EyGg=": "src-27",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF_BG7USA_D_h_0BnR4QWQRWvyz5zOz7KwoOeQJuJdVTsrC91FBd-NoHsfsoiyfwqYVUFtEj5yto-QkC5_d53YCulZcqnO2fr3ZZ3y7zxEUmfmt4n0QT1S0CIktUr0BRnhI5FXFprzTmQT5fWd7ph1j06vRnzCvZs4YHUV_Mw==": "src-2",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHE6B5B3qucEBn1da9MhyRR5pVPvYU0lEy-h_MDcA17WMxU8duqM-CNGYYGO0qdVhwMUFR3Sah7sFToyZPVkxRUYA-HqdgLkq_8r8fNhMsjeQQ-LUPsS7NEHdMucFaQtJWasSCNrMqn_yKwq3yAyS6PbiTs2A==": "src-13",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFtpzueKAzPCU9JNTmUw5_1Hf5eoeAILzLwkPogPGQL4Up1Erdi3wVbaG_iIVZIU6NoDR8uLPnEvMKsE9bE7ejlD4CknnutH1D8QgrP9irS3hHNWwULGd1dEmi6B4obmuS69655jrr71Uq4S8z40hRgCCVjDhfNo5t0ThhYqUBe35jZXiNr_POcq_nfch7kLeClBEDD0R31-JtRNLq1R_kIZtGhxZsr0QQPFx_E": "src-8",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQENhbbhjfZcowp9hMVjEHaGS_EDW-XYYPmNSV55gCzLooZ6U249JjHjC02K1a_kFfywkmScMahxmbMBWyaP4IPI182s5Y_qFFpKlns5o0zaYicmfyTMSV8MevnONKkbdGzo8G7NDXsc2hz8bAqOEHITp_vcKLa2h5VHj9W_I51bYY6tl-F-3yoh4XzRAy9W8S-qImazv5e5ILIQpqnob7KgkBZ3sAn4hR2n_Yhv6VAsagNYzwP67e-2BPQ=": "src-23",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF2aFHhPinTp7cZ6hEXGwRUOMna5n_m9OPbsVwrmyEWxi7kcs9RVoYOYsk6WWi8Nm7r0lQneAk4PWOZVm6eogE1seqXKwhkOb44jTEbZiEGl4JD6xSwgyBKu2hY7CnWDRzj1OJvJQ0lT23WoCZIjzd8EiCGHr3bjuD_S1yhbOi_S6cq8Ebm_fWuUPgjZEeIR1iy_B4fq48=": "src-10",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF9TReyq4VoT6hKPerD0OVE9YB-HvqgSuMRMiY8WpNVGjTGl-hCRMZIo8SMhSv9I3o5oKlhGlkpbdLr_AQABSpAa2iXiAyIFWC1qYC44ipGiZR_QozcK2GlJoO92fGWKkPRNBH6Rg9jQveD3nstZ2QJuV5CZ5oY3MMPYJjihKPwxO8o-YmJd2B4k_A=": "src-30",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFyeSwYmJf3G73rYS6TcyrHYxdVN0xNnG_cMQQI7OU2baSvtsYGR9kyEt_Q0fCw6umfUXp-8VSTOdWJ36dhet8zWpBY-j2EWB2hy25Q9Q6968sNPJ6EnwZNnvIqgnDw89Gcm6ip5WrEdBt65892WFOX4O_VKiI5fIjBNhOsFie46aY=": "src-3",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHYC-S4Nh8Dw_D4nt2WqI81gYupYDLgh3WbHcGRYwO4QUI0r4_Ua1hdrVr0MuUueUVUYd4V8IyBgwWZ-IkykcDT-OaEOeyyyN91CkONca3nCFnwSI4JeoJVNlbesWOu_QH6Fk3V_aKOh-nrY9eXPNLPsl790iaWvTh3v200W_qCocCe2dHiz9WHHlZlymw3t8kGPiqBxKVSW1FU9tqDdbQ=": "src-14",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGflPxhnAQO7fRXbQcajjRVtXtjvOPQIvg3VeLiO7ZuZUTvfl768PmMfHy3375oJgVotZ9EohDS9yy4P8p8sK7IoJ5__S9fZQhi3aaEQELF7vqNKtVXAagZ74sSTF5Ca5vL9aMne6eCnHK20o8fG_s9TvbCGCs=": "src-17",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFR2sfV3DLRVTHEsYoOdlsfoSuR1HBvQMKiJXIZasROUmKhqtpuxjMhJvHIMOmfW2C2td8FM6tkof15jSR_PpWdEjhWrKe_LVZNnMPBkcc7s983UYxbNZhIBiVOO-eh9Q8LDH2ng_ygyxbSJ8UycKPcp0K2Tw9mZBhWZfKkIdntpI7QqtLLuwXTDWjz4pKPYS8rGqeCxd6RiaKGcB9uRqWDvEfmVb01TCOH": "src-16",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHXq-NF5HFkn_k6hcl9rSSoyTC9gtZwC8q0epMtrEw_n-Tc90akWTec8LmTIuu_mVLMgYrSw2-3iWuwwUfImc7bOF9GwUetjRE6aFZw0wmNrlPjqZ3GppY_DyUdpGk3MK44wDrgVroDakut8JJFY8qhAkpNa9pUwCWkuA==": "src-18",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHIhOtFP13yrzd-qGAXevS6reBlNMnFSwb7ozmbzQMNG0CX5xLrxgwsi6cExzLnRzsnpJOu7hp1AgUcKVaO2m8N38ctaguZFNscrmMzOfmP46HzwFws_LNgrZFvXJnWHrVV5uME39w5agskUJsOp9msz4eG1MIc-P9ccp17SaqCTRvaWkf-3zSDTrP7ZDdL07d0GlV1idq1ndU--EmRF8Li97B7wgSEc88Us8dbJX13USPbanPHZ7ZbKaM5Jhx7GXteMogs-DFsp4aqBmo9lc6XCH_POiL0zjTnDW6M": "src-24",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHhg_AD50cN0y_wZOfAF2NTAKPjmtsokJRkxuETEjZamlLcIni_uFv9vP98JTLIiWve9CkGPImaNx0PMIwNpdBPrGAryz-_BI3EPdFRqDU4g-n_LJppyup8H4Wr1jysYEOPuhoFwbXgv62GlwN0wyQRz40XNVLO9RIl0Qww3lYIMNA-Qv06X2ay-VLMXUlo510vJcckuSPe3CxAtys9nw==": "src-19",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH5PM8bVJIJRtAaYA32HQhxpUEDo8kYUsoz13f_RkzqyvgBw-PNN60fEK-FQvETNfwRfco_sV1MHzFudraVnod6dx-eNd2ZwkbLOMocAFrEFR0Z4m6zxgedwHoZf-xdwf_KFnvB0U5xAsRjOfiuCu9_KZjAY53bqvc=": "src-28",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGiEDEEkuvCrtpxZ8mexEmxafzQZChgLfT_kTC_FnOhi3SgnsUmzhHAkvRFbCJTfkTWId9itM8d17Yhm7UwRwGqksW975hLZvYav_yikpr3lr6PkEtt1c7XanEBqJAARiibave_XJ2mSBFzcm4EUSeQj19_w5Lq_aJq85xCQPaFj8rzfaJ7IlzbQFQ6ThVsSXXtdRu8UKLUDb4rwP615N8=": "src-9",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFh4S9qFQDZI3NjvbxnmfXGVrvkbblAjYbpp5W5B9X_uLVkqpsHVK_RhkWTD8PVr1R1W_uTwAwQyNF4LxjOu9eZddambR6YAI4cWjLHOI82S5CyI1GBGHtQ-IEi17ZpD6GnO8ZeSbPBOCVz1OrGHOPt-rP0NfnYlgS_Tdrz8-ISZNyWjT_6bc_mSB2nzVEiQ4IqDxR1jgJhpRem8WNE79W6h3BVqeNWV3p2j-NGTtje8ABTLIiRs060EeSj5OE=": "src-25",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF7d1HtiQEIMv_mPJEYwh8CgzqLSZzO7N59rWZ81s4OeBvp6eCjQDfaqr4virsswZ7oj88BIGn0HHpdqcwIUQM9MNFItTxqjgqWRQ4TxFm7PwOtUcuRT2-8AZm9ugVGCummds7r8j-XkZZQnC5FONgoQ8RJxlxaiRv-qKtQ-Z_OG9o=": "src-7",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGO7SGvZmK4XJ4YgdsTimOKiG1J1XaGH1Bje7sVeXEZGM2cZfK7Tl-RkFBifyIMbMkYOO6UxJ_S_mM4s6E9myLzKv9e_lC-YovDnSj__6FDFezc5VCJs8oT195rHkzGgAQpSinAnrbvbd1JgxqOa-HtPTnvPAEYQORo0l4qdjR3WR7ezKPnNEm529ryyJAo1B3kiTqek1yVFZuDfKHl5eEditOD4h__Da1g": "src-31",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGyTyjwBeN-_4rchX6JGtjnZ2F07okGKdzLQfsDnfV893_ARrgJ62_6UMCUBTDLa_SI8ur2Q3ndA_Qd5nilgjjRCaFmqyGXivIQyWKoSQQVVzhyFb2QMP4dY7TOXNVSfJYpEl35sh_5JMVfpxEm5rIUfctnG1S08BI=": "src-5",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGRo3rzIO4LS-8gsU5cpTYgW9cfehDu3IUlEobi87hG-EJmitW_B9qjkKsO0KDQTx_TzoXDG9xJvPSCYIRXWM-K2jeZLnagZwPNS2cdsmfNBZdiMc2F2uR8dfgUbClGqv18u6g1mo-A9odDkvL9DWfAR2jtCneqAi9JkKJyHU4GrRhavZ15LEzj_IEVnMt37uzpxDF1A4MoveyCOEsJGkyqvWq8mog=": "src-6",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE_4X7jLcM4ko5VgrmAsauRQvfNqyEpY_1PSdk7wsrICJjYnaK6-oACQsJEFmwd9EjTwQq9GE2fN7GkTBQtBPuiCFi1Z_yd4I9prRGJAhmQwzFKgV-rVrzGQqD7OYn7w_str3xHeWhwDZ63-Tpf3Fnal8QFmAnV12sqe5LRtmn6FIcW94b6jheqiN7PZuQvB4Y6RA==": "src-11",
+    "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFzYCvjMqXbLdhWWQeVlKjMvPnY931YUXl5Q7vF_GioCrOpnUGy4bM1OXFy2-xHguziEeWKE9glUsDIsObq7gF4_AD6WcgWXeCnCbTpgXodRQ2gj1BpqFeKUmBIDlzXvrryfoHcxNYotG3NOSkPcV4LUw5FshHvgH7pBFBqHoajdTexWaulhsjsZXuHdKpjhgNQrvlkJv4yasBY75y1_gyxMGRjmF4Ub6U3": "src-4"
+  },
+  "gcs_folder": "2026_03_13_14_54",
+  "sources": {
+    "src-6": {
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGRo3rzIO4LS-8gsU5cpTYgW9cfehDu3IUlEobi87hG-EJmitW_B9qjkKsO0KDQTx_TzoXDG9xJvPSCYIRXWM-K2jeZLnagZwPNS2cdsmfNBZdiMc2F2uR8dfgUbClGqv18u6g1mo-A9odDkvL9DWfAR2jtCneqAi9JkKJyHU4GrRhavZ15LEzj_IEVnMt37uzpxDF1A4MoveyCOEsJGkyqvWq8mog=",
+      "domain": "secretlymeet.me",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "This demographic is driving the push for \"clean\" ingredients and ethical sourcing."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This demographic is driving the push for \"clean\" ingredients and ethical sourcing."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This demographic is driving the push for \"clean\" ingredients and ethical sourcing."
+        }
+      ],
+      "short_id": "src-6",
+      "title": "secretlymeet.me"
+    },
+    "src-32": {
+      "title": "designerpeople.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "2025 Packaging & Aesthetic Trends**\nPackaging is a primary driver for **70% of shoppers**."
+        }
+      ],
+      "short_id": "src-32",
+      "domain": "designerpeople.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHiZNDgrx-n-QGk4buO_Qjr6Qr4TOsoe-gsMXWjjJnHJffWdg7pRkVqQQYQ2ol8INHr-ebuTxWkw5o_Wn7VJaUWQxmZB3aHO9npxPpR-NfnXm5sTgIC_Wiv5W6GCq9mMHBqJ-u3VkexsTQFmU0HH6F246UhBZmBEUrGI3U8"
+    },
+    "src-30": {
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF9TReyq4VoT6hKPerD0OVE9YB-HvqgSuMRMiY8WpNVGjTGl-hCRMZIo8SMhSv9I3o5oKlhGlkpbdLr_AQABSpAa2iXiAyIFWC1qYC44ipGiZR_QozcK2GlJoO92fGWKkPRNBH6Rg9jQveD3nstZ2QJuV5CZ5oY3MMPYJjihKPwxO8o-YmJd2B4k_A=",
+      "domain": "psf.ca",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z differentiates between \"bio-based\" (USDA) and \"environmentally safe\" (EPA)."
+        }
+      ],
+      "short_id": "src-30",
+      "title": "psf.ca"
+    },
+    "src-31": {
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGO7SGvZmK4XJ4YgdsTimOKiG1J1XaGH1Bje7sVeXEZGM2cZfK7Tl-RkFBifyIMbMkYOO6UxJ_S_mM4s6E9myLzKv9e_lC-YovDnSj__6FDFezc5VCJs8oT195rHkzGgAQpSinAnrbvbd1JgxqOa-HtPTnvPAEYQORo0l4qdjR3WR7ezKPnNEm529ryyJAo1B3kiTqek1yVFZuDfKHl5eEditOD4h__Da1g",
+      "domain": "personalcaremagazine.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Biodegradability:** A \"biodegradable\" claim is viewed as vague unless it specifies the **OECD 301F standard** (breaking down >60% within 28 days)."
+        }
+      ],
+      "short_id": "src-31",
+      "title": "personalcaremagazine.com"
+    },
+    "src-13": {
+      "title": "rusticstrength.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        }
+      ],
+      "short_id": "src-13",
+      "domain": "rusticstrength.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHE6B5B3qucEBn1da9MhyRR5pVPvYU0lEy-h_MDcA17WMxU8duqM-CNGYYGO0qdVhwMUFR3Sah7sFToyZPVkxRUYA-HqdgLkq_8r8fNhMsjeQQ-LUPsS7NEHdMucFaQtJWasSCNrMqn_yKwq3yAyS6PbiTs2A=="
+    },
+    "src-14": {
+      "domain": "halomiddleeast.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        }
+      ],
+      "short_id": "src-14",
+      "title": "halomiddleeast.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHYC-S4Nh8Dw_D4nt2WqI81gYupYDLgh3WbHcGRYwO4QUI0r4_Ua1hdrVr0MuUueUVUYd4V8IyBgwWZ-IkykcDT-OaEOeyyyN91CkONca3nCFnwSI4JeoJVNlbesWOu_QH6Fk3V_aKOh-nrY9eXPNLPsl790iaWvTh3v200W_qCocCe2dHiz9WHHlZlymw3t8kGPiqBxKVSW1FU9tqDdbQ="
+    },
+    "src-22": {
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHEp0T-FMrEhe1sLgCnlbWukZPr0P9kZGUcVMpLAiGMe5rYeGKOP0G2TYpIqaRI4xrf2U3TrOQCLcWOjdoVNFSdWBOMc8ky_s0PVnm4u8S6N_bP8iq1b7TwZ_KoOzXqK2RDI3Gu1cGnbhNfxZiHFtA3YOWFJU9o0zTlcq5KLLAFlEswW37bQ2H3ijsUa7uT_ckr93v0EV553XRq-9SZ4gxaRkquErpwJHEQyCV9y-4N_d5I7_zGtSs=",
+      "title": "oreateai.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Drivers include heightened awareness of \"chemical load\" and a post-pandemic obsession with hygiene that now demands \"safer\" antimicrobial solutions."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **DIY & Concentrates:** There is a surge in \"refill culture.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Drivers include heightened awareness of \"chemical load\" and a post-pandemic obsession with hygiene that now demands \"safer\" antimicrobial solutions."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **DIY & Concentrates:** There is a surge in \"refill culture.\""
+        }
+      ],
+      "short_id": "src-22",
+      "domain": "oreateai.com"
+    },
+    "src-20": {
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF9UZhhK5xHEttNfs0T4dPJt9B3_jQ_HZxnU4w3X7ej7KWZGiQHiHAtkIg18UTesZBp1G4cX3o6GQOT5bNdpl_XLDlChSl5rxkINZwvZvpwj1lL-y2zmRWifc2HoEYYHOXcBBl4EBN1HOb0",
+      "title": "noam-urim.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "In 2024 and 2025, the consumer market for sustainable cleaning is being reshaped by a move toward minimalism, \"cleaner\" formulations, and highly efficient delivery models."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "In 2024 and 2025, the consumer market for sustainable cleaning is being reshaped by a move toward minimalism, \"cleaner\" formulations, and highly efficient delivery models."
+        }
+      ],
+      "short_id": "src-20",
+      "domain": "noam-urim.com"
+    },
+    "src-5": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "This demographic is driving the push for \"clean\" ingredients and ethical sourcing."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Aesthetic & Lifestyle:** Home fragrance is now viewed as part of interior design (\"scent styling\") and self-care rituals."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This demographic is driving the push for \"clean\" ingredients and ethical sourcing."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Aesthetic & Lifestyle:** Home fragrance is now viewed as part of interior design (\"scent styling\") and self-care rituals."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This demographic is driving the push for \"clean\" ingredients and ethical sourcing."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Aesthetic & Lifestyle:** Home fragrance is now viewed as part of interior design (\"scent styling\") and self-care rituals."
+        }
+      ],
+      "short_id": "src-5",
+      "domain": "esw.com",
+      "title": "esw.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGyTyjwBeN-_4rchX6JGtjnZ2F07okGKdzLQfsDnfV893_ARrgJ62_6UMCUBTDLa_SI8ur2Q3ndA_Qd5nilgjjRCaFmqyGXivIQyWKoSQQVVzhyFb2QMP4dY7TOXNVSfJYpEl35sh_5JMVfpxEm5rIUfctnG1S08BI="
+    },
+    "src-18": {
+      "title": "freeyourself.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Cultural Relevance for Gen Z"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cultural Relevance for Gen Z"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cultural Relevance for Gen Z"
+        }
+      ],
+      "short_id": "src-18",
+      "domain": "freeyourself.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHXq-NF5HFkn_k6hcl9rSSoyTC9gtZwC8q0epMtrEw_n-Tc90akWTec8LmTIuu_mVLMgYrSw2-3iWuwwUfImc7bOF9GwUetjRE6aFZw0wmNrlPjqZ3GppY_DyUdpGk3MK44wDrgVroDakut8JJFY8qhAkpNa9pUwCWkuA=="
+    },
+    "src-4": {
+      "domain": "cornnext.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Willingness to Pay Premium:** Approximately **72% of Gen Z** consumers are willing to pay more for sustainable products."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This demographic is driving the push for \"clean\" ingredients and ethical sourcing."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Willingness to Pay Premium:** Approximately **72% of Gen Z** consumers are willing to pay more for sustainable products."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This demographic is driving the push for \"clean\" ingredients and ethical sourcing."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Willingness to Pay Premium:** Approximately **72% of Gen Z** consumers are willing to pay more for sustainable products."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This demographic is driving the push for \"clean\" ingredients and ethical sourcing."
+        }
+      ],
+      "short_id": "src-4",
+      "title": "cornnext.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFzYCvjMqXbLdhWWQeVlKjMvPnY931YUXl5Q7vF_GioCrOpnUGy4bM1OXFy2-xHguziEeWKE9glUsDIsObq7gF4_AD6WcgWXeCnCbTpgXodRQ2gj1BpqFeKUmBIDlzXvrryfoHcxNYotG3NOSkPcV4LUw5FshHvgH7pBFBqHoajdTexWaulhsjsZXuHdKpjhgNQrvlkJv4yasBY75y1_gyxMGRjmF4Ub6U3"
+    },
+    "src-8": {
+      "domain": "kadence.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Brand Accountability:** Gen Z views businesses as responsible for environmental issues, with **72%** believing companies should be held accountable for their impact."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Brand Accountability:** Gen Z views businesses as responsible for environmental issues, with **72%** believing companies should be held accountable for their impact."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Brand Accountability:** Gen Z views businesses as responsible for environmental issues, with **72%** believing companies should be held accountable for their impact."
+        }
+      ],
+      "short_id": "src-8",
+      "title": "kadence.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFtpzueKAzPCU9JNTmUw5_1Hf5eoeAILzLwkPogPGQL4Up1Erdi3wVbaG_iIVZIU6NoDR8uLPnEvMKsE9bE7ejlD4CknnutH1D8QgrP9irS3hHNWwULGd1dEmi6B4obmuS69655jrr71Uq4S8z40hRgCCVjDhfNo5t0ThhYqUBe35jZXiNr_POcq_nfch7kLeClBEDD0R31-JtRNLq1R_kIZtGhxZsr0QQPFx_E"
+    },
+    "src-3": {
+      "domain": "wonderwork.digital",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z & Eco-Friendly Consumer Behavior (2024\u20132025)"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z & Eco-Friendly Consumer Behavior (2024\u20132025)"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z & Eco-Friendly Consumer Behavior (2024\u20132025)"
+        }
+      ],
+      "short_id": "src-3",
+      "title": "wonderwork.digital",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFyeSwYmJf3G73rYS6TcyrHYxdVN0xNnG_cMQQI7OU2baSvtsYGR9kyEt_Q0fCw6umfUXp-8VSTOdWJ36dhet8zWpBY-j2EWB2hy25Q9Q6968sNPJ6EnwZNnvIqgnDw89Gcm6ip5WrEdBt65892WFOX4O_VKiI5fIjBNhOsFie46aY="
+    },
+    "src-12": {
+      "title": "decooklandscaping.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        }
+      ],
+      "short_id": "src-12",
+      "domain": "decooklandscaping.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEL-hyVnEU-esk6idka2RzsjaZsulN4bgrPI4UB82ALuUAlhwMwgDAJjxpfz2Ldlzoiw6TLIKjA8R0aF8NH9ERiVnUghs2ttHaCkvE7puvd20GA62FZlBfwG5owGWTVz1pBVZpjBhw="
+    },
+    "src-10": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Mood-Enhancing Benefits:** Scents are increasingly marketed for emotional well-being."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Aesthetic & Lifestyle:** Home fragrance is now viewed as part of interior design (\"scent styling\") and self-care rituals."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Mood-Enhancing Benefits:** Scents are increasingly marketed for emotional well-being."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Aesthetic & Lifestyle:** Home fragrance is now viewed as part of interior design (\"scent styling\") and self-care rituals."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Mood-Enhancing Benefits:** Scents are increasingly marketed for emotional well-being."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Aesthetic & Lifestyle:** Home fragrance is now viewed as part of interior design (\"scent styling\") and self-care rituals."
+        }
+      ],
+      "short_id": "src-10",
+      "domain": "oand3.com",
+      "title": "oand3.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF2aFHhPinTp7cZ6hEXGwRUOMna5n_m9OPbsVwrmyEWxi7kcs9RVoYOYsk6WWi8Nm7r0lQneAk4PWOZVm6eogE1seqXKwhkOb44jTEbZiEGl4JD6xSwgyBKu2hY7CnWDRzj1OJvJQ0lT23WoCZIjzd8EiCGHr3bjuD_S1yhbOi_S6cq8Ebm_fWuUPgjZEeIR1iy_B4fq48="
+    },
+    "src-29": {
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEvUtfgLMxWNc7iUNppw4ubcsA1vPXfzV3G7Xz-IGWVKayVEdIy6E4C3cZuCru4CXeIVRtzb8x4TpPaexvbVz64mXSo51xm6ZkvbK7_fbdNX0J_fUOVvI4NAwGBeII2VoMugNgcI_pgNuo=",
+      "title": "odowell.com",
+      "domain": "odowell.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Longevity Gaps:** Natural floral scents typically last **4\u20138 hours**."
+        }
+      ],
+      "short_id": "src-29"
+    },
+    "src-24": {
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHIhOtFP13yrzd-qGAXevS6reBlNMnFSwb7ozmbzQMNG0CX5xLrxgwsi6cExzLnRzsnpJOu7hp1AgUcKVaO2m8N38ctaguZFNscrmMzOfmP46HzwFws_LNgrZFvXJnWHrVV5uME39w5agskUJsOp9msz4eG1MIc-P9ccp17SaqCTRvaWkf-3zSDTrP7ZDdL07d0GlV1idq1ndU--EmRF8Li97B7wgSEc88Us8dbJX13USPbanPHZ7ZbKaM5Jhx7GXteMogs-DFsp4aqBmo9lc6XCH_POiL0zjTnDW6M",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Approximately **65% of buyers** are willing to pay a premium for recyclable or refillable packaging."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Approximately **65% of buyers** are willing to pay a premium for recyclable or refillable packaging."
+        }
+      ],
+      "short_id": "src-24",
+      "domain": "zigpoll.com",
+      "title": "zigpoll.com"
+    },
+    "src-7": {
+      "title": "innovamarketinsights.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "This demographic is driving the push for \"clean\" ingredients and ethical sourcing."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This demographic is driving the push for \"clean\" ingredients and ethical sourcing."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "This demographic is driving the push for \"clean\" ingredients and ethical sourcing."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cleaning Efficacy vs. Plant-Based Ingredients"
+        }
+      ],
+      "short_id": "src-7",
+      "domain": "innovamarketinsights.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF7d1HtiQEIMv_mPJEYwh8CgzqLSZzO7N59rWZ81s4OeBvp6eCjQDfaqr4virsswZ7oj88BIGn0HHpdqcwIUQM9MNFItTxqjgqWRQ4TxFm7PwOtUcuRT2-8AZm9ugVGCummds7r8j-XkZZQnC5FONgoQ8RJxlxaiRv-qKtQ-Z_OG9o="
+    },
+    "src-1": {
+      "title": "shorr.com",
+      "domain": "shorr.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z & Eco-Friendly Consumer Behavior (2024\u20132025)"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Sustainable Packaging Demand:** Over half of Gen Z (**56%**) consciously chose products with sustainable packaging in the last six months."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z & Eco-Friendly Consumer Behavior (2024\u20132025)"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Sustainable Packaging Demand:** Over half of Gen Z (**56%**) consciously chose products with sustainable packaging in the last six months."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z & Eco-Friendly Consumer Behavior (2024\u20132025)"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Sustainable Packaging Demand:** Over half of Gen Z (**56%**) consciously chose products with sustainable packaging in the last six months."
+        }
+      ],
+      "short_id": "src-1",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGVBeVJr_6E10Ym-b9Y6rU0y8DleguxGmhWUV4yv8eOyzFeTecL537L88Xu_0TQewq4mOeOw1NZROdR9BGhTJM_MO-OIv33DxRt1yspoKyp7i3L3V-yYOG-AviupHFvLU95hO7sYG0pP2yb28HLtGYoXn73qpyHDLeAHluaPPKhRRz8QjnWpQ=="
+    },
+    "src-27": {
+      "title": "mbacasecomp.com",
+      "domain": "mbacasecomp.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Blueland** focuses on a \"pioneer refill\" system (tablets/powders) to eliminate plastic entirely."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Blueland** focuses on a \"pioneer refill\" system (tablets/powders) to eliminate plastic entirely."
+        }
+      ],
+      "short_id": "src-27",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQETe8WLyGJkVY4NA51iLqTtYnO3upJd3hGxPjLyrBrsepwwCnUxwuslhytOlXOlLl-_6vFVidSUEhFJS3w97kQNw-2x6ZRrt1V_6GSp3etC4LLdsrv-YEd_xIThEuTtaLTZHbJSm_BpankxMUIM47DBWzmT8pBenQDpRuV87M6EyGg="
+    },
+    "src-17": {
+      "title": "givz.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Silk\u2019s \"Eco-Anxiety Counseling\":** Addressed consumer emotions directly through influencer partnerships."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Silk\u2019s \"Eco-Anxiety Counseling\":** Addressed consumer emotions directly through influencer partnerships."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Silk\u2019s \"Eco-Anxiety Counseling\":** Addressed consumer emotions directly through influencer partnerships."
+        }
+      ],
+      "short_id": "src-17",
+      "domain": "givz.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGflPxhnAQO7fRXbQcajjRVtXtjvOPQIvg3VeLiO7ZuZUTvfl768PmMfHy3375oJgVotZ9EohDS9yy4P8p8sK7IoJ5__S9fZQhi3aaEQELF7vqNKtVXAagZ74sSTF5Ca5vL9aMne6eCnHK20o8fG_s9TvbCGCs="
+    },
+    "src-23": {
+      "title": "oreateai.com",
+      "domain": "oreateai.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Low-Waste Loyalty:** Consumers are increasingly moving away from single-use plastics."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **DIY & Concentrates:** There is a surge in \"refill culture.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Blueland** focuses on a \"pioneer refill\" system (tablets/powders) to eliminate plastic entirely."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Grove Collaborative** acts as a curated marketplace, offering a holistic sustainable lifestyle by vetting multiple \"clean\" brands for the consumer."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Low-Waste Loyalty:** Consumers are increasingly moving away from single-use plastics."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **DIY & Concentrates:** There is a surge in \"refill culture.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Blueland** focuses on a \"pioneer refill\" system (tablets/powders) to eliminate plastic entirely."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Grove Collaborative** acts as a curated marketplace, offering a holistic sustainable lifestyle by vetting multiple \"clean\" brands for the consumer."
+        }
+      ],
+      "short_id": "src-23",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQENhbbhjfZcowp9hMVjEHaGS_EDW-XYYPmNSV55gCzLooZ6U249JjHjC02K1a_kFfywkmScMahxmbMBWyaP4IPI182s5Y_qFFpKlns5o0zaYicmfyTMSV8MevnONKkbdGzo8G7NDXsc2hz8bAqOEHITp_vcKLa2h5VHj9W_I51bYY6tl-F-3yoh4XzRAy9W8S-qImazv5e5ILIQpqnob7KgkBZ3sAn4hR2n_Yhv6VAsagNYzwP67e-2BPQ="
+    },
+    "src-28": {
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH5PM8bVJIJRtAaYA32HQhxpUEDo8kYUsoz13f_RkzqyvgBw-PNN60fEK-FQvETNfwRfco_sV1MHzFudraVnod6dx-eNd2ZwkbLOMocAFrEFR0Z4m6zxgedwHoZf-xdwf_KFnvB0U5xAsRjOfiuCu9_KZjAY53bqvc=",
+      "title": "karensgreencleaning.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Method (The Performance Challenger):** Positioned as \"science-meets-minimalism.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Mrs. Meyer\u2019s (The Scent Specialist):** Dominates the \"garden-inspired\" niche with heavy use of essential oils."
+        }
+      ],
+      "short_id": "src-28",
+      "domain": "karensgreencleaning.com"
+    },
+    "src-21": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Market Growth & Drivers:** The global natural household cleaners market is projected to grow from **$6.97 billion in 2024 to $13.28 billion by 2030** (11.3% CAGR)."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Market Growth & Drivers:** The global natural household cleaners market is projected to grow from **$6.97 billion in 2024 to $13.28 billion by 2030** (11.3% CAGR)."
+        }
+      ],
+      "short_id": "src-21",
+      "domain": "grandviewresearch.com",
+      "title": "grandviewresearch.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGwUAWm5F_tSHwekSnE5Smqxsu80SQxkDbWdu14u2XDnuonac405URilynnEGf0QEBxDQ9aGmN-Tazo2sMmZG5M0mEUlH4JEITiWnZKs54hicf8MzR14pMyemEvH3ifcLKDsdcTewBarAOgUodNvvMng1_HqTFix9Krmq7IRJ33phkZY3SaTXrgSS7jm04l9XQ="
+    },
+    "src-9": {
+      "title": "foreverest.net",
+      "domain": "foreverest.net",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Biophilic Authenticity:** Consumers are moving away from generic \"fresh\" scents toward \"biophilic\" fragrances that mimic nature."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "While citrus and herbal blends currently lead, there is a rising demand for **\"wild florals\"** and botanical notes that provide a sense of natural escapism."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Mood-Enhancing Benefits:** Scents are increasingly marketed for emotional well-being."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Biophilic Authenticity:** Consumers are moving away from generic \"fresh\" scents toward \"biophilic\" fragrances that mimic nature."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "While citrus and herbal blends currently lead, there is a rising demand for **\"wild florals\"** and botanical notes that provide a sense of natural escapism."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Mood-Enhancing Benefits:** Scents are increasingly marketed for emotional well-being."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Biophilic Authenticity:** Consumers are moving away from generic \"fresh\" scents toward \"biophilic\" fragrances that mimic nature."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "While citrus and herbal blends currently lead, there is a rising demand for **\"wild florals\"** and botanical notes that provide a sense of natural escapism."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Mood-Enhancing Benefits:** Scents are increasingly marketed for emotional well-being."
+        }
+      ],
+      "short_id": "src-9",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGiEDEEkuvCrtpxZ8mexEmxafzQZChgLfT_kTC_FnOhi3SgnsUmzhHAkvRFbCJTfkTWId9itM8d17Yhm7UwRwGqksW975hLZvYav_yikpr3lr6PkEtt1c7XanEBqJAARiibave_XJ2mSBFzcm4EUSeQj19_w5Lq_aJq85xCQPaFj8rzfaJ7IlzbQFQ6ThVsSXXtdRu8UKLUDb4rwP615N8="
+    },
+    "src-19": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Cultural Relevance for Gen Z"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cultural Relevance for Gen Z"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Cultural Relevance for Gen Z"
+        }
+      ],
+      "short_id": "src-19",
+      "domain": "houseofevorah.com",
+      "title": "houseofevorah.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHhg_AD50cN0y_wZOfAF2NTAKPjmtsokJRkxuETEjZamlLcIni_uFv9vP98JTLIiWve9CkGPImaNx0PMIwNpdBPrGAryz-_BI3EPdFRqDU4g-n_LJppyup8H4Wr1jysYEOPuhoFwbXgv62GlwN0wyQRz40XNVLO9RIl0Qww3lYIMNA-Qv06X2ay-VLMXUlo510vJcckuSPe3CxAtys9nw=="
+    },
+    "src-26": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Subscription Dominance:** Subscriptions for eco-cleaners increased by **27% year-over-year in 2025**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Brands like **Blueland** and **Grove Collaborative** lead this space by offering the convenience of recurring deliveries combined with carbon-neutral shipping."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Subscription Dominance:** Subscriptions for eco-cleaners increased by **27% year-over-year in 2025**."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Brands like **Blueland** and **Grove Collaborative** lead this space by offering the convenience of recurring deliveries combined with carbon-neutral shipping."
+        }
+      ],
+      "short_id": "src-26",
+      "domain": "marketresearchfuture.com",
+      "title": "marketresearchfuture.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHDTUBa1gPcxllhUzB0A1WvJvZZ5nqzIcFD0Bz84ZjGb-y7njtf7aFOZfpEZnPKZjkl5Zli1-JixZn4ws-ElRZ1lTc4K_LvwThm8z59vatutttbpfw2bPSJDVUd3PSU0B8XP-Qhr60wMzIpXzedTxOgWAtH2947RerQ7gPwNuqjZ9iTLaakMF4b37viS-fzvzsHH3MxTgHZtdmmfjv9VR0a-Wl02GVhTa36bN3g"
+    },
+    "src-2": {
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z & Eco-Friendly Consumer Behavior (2024\u20132025)"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z & Eco-Friendly Consumer Behavior (2024\u20132025)"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Gen Z & Eco-Friendly Consumer Behavior (2024\u20132025)"
+        }
+      ],
+      "short_id": "src-2",
+      "domain": "accio.com",
+      "title": "accio.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQF_BG7USA_D_h_0BnR4QWQRWvyz5zOz7KwoOeQJuJdVTsrC91FBd-NoHsfsoiyfwqYVUFtEj5yto-QkC5_d53YCulZcqnO2fr3ZZ3y7zxEUmfmt4n0QT1S0CIktUr0BRnhI5FXFprzTmQT5fWd7ph1j06vRnzCvZs4YHUV_Mw=="
+    },
+    "src-11": {
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE_4X7jLcM4ko5VgrmAsauRQvfNqyEpY_1PSdk7wsrICJjYnaK6-oACQsJEFmwd9EjTwQq9GE2fN7GkTBQtBPuiCFi1Z_yd4I9prRGJAhmQwzFKgV-rVrzGQqD7OYn7w_str3xHeWhwDZ63-Tpf3Fnal8QFmAnV12sqe5LRtmn6FIcW94b6jheqiN7PZuQvB4Y6RA==",
+      "domain": "essexlive.news",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Experimental Olfaction:** Unlike older generations who stick to familiar scents, Gen Z is more experimental."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Experimental Olfaction:** Unlike older generations who stick to familiar scents, Gen Z is more experimental."
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Experimental Olfaction:** Unlike older generations who stick to familiar scents, Gen Z is more experimental."
+        }
+      ],
+      "short_id": "src-11",
+      "title": "essexlive.news"
+    },
+    "src-25": {
+      "title": "quad.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **DIY & Concentrates:** There is a surge in \"refill culture.\""
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **DIY & Concentrates:** There is a surge in \"refill culture.\""
+        }
+      ],
+      "short_id": "src-25",
+      "domain": "quad.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFh4S9qFQDZI3NjvbxnmfXGVrvkbblAjYbpp5W5B9X_uLVkqpsHVK_RhkWTD8PVr1R1W_uTwAwQyNF4LxjOu9eZddambR6YAI4cWjLHOI82S5CyI1GBGHtQ-IEi17ZpD6GnO8ZeSbPBOCVz1OrGHOPt-rP0NfnYlgS_Tdrz8-ISZNyWjT_6bc_mSB2nzVEiQ4IqDxR1jgJhpRem8WNE79W6h3BVqeNWV3p2j-NGTtje8ABTLIiRs060EeSj5OE="
+    },
+    "src-16": {
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFR2sfV3DLRVTHEsYoOdlsfoSuR1HBvQMKiJXIZasROUmKhqtpuxjMhJvHIMOmfW2C2td8FM6tkof15jSR_PpWdEjhWrKe_LVZNnMPBkcc7s983UYxbNZhIBiVOO-eh9Q8LDH2ng_ygyxbSJ8UycKPcp0K2Tw9mZBhWZfKkIdntpI7QqtLLuwXTDWjz4pKPYS8rGqeCxd6RiaKGcB9uRqWDvEfmVb01TCOH",
+      "title": "justgreenorganic.co.uk",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "*   **Plant-Based Performance:** Modern plant-based softeners (often using coconut, palm, or cotton seed derivatives) are marketed as **\"fi

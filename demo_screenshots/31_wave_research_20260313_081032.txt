@@ -1,0 +1,13 @@
+[root_agent]: Running market research pipeline...
+[research_orchestrator]: Running parallel research (YouTube, Search, Campaign)...
+[campaign_web_planner]: 1. Gen Z consumer behavior and preferences for sustainable laundry products and plant-based fabric softeners.
+2. Market trends for hibiscus and floral scents in eco-friendly household goods and personal care.
+3. Effectiveness of biodegradable packaging vs. plant-based formulas in driving purchase decisions for eco-conscious Gen Z.
+4. Culturally relevant Gen Z marketing strategies for sustainable home care brands focusing on scent and freshness.
+5. Consumer reviews and pain points regarding scent longevity in eco-friendly fabric softeners.
+6. Latest Gen Z aesthetic trends related to sustainability and "clean" living to inform creative advertising for laundry products.
+[gs_web_planner]: 1. What are the primary cultural and economic drivers behind the recent surge in interest for sustainable laundry solutions, and how do these factors differ across different generational cohorts like Gen Z and Millennials?
+2. Who are the key influencers, environmental organizations, and innovative brands currently leading the conversation around plastic-free and non-toxic cleaning, and what specific claims or certifications are most influential to consumers?
+3. How does the "Sustainable Laundry" trend intersect with broader lifestyle movements such as zero-waste living, minimalist home aesthetics, and the push for energy efficiency in the household?
+4. What are the specific environmental concerns driving this trend—such as microplastic shedding from synthetic fabrics or the impact of phosphates on water systems—and how are these being addressed by new product innovations?
+5. Describe the relationship between the rising cost of living and the adoption of eco-friendly laundry habits, such as cold-water washing and air-drying, and how brands are positioning "sustainability" as a cost-saving measure.

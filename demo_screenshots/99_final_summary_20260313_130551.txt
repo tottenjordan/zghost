@@ -1,0 +1,18 @@
+
+============================================================
+E2E DEMO RESULTS (CampaignOrchestrator) - 20260313_130551
+============================================================
+  Engine ID: 8788263399906607104
+  Session ID: 5281379446891216896
+  Duration: 21.4 minutes
+  Campaign: Tide Fabric Softener (Hibiscus) for Gen Z
+
+  Research report: 4195 chars PASS
+  Images: 1 FAIL
+  Videos: 0 FAIL
+  15s Commercial: FAIL
+  Focus Group: FAIL
+  Final report: 0 chars FAIL
+
+  OVERALL: FAIL
+============================================================

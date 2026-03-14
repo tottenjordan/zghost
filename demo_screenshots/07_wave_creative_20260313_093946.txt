@@ -1,0 +1,40 @@
+[root_agent]: Running creative production pipeline (ad copy, visuals, commercial)...
+[creative_production_orchestrator]: Generating ad copy and visual creatives...
+[ad_content_generator_agent]: ### **Draft Creative Brief for Tide Hibiscus Campaign**
+
+I have selected the top two ad ideas for the Tide Fabric Softener with Hibiscus Scent campaign. These are designed to bridge the gap between Tide's legendary performance and the "Eco-Pragmatist" audience's demand for botanical purity and sustainable results.
+
+---
+
+### **Ad Idea 1: The Sunday Reset Ritual**
+*   **Ad Copy:**
+    *   **Headline:** Reset Your Space. Reset Your Mind.
+    *   **Body Text:** Transforming laundry from a chore into a sensory reset. Our Hibiscus softener combines plant-based purity with the performance only Tide delivers. Experience a 27% reduction in cleaning stress with a botanical scent that actually lasts.
+    *   **Call-to-Action:** Elevate Your Sunday Reset.
+    *   **Social Media Caption:** Sunday resets just hit different when your laundry room smells like a botanical garden. 🌺✨ Plant-based, Tide-approved. #SundayReset #TideHibiscus #CleanAesthetic
+*   **Visual Concept (Video + Keyframe Image):**
+    *   **Name:** The Ritual of Release
+    *   **Creative Concept:** An "Eco-Romantic" ASMR video focusing on the psychological benefits of cleaning.
+    *   **Imagen (Keyframe) & Veo (Video) Prompt:** A thick, viscous pink liquid being poured into a sleek, white ceramic laundry dispenser in a sun-drenched, minimalist laundry room. Includes a time-lapse of a vibrant hibiscus flower unfolding.
+*   **Trend Alignment:** YouTube "Eco Cleaning Hacks" (Sunday Reset/Self-care rituals) and the "CleanTok" aesthetic.
+*   **Rationale:** Taps into the multi-billion view "Sunday Reset" trend and uses research-backed data on stress reduction to position the product as a wellness ritual.
+
+---
+
+### **Ad Idea 2: The Activewear Breakthrough**
+*   **Ad Copy:**
+    *   **Headline:** Softness That Lets Your Leggings Breathe.
+    *   **Body Text:** Traditional softeners clog moisture-wicking fibers. Our non-ionic, plant-based formula lubricates your favorite gym gear without ruining the tech. Keep your "drip" fresh and your performance peak.
+    *   **Call-to-Action:** Shop Activewear-Safe.
+    *   **Social Media Caption:** Yes, you *can* use softener on your gym fits. 🧘‍♀️ Non-ionic technology = soft leggings that still wick sweat. Bet. #GymFit #LaundryHacks #ActivewearCare
+*   **Visual Concept (Image + Video):**
+    *   **Name:** The Breathable Fiber
+    *   **Creative Concept:** A "Tech Wellness" macro-visual showcasing the intersection of high-performance gear and botanical care.
+    *   **Imagen (Keyframe) & Veo (Video) Prompt:** Macro photography of high-performance black yoga leggings showing moisture-wicking fiber texture. A single, dew-kissed pink hibiscus flower lies elegantly across the fabric with cinematic "Tech Wellness" lighting.
+*   **Trend Alignment:** Search Trends for "Sustainable Laundry" (Technical performance/Non-ionic solutions) and "Activewear care."
+*   **Rationale:** Solves a major pain point for Gen Z (softener ruining gym clothes) while highlighting Tide's technical superiority in a visually stunning way.
+
+---
+
+**Do you approve of these two ideas, or would you like any changes before I generate the final images and videos?**
+[creative_production_orchestrator]: Producing commercial in AV editing studio...

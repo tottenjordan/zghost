@@ -3,7 +3,7 @@
 > A multi-agent marketing intelligence system that transforms real-time cultural trends into broadcast-ready advertising campaigns — from research to finished commercial — in under 15 minutes.
 
 <p align="center">
-  <img src='functional_architecture_diagram.png' width="800"/>
+  <img src='docs/pipeline_stages.png' width="800"/>
 </p>
 
 ## What It Does
@@ -21,37 +21,20 @@ The entire pipeline runs autonomously on [Vertex AI Agent Engine](https://cloud.
 ## Architecture
 
 <p align="center">
-  <img src='gcp_architecture_diagram.png' width="800"/>
+  <img src='docs/functional_architecture_diagram.png' width="800"/>
+</p>
+
+### GCP Architecture
+
+<p align="center">
+  <img src='docs/gcp_architecture_diagram.png' width="800"/>
 </p>
 
 > Architecture diagrams are being actively updated — see `docs/` for the latest versions.
 
 ### Pipeline Stages
 
-```
-CampaignOrchestrator (BaseAgent state machine)
-│
-├── TRENDS       → trends_and_insights_agent
-│                  Surfaces Google Search + YouTube trends, captures selections
-│
-├── RESEARCH     → research_orchestrator
-│                  Parallel research (YT + Search + Campaign), memory recall,
-│                  quality evaluation, cited report generation
-│
-├── CREATIVE     → CreativeProductionOrchestrator
-│   ├── AD_CREATIVE    → Ad copy draft-critique + visual concept draft-critique-finalize
-│   ├── IMAGE_GEN      → Deterministic image generation (Gemini 3 Pro)
-│   ├── AV_STUDIO      → 15s commercial via Veo 3.1 with first-frame conditioning
-│   └── COMMERCIAL_QA  → Gecko fidelity scoring + Gemini video analysis
-│
-├── FOCUS_GROUP  → focus_group_evaluator_agent
-│                  3-person panel simulation with portrait generation,
-│                  6-category weighted scoring, Go/No-Go recommendation
-│
-├── SAVE_REPORT  → PDF generation with all assets
-│
-└── COMPLETE
-```
+![Campaign Pipeline Stages](docs/pipeline_stages.png)
 
 ### Models & Services
 
@@ -99,7 +82,8 @@ gcloud services enable \
     secretmanager.googleapis.com \
     youtube.googleapis.com \
     texttospeech.googleapis.com \
-    run.googleapis.com
+    run.googleapis.com \
+    discoveryengine.googleapis.com
 ```
 
 ### 3. Create YouTube API key
@@ -172,13 +156,23 @@ uv run python e2e_demo_runner.py
 
 ### Publish to Gemini Enterprise
 
-After deploying to Agent Engine, register with Gemini Enterprise (Agentspace):
+After deploying to Agent Engine, register with Gemini Enterprise (Discovery Engine):
 
 ```bash
-./publish_to_agentspace_v2.sh --action create --config agent_config.json
+# Register agent with GE (reads engine ID from deployment_info.json)
+source trends_and_insights_agent/.env
+uv run python deploy_to_ae.py --step gemini-enterprise
 ```
 
-See the Agentspace section below for full CLI options.
+Or deploy everything in one command:
+
+```bash
+# Deploy to Agent Engine + register with GE
+source trends_and_insights_agent/.env
+uv run python deploy_to_ae.py --step all --update
+```
+
+The GE agent ID is saved to `deployment_info.json` for use by tests and the streamAssist API.
 
 ## Agent Engine Observability
 
@@ -201,83 +195,60 @@ End-to-end distributed tracing with span-level detail for each pipeline stage.
 
 ## Project Structure
 
-```
-zghost/
-├── trends_and_insights_agent/     # Main agent module
-│   ├── orchestrator.py            # CampaignOrchestrator (top-level state machine)
-│   ├── agent.py                   # Agent wiring and sub-agent definitions
-│   ├── common_agents/
-│   │   ├── ad_content_generator/
-│   │   │   ├── creative_orchestrator.py  # Creative pipeline state machine
-│   │   │   ├── agent.py                  # Ad copy + visual concept agents
-│   │   │   └── tools.py                  # Image/video gen, Gecko fidelity
-│   │   └── market_research/
-│   │       ├── agent.py                  # Research pipeline agents
-│   │       └── tools.py                  # Memory recall, report save
-│   ├── skills/
-│   │   ├── av_studio/                    # Commercial production (Veo + audio)
-│   │   └── focus_group/                  # Focus group evaluation
-│   └── shared_libraries/
-│       ├── config.py                     # Model configuration
-│       ├── callbacks.py                  # Status callbacks, rate limiting
-│       └── fidelity_eval/                # Gecko image fidelity scoring
-├── e2e_demo_runner.py             # Agent Engine E2E test runner
-├── deploy_to_ae.py                # Agent Engine deployment script
-├── deployment_info.json           # Current engine ID and project info
-├── docs/
-│   ├── CAPABILITIES.md            # Detailed capability documentation
-│   ├── agent_engine_screenshots/  # AE dashboard screenshots
-│   ├── NOVASTORM.md               # Skill self-reflection system design
-│   └── NOVASTORM_INTEGRATION.md   # NovaStorm integration guide
-├── functional_architecture_diagram.png
-├── gcp_architecture_diagram.png
-└── CLAUDE.md                      # Claude Code development instructions
-```
+![Project Structure](docs/project_structure.png)
 
 ## Autopilot Mode
 
 Set `autopilot_mode: true` in session state to run the full pipeline end-to-end without user confirmations — from trend selection through finished commercial and focus group evaluation. The E2E runner uses this mode by default.
 
-## Agentspace CLI Reference
+## Gemini Enterprise Integration
 
-Manage the agent in Gemini Enterprise (Agentspace):
+The agent is accessible through Gemini Enterprise (Discovery Engine) via the `streamAssist` API. GE provides an enterprise chat interface with thinking visualization, status chips, and artifact display.
+
+### How It Works
+
+1. **Agent Engine deployment** creates a Vertex AI Reasoning Engine (`8788263399906607104`)
+2. **GE registration** creates an agent entry in the Discovery Engine that routes to the reasoning engine
+3. **streamAssist API** sends user queries through GE, which delegates to the ADK agent via `agentsSpec`
+
+### Key IDs (from `deployment_info.json`)
+
+| ID | Purpose |
+|----|---------|
+| `engine_id` | Agent Engine (Reasoning Engine) ID |
+| `ge_engine` | Discovery Engine app ID |
+| `ge_agent_id` | GE agent ID (routes to reasoning engine) |
+
+### streamAssist API
 
 ```bash
-# Create
-./publish_to_agentspace_v2.sh --action create --config agent_config.json
+TOKEN=$(gcloud auth print-access-token)
 
-# Update
-./publish_to_agentspace_v2.sh --action update --config agent_config.json
+curl -s -X POST \
+  "https://global-discoveryengine.googleapis.com/v1alpha/projects/PROJECT_NUMBER/locations/global/collections/default_collection/engines/GE_ENGINE/assistants/default_assistant:streamAssist" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": {"text": "Create a campaign for Tide Fabric Softener"},
+    "agentsSpec": {"agentSpecs": [{"agentId": "GE_AGENT_ID"}]},
+    "session": "projects/PROJECT_NUMBER/locations/global/collections/default_collection/engines/GE_ENGINE/sessions/-"
+  }'
+```
 
-# List
-./publish_to_agentspace_v2.sh --action list --config agent_config.json
+**`agentsSpec` is required** — without it, GE answers with generic Gemini knowledge instead of routing to the ADK agent. Use `sessions/-` to auto-create a new session.
+
+### Manage GE Agents
+
+```bash
+# List registered agents
+uv run python -m deploy.register_gemini_enterprise list --from-deployment-info
+
+# Register (idempotent — skips if exists)
+uv run python -m deploy.register_gemini_enterprise register --from-deployment-info
 
 # Delete
-./publish_to_agentspace_v2.sh --action delete --config agent_config.json
+uv run python -m deploy.register_gemini_enterprise delete --agent-id AGENT_ID --from-deployment-info
 ```
-
-<details>
-<summary>CLI options</summary>
-
-```
-Usage: ./publish_to_agentspace_v2.sh [OPTIONS]
-
-Options:
-  -a, --action <create|update|list|delete>  Action to perform (required)
-  -c, --config <file>              JSON configuration file
-  -p, --project-id <id>            Google Cloud project ID
-  -n, --project-number <number>    Google Cloud project number
-  -e, --app-id <id>                Agent Space application ID
-  -r, --reasoning-engine <id>      Reasoning Engine ID
-  -d, --display-name <name>        Agent display name
-  -s, --description <desc>         Agent description
-  -i, --agent-id <id>              Agent ID (for update/delete)
-  -t, --instructions <text>        Agent instructions
-  -u, --icon-uri <uri>             Icon URI
-  -l, --location <location>        Location (default: us)
-```
-
-</details>
 
 ## Video Walkthrough
 
@@ -290,3 +261,7 @@ Options:
 - [Capability Overview](docs/CAPABILITIES.md) — detailed breakdown of each pipeline stage with tools, models, and business value
 - [NovaStorm Design](docs/NOVASTORM.md) — skill self-reflection and evolution system
 - [NovaStorm Integration](docs/NOVASTORM_INTEGRATION.md) — how to wire NovaStorm into the pipeline
+- [Skill Critic Agent](docs/skill_critic.md) — scores skill outputs using GEPA
+- [Research Pipeline Orchestrator](docs/staged_researcher.md) — deterministic research pipeline
+- [Trends & Insights Agent](docs/trend_assistant.md) — captures metadata and fetches trends
+

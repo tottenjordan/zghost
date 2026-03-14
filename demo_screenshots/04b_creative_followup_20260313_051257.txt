@@ -1,0 +1,39 @@
+[visual_concept_drafter]: Based on the current 2026 search trends toward **"Dark Mode" living**, the rise of the **"Brain Rot"** conversation regarding digital overstimulation, and the YouTube trend of **native multimodal AI assistance (Gemini)**, here are three visual concepts designed for your organic energy drink campaign.
+
+These concepts bridge the gap between "wellness as a status" and the high-tech, AI-driven environment of the modern high-performer.
+
+### Visual Concept 1: The Bio-Hacker’s Botanical Sanctuary
+*   **Type:** Image
+*   **Relates to Trends:** Prioritizing Prevention, Nature-Inspired "Distilled" Aesthetics.
+*   **Connects to Ad Copy:** *The Clean Energy Revolution* ("Pure Energy. No Compromise.")
+*   **Creative Concept:** This concept uses the "Bio-Hacker" design trend—moving away from aggressive energy drink branding toward pharmaceutical-grade minimalism. It positions the drink as a sophisticated tool for mental clarity, set in a peaceful, natural office environment that embodies the "Distilled" aesthetic of 2026.
+*   **Gemini-3-Pro-Image-Preview Prompt:** 
+    > A professional high-end lifestyle photograph of a sleek organic energy drink can on a minimalist recycled oak desk. The can is matte white with a central, shimmering holographic embossed green leaf logo that catches the morning sun. In the background, a "living office" with lush blurred monstera leaves and soft, warm sunlight streaming through a window. The atmosphere is calm, clean, and premium. Shallow depth of field, 8k resolution, photorealistic, distilled aesthetic.
+
+---
+
+### Visual Concept 2: The Neural Flow Reset
+*   **Type:** Video (8 seconds)
+*   **Relates to Trends:** Brain Rot, YouTube: Native Multimodal AI (Assistant vibe), Functional Consumption.
+*   **Connects to Ad Copy:** *The Peak Performance Flow* ("Fuel Your Flow, Not Your Burnout.")
+*   **Creative Concept:** A "visual metaphor" for overcoming "Brain Rot." It shows the transition from a chaotic, multi-window digital overwhelm to a state of clear "neural flow" using cinematic, AI-inspired visual effects. It mimics the feel of an AI assistant "organizing" a user's mind.
+*   **Veo-3.1-Fast-Generate-001 Prompt:**
+    > <SUBJECT> A young creative professional with tired eyes sitting at a desk in a dark moody studio. </SUBJECT>
+    > <ACTION> The character is surrounded by frantic, glitching holographic screens representing 'brain rot'. They take a slow, intentional sip of an organic energy drink with a glowing indigo rim. As they exhale, the glitches instantly transform into calm, fluid, golden neural lines that orbit gracefully around their head. </ACTION>
+    > <SCENE_AND_CONTEXT> A high-tech 'Dark Mode' home office. The lighting shifts from a harsh blue digital flicker to a warm, vibrant amber glow. </SCENE_AND_CONTEXT>
+    > <CAMERA_ANGLE> Close-up on the character's face, transitioning to a slow dolly out to a medium shot as the chaos settles into flow. </CAMERA_ANGLE>
+    > <VISUAL_STYLE_AND_AESTHETICS> Cinematic film look, high-contrast, bioluminescent effects, sophisticated tech-noir palette. SUPPRESS SUBTITLES. </VISUAL_STYLE_AND_AESTHETICS>
+
+---
+
+### Visual Concept 3: The Offline Luxury
+*   **Type:** Video (8 seconds)
+*   **Relates to Trends:** Dark Mode Living Subculture, "Standing on Business" (integrity/intent), H2H Authenticity.
+*   **Connects to Ad Copy:** *The Clean Energy Revolution* ("Energy that aligns with your wellness.")
+*   **Creative Concept:** This targets the "Dark Mode" living subculture—Gen Z’s rebellion against 24/7 connectivity. It uses the "Human-to-Human" (H2H) trend, favoring raw, analog textures (35mm film) over digital perfection. It frames the drink as a companion for "offline" recovery and focused hobbyism.
+*   **Veo-3.1-Fast-Generate-001 Prompt:**
+    > <SUBJECT> A person with a calm, focused expression in a dimly lit, cozy library-style room. </SUBJECT>
+    > <ACTION> They firmly close a laptop, 'standing on business' by ending the workday. They reach for an unpainted aluminum energy drink can. When they crack it open, a subtle, ethereal green mist (organic essence) curls into the air. They lean back and open a thick physical book. </ACTION>
+    > <SCENE_AND_CONTEXT> Interior 'Dark Mode' setting at night. Warm flickering candlelight and a crackling fireplace in the background provide the only light. </SCENE_AND_CONTEXT>
+    > <CAMERA_MOVEMENTS> A slow, cinematic pan left, following the hand from the closed laptop to the refreshing drink. </CAMERA_MOVEMENTS>
+    > <VISUAL_STYLE_AND_AESTHETICS> 35mm black and white film aesthetic with heavy grain and raw authenticity. High-contrast lighting. Feels like an intimate, analog moment. SUPPRESS SUBTITLES. </VISUAL_STYLE_AND_AESTHETICS>

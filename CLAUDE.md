@@ -55,7 +55,7 @@ uv run python e2e_demo_runner.py
 
 ```
 CampaignOrchestrator (BaseAgent) — orchestrator.py
-  TRENDS      → trends_and_insights_agent
+  TRENDS      → deterministic (autopilot) OR trends_and_insights_agent (interactive)
   RESEARCH    → research_orchestrator (SequentialAgent)
   CREATIVE    → CreativeProductionOrchestrator (BaseAgent) — creative_orchestrator.py
                   AD_CREATIVE   → ad_content_generator_agent
@@ -103,7 +103,7 @@ Required in `trends_and_insights_agent/.env`:
 
 ## Important Patterns
 
-1. **Deterministic Orchestration**: Top-level orchestrators are BaseAgent (not LLM) — check session state keys to decide next stage
+1. **Deterministic Orchestration**: Top-level orchestrators are BaseAgent (not LLM) — check session state keys to decide next stage. TRENDS stage is deterministic in autopilot mode (direct BigQuery + YouTube API calls, no LLM); interactive mode still uses LLM trends agent
 2. **State Persistence on AE**: Use `event.actions.state_delta["key"] = value` — direct `state["key"] = value` does NOT persist across AE invocations
 3. **Per-Event Persistence**: Emit state_delta AFTER each operation (image gen, video gen) — AE waves can timeout mid-operation
 4. **Wave-Safe Veo**: Submit Veo operation, poll for 45s, save operation name to state if not done, resume on next wave via `GenerateVideosOperation(name=op_name)` stub

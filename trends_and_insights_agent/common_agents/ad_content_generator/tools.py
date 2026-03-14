@@ -1340,10 +1340,10 @@ async def save_final_report_tool(
             for item in summary_items:
                 pdf.cell(0, 6, item, 0, 1, 'C')
 
-                pdf.is_back_cover = False
+            pdf.is_back_cover = False
 
-                # Output branded PDF
-                pdf.output(report_filepath)
+            # Output branded PDF
+            pdf.output(report_filepath)
 
         except Exception as branded_err:
             logging.warning(f"Branded PDF layout failed ({branded_err}), falling back to simple PDF")
@@ -1388,6 +1388,7 @@ async def save_final_report_tool(
         return {
             "status": "ok",
             "artifact_key": artifact_key,
+            "version": version,
             "message": "Final campaign report saved as PDF with all sections.",
         }
     except Exception as e:

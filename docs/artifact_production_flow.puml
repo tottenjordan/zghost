@@ -1,0 +1,54 @@
+@startuml
+skinparam Handwritten false
+skinparam Monochrome false
+skinparam BackgroundColor #f9f9f9
+skinparam Padding 10
+
+title Trends & Insights - Artifact Production Flow
+
+| Campaign Orchestrator |
+| Services |
+| Storage (GCS) |
+
+| Campaign Orchestrator |
+start
+:Initialize Session;
+
+| Services |
+:Trends & Insights Agent;
+:Query Trends;
+| Storage (GCS) |
+:Save Trends Metadata;
+
+| Services |
+:Research Orchestrator;
+:Fetch Content;
+:Generate Draft Report;
+| Storage (GCS) |
+:Save Draft Report (PDF);
+:Save Research Data;
+
+| Services |
+:Creative Production Orchestrator;
+:Draft Copy;
+:Generate Images (Imagen);
+:Generate Video (Veo);
+| Storage (GCS) |
+:Save Ad Copy;
+:Save Images;
+:Save Videos;
+
+| Services |
+:Focus Group Evaluator;
+:Evaluate Commercial;
+:Simulate Focus Group;
+| Storage (GCS) |
+:Save Evaluation Report;
+
+| Campaign Orchestrator |
+:Compile Final Report;
+| Storage (GCS) |
+:Save Final Report (PDF);
+
+stop
+@endum

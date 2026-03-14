@@ -82,14 +82,53 @@ STAGES = ["TRENDS", "RESEARCH", "CREATIVE", "FOCUS_GROUP", "SAVE_REPORT", "COMPL
 
 MAX_CREATIVE_ATTEMPTS = 15  # Max times to re-enter CREATIVE before skipping to FOCUS_GROUP
 
-STAGE_STATUS_MESSAGES = {
-    "TRENDS": "Gathering campaign metadata and trend selections...",
-    "RESEARCH": "Running market research pipeline...",
-    "CREATIVE": "Running creative production pipeline (ad copy, visuals, commercial)...",
-    "FOCUS_GROUP": "Running focus group evaluation...",
-    "SAVE_REPORT": "Generating final campaign report PDF...",
-    "COMPLETE": "Campaign pipeline complete!",
-}
+def _dynamic_stage_message(stage: str, state: dict) -> str:
+    """Build contextual, CEO-friendly status messages using campaign metadata."""
+    brand = state.get("brand", "")
+    product = state.get("target_product", "")
+    audience = state.get("target_audience", "")
+    selling_points = state.get("key_selling_points", "")
+
+    # Avoid "Tide Tide Fabric Softener" — if product already contains brand, use product alone
+    if brand and product and product.lower().startswith(brand.lower()):
+        descriptor = product
+    elif brand and product:
+        descriptor = f"{brand} {product}"
+    else:
+        descriptor = product or brand or "the campaign"
+    # Extract first selling point for flavor text
+    first_sp = selling_points.split(".")[0].strip() if selling_points else ""
+
+    messages = {
+        "TRENDS": (
+            f"Scanning real-time Google Trends and YouTube for {descriptor} — "
+            f"finding the cultural moments that will make this campaign resonate."
+        ),
+        "RESEARCH": (
+            f"Deep-diving into market intelligence for {descriptor}"
+            + (f" — analyzing what motivates {audience}" if audience else "")
+            + ". Synthesizing YouTube, Google Search, and competitive insights."
+        ),
+        "CREATIVE": (
+            f"Entering the creative studio for {descriptor}"
+            + (f" — leading with '{first_sp}'" if first_sp else "")
+            + ". Generating ad copy, hero images, and a video commercial."
+        ),
+        "FOCUS_GROUP": (
+            f"Assembling a simulated focus group to evaluate the {descriptor} campaign"
+            + (f" — panelists drawn from {audience}" if audience else "")
+            + ". Scoring creative impact, brand alignment, and audience appeal."
+        ),
+        "SAVE_REPORT": (
+            f"Compiling the final campaign brief for {descriptor} — "
+            f"research findings, creative assets, and focus group scores packaged into a PDF."
+        ),
+        "COMPLETE": (
+            f"Campaign pipeline complete for {descriptor}! "
+            f"All assets — research report, ad creatives, commercial, and focus group evaluation — are ready for review."
+        ),
+    }
+    return messages.get(stage, f"Running stage: {stage}")
 
 STAGE_AGENT_MAP = {
     "TRENDS": "trends_and_insights_agent",
@@ -161,7 +200,7 @@ class CampaignOrchestrator(BaseAgent):
             return
 
         # Emit status message
-        status_msg = STAGE_STATUS_MESSAGES.get(stage, f"Running stage: {stage}")
+        status_msg = _dynamic_stage_message(stage, dict(state))
         yield Event(
             invocation_id=ctx.invocation_id,
             author=self.name,
@@ -188,6 +227,10 @@ class CampaignOrchestrator(BaseAgent):
                     async for event in agen:
                         yield event
                         if ctx.should_pause_invocation(event):
+                            # Yield wave-boundary context before pausing
+                            descriptor = f"{state.get('brand', '')} {state.get('target_product', '')}".strip() or "the campaign"
+                            wave_msg = f"{status_msg.rstrip('.')} — say 'continue' to proceed."
+                            yield self._status_event(ctx, wave_msg)
                             return
 
         # After sub-agent completes, mark end for AE
@@ -433,6 +476,10 @@ class CampaignOrchestrator(BaseAgent):
                 ctx, f"Final campaign report saved as PDF: {artifact_key}"
             )
             report_event.actions.state_delta["final_report_with_citations"] = processed_report
+            # Set artifact_delta so PDF appears inline in ADK web UI / GE
+            version = result.get("version")
+            if version is not None:
+                report_event.actions.artifact_delta[artifact_key] = version
             yield report_event
         else:
             msg = f"Failed to save final report: {result.get('error', 'unknown')}"

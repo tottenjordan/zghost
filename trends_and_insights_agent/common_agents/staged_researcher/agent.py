@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 
@@ -253,6 +254,125 @@ combined_report_composer = Agent(
     after_model_callback=callbacks.reorder_parts_text_first,
 )
 
+class RecallMemoryDeterministic:
+    """Helper class to recall prior insights deterministically."""
+
+    def __init__(self, name: str = "RecallMemoryDeterministic", agent_engine_id: str | None = None):
+        """Initialize with agent_engine_id.
+
+        Args:
+            name: The name of the helper (used for author in events).
+            agent_engine_id: Optional. Default to env variable MEMORY_BANK_AGENT_ENGINE_ID.
+        """
+        self.name = name
+        self.agent_engine_id = agent_engine_id or os.getenv("MEMORY_BANK_AGENT_ENGINE_ID")
+        import logging
+        self.logger = logging.getLogger(__name__)
+
+    def _status_event(self, ctx: InvocationContext, message: str) -> Event:
+        """Create an event with a status message and ui:status_update."""
+        self.logger.info(f"[{self.name}] {message}")
+        event = Event(
+            invocation_id=ctx.invocation_id,
+            author=self.name,
+            branch=ctx.branch,
+            content=types.Content(
+                role="model",
+                parts=[types.Part(text=message)],
+            ),
+        )
+        # Set ui:status_update for GE status chips
+        event.actions.state_delta["ui:status_update"] = message
+        return event
+
+    async def run(self, ctx: InvocationContext) -> AsyncGenerator[Event, None]:
+        """Recall prior campaign insights deterministically — no LLM needed.
+
+        Args:
+            ctx: The invocation context.
+
+        Yields:
+            Status events.
+        """
+        import os
+        state = ctx.session.state
+        brand = state.get("brand", "")
+        product = state.get("target_product", "")
+
+        if not brand and not product:
+            event = self._status_event(ctx, "No brand/product set — skipping memory recall.")
+            event.actions.state_delta["prior_campaign_insights"] = ""
+            event.actions.state_delta["_memory_recall_done"] = True
+            yield event
+            return
+
+        try:
+            if not self.agent_engine_id:
+                event = self._status_event(ctx, "Memory Bank not configured — skipping recall")
+                event.actions.state_delta["prior_campaign_insights"] = ""
+                event.actions.state_delta["_memory_recall_done"] = True
+                yield event
+                return
+
+            import vertexai
+            project = os.getenv("GOOGLE_CLOUD_PROJECT")
+            project_number = os.getenv("GOOGLE_CLOUD_PROJECT_NUMBER")
+            location = os.getenv("MEMORY_BANK_LOCATION", "us-central1")
+
+            client = vertexai.Client(project=project, location=location)
+            resource_name = f"projects/{project_number}/locations/{location}/reasoningEngines/{self.agent_engine_id}"
+
+            search_query = (
+                f"Campaign insights for {brand} {product}. "
+                f"What messaging worked, audience reactions, creative strategies."
+            )
+
+            results = list(client.agent_engines.memories.retrieve(
+                name=resource_name,
+                scope={"user_id": ctx.user_id or "default", "memory_type": "campaign_insight"},
+                similarity_search_params={
+                    "search_query": search_query,
+                    "top_k": 5,
+                },
+            ))
+
+            # Also query skill memories
+            skill_results = list(client.agent_engines.memories.retrieve(
+                name=resource_name,
+                scope={"user_id": ctx.user_id or "default", "memory_type": "skill_memory", "skill": "research"},
+                similarity_search_params={
+                    "search_query": f"Research techniques and patterns for {brand} {product}",
+                    "top_k": 5,
+                },
+            ))
+            results.extend(skill_results)
+
+            insights = []
+            for result in results:
+                fact = getattr(getattr(result, "memory", None), "fact", None)
+                if not fact:
+                    fact = str(result)
+                insights.append(fact)
+
+            if insights:
+                prior_text = "\n- ".join([""] + insights)
+                event = self._status_event(ctx, f"Retrieved {len(insights)} prior campaign insights from Memory Bank")
+                event.actions.state_delta["prior_campaign_insights"] = prior_text
+                event.actions.state_delta["_memory_recall_done"] = True
+                yield event
+            else:
+                event = self._status_event(ctx, "No prior campaign insights found in Memory Bank")
+                event.actions.state_delta["prior_campaign_insights"] = ""
+                event.actions.state_delta["_memory_recall_done"] = True
+                yield event
+
+        except Exception as e:
+            self.logger.warning(f"[{self.name}] Memory recall failed (non-fatal): {e}")
+            event = self._status_event(ctx, f"Memory recall failed (non-fatal): {str(e)[:80]}")
+            event.actions.state_delta["prior_campaign_insights"] = ""
+            event.actions.state_delta["_memory_recall_done"] = True
+            yield event
+
 
 # ============================================================
 # ResearchPipelineOrchestrator — deterministic BaseAgent
@@ -306,9 +426,10 @@ class ResearchPipelineOrchestrator(BaseAgent):
         insights = state.get("combined_web_search_insights", "")
         prior = state.get("prior_campaign_insights", "")
 
-        if eval_result and insights and prior:
-            # Memory recall and enhanced search done — compose report
-            return 5  # COMPOSE_REPORT index
+        memory_done = state.get("_memory_recall_done", False)
+        if eval_result and insights and (prior or memory_done):
+            # Memory recall done — proceed to enhanced search
+            return 4  # ENHANCED_SEARCH index
 
         if eval_result and insights:
             # Eval done, need memory recall
@@ -359,6 +480,10 @@ class ResearchPipelineOrchestrator(BaseAgent):
             elif stage_name == "MERGE_INSIGHTS":
                 # Deterministic merge — no LLM needed, just concatenate
                 async for event in self._merge_insights_deterministic(ctx):
+                    yield event
+            elif stage_name == "MEMORY_RECALL":
+                # Deterministic memory recall — no LLM agent needed
+                async for event in self._recall_memory_deterministic(ctx):
                     yield event
             elif stage_name == "PARALLEL_RESEARCH":
                 # Run parallel research with wave-count fallthrough
@@ -436,6 +561,17 @@ class ResearchPipelineOrchestrator(BaseAgent):
         event.actions.state_delta["combined_web_search_insights"] = merged
         yield event
         logger.info(f"[ResearchPipeline] Deterministic merge: {len(merged)} chars from {len(sections)} streams")
+
+    async def _recall_memory_deterministic(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """Recall prior campaign insights deterministically — no LLM needed.
+
+        Delegates to RecallMemoryDeterministic helper class.
+        """
+        recaller = RecallMemoryDeterministic()
+        async for event in recaller.run(ctx):
+            yield event
 
     async def _save_report(
         self, ctx: InvocationContext

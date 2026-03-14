@@ -1,0 +1,42 @@
+[root_agent]: Running creative production pipeline (ad copy, visuals, commercial)...
+[creative_production_orchestrator]: Generating ad copy and visual creatives...
+[ad_content_generator_agent]: ### Creative Brief: Tide Fabric Softener with Hibiscus Scent
+
+I've selected the top 2 ad ideas for your campaign. Each idea is designed to resonate with Gen Z's "aesthetic cleaning" and "sustainable living" trends, and each will result in both a high-fidelity keyframe image and a high-quality video using that image as a reference.
+
+---
+
+#### **Ad Idea 1: The Vintage Care Editorial**
+*   **Ad Copy:**
+    *   **Headline:** Love Thrifting? Keep Your Finds Fresh for Longer.
+    *   **Body Text:** Give your vintage scores the love they deserve. Our plant-based formula protects delicate fibers and leaves a blooming Hibiscus scent that lasts through every wear.
+    *   **Call-to-Action:** Protect Your Style
+    *   **Social Media Caption:** The ultimate eco-hack for your vintage finds. 👗🌿 Keep it vintage, keep it soft with Tide Hibiscus. #ThriftTok #EcoHacks #VintageCare
+*   **Visual Concept:**
+    *   **Name:** The Vintage Care Editorial
+    *   **Creative Concept:** A high-end, 35mm film-style editorial shot that positions Tide Hibiscus as a "beauty product" for clothes. Set in a sun-drenched, curated thrifter's studio rather than a utility room, it emphasizes the preservation of delicate, high-value second-hand items.
+    *   **Imagen Prompt:** A cinematic, authentic documentary-style photograph captured on 35mm grainy film with a warm, nostalgic color grade. The scene is a sun-drenched "thrifter's" home studio at golden hour... [Full prompt optimized for image generation]
+    *   **Veo Prompt:** [Optimized for video generation using the image as a reference]
+*   **Trend Alignment:** Sustainable Laundry (Search), Slow Fashion & ThriftTok (Cultural Trend)
+*   **Rationale:** Gen Z views thrifting as a primary sustainable action. By elevating the setting to a "studio," we validate their lifestyle and position Tide as a specialized care tool for the $50B+ vintage market.
+
+---
+
+#### **Ad Idea 2: The Sensory Sunday Reset**
+*   **Ad Copy:**
+    *   **Headline:** Laundry is the New Self-Care
+    *   **Body Text:** Transform your Sunday chores into a botanical escape. Breathe in the calming, modern scent of Hibiscus while plant-based agents cocoon your favorite loungewear in softness.
+    *   **Call-to-Action:** Try Self-Care Laundry
+    *   **Social Media Caption:** Chores? No, it’s called a "Home Environment Wellness Break." 💆‍♀️🌺 Experience the calming power of Hibiscus. #SelfCare #SundayReset
+*   **Visual Concept:**
+    *   **Name:** The Sensory Sunday Reset
+    *   **Creative Concept:** A "CleanTok" style ritual video focusing on the emotional "reset" of laundry. It uses extreme slow motion to capture the sensory bliss of inhaling the hibiscus scent and the aesthetic beauty of the liquid.
+    *   **Imagen Prompt:** [Optimized for keyframe image generation]
+    *   **Veo Prompt:** <SUBJECT> A young woman with a serene, peaceful expression... <ACTION> In extreme slow motion, she gently pulls a thick, fluffy, freshly washed pink hibiscus-colored linen towel toward her face... [Full prompt optimized for video generation]
+*   **Trend Alignment:** CleanTok & #LaundryRoomReveal (YouTube), Scent as Ritual (Search)
+*   **Rationale:** 49% of Gen Z look forward to cleaning as a mental health break. This visualizes the "romanticization of chores" trend, turning a mundane task into an aspirational wellness ritual.
+
+---
+
+**Do you approve these top 2 ad ideas, or would you like any changes before I generate the final images and videos?**
+[creative_production_orchestrator]: Producing commercial in AV editing studio...

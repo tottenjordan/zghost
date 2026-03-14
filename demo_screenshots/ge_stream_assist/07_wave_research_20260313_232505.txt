@@ -1,0 +1,54 @@
+[root_agent]: Running market research pipeline...
+[research_orchestrator]: Composing final cited research report...
+[combined_report_composer]: # Tide Fabric Softener: The Hibiscus Scent Campaign Research Report
+
+## Campaign Guide: Target Audience & Strategy
+
+### **The Gen Z "Conscious Curator"**
+The primary target for the Hibiscus Scent launch is Gen Z, a demographic where **62% of shoppers prefer sustainable brands** and up to **73% are willing to pay a 10% premium** for eco-friendly products <cite source="src-1" />. These "Conscious Curators" view laundry as a form of "self-care" and a "mood-lifting" ritual rather than a chore <cite source="src-3" /><cite source="src-10" /><cite source="src-15" />. To engage this audience, Tide must navigate a deep-seated skepticism toward "greenwashing"; currently, only about **one in five consumers** believe brand environmental claims without secondary proof <cite source="src-13" />.
+
+### **Strategic Positioning: The "Anti-Rickroll"**
+A unique cultural insight from YouTube trends reveals that the eco-cleaning space is frequently targeted by "Rickroll" pranks, leading to a "trust crisis" where users feel misled by clickbait <cite source="src-10" /><cite source="src-11" />. Tide can differentiate itself by positioning the Hibiscus Scent as the **"Reliable Reward"**—the authentic alternative that "never lets you down" on efficacy, bridging the gap between digital noise and genuine product performance <cite source="src-10" /><cite source="src-17" />.
+
+### **Aesthetic Utility & Performance**
+*   **Shelfie-Ready Packaging:** For digital natives, visual appeal is critical. Modern, minimalist packaging that is clearly labeled **"plastic-free" or "biodegradable"** encourages social media sharing and justifies higher price points <cite source="src-7" /><cite source="src-8" />.
+*   **The Scent Longevity Solution:** A major pain point is that natural scents fade quickly. Tide can solve this using **biodegradable fragrance capsules** or **microencapsulation**, ensuring plant-based scents last through fabric friction <cite source="src-10" />.
+*   **Fabric Care:** Position the formula as a tool for "slow fashion" by avoiding waxy residues (quats) that damage stretch fabrics and reduce towel absorbency <cite source="src-9" />.
+
+---
+
+## Search Trend & Market Analysis
+
+### **The Shift to "Waterless" and Concentrated Formats**
+Consumer sentiment is rapidly shifting toward **laundry sheets, tiles, and concentrates** <cite source="src-18" />. This is driven by the realization that liquid detergents are up to 90% water, which significantly increases the carbon footprint during transport <cite source="src-18" />. By 2025, it is projected that **30% of cleaning industry revenue** will stem from these "green" products <cite source="src-15" />.
+
+### **Fragrance Trends: Reimagined Florals**
+The market is moving away from traditional "powdery" scents toward **"Reimagined Florals"** like Hibiscus, often paired with pear or coconut milk <cite source="src-3" />. This aligns with the "Scent-Maxxing" trend, where consumers layer fabric scents to complement their personal perfumes <cite source="src-5" />.
+
+### **Technical Innovation in Hibiscus Stability**
+Natural hibiscus extracts are sensitive to light and heat, often losing potency during storage. To ensure consistency, the use of **biotechnology (microbial fermentation)** to create "nature-identical" fragrance molecules allows for a stable, high-quality scent that uses **90% less water** than traditional extraction methods <cite source="src-19" /><cite source="src-20" /><cite source="src-21" />.
+
+---
+
+## YouTube Trend Analysis
+
+### **The "CleanTok" and Eco-Cleaning Community**
+The "Eco Cleaning Hacks" niche is a high-traffic area where creators share sustainable routines and product reviews <cite source="src-10" />. However, the prevalence of bait-and-switch content (the "Rickroll" phenomenon) has led to a **"show me the receipts"** mentality among users <cite source="src-11" /><cite source="src-14" />.
+
+### **Engagement Drivers**
+*   **Authentic Content:** Gen Z responds best to **User-Generated Content (UGC)** and behind-the-scenes storytelling rather than polished, traditional advertisements <cite source="src-2" />.
+*   **Performance Verification:** Because approximately **53% of environmental claims** are found to be ambiguous, creators who provide transparent ingredient breakdowns and performance tests are the most trusted <cite source="src-10" /><cite source="src-12" />.
+
+---
+
+## Key Insights from Research
+
+| **Strategy Pillar** | **Market Reality** | **Tide Campaign Action** |
+| :--- | :--- | :--- |
+| **Trust & Authenticity** | 53% of eco-claims are considered baseless <cite source="src-10" />. | Pursue **EPA Safer Choice** or **USDA BioPreferred** certifications to provide "the receipts" <cite source="src-10" />. |
+| **Sustainability** | Liquid detergent is 90% water <cite source="src-18" />. | Focus marketing on **concentrated formats** and FSC-certified cardboard packaging <cite source="src-18" />. |
+| **Performance** | Users resort to "compensating behaviors" (overdosing) if eco-products fail <cite source="src-16" />. | Highlight **PlanetCaps™ technology** for long-lasting scent and superior fabric protection <cite source="src-10" />. |
+| **Wellness** | Cleaning is now a self-care ritual <cite source="src-14" /><cite source="src-15" />. | Position Hibiscus as a **vibrant, joyful mood-lifter** for 2025 <cite source="src-3" />. |
+[combined_report_composer]: PDF report saved to memory 📝 !!
+[research_orchestrator]: Saving research report as PDF...
+[research_orchestrator]: Research report saved as PDF: draft_research_report_with_citations.pdf

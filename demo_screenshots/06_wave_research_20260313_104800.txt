@@ -1,0 +1,48 @@
+[root_agent]: Running market research pipeline...
+[research_orchestrator]: Merging research findings into unified summary...
+[merge_planners]: # Summary of Campaign and Trend Research
+
+## Campaign Guide
+Market research for the Tide Fabric Softener with Hibiscus Scent campaign reveals a shift in Gen Z consumer behavior where laundry is evolving from a chore into a "sensory wellness ritual." While sustainability is a key expectation, it is increasingly viewed as a "secondary selective criterion" compared to fragrance performance and aesthetic appeal.
+
+### 1. Gen Z Consumer Behavior & Sustainability Trends 2024–2025
+*   **Sustainability as a Baseline, Not a Hook:** While 73% of Gen Z express a willingness to pay more for sustainable packaging, sustainability often ranks lower (6th out of 7 factors) than price, quality, and efficacy in actual purchasing decisions.
+*   **The "Receipts" of Impact:** Gen Z is increasingly skeptical of vague ESG claims. They demand "tangible brand action" and "receipts" of impact. Brands like Tide are successfully pivoting by using FSC-certified recyclable cardboard and plant-based formulas to make sustainability visible.
+*   **Home Care as Self-Care:** Cleaning is being redefined as a "mental wellness" activity. 49% of Gen Z report looking forward to cleaning (compared to 18% of older consumers), often "romanticizing" the process through trends like "Clean Girl" aesthetics.
+
+### 2. The Hibiscus & Floral Fragrance Opportunity
+*   **The Rise of "Fragrance Wardrobes":** Consumers, especially Gen Z women (ages 18–25), are building "olfactory wardrobes," matching laundry scents to their mood, outfits, or the season.
+*   **Exotic & Functional Florals:** Hibiscus and other exotic florals are trending as part of the "affordable luxury" and "clean girl" aesthetic. There is a 44.7% market claim share for long-lasting scent formulations, with a strong interest in "functional fragrances" that offer aromatherapy benefits (e.g., stress relief or mood enhancement).
+*   **Scent as the Performance Benchmark:** In the fabric care category, scent has become the primary differentiator. Consumers often equate "smelling fresh" with "being clean," even if the detergent's cleaning power is secondary.
+
+### 3. Competitive Landscape: Plant-Based vs. Traditional
+*   **The Performance Gap:** Traditional petroleum-based softeners still hold ~80% of the market because they are 15–20% cheaper and offer perceived superior static control. However, organic/plant-based softeners are the fastest-growing segment (7.4% CAGR).
+*   **Niche Brand Disruptors:** Brands like **Mozi Wash** are successfully positioning themselves as "bridges between home goods and beauty," selling plant-based detergents for $35 by focusing on high-end, cologne-inspired fragrances (e.g., amber, floral, and sandalwood).
+*   **Ingredient Innovation:** To compete, plant-based formulas are adopting "esterquat" chemistries that achieve 90% biodegradation within 28 days, meeting EU Ecolabel and EPA Safer Choice standards.
+
+### 4. TikTok Aesthetics & Cultural Triggers
+*   **#CleanTok & Scent-Layering:** A third of Gen Z gets laundry advice from TikTok. Trends like "scent-layering" (using matching detergent, softener, and scent boosters) are highly viral.
+*   **The "Clean Girl" & "Quiet Luxury" Aesthetics:** These trends drive purchase intentions for products that look and smell sophisticated. Visual-first platforms (TikTok, Instagram) are the primary discovery engines, with 71% of Gen Z discovering new personal care products via these apps.
+*   **Packaging as Decor:** There is a growing demand for "display-worthy" packaging. Refillable systems (like Blueland) and aesthetic branding are more likely to gain traction with Gen Z than traditional "bulk" plastic jugs.
+
+### 5. Technical Expectations for Fabric Care
+*   **Scent Longevity (The "Fragrance Trail"):** Gen Z seeks a "vivid fragrance trail" because they value social compliments. This has led to the adoption of **microencapsulation technology**, which releases scent upon friction or movement, allowing clothes to smell fresh for up to two weeks after washing.
+*   **Fiber Compatibility:** Natural fibers like cotton are recognized for superior scent retention due to their hydrophilic nature. Marketing should emphasize how the softener interacts with these "wellness" fabrics.
+*   **Concentrated Formats:** Liquid softeners dominate (87.75% revenue share), but there is a push toward concentrated, smaller-dose formulas that align with both convenience and environmental efficiency.
+
+## YouTube Trends Findings
+
+### 1. The "Low-Tox" Laundry Revolution
+The market is actively transitioning from traditional, chemical-heavy cleaners to "low-tox" alternatives, driven by consumers seeking biodegradable, skin-safe, and environmentally neutral cleaning processes. Effective cleaning is now perceived as achievable through plant-based ingredients.
+
+### 2. Hibiscus and Botanical Scents as the "New Fresh"
+There is a significant cultural shift towards sophisticated, nature-identical scents. Hibiscus is trending as a "premium botanical" that merges luxury fragrance with natural wellness, providing a vibrant, tart, and sophisticated floral note that is both "tropical yet grounded." This aligns with "CleanTok" influencers moving to "garden-fresh" profiles from "industrial-fresh."
+
+### 3. Cleaning as a Self-Care Ritual & "Cleaning Therapy"
+The "Eco Cleaning Hacks" trend, particularly on YouTube and TikTok, has transformed cleaning into a "mental wellness" or "Cleaning Therapy" activity. Gen Z and Millennials, who prioritize aesthetic and sustainable lifestyle choices, view a beautifully scented home as contributing to mental health. Botanical scents, like hibiscus, are linked to "sensory escapes" and mindfulness.
+
+### 4. Market Drivers and Strategic Implications
+*   **Eco-Conscious Consumers:** Gen Z and Millennial "CleanTok" creators are key drivers.
+*   **Sustainable Packaging:** A major concern, with high engagement for brands offering concentrated formulas or recyclable packaging.
+*   **Strategic Positioning for Tide:** The Tide Fabric Softener with Hibiscus Scent is well-positioned to leverage this trend by emphasizing its modern, elevated botanical scent, highlighting any plant-based or biodegradable components, and utilizing vibrant botanical imagery common in eco-aesthetic content. The product can act as a "bridge" offering Tide's performance while meeting demand for botanical-based, safer fragrances.
+[research_orchestrator]: Evaluating research quality and identifying gaps...

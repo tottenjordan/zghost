@@ -324,97 +324,78 @@ async def generate_panelist_testimonial(
         logging.error(f"Panelist voiceover generation failed: {e}")
         return {"status": "failed", "error": f"Voiceover generation failed: {e}"}
 
-    # Step 2: Generate video from portrait reference + prompt
-    from google.genai.types import GenerateVideosConfig, VideoGenerationReferenceImage
+    # Step 2: Create Ken Burns zoom video from portrait + voiceover audio
+    import subprocess
 
     portrait_gcs_uri = panelist_data.get("portrait_gcs_uri", "")
-    video_prompt = (
-        f"<SUBJECT> A {panelist_data.get('age', 25)}-year-old person, the same person "
-        f"from the reference image, speaking directly to camera with natural gestures. "
-        f"<ACTION> The person is talking naturally, making eye contact with the camera, "
-        f"occasionally nodding and using subtle hand gestures. Their expression is "
-        f"engaged and genuine. "
-        f"<SCENE_AND_CONTEXT> A modern, well-lit focus group room or home office. "
-        f"Clean background, soft lighting. "
-        f"<CAMERA_ANGLE> Medium close-up, shoulders and head. "
-        f"<CAMERA_MOVEMENTS> Static, locked-off camera. "
-        f"<VISUAL_STYLE_AND_AESTHETICS> Natural, documentary style. High quality. "
-        f"SUPPRESS SUBTITLES."
-    )
+    testimonial_duration = int(tool_context.state.get("testimonial_duration", 15))
 
     try:
-        reference_images = None
+        # Download portrait image
+        portrait_local = None
         if portrait_gcs_uri:
-            reference_images = [
-                VideoGenerationReferenceImage(
-                    image=types.Image(gcs_uri=portrait_gcs_uri, mime_type="image/png"),
-                    reference_type="STYLE",
-                )
-            ]
+            bucket_name = os.environ.get("BUCKET", "gs://zghost-media-center").replace("gs://", "")
+            portrait_blob = portrait_gcs_uri.replace(f"gs://{bucket_name}/", "")
+            from ...shared_libraries.utils import download_blob
+            portrait_bytes = download_blob(bucket_name=bucket_name, source_blob_name=portrait_blob)
+            portrait_dir = "session_media/focus_group/portraits"
+            os.makedirs(portrait_dir, exist_ok=True)
+            portrait_local = os.path.join(portrait_dir, f"{safe_name}_portrait.png")
+            with open(portrait_local, "wb") as f:
+                f.write(portrait_bytes)
 
-        gen_config = GenerateVideosConfig(
-            aspect_ratio="16:9",
-            number_of_videos=1,
-            output_gcs_uri=os.environ.get("BUCKET", "gs://zghost-media-center"),
-            reference_images=reference_images,
+        if not portrait_local or not os.path.exists(portrait_local):
+            return {"status": "partial", "voiceover_gcs_uri": vo_gcs_uri, "error": "No portrait image for Ken Burns"}
+
+        # Ken Burns zoom effect: slow zoom in on the portrait with the voiceover
+        video_artifact_key = f"panelist_testimonial_{safe_name}.mp4"
+        video_dir = "session_media/focus_group/testimonials"
+        os.makedirs(video_dir, exist_ok=True)
+        video_local_path = os.path.join(video_dir, video_artifact_key)
+
+        # ffmpeg Ken Burns: zoom from 1.0x to 1.2x over duration, centered on face area
+        # zoompan filter: z='1+0.2*on/total_frames' gives smooth zoom in
+        # s=1920x1080 output, d=duration*fps frames
+        fps = 30
+        total_frames = testimonial_duration * fps
+        ffmpeg_cmd = [
+            "ffmpeg", "-y",
+            "-loop", "1", "-i", portrait_local,
+            "-i", vo_local_path,
+            "-filter_complex",
+            f"[0:v]scale=3840:2160,zoompan=z='1+0.2*on/{total_frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={total_frames}:s=1920x1080:fps={fps}[v]",
+            "-map", "[v]", "-map", "1:a",
+            "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+            "-c:a", "aac", "-b:a", "128k",
+            "-t", str(testimonial_duration),
+            "-shortest",
+            "-pix_fmt", "yuv420p",
+            video_local_path,
+        ]
+        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=120)
+        if result.returncode != 0:
+            logging.warning(f"ffmpeg Ken Burns failed: {result.stderr[:500]}")
+            return {"status": "partial", "voiceover_gcs_uri": vo_gcs_uri, "error": f"Ken Burns video failed: {result.stderr[:200]}"}
+
+        # Read video bytes
+        with open(video_local_path, "rb") as f:
+            video_bytes = f.read()
+
+        # Save as ADK artifact
+        await tool_context.save_artifact(
+            filename=video_artifact_key,
+            artifact=types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
         )
 
-        operation = client.models.generate_videos(
-            model=config.video_gen_model, prompt=video_prompt, config=gen_config
+        # Upload to GCS
+        dest_blob = f"{gcs_folder}/focus_group/{video_artifact_key}"
+        upload_blob_to_gcs(
+            source_file_name=video_local_path,
+            destination_blob_name=dest_blob,
         )
-        while not operation.done:
-            time.sleep(15)
-            operation = client.operations.get(operation)
-
-        if operation.error:
-            # Retry without reference image
-            logging.warning(f"Video gen with reference failed: {operation.error}. Retrying without reference.")
-            gen_config_no_ref = GenerateVideosConfig(
-                aspect_ratio="16:9",
-                number_of_videos=1,
-                output_gcs_uri=os.environ.get("BUCKET", "gs://zghost-media-center"),
-            )
-            operation = client.models.generate_videos(
-                model=config.video_gen_model, prompt=video_prompt, config=gen_config_no_ref
-            )
-            while not operation.done:
-                time.sleep(15)
-                operation = client.operations.get(operation)
-
-        if operation.error:
-            return {"status": "failed", "error": f"Video generation failed: {operation.error}"}
-
-        video_artifact_key = None
-        if operation.result and operation.result.generated_videos:
-            for idx, gen_video in enumerate(operation.result.generated_videos):
-                if gen_video.video and gen_video.video.uri:
-                    video_uri = gen_video.video.uri
-                    video_artifact_key = f"panelist_testimonial_{safe_name}_{idx}.mp4"
-
-                    bucket_name = os.environ.get("BUCKET", "gs://zghost-media-center").replace("gs://", "")
-                    source_blob = video_uri.replace(f"gs://{bucket_name}/", "")
-
-                    from ...shared_libraries.utils import download_blob
-                    video_bytes = download_blob(
-                        bucket_name=bucket_name, source_blob_name=source_blob
-                    )
-
-                    await tool_context.save_artifact(
-                        filename=video_artifact_key,
-                        artifact=types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
-                    )
-
-                    dest_blob = f"{gcs_folder}/focus_group/{video_artifact_key}"
-                    bucket_obj = storage_client.get_bucket(bucket_name)
-                    source_blob_obj = bucket_obj.blob(source_blob)
-                    bucket_obj.copy_blob(source_blob_obj, bucket_obj, new_name=dest_blob)
-
-                    video_gcs_uri = f"gs://{bucket_name}/{dest_blob}"
-                    logging.info(f"Generated panelist testimonial video: {video_artifact_key}")
-                    break
-
-        if not video_artifact_key:
-            return {"status": "partial", "voiceover_gcs_uri": vo_gcs_uri, "error": "Video generation produced no output"}
+        bucket = os.environ.get("BUCKET", "gs://zghost-media-center")
+        video_gcs_uri = f"{bucket}/{dest_blob}"
+        logging.info(f"Generated panelist Ken Burns testimonial: {video_artifact_key}")
 
         # Update panelist data in state
         for p in panelists.get("panelists", []):
@@ -440,3 +421,125 @@ async def generate_panelist_testimonial(
             "voiceover_gcs_uri": vo_gcs_uri,
             "error": f"Video generation failed: {e}",
         }
+
+
+async def concatenate_panelist_videos(tool_context: ToolContext) -> dict:
+    """Concatenate all panelist testimonial videos into a single focus group reel.
+
+    Uses ffmpeg to join all individual Ken Burns panelist videos into one
+    continuous video with crossfade transitions.
+
+    Returns:
+        dict with status, artifact_key, and gcs_uri of the combined video.
+    """
+    import subprocess
+    from ...shared_libraries.utils import download_blob
+
+    panelists = tool_context.state.get("focus_group_panelists", {})
+    panelist_list = panelists.get("panelists", []) if isinstance(panelists, dict) else []
+    gcs_folder = tool_context.state.get("gcs_folder", "default")
+    bucket = os.environ.get("BUCKET", "gs://zghost-media-center")
+    bucket_name = bucket.replace("gs://", "")
+
+    # Collect all testimonial video paths
+    video_paths = []
+    video_dir = "session_media/focus_group/testimonials"
+    os.makedirs(video_dir, exist_ok=True)
+
+    for p in panelist_list:
+        video_uri = p.get("testimonial_video_gcs_uri", "")
+        if not video_uri:
+            continue
+        blob_name = video_uri.replace(f"gs://{bucket_name}/", "")
+        safe_name = p.get("name", "unknown").replace(" ", "_").replace(",", "")
+        local_path = os.path.join(video_dir, f"concat_{safe_name}.mp4")
+        try:
+            video_bytes = download_blob(bucket_name=bucket_name, source_blob_name=blob_name)
+            with open(local_path, "wb") as f:
+                f.write(video_bytes)
+            video_paths.append(local_path)
+        except Exception as e:
+            logging.warning(f"Could not download panelist video {safe_name}: {e}")
+
+    if len(video_paths) < 2:
+        return {"status": "skipped", "message": f"Need at least 2 videos to concatenate (found {len(video_paths)})"}
+
+    # Create ffmpeg concat list file
+    concat_list_path = os.path.join(video_dir, "concat_list.txt")
+    with open(concat_list_path, "w") as f:
+        for vp in video_paths:
+            f.write(f"file '{os.path.abspath(vp)}'\n")
+
+    output_artifact = "focus_group_reel.mp4"
+    output_path = os.path.join(video_dir, output_artifact)
+
+    try:
+        # Re-encode all to consistent format then concat
+        normalized = []
+        for i, vp in enumerate(video_paths):
+            norm_path = os.path.join(video_dir, f"norm_{i}.mp4")
+            norm_cmd = [
+                "ffmpeg", "-y", "-i", vp,
+                "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+                "-c:a", "aac", "-b:a", "128k",
+                "-r", "30", "-s", "1920x1080",
+                "-pix_fmt", "yuv420p",
+                norm_path,
+            ]
+            subprocess.run(norm_cmd, capture_output=True, text=True, timeout=60)
+            if os.path.exists(norm_path):
+                normalized.append(norm_path)
+
+        # Write normalized concat list
+        with open(concat_list_path, "w") as f:
+            for np in normalized:
+                f.write(f"file '{os.path.abspath(np)}'\n")
+
+        concat_cmd = [
+            "ffmpeg", "-y",
+            "-f", "concat", "-safe", "0",
+            "-i", concat_list_path,
+            "-c", "copy",
+            output_path,
+        ]
+        result = subprocess.run(concat_cmd, capture_output=True, text=True, timeout=120)
+        if result.returncode != 0:
+            return {"status": "failed", "error": f"Concat failed: {result.stderr[:200]}"}
+
+        with open(output_path, "rb") as f:
+            reel_bytes = f.read()
+
+        # Save as artifact
+        await tool_context.save_artifact(
+            filename=output_artifact,
+            artifact=types.Part.from_bytes(data=reel_bytes, mime_type="video/mp4"),
+        )
+
+        # Upload to GCS
+        dest_blob = f"{gcs_folder}/focus_group/{output_artifact}"
+        upload_blob_to_gcs(source_file_name=output_path, destination_blob_name=dest_blob)
+        reel_gcs_uri = f"{bucket}/{dest_blob}"
+
+        # Store in state
+        tool_context.state["focus_group_reel_gcs_uri"] = reel_gcs_uri
+        tool_context.state["focus_group_reel_artifact"] = output_artifact
+
+        logging.info(f"Focus group reel created: {reel_gcs_uri} ({len(video_paths)} panelists)")
+
+        # Cleanup temp files
+        for np in normalized:
+            try:
+                os.unlink(np)
+            except OSError:
+                pass
+
+        return {
+            "status": "ok",
+            "artifact_key": output_artifact,
+            "gcs_uri": reel_gcs_uri,
+            "panelist_count": len(video_paths),
+        }
+
+    except Exception as e:
+        logging.error(f"Focus group reel concatenation failed: {e}")
+        return {"status": "failed", "error": str(e)}

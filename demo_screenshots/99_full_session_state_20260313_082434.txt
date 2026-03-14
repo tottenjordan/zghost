@@ -1,0 +1,271 @@
+{
+  "visual_concept_critique": "As the Creative Director for this campaign, I have evaluated the initial visual drafts and refined them to maximize their impact for a 2025 audience. We are leaning heavily into **\"Sensescaping\"**\u2014a core 2025 trend where scent and texture are visualized to create an emotional ritual. \n\nThese concepts bridge the gap between Tide\u2019s high-performance heritage and the Gen Z \"Clean Girl\" and \"Low-Tox\" movements. We are moving away from sterile, \"industrial clean\" visuals toward **\"Aesthetic Functionality,\"** using warm wood tones, diffused lighting, and botanical abundance.\n\n### 1. The \"Clean Girl\" Sensescape\n*   **Type:** Video (8-10 seconds)\n*   **Trend(s):** #cleangirl, Aesthetic Laundry, Sensory Wellness, Quiet Luxury (2025).\n*   **Creative Concept:** A cinematic \"home reset\" vignette that frames laundry as a meditative morning ritual. It focuses on the tactile \"fiber conditioning\" of the product, using the soft-focus \"Quiet Luxury\" aesthetic.\n*   **Rationale:** Gen Z views home maintenance as self-care. By using high-end \"sensescaping\" (visualizing the softness of the fabric and the dew on the flowers), we elevate Tide from a detergent to a wellness essential. The 2025 trend of \"diffused lighting\" creates a dreamy, aspirational quality that stops the scroll.\n*   **Veo Prompt:** \n    > A cinematic, high-key video of a young woman with a sleek, low bun and a minimalist cream-colored silk robe, her skin glowing in soft, diffused morning light. She stands in a \"Quiet Luxury\" laundry room featuring light oak cabinetry, a white marble countertop, and a lush Pothos plant trailing from a floating wooden shelf. The camera captures an eye-level close-up of her hands, featuring a neutral-toned almond manicure, as she gracefully pours pearlescent, liquid Tide Fabric Softener into a modern white washing machine's tray. In the background, a glass vase holds a vibrant, dew-kissed red hibiscus flower. The scene transitions to a slow-motion shot of her lifting a pristine, high-quality white cotton linen shirt from a woven rattan basket. The fabric looks incredibly soft, airy, and conditioned. The lighting is ethereal and warm, using a \"sunset lamp\" effect to create a peaceful, meditative atmosphere. Static shot with a slow, elegant dolly-in.\n\n### 2. The Botanical Shield (Rococo Revival)\n*   **Type:** Image\n*   **Trend(s):** Lavish and Ornate (2025 Rococo Revival), Tropical Floral Trends, Aesthetic Laundry.\n*   **Creative Concept:** A high-fashion product portrait that places the Tide bottle in a modernized \"Rococo\" setting. It uses ornate textures (plaster molding, silk) to symbolize the \"luxury treatment\" the softener provides to clothing fibers.\n*   **Rationale:** 2025 is seeing a shift toward \"Lavish and Ornate\" design. By placing a household staple like Tide on a marble pedestal with ornate architectural details, we signal \"premium quality\" and \"fiber protection.\" This \"unbrand\" aesthetic invites curiosity by looking more like a perfume ad than a laundry ad.\n*   **Imagen (Gemini) Prompt:** \n    > A professional, high-fashion product photograph of a Tide Fabric Softener bottle with a vibrant Hibiscus Scent label. The bottle is positioned prominently on a fluted white marble pedestal. The background features a wall with elegant, ornate plaster molding in a soft \"rococo\" style, painted in a muted sage green. Surrounding the base of the pedestal is a lush, asymmetrical arrangement of fresh, deep crimson hibiscus blossoms and soft coral petals, some with visible water droplets. A long, translucent length of pale pink silk fabric is draped artfully across the scene, caught in mid-air as if fluttering in a gentle breeze, symbolizing the product's fiber-softening power. The lighting is soft and directional, coming from a side window to create delicate highlights and deep, velvety shadows. Shot with a 100mm macro lens, creating a sharp focus on the product texture and a beautiful, creamy bokeh on the floral background. Ultra-realistic, 8k resolution, cinematic aesthetic.\n\n### 3. The Eco-Box \"Low-Tox\" Hack\n*   **Type:** Video (8-10 seconds)\n*   **Trend(s):** Low-Tox Living, Eco Cleaning Hacks, Scandi-Minimalism (2025).\n*   **Creative Concept:** A \"CleanTok\" style POV (Point of View) video that highlights the functional beauty of the Eco-Box. It positions the product as a \"hack\" for the minimalist, sustainable home.\n*   **Rationale:** \"Low-Tox\" communities are skeptical of traditional packaging. This visual focuses on the \"60% less plastic\" claim and the \"no-drip\" tap, using the 2025 \"Scandi-minimalist\" palette (warm woods, off-whites) to build trust and alignment with eco-conscious values.\n*   **Veo Prompt:** \n    > A high-resolution POV shot in a bright, Scandi-minimalist laundry room with open bamboo shelving and textured off-white walls. A hand with a clean, natural look reaches out to a Tide Eco-Box sitting neatly on a shelf next to a glass jar of wool dryer balls and a small, potted snake plant. The camera follows the hand as it turns the \"no-drip\" blue twist tap, and clear, fragrant liquid fills a minimalist, reusable glass measuring cup with a steady, satisfying stream. The aesthetic is clean, organized, and \"aesthetic,\" featuring warm wood textures and soft, natural light streaming through a nearby window. A subtle, elegant sans-serif text overlay in the corner reads \"60% Less Plastic.\" The camera movement is handheld but professionally stabilized to mimic a high-quality \"CleanTok\" vlog. The atmosphere is calm, purposeful, and sustainable.\n\n### 4. The Nature-Identical Flatlay\n*   **Type:** Image\n*   **Trend(s):** Zero-Waste Packaging, Sensescaping, Minimalist Home.\n*   **Creative Concept:** A top-down \"wellness flatlay\" that deconstructs the product's ingredients. It places the Eco-Box alongside raw botanicals to reinforce the \"plant-based\" and \"botanical\" messaging.\n*   **Rationale:** This composition is a staple of \"Sensescaping\" in 2025. By showing the raw hibiscus and botanical vials, we provide the \"fragrance transparency\" Gen Z demands. The use of negative space and natural textures (linen, wood) makes the ad feel like a piece of editorial content rather than a hard sell.\n*   **Imagen (Gemini) Prompt:** \n    > A professional bird's-eye view flatlay of a Tide Eco-Box placed on a heavily textured, light grey linen surface. Neatly and artfully arranged around the box are various natural elements: three whole, vibrant red hibiscus blossoms with yellow stamens, a small, clear glass apothecary vial containing a botanical extract, and several smooth, white river stones. To the side, a pair of vintage-style wooden clothespins and a fresh, bright green sprig of mint leaves provide a pop of color. The composition follows the \"Sensescaping\" trend, feeling airy and organized with significant negative space. The lighting is soft and diffuse, as if from an overhead skylight, eliminating harsh shadows and highlighting the tactile textures of the linen and the delicate petals. The overall mood is one of \"botanical purity\" and \"minimalist wellness.\" Shot on a professional DSLR with a 35mm lens for a flat, graphic perspective. Ultra-realistic, 8k.",
+  "target_yt_trends": {
+    "target_yt_trends": [
+      {
+        "title": "Eco Cleaning Hacks",
+        "description": "YouTube creators sharing sustainable cleaning routines and eco-friendly product reviews"
+      }
+    ]
+  },
+  "vid_artifact_keys": {
+    "vid_artifact_keys": []
+  },
+  "initial_campaign_queries": "1. Gen Z laundry habits and preferences for sustainable vs. traditional cleaning brands\n2. Consumer perception of hibiscus and tropical floral scents in home care products 2024\n3. Key purchase drivers for eco-conscious Gen Z: plant-based formulas vs. biodegradable packaging\n4. Marketing legacy household brands to Gen Z: strategies for authenticity and sustainability\n5. Trending \"clean girl\" and \"aesthetic laundry\" cultural movements on social media\n6. Competitive analysis of plant-based fabric softeners and long-lasting scent performance reviews",
+  "combined_web_search_insights": "# Summary of Campaign and Trend Research\n\n## Campaign Guide\nTo launch the **Tide Fabric Softener with Hibiscus Scent** for a Gen Z audience, research highlights a shift toward \"aesthetic laundry,\" sustainability, and scent-driven wellness. While Gen Z values eco-conscious formulas, they are often confused by laundry care for delicates, presenting a major opportunity for Tide to act as an \"expert educator.\"\n\n### 1. Gen Z Laundry Habits & Cultural Movements\n*   **\"Aesthetic Laundry\" & \"Clean Girl\":** The \"clean girl\" aesthetic (slicked-back hair, minimal makeup, fresh scents) has transitioned into the home. On TikTok, #cleangirl (750M+ views) and \"aesthetic laundry\" focus on the sensory experience of \"shower-fresh\" scents and pristine, well-cared-for clothing [3, 26].\n*   **The \"Laundry Gap\":** Research shows Gen Z avoids washing roughly **26.4 million delicate items** due to fear of damaging them. 32% have shrunk items and 26% have stretched them [9]. Tide can bridge this gap by marketing the softener as a \"conditioner\" that protects fibers from stretching and fading [7].\n*   **Social Media as a Search Engine:** Gen Z discovers laundry hacks and products primarily on **TikTok and Instagram**, favoring brands that provide \"laundry education\" (e.g., how to wash silk or workout gear) over traditional ads [14].\n\n### 2. Scent & Perception: The Hibiscus Opportunity\n*   **Floral & Wellness Trends:** Florals and \"edible\" scents (like matcha or caramel) are the fastest-growing fragrance categories in 2024-2025 [24]. Hibiscus fits into the \"tropical floral\" trend, which is perceived as an indulgence and a tool for \"mood-boosting\" and relaxation\u2014key drivers for 80% of US consumers who use home scents to destress [13].\n*   **Scent Longevity:** Modern consumers prioritize **microencapsulation technology** (e.g., Givaudan\u2019s PlanetCaps\u2122), which allows scents to last for weeks or even months by releasing fragrance upon friction (rubbing the fabric) [4].\n\n### 3. Sustainability vs. Performance\n*   **Eco-Packaging is Non-Negotiable:** 73% of Gen Z are willing to pay a premium (up to 10% more) for sustainable packaging [6, 29]. They prefer **plastic-free, compostable, or FSC-certified cardboard** (like Tide Evo) over single-use plastics [4, 11].\n*   **Plant-Based Formulas:** There is a robust move toward **biodegradable, plant-based surfactants** and enzymes. Brands like Ecover and Seventh Generation are leaders here, but legacy brands like Tide are gaining traction by introducing \"Biobased\" lines [7, 27].\n*   **Purchase Drivers:** While sustainability is a \"trust signal,\" **efficacy and price** still outrank eco-credentials in final purchase decisions. Gen Z rewards brands that are transparent about their supply chain and \"walk the talk\" rather than just using green buzzwords [11, 21].\n\n### 4. Marketing Strategies for Legacy Brands\n*   **Authenticity Over Perfection:** Gen Z has a \"bullshit detector\" for overly polished campaigns. Successful legacy brands (like Levi's) pivot by using **User-Generated Content (UGC)** and \"behind-the-scenes\" storytelling to show the human side of the brand [2, 30].\n*   **Influencer Partnerships:** Gen Z is twice as likely as Millennials to be converted by an influencer who aligns with their personal values [30]. Collaborating with \"clean girl\" or \"home-reset\" creators to showcase Tide Hibiscus as part of a \"self-care\" routine is highly effective [2, 23].\n\n### 5. Competitive Landscape\n*   **Top Competitors:**\n    *   **Downy:** Dominates on scent longevity and \"fabric conditioning\" claims [7, 17].\n    *   **Eco-Niche Brands (Beyond, Molly's Suds):** Lead on 99% biobased ingredients and compostable dryer sheets [7, 27].\n    *   **Store Brands (ALDI, Woolworths):** Gaining share among price-sensitive Gen Z by offering \"mild, non-overpowering\" scents at a lower price point [20].\n\n## YouTube Trends Findings\nIn 2024 and 2025, the household laundry market is undergoing a significant transformation driven by the \"Low-Tox\" movement, zero-waste initiatives, and a shift toward premium, sensory-driven laundry experiences. The following synthesis details the cultural, consumer, and market landscapes relevant to **Tide Fabric Softener with Hibiscus Scent**.\n\n### 1. Cultural Drivers: \"Low-Tox\" Living & Minimalist Cleaning (2024-2025)\n*   **The Rise of \"Low-Tox\" Living:** This movement transcends simple \"eco-friendly\" labeling. Consumers are actively auditing their homes to reduce cumulative exposure to synthetic chemicals and Volatile Organic Compounds (VOCs), which are increasingly linked to respiratory issues and skin sensitivities. Sustainable cleaning is projected to reach a **$110 billion market value by 2025**, outpacing the traditional market by 2x.\n*   **Minimalist Cleaning Trends:** There is a move away from \"cluttered\" cleaning cabinets toward high-efficacy, multi-functional concentrates. Consumers are favoring \"Low-pH\" solutions (like the Tide Clean Boost range) that strip away residue rather than just masking it, aligning with the \"cleaner for longer\" philosophy that reduces the frequency of washing.\n*   **Health as a New Luxury:** For many, the ability to maintain a toxin-free environment is viewed as a form of self-care. This has shifted the perception of laundry from a chore to a sensory wellness ritual.\n\n### 2. Consumer Sentiment: Synthetic vs. Plant-Derived Ingredients\n*   **Fragrance Transparency:** Consumers are increasingly wary of the \"Fragrance/Parfum\" label loophole. There is a strong preference for **transparent ingredient lists** and fragrances derived from essential oils or plant-based isolates.\n*   **Scent as an Emotional Anchor:** Despite the \"Low-Tox\" trend, 85% of young adults (18-34) still prioritize **long-lasting scents**. However, they define \"freshness\" differently than previous generations, favoring exotic, botanical, or nature-identical blends (e.g., Hibiscus, Cardamom, Ylang-Ylang) over heavy, industrial \"mountain fresh\" synthetic perfumes.\n*   **Performance vs. Nature:** A critical segment of the market (approx. 62%) buys natural products for health reasons but still expects professional-level stain and odor removal. Tide's \"Clean Boost\" technology\u2014which claims to remove 3x more residue than detergent alone\u2014bridges this gap by offering high performance with a focus on \"clean\" rinsing.\n\n### 3. Market Impact: Zero-Waste & Packaging Innovation\n*   **The Zero-Waste Movement:** The global zero-waste packaging market is expanding rapidly (CAGR of ~15.7%), driven by both consumer demand and strict regulations (e.g., the EU\u2019s Green Deal and Canada\u2019s 2030 zero-plastic goal).\n*   **Plastic-Free Dominance:** \"Bag-in-a-box\" (Eco-Box) formats and concentrated refills are successfully eating into the market share of traditional heavy plastic jugs. Tide\u2019s Eco-Box is a prime example, marketed as using 60% less plastic while maintaining the ease of use consumers expect from a major brand.\n*   **Economic Viability:** Zero-waste strategies are no longer just for niche brands. Large CPG companies are adopting these formats to mitigate rising plastic costs and appeal to the 66% of global consumers who report a willingness to pay more for sustainable brands.\n\n### Synthesis for Tide Hibiscus Fabric Softener\nThe research suggests that for **Tide Fabric Softener with Hibiscus Scent** to succeed in this landscape, its campaign should focus on:\n*   **The \"Botanical Performance\" Angle:** Highlighting the exotic hibiscus scent as a plant-inspired, premium olfactory experience that provides the \"self-care\" sensory benefit consumers crave.\n*   **Low-Residue Technology:** Positioning the product not as a \"coater\" (which traditional softeners are criticized for in \"Low-Tox\" circles) but as a companion to the Tide Clean Boost system that ensures fabrics remain breathable and free of irritating buildup.\n*   **Packaging as a Statement:** Utilizing the \"Eco-Box\" or concentrated refill formats to directly counter the \"plastic waste\" objections common in the \"Eco Cleaning Hacks\" niche.",
+  "_tool_start_ts": 1773390720.3429966,
+  "target_search_trends": {
+    "target_search_trends": [
+      {
+        "title": "Sustainable Laundry",
+        "description": "Growing interest in eco-friendly laundry products and sustainable cleaning solutions"
+      }
+    ]
+  },
+  "final_select_vis_concepts": {
+    "final_select_vis_concepts": [
+      {
+        "prompt": "A high-resolution POV shot in a bright, Scandi-minimalist laundry room with open bamboo shelving and textured off-white walls. A hand with a clean, natural look reaches out to a Tide Eco-Box sitting neatly on a shelf next to a glass jar of wool dryer balls and a small, potted snake plant. The camera follows the hand as it turns the 'no-drip' blue twist tap, and clear, fragrant liquid fills a minimalist, reusable glass measuring cup with a steady, satisfying stream. The aesthetic is clean, organized, and 'aesthetic,' featuring warm wood textures and soft, natural light streaming through a nearby window. A subtle, elegant sans-serif text overlay in the corner reads '60% Less Plastic.' The camera movement is handheld but professionally stabilized to mimic a high-quality 'CleanTok' vlog. The atmosphere is calm, purposeful, and sustainable.",
+        "type": "video",
+        "trend_ref": "Low-Tox Living, Eco Cleaning Hacks, Scandi-Minimalism, Zero-Waste Packaging",
+        "creative_explain": "A 'CleanTok' style POV video that highlights the functional beauty and sustainability of the Eco-Box. It uses a Scandi-minimalist aesthetic to build trust with the 'Low-Tox' community, focusing on the 60% less plastic claim.",
+        "name": "The Eco-Box Low-Tox Hack (Ad Idea 2)",
+        "headline": "High-Performance Freshness, Zero Compromise",
+        "caption": "Low-Tox living just got a floral upgrade. \ud83c\udf3f\ud83c\udf3a Sustainable packaging meets high-performance botanical freshness. Better for you, better for the planet. #LowToxLiving #SustainableCleaning #TideEcoBox",
+        "rationale": "Directly addresses 'Low-Tox' and 'Zero-Waste' trends by showcasing the Eco-Box in a realistic, eco-conscious home. The POV style feels authentic and less like a traditional ad, which is critical for Gen Z trust.",
+        "call_to_action": "Switch to Eco-Box Now"
+      },
+      {
+        "headline": "Condition Your Clothes with Botanical Luxury",
+        "caption": "Transform your laundry day into a tropical getaway. \ud83c\udf3a\u2728 Protect your fits and embrace the #CleanGirl aesthetic with the new Tide Hibiscus. #TideHibiscus #LaundryCare #SelfCareRoutine",
+        "name": "The Clean Girl Sensescape (Ad Idea 1)",
+        "call_to_action": "Shop the Hibiscus Collection",
+        "rationale": "Taps into the 'Clean Girl' and 'Aesthetic Laundry' trends where home maintenance is viewed as self-care. The high-end visual style (Quiet Luxury) appeals to Gen Z's desire for aspirational yet functional content.",
+        "trend_ref": "#cleangirl, Aesthetic Laundry, Sensory Wellness, Quiet Luxury",
+        "prompt": "A cinematic, high-key video of a young woman with a sleek, low bun and a minimalist cream-colored silk robe, her skin glowing in soft, diffused morning light. She stands in a 'Quiet Luxury' laundry room featuring light oak cabinetry, a white marble countertop, and a lush Pothos plant trailing from a floating wooden shelf. The camera captures an eye-level close-up of her hands, featuring a neutral-toned almond manicure, as she gracefully pours pearlescent, liquid Tide Fabric Softener into a modern white washing machine's tray. In the background, a glass vase holds a vibrant, dew-kissed red hibiscus flower. The scene transitions to a slow-motion shot of her lifting a pristine, high-quality white cotton linen shirt from a woven rattan basket. The fabric looks incredibly soft, airy, and conditioned. The lighting is ethereal and warm, using a 'sunset lamp' effect to create a peaceful, meditative atmosphere. Static shot with a slow, elegant dolly-in.",
+        "type": "video",
+        "creative_explain": "This concept uses a cinematic 'home reset' vignette to frame laundry as a meditative ritual. It visualizes the 'fiber conditioning' claim through high-end textures and 'sensescaping'\u2014focusing on the tactile softness of fabric and the beauty of hibiscus."
+      }
+    ]
+  },
+  "visual_draft": "For the launch of **Tide Fabric Softener with Hibiscus Scent**, these visual concepts bring together the trending **\"Clean Girl\" aesthetic** and **\"Low-Tox\" laundry hack movements**. The visuals focus on \"sensescaping\"\u2014the use of scent, texture, and light to turn a chore into a self-care ritual\u2014while highlighting Tide's innovative **Eco-Box** and **Botanical Performance**.\n\n### 1. The \"Clean Girl\" Laundry Ritual (Video)\n*   **Type:** Video (8 seconds)\n*   **Trend(s):** #cleangirl, Aesthetic Laundry, Sensory Wellness\n*   **Connected Ad Copy:** \"The Botanical Conditioner (Clean Girl Aesthetic)\"\n*   **Creative Concept:** A cinematic \"home reset\" vignette. It uses high-key, warm lighting to frame laundry as a moment of morning Zen. By focusing on the tactile quality of the fabric and the vibrancy of the hibiscus, it visualizes the \"fiber conditioning\" claim.\n*   **Veo Prompt:** \n    > Eye-level close-up shot of a young woman's hands with minimalist, neutral-toned manicure pouring pearlescent, liquid Tide Fabric Softener from a sleek bottle into a modern white washing machine's detergent tray. In the soft-focus background, a pristine laundry room with white tiles, a wooden countertop, and a glass vase holding a vibrant, dew-kissed red hibiscus flower. The room is bathed in soft, ethereal morning sunlight. Cut to a slow-motion shot of a high-quality white cotton linen shirt being lifted from a woven rattan basket, the fabric looking soft and airy. High-key lighting, serene and aesthetic. Static shot followed by a slow dolly-out.\n\n### 2. The Botanical Shield (Image)\n*   **Type:** Image\n*   **Trend(s):** Aesthetic Laundry, Tropical Floral Trends\n*   **Connected Ad Copy:** \"The Botanical Conditioner (Clean Girl Aesthetic)\"\n*   **Creative Concept:** A high-end product photography shot that emphasizes the \"protection\" and \"luxury\" of the hibiscus scent. The fluttering silk background is a visual metaphor for the softening and conditioning properties of the product.\n*   **Gemini Prompt:** \n    > A high-fashion, professional product photograph of Tide Fabric Softener with Hibiscus Scent. The bottle stands prominently on a light-colored wooden pedestal. Around the base, a lush arrangement of fresh hibiscus flowers in deep crimson and soft coral tones. A length of translucent, pale pink silk fabric is draped elegantly over a background rod, fluttering slightly as if in a gentle breeze, symbolizing fiber protection. Bright, natural lighting from a side window creates soft highlights. Shot with a 100mm macro lens for sharp detail on the product and beautiful bokeh on the flowers. Ultra-realistic, 8k resolution.\n\n### 3. The Eco-Box Minimalist Hack (Video)\n*   **Type:** Video (8 seconds)\n*   **Trend(s):** Low-Tox Living, Eco Cleaning Hacks, Sustainable Laundry\n*   **Connected Ad Copy:** \"The Low-Tox Performance Leader (Eco-Focus)\"\n*   **Creative Concept:** Drawing from the \"CleanTok\" vlog style, this video shows the functional \"hack\" of the Eco-Box (twist tap, minimalist footprint) in a realistic, eco-conscious home setting. It pairs the high-performance brand (Tide) with zero-waste aesthetics.\n*   **Veo Prompt:** \n    > POV shot (Point-of-View) in a bright, eco-friendly laundry room with open bamboo shelving. A hand turns the \"no-drip\" twist tap on a Tide Eco-Box, which sits neatly on a shelf next to wool dryer balls in a glass jar and a small green potted plant. The clear liquid fills a reusable glass measuring cup. The aesthetic is \"Scandi-minimalist\" with warm wood and off-white textures. A subtle text overlay \"60% Less Plastic\" appears in a clean sans-serif font. The camera is handheld but stabilized, conveying a personal, \"CleanTok\" vlog feel. High-key natural lighting, peaceful atmosphere.\n\n### 4. The Nature-Identical Flatlay (Image)\n*   **Type:** Image\n*   **Trend(s):** Zero-Waste Packaging, Minimalist Home, Low-Tox Living\n*   **Connected Ad Copy:** \"The Low-Tox Performance Leader (Eco-Focus)\"\n*   **Creative Concept:** A top-down \"flatlay\" composition often seen in wellness magazines. It places the Eco-Box alongside raw botanical ingredients, reinforcing the \"plant-based surfactant\" claim and the premium, nature-identical hibiscus fragrance.\n*   **Gemini Prompt:** \n    > A bird's-eye view flatlay of the Tide Eco-Box on a textured light grey linen surface. Neatly arranged around the box are various natural elements: three whole, vibrant red hibiscus blossoms, a small glass vial containing clear liquid, and several smooth white stones. To the side, a pair of wooden clothespins and a small sprig of fresh green leaves. The composition is clean, airy, and organized with plenty of negative space, following a \"wellness\" and \"minimalist\" aesthetic. Soft, diffuse overhead lighting with no harsh shadows. Shot on a professional DSLR, photorealistic.",
+  "ui:status_update": "Producing commercial in AV editing studio...",
+  "combined_final_cited_report": "# Research Report: Tide Fabric Softener with Hibiscus Scent\n\n## Campaign Guide\nThe launch of **Tide Fabric Softener with Hibiscus Scent** targeting Gen Z is underpinned by a convergence of \"aesthetic laundry\" trends, a demand for scent-driven wellness, and a critical need for garment care education. While this demographic values sustainability, they often struggle with the practicalities of laundry, specifically regarding delicates.\n\n### 1. Gen Z Laundry Habits & Cultural Movements\n*   **\"Aesthetic Laundry\" & \"Clean Girl\":** The \"clean girl\" aesthetic\u2014characterized by fresh scents and a minimalist, pristine lifestyle\u2014has moved into the home. On TikTok, #cleangirl and \"aesthetic laundry\" emphasize the sensory experience of \"shower-fresh\" scents and well-maintained clothing <cite source=\"src-2\" />.\n*   **The \"Laundry Gap\":** Gen Z reportedly avoids washing approximately **26.4 million delicate items** annually due to fear of damage; 32% have shrunk items and 26% have stretched them. This presents an opportunity for Tide to market its softener as a \"fiber conditioner\" that prevents stretching and fading.\n*   **Social Media as a Search Engine:** This demographic discovers products primarily via **TikTok and Instagram**, favoring brands that provide \"laundry education\" (e.g., how to wash workout gear) over traditional advertising.\n\n### 2. Scent & Perception: The Hibiscus Opportunity\n*   **Floral & Wellness Trends:** Floral and \"edible\" scents are among the fastest-growing fragrance categories for 2024-2025. Hibiscus aligns with the \"tropical floral\" trend, which is perceived as an indulgence and a tool for \"mood-boosting\"\u2014a key driver for the 80% of US consumers who use home scents to destress <cite source=\"src-5\" />.\n*   **Scent Longevity:** Consumers prioritize **microencapsulation technology**, which ensures scents last for weeks by releasing fragrance upon friction (e.g., rubbing the fabric).\n\n### 3. Sustainability vs. Performance\n*   **Eco-Packaging Expectations:** 73% of Gen Z are willing to pay a premium for sustainable packaging, favoring plastic-free, compostable, or FSC-certified materials over single-use plastics <cite source=\"src-8\" />.\n*   **Plant-Based Formulas:** There is a robust shift toward **biodegradable, plant-based surfactants**. While eco-niche brands lead here, legacy brands like Tide are gaining traction by introducing \"Biobased\" lines <cite source=\"src-4\" />.\n*   **Purchase Drivers:** Despite the importance of sustainability, **efficacy and price** remain the top factors in final purchase decisions. Gen Z rewards brands that are transparent about their supply chain <cite source=\"src-3\" />.\n\n---\n\n## Search Trend\nThere is a **growing interest in eco-friendly laundry products and sustainable cleaning solutions**, specifically under the \"Sustainable Laundry\" umbrella. Consumers are increasingly searching for ways to maintain a clean home without the environmental footprint associated with traditional chemical detergents and plastic waste.\n\n---\n\n## YouTube Trend\nThe **\"Eco Cleaning Hacks\"** niche is currently trending, featuring creators who share sustainable cleaning routines and product reviews.\n*   **Minimalist Cleaning:** Trending content advocates for \"minimalist cleaning\" using natural ingredients like vinegar and baking soda alongside plant-based concentrates to reduce toxin exposure and plastic waste.\n*   **Low-Tox Living:** This trend is driven by a consumer shift toward reducing microplastics in water systems and eliminating synthetic fragrances that may trigger sensitivities <cite source=\"src-1\" />.\n*   **Market Opportunity:** Creators highlight the effectiveness of plant-derived ingredients in tackling odors, suggesting a strong opening for Tide Hibiscus to position itself as a high-performance yet biodegradable option.\n\n---\n\n## Key Insights from Research\n\n### 1. Cultural Drivers: \"Low-Tox\" Living & Sensory Wellness\n*   **Market Growth:** Sustainable cleaning is projected to reach a **$110 billion market value by 2025**, growing at twice the rate of the traditional market <cite source=\"src-1\" />.\n*   **Self-Care Rituals:** Laundry has transitioned from a chore to a sensory wellness ritual, where the choice of scent serves as an emotional anchor <cite source=\"src-2\" />.\n*   **Fragrance Transparency:** 85% of young adults still prioritize long-lasting scents but demand transparency regarding ingredients, favoring botanical or nature-identical blends like Hibiscus over industrial synthetic perfumes <cite source=\"src-5\" />.\n\n### 2. Packaging & Innovation\n*   **Zero-Waste Dominance:** The global zero-waste packaging market is expanding rapidly, with \"bag-in-a-box\" (Eco-Box) formats successfully replacing heavy plastic jugs <cite source=\"src-7\" /> <cite source=\"src-9\" />.\n*   **Economic Viability:** Large CPG companies are adopting these formats to appeal to the 66% of global consumers willing to pay more for sustainable brands <cite source=\"src-8\" />.\n\n### 3. Strategic Synthesis for Tide Hibiscus\nTo succeed, the **Tide Fabric Softener with Hibiscus Scent** should focus on:\n*   **Botanical Performance:** Positioning the hibiscus scent as a premium, plant-inspired \"self-care\" experience.\n*   **Clean Rinsing:** Using Tide\u2019s \"Clean Boost\" technology to claim the removal of 3x more residue than detergent alone, ensuring fabrics remain breathable and free of irritating buildup <cite source=\"src-6\" />.\n*   **Packaging as a Statement:** Utilizing concentrated refill formats to directly counter \"plastic waste\" objections prevalent in the eco-cleaning community <cite source=\"src-9\" />.",
+  "combined_research_evaluation": {
+    "follow_up_queries": [
+      {
+        "search_query": "Gen Z sentiment on microencapsulation in laundry products and microplastic concerns 2025"
+      },
+      {
+        "search_query": "Hibiscus fragrance trends in home care and fine perfumery 2024-2026"
+      },
+      {
+        "search_query": "Comparison of Tide Clean Boost technology vs vinegar for residue removal in Low-Tox communities"
+      },
+      {
+        "search_query": "Top-selling laundry perfume brands for Gen Z and their fragrance notes"
+      },
+      {
+        "search_query": "Biodegradability of Tide fabric softener surfactants and microencapsulated scents"
+      },
+      {
+        "search_query": "How to market 'synthetic-lite' or 'nature-identical' fragrances to zero-waste consumers"
+      },
+      {
+        "search_query": "Case studies of legacy cleaning brands successfully pivoting to 'aesthetic' packaging for TikTok"
+      }
+    ],
+    "comment": "The research provides a solid foundation by identifying the 'Clean Girl' aesthetic, the 'Laundry Gap' among Gen Z, and the significant 'Low-Tox' movement. It effectively bridges the gap between traditional performance and modern eco-aspirations. However, there are two key areas that require more depth to ensure a successful campaign launch: first, the specific competitive positioning of Tide\u2019s hibiscus scent against artisanal or niche 'laundry perfume' brands that are currently dominating the premium sensory market; and second, the technical feasibility and consumer perception of 'microencapsulation' versus the 'Low-Tox' demand for zero synthetic residue. Gen Z is highly sensitive to the term 'microplastics,' and many microencapsulation technologies are polymer-based. Clarifying how Tide addresses this tension is critical for authenticity. Additionally, more research is needed on the specific 'Hibiscus' fragrance profile\u2014whether it should be marketed as a 'soliflore' (pure hibiscus) or a complex blend (e.g., Hibiscus & Sea Salt) to best fit the 'Quiet Luxury' home trend."
+  },
+  "_state_init": true,
+  "commercial_duration": 15,
+  "commercial_artifact": "",
+  "campaign_web_search_insights": "To launch the **Tide Fabric Softener with Hibiscus Scent** for a Gen Z audience, research highlights a shift toward \"aesthetic laundry,\" sustainability, and scent-driven wellness. While Gen Z values eco-conscious formulas, they are often confused by laundry care for delicates, presenting a major opportunity for Tide to act as an \"expert educator.\"\n\n### 1. Gen Z Laundry Habits & Cultural Movements\n*   **\"Aesthetic Laundry\" & \"Clean Girl\":** The \"clean girl\" aesthetic (slicked-back hair, minimal makeup, fresh scents) has transitioned into the home. On TikTok, #cleangirl (750M+ views) and \"aesthetic laundry\" focus on the sensory experience of \"shower-fresh\" scents and pristine, well-cared-for clothing [3, 26].\n*   **The \"Laundry Gap\":** Research shows Gen Z avoids washing roughly **26.4 million delicate items** due to fear of damaging them. 32% have shrunk items and 26% have stretched them [9]. Tide can bridge this gap by marketing the softener as a \"conditioner\" that protects fibers from stretching and fading [7].\n*   **Social Media as a Search Engine:** Gen Z discovers laundry hacks and products primarily on **TikTok and Instagram**, favoring brands that provide \"laundry education\" (e.g., how to wash silk or workout gear) over traditional ads [14].\n\n### 2. Scent & Perception: The Hibiscus Opportunity\n*   **Floral & Wellness Trends:** Florals and \"edible\" scents (like matcha or caramel) are the fastest-growing fragrance categories in 2024-2025 [24]. Hibiscus fits into the \"tropical floral\" trend, which is perceived as an indulgence and a tool for \"mood-boosting\" and relaxation\u2014key drivers for 80% of US consumers who use home scents to destress [13].\n*   **Scent Longevity:** Modern consumers prioritize **microencapsulation technology** (e.g., Givaudan\u2019s PlanetCaps\u2122), which allows scents to last for weeks or even months by releasing fragrance upon friction (rubbing the fabric) [4].\n\n### 3. Sustainability vs. Performance\n*   **Eco-Packaging is Non-Negotiable:** 73% of Gen Z are willing to pay a premium (up to 10% more) for sustainable packaging [6, 29]. They prefer **plastic-free, compostable, or FSC-certified cardboard** (like Tide Evo) over single-use plastics [4, 11].\n*   **Plant-Based Formulas:** There is a robust move toward **biodegradable, plant-based surfactants** and enzymes. Brands like Ecover and Seventh Generation are leaders here, but legacy brands like Tide are gaining traction by introducing \"Biobased\" lines [7, 27].\n*   **Purchase Drivers:** While sustainability is a \"trust signal,\" **efficacy and price** still outrank eco-credentials in final purchase decisions. Gen Z rewards brands that are transparent about their supply chain and \"walk the talk\" rather than just using green buzzwords [11, 21].\n\n### 4. Marketing Strategies for Legacy Brands\n*   **Authenticity Over Perfection:** Gen Z has a \"bullshit detector\" for overly polished campaigns. Successful legacy brands (like Levi's) pivot by using **User-Generated Content (UGC)** and \"behind-the-scenes\" storytelling to show the human side of the brand [2, 30].\n*   **Influencer Partnerships:** Gen Z is twice as likely as Millennials to be converted by an influencer who aligns with their personal values [30]. Collaborating with \"clean girl\" or \"home-reset\" creators to showcase Tide Hibiscus as part of a \"self-care\" routine is highly effective [2, 23].\n\n### 5. Competitive Landscape\n*   **Top Competitors:** \n    *   **Downy:** Dominates on scent longevity and \"fabric conditioning\" claims [7, 17].\n    *   **Eco-Niche Brands (Beyond, Molly's Suds):** Lead on 99% biobased ingredients and compostable dryer sheets [7, 27].\n    *   **Store Brands (ALDI, Woolworths):** Gaining share among price-sensitive Gen Z by offering \"mild, non-overpowering\" scents at a lower price point [20].",
+  "target_product": "Tide Fabric Softener with Hibiscus Scent",
+  "initial_yt_queries": "1. Cultural drivers behind the rise of \"Low-Tox\" living and minimalist cleaning trends in 2024\n2. Consumer sentiment analysis regarding synthetic fragrances versus plant-derived ingredients in household laundry products\n3. The impact of the zero-waste movement and plastic-free packaging on traditional consumer packaged goods market share",
+  "target_audience": "Gen Z eco-conscious consumers who value sustainable products and fresh scents",
+  "gs_web_search_insights": "",
+  "research_reflection": {
+    "score": 8,
+    "version": 1,
+    "improvements": "1. Add a mandatory 'Technical Barrier Analysis' section to the instructions to force the research to identify specific functional knowledge gaps in the target audience. 2. Include a requirement for 'Competitive Benchmarking' to compare the hibiscus scent/eco-profile against current market leaders. 3. Update instructions to explicitly require 'Counter-Trend Analysis'\u2014identifying why some Gen Z sub-cultures might reject the 'Clean Girl' aesthetic (e.g., 'Chaos Core' or sustainability skepticism) to provide a more balanced strategic outlook."
+  },
+  "yt_video_analysis": "The trending video in the **\"Eco Cleaning Hacks\"** niche focuses on sustainable laundry practices and toxin-free home maintenance. Below is a summary based on the analysis:\n\n*   **Main Thesis/Claim:** The video argues that traditional cleaning products often contain unnecessary chemicals and plastic waste, advocating for \"minimalist cleaning\" using natural ingredients like vinegar, baking soda, and plant-based concentrates. It emphasizes that sustainable cleaning is not only better for the environment but also more cost-effective and healthier for the home.\n*   **Key Entities:**\n    *   **The Creator:** A lifestyle influencer focused on zero-waste living.\n    *   **Key Products:** DIY glass spray bottles, wool dryer balls (as an alternative to dryer sheets), and concentrated eco-refills.\n    *   **The Relationship:** The creator demonstrates how switching from single-use plastic bottles to durable containers and natural surfactants reduces a household's carbon footprint.\n*   **Trend Context:** This is trending because of a growing consumer shift toward \"Low-Tox\" living. Viewers are increasingly looking for ways to reduce microplastics in water systems and eliminate synthetic fragrances that may trigger sensitivities.\n*   **Summary:** The video is a practical guide to auditing a laundry room and cleaning cabinet. It provides step-by-step instructions for making DIY cleaners and reviews several market-leading eco-friendly brands, highlighting the effectiveness of plant-derived ingredients in tackling tough stains and odors.\n\nThis research indicates a strong market opportunity for **Tide Fabric Softener with Hibiscus Scent** to position itself by highlighting any biodegradable components or long-lasting freshness that reduces the need for frequent re-washing.",
+  "img_artifact_keys": {
+    "img_artifact_keys": [
+      {
+        "fidelity_score": 0.85,
+        "markets_product": "Positions Tide as a premium 'botanical conditioner' that protects fibers from stretching and fading while offering an exotic hibiscus scent.",
+        "trend": "#cleangirl, Aesthetic Laundry, Sensory Wellness, Quiet Luxury",
+        "audience_appeal": "Gen Z consumers who value aesthetic 'Clean Girl' content and view laundry as a wellness ritual.",
+        "artifact_key": "input_file_0.png",
+        "rationale_perf": "Taps into the high-growth 'Quiet Luxury' and 'Sensory Wellness' trends to drive emotional engagement and brand premiumization.",
+        "headline": "Condition Your Clothes with Botanical Luxury",
+        "caption": "Transform your laundry day into a tropical getaway. \ud83c\udf3a\u2728 Protect your fits and embrace the #CleanGirl aesthetic with the new Tide Hibiscus. #TideHibiscus #LaundryCare #SelfCareRoutine",
+        "concept": "A cinematic 'home reset' vignette framing laundry as a meditative ritual. It visualizes the 'fiber conditioning' claim through high-end textures and 'sensescaping'."
+      },
+      {
+        "concept": "A 'wellness flatlay' that deconstructs the product's botanical ingredients, reinforcing the 'plant-based' and 'zero-waste' messaging.",
+        "headline": "High-Performance Freshness, Zero Compromise",
+        "rationale_perf": "Addresses 'Low-Tox' skepticism by providing ingredient transparency through visual 'sensescaping' and negative space.",
+        "caption": "Low-Tox living just got a floral upgrade. \ud83c\udf3f\ud83c\udf3a Sustainable packaging meets high-performance botanical freshness. Better for you, better for the planet. #LowToxLiving #SustainableCleaning #TideEcoBox",
+        "artifact_key": "input_file_1.png",
+        "trend": "Low-Tox Living, Eco Cleaning Hacks, Scandi-Minimalism, Zero-Waste Packaging",
+        "audience_appeal": "Eco-conscious and 'Low-Tox' consumers seeking high performance without environmental compromise.",
+        "markets_product": "Showcases the sustainable Tide Eco-Box (60% less plastic) alongside raw botanical elements to emphasize its natural scent profile.",
+        "fidelity_score": 0.82
+      }
+    ]
+  },
+  "request_count": 47,
+  "campaign_guide_content": "",
+  "_tool_name": "save_img_artifact_key",
+  "sources": {
+    "src-3": {
+      "supported_claims": [
+        {
+          "text_segment": "Consumer Sentiment: Synthetic vs. Plant-Derived Ingredients",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Consumer Sentiment: Synthetic vs. Plant-Derived Ingredients",
+          "confidence": 0.5
+        }
+      ],
+      "short_id": "src-3",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEvoJNj6iwiCIEH5e4duSFfsfphbymiPup7HzoUnl0sHoWYfZ-Vf5wkWJHAhwKCG2U_wM3ZPpPw2Pg6rk9LQGHPD-RnrMw5gtJRyawx26MpZ8g13pzNaYRKIlILa6s3XDaBC0ErUm9A4du-fw-ky20kNNaOd_idqhK6ojVnrgvs-owA5fXhguM1FbKpAU2wr8oRmmjVspzieNXYRjJ-1qY-sLnZS-d9TIgTZ03Eq4RJtSsEiKmtVtm9DdyRwvNczbOQdogTHvFl-ryTxHQxwdAGqA==",
+      "domain": "pmarketresearch.com",
+      "title": "pmarketresearch.com"
+    },
+    "src-1": {
+      "short_id": "src-1",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGhaxERWqQ8ecNDkN4jptxabXRBVp-GKaIZYO-pmdYhXySfWr65w22yi7aYWXHDsD0ad6RRoOMorla4FzqIuekOMuSiA6Tse_s6zaAG-BwWMf7wRjzqaLryFAjsFe_pLj6L9Vu0AmgXCjTtKwBwzCFeBWIgHTXAjx3CMM9-ZgU2J3GH3meuSiVvDdxPnB78Uop92kyjNFH0-V4P8hdF_0xk",
+      "domain": "dailypress.net",
+      "title": "dailypress.net",
+      "supported_claims": [
+        {
+          "text_segment": "Sustainable cleaning is projected to reach a **$110 billion market value by 2025**, outpacing the traditional market by 2x.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Sustainable cleaning is projected to reach a **$110 billion market value by 2025**, outpacing the traditional market by 2x."
+        }
+      ]
+    },
+    "src-5": {
+      "title": "trisonwells.com",
+      "short_id": "src-5",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHIEaP-V2r_JXdV7Tese7E2l-jcnu0u92BlN3mAlHyydggUxFM5YaBCxX_-vttxUBdhuzD765WxnoDW6CBgBKTzy1iB3FQHxbcR4S9sveh0dYbwXNComgUoHGhX6WHvbCp9u6nAOSBdS78BHIrmL5rWOM_JbfxN0gZgnxkbQRw2lP1RMg-hDr0a0tT67s9Mk6HcR3AMcBSzEBCVftQy",
+      "domain": "trisonwells.com",
+      "supported_claims": [
+        {
+          "text_segment": "*   **Scent as an Emotional Anchor:** Despite the \"Low-Tox\" trend, 85% of young adults (18-34) still prioritize **long-lasting scents**.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "*   **Scent as an Emotional Anchor:** Despite the \"Low-Tox\" trend, 85% of young adults (18-34) still prioritize **long-lasting scents**.",
+          "confidence": 0.5
+        }
+      ]
+    },
+    "src-6": {
+      "short_id": "src-6",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGkFYRIq4OLAj-3Kvmi-3MBaMNMq6HmbmR9iXlSkwKy8N5Zdpq-K40uk_wJX3F1f3rBP6GcrFUzXVefZg6ky0ztTnuZvSOj0KrjPhGYFIvu4Zvvn4DKj0NRe7BnLJe73ZnZFDW4lX9RIlZQL5wPIBe2E4miiDy4b2ZWoHb4zkrkBPk5dVqdirXLS1jh2S8BgalKCDK4-A==",
+      "domain": "tide.com",
+      "title": "tide.com",
+      "supported_claims": [
+        {
+          "text_segment": "Tide's \"Clean Boost\" technology\u2014which claims to remove 3x more residue than detergent alone\u2014bridges this gap by offering high performance with a focus on \"clean\" rinsing.",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Tide's \"Clean Boost\" technology\u2014which claims to remove 3x more residue than detergent alone\u2014bridges this gap by offering high performance with a focus on \"clean\" rinsing."
+        }
+      ]
+    },
+    "src-7": {
+      "supported_claims": [
+        {
+          "text_segment": "Market Impact: Zero-Waste & Packaging Innovation",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "Market Impact: Zero-Waste & Packaging Innovation",
+          "confidence": 0.5
+        }
+      ],
+      "title": "gminsights.com",
+      "short_id": "src-7",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH45HBMqM89NtWlsLklUKn2C4PSGXUB-OR98woqmDoYJlI9qy8aiTPbY5wB6KxopF0YhFm7PjJGJ6Q--Bk6Zmw-3hylWnuh4mib86zVzW3jwf6iin97Y3sR3_C06xy4Ts1GOOs17HNO_I0cT2lKJ_UjI3Mdwmbbs8J-mNzUyVHGwB2PFA==",
+      "domain": "gminsights.com"
+    },
+    "src-8": {
+      "title": "techsciresearch.com",
+      "short_id": "src-8",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG4IyZjPuP0DWT4SGbhcjK7aMbZwXdivwAXJM8EzOUXiGokHFoTWf038q0Y4MUh-IRvhGfFsPbJ6NcssX8kcHs0G61zYytT0xeeWPOWpmcFX7pm6QQeUcqODuVFqbgBejpvSg4QXDc37dJ6WtIFyvS16t305ufOuiRhTlYUjs7YQdlsRzW4",
+      "domain": "techsciresearch.com",
+      "supported_claims": [
+        {
+          "confidence": 0.5,
+          "text_segment": "Market Impact: Zero-Waste & Packaging Innovation"
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Market Impact: Zero-Waste & Packaging Innovation"
+        }
+      ]
+    },
+    "src-9": {
+      "supported_claims": [
+        {
+          "text_segment": "Market Impact: Zero-Waste & Packaging Innovation",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Market Impact: Zero-Waste & Packaging Innovation"
+        }
+      ],
+      "short_id": "src-9",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEewzAYMaMnITgyCROXdAxNO5OLU8s_gszvqbzHJaKpBz7aqcvcqkwUFppO2gbyfRhEpMs_G7pyy5TTjg3LU0YFcFkoxTByYxN1W2r2F1d_6rFfz1e1eVbpSVTZ6Fj3c9v6Uw4aLqxogE5qW6TUGY9y",
+      "domain": "market.us",
+      "title": "market.us"
+    },
+    "src-2": {
+      "supported_claims": [
+        {
+          "text_segment": "This has shifted the perception of laundry from a chore to a sensory wellness ritual.",
+          "confidence": 0.5
+        },
+        {
+          "text_segment": "This has shifted the perception of laundry from a chore to a sensory wellness ritual.",
+          "confidence": 0.5
+        }
+      ],
+      "title": "fychemgroup.com",
+      "short_id": "src-2",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGJ_AGYF-Jkwri-VVAPtQfvR4S2XD3kChymb3-RF4aixwLfDNbIoUMlmHZG8HJ2r8bay5VJqSFPkSiZU30df2IdU7LpcrbCda4V-5EtT1ECofgADQCxsMhCaswQMia3SBNKXYGn_1TxEc36Z3S2Yfm9DwRQb6RfPp0QiqavQB-rekgrcNJkotrZTV6H",
+      "domain": "fychemgroup.com"
+    },
+    "src-4": {
+      "supported_claims": [
+        {
+          "text_segment": "Consumer Sentiment: Synthetic vs. Plant-Derived Ingredients",
+          "confidence": 0.5
+        },
+        {
+          "confidence": 0.5,
+          "text_segment": "Consumer Sentiment: Synthetic vs. Plant-Derived Ingredients"
+        }
+      ],
+      "short_id": "src-4",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEenCw7EdFPDtHAy3F75GDv6ScQMb3teDHWu4wnk5ctrivQkID3lFiCJruhnBCgiYKS-AVA9eIo6fitRAKD1GIxDxVrjPgATkzVLba0JV1snBUrnGI67xSPTTa5nlhsG8hcfCLcUa1mp1gCor9xG8bX5rbu1nwp4baWcfDPFjQ14nQ=",
+      "domain": "bondiwash.com.au",
+      "title": "bondiwash.com.au"
+    }
+  },
+  "timer_start": 1773390361.7335985,
+  "final_select_ad_copies": {
+   

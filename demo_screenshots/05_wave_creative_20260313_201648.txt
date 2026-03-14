@@ -1,0 +1,177 @@
+[root_agent]: Creative pipeline attempt 1/15...
+[root_agent]: Running creative production pipeline (ad copy, visuals, commercial)...
+[creative_production_orchestrator]: Generating ad copy and visual creatives...
+[ad_copy_drafter]: Here are 11 culturally relevant ad copy ideas for Tide Fabric Softener with Hibiscus Scent, tailored for a 2026 social media landscape (Instagram/TikTok).
+
+---
+
+### 1. The "Sunday Reset" Meditative Ritual
+*   **Headline:** Your Sunday Reset Just Got a Botanical Upgrade.
+*   **Body Text:** Ditch the Sunday scaries. Turn your laundry routine into a moment of sensory grounding. Tide Hibiscus offers that "escapism" scent that lingers long after the dryer dings. Gentle on your clothes, even gentler on your mind.
+*   **Call-to-Action:** Shop the Hibiscus Collection.
+*   **Reference Trend(s):** YouTube Trend (Eco-Routine/#SundayReset)
+*   **Rationale:** Taps into the 4.3B views for #SundayReset by positioning laundry as self-care and mental preparation.
+*   **Social Media Caption:** Less "chore," more "meditation." 🌺✨ Bringing that Sunday Reset energy into the new week with Tide Hibiscus. #SundayReset #CleanTok #MindfulCleaning
+
+### 2. "Smellmaxxing" with a Conscience
+*   **Headline:** Peak Freshness, Zero Trade-offs. 
+*   **Body Text:** You want a fragrance that makes a statement without the harsh footprint. Layer the botanical notes of Hibiscus with Tide’s 2x cleaning power. It’s the "Smellmaxxing" hack your wardrobe—and the planet—has been waiting for.
+*   **Call-to-Action:** Start Your Eco-Scent Journey.
+*   **Reference Trend(s):** YouTube Trend (Scent Layering / "Smellmaxxing")
+*   **Rationale:** Appeals to Gen Z's desire for intense, unique scents ("Identity Scenting") while satisfying eco-standards.
+*   **Social Media Caption:** Why choose between smelling like a tropical dream and saving the planet? 🌴🌎 Tide Hibiscus does both. #Smellmaxxing #EcoFresh #LaundryHack
+
+### 3. The "No Plastic" Power Move
+*   **Headline:** 2x Power. 0x Plastic Waste.
+*   **Body Text:** Tired of the giant plastic jugs? Meet the Hibiscus fiber tiles. FSC-certified paperboard meets botanical softness. It’s the high-performance sustainable laundry solution that actually fits in your aesthetic laundry jar.
+*   **Call-to-Action:** Join the Plastic-Free Revolution.
+*   **Reference Trend(s):** Search Trend (Sustainable Laundry / Packaging Innovation)
+*   **Rationale:** Directly addresses the 90% of Gen Z consumers who prefer eco-friendly packaging and search for plastic-free solutions.
+*   **Social Media Caption:** The future of laundry is fiber. 📦🌺 Clean clothes, cleaner oceans. No compromises. #ZeroWaste #SustainableLiving #TideEvo
+
+### 4. Fragrance Wardrobing: Living Room Edit
+*   **Headline:** Separate Your Rest From Your Reset.
+*   **Body Text:** Keep Lavender for the sheets, but let Hibiscus take over the living room. Use the tropical floral profile for throw blankets and curtains to create an "Invitational Aesthetic" that feels like a staycation every single day.
+*   **Call-to-Action:** Discover Your Fragrance Wardrobe.
+*   **Reference Trend(s):** Search Trend (Sustainable Laundry) & Campaign Insight (Fragrance Wardrobing)
+*   **Rationale:** Utilizes the insight that consumers are now selecting specific scents for different functional areas of the home.
+*   **Social Media Caption:** Lavender for sleep. Hibiscus for energy. 🛋️🌺 Welcome to Fragrance Wardrobing 101. #HomeAesthetic #ScentStyle #InteriorVibes
+
+### 5. Habit-Stacking: The Multi-Tasker
+*   **Headline:** Face Mask On. Hibiscus In. 
+*   **Body Text:** Work smarter, not harder. Throw your favorite linens in the wash with Tide Hibiscus while you do your skincare. It’s the ultimate habit-stacking hack for a week that feels organized, fresh, and tropical.
+*   **Call-to-Action:** Shop Your Reset Duo.
+*   **Reference Trend(s):** YouTube Trend (Habit-Stacking / Cleanfluencer Hacks)
+*   **Rationale:** Connects with the 2026 "skin-ification of scent" trend where laundry is part of a broader wellness/skincare routine.
+*   **Social Media Caption:** Skincare and fabric care in one go. 🧖‍♀️🌺 Resetting my home and my head at the same time. #SelfCareSunday #HabitStacking #TideHibiscus
+
+### 6. The "Ingredient Receipt" (Radical Transparency)
+*   **Headline:** We’re Showing Our Work. 
+*   **Body Text:** No greenwashing, just results. Our Hibiscus formula uses plant-derived surfactants and SmartLabel® transparency. Learn exactly why we chose synthetic botanical blends for better resource efficiency than intensive farming. 
+*   **Call-to-Action:** See the Ingredients.
+*   **Reference Trend(s):** YouTube Trend (Ingredient Receipts / Transparency)
+*   **Rationale:** Directly targets Gen Z's "skepticism by default" and their demand for verifiable sustainability data.
+*   **Social Media Caption:** Transparency is the new "Natural." 🔎🌱 Scanning the receipts on our favorite botanical scent. #GreenCleaning #IngredientSafety #CleanLabel
+
+### 7. The Vacation Aesthetic (Digital Escapism)
+*   **Headline:** Fresh Out of the Dryer. Fresh Out of the Tropics. 
+*   **Body Text:** Why wait for PTO? Tide Hibiscus brings the vacation to your laundry room. Long-lasting scent longevity means your hoodie smells like a Caribbean breeze until your next wash cycle.
+*   **Call-to-Action:** Escape the Mundane.
+*   **Reference Trend(s):** Campaign Insight (The Escapism Narrative)
+*   **Rationale:** Taps into the desire for "digital self-care" and emotional grounding through pleasant domestic tasks.
+*   **Social Media Caption:** This hoodie smells like a 10-day tropical getaway. ✈️🏝️ Catch flights *and* feelings with Tide Hibiscus. #VacationAesthetic #LaundryDay #HibiscusVibes
+
+### 8. Cold-Wash, Tropical-Heat (Eco-Efficiency)
+*   **Headline:** Cold Water. Hot Scents.
+*   **Body Text:** 90% of laundry energy goes to heating the water. Save the planet (and your bills) by switching to cold cycles with Tide’s 2x performance. Hibiscus is formulated to bloom even in chilly water.
+*   **Call-to-Action:** Save with Cold Wash.
+*   **Reference Trend(s):** Search Trend (Sustainable Laundry) & YouTube Trend (Eco Cleaning Hacks)
+*   **Rationale:** Combines the "financial pragmatism" of 2026 with the technical performance of Tide in cold-water settings.
+*   **Social Media Caption:** Cold water = less energy = longer garment life. 🥶🌺 And it still smells like paradise. #ColdWaterClean #EnergySaving #EcoHack
+
+### 9. Minimalist Form, Maximalist Scent
+*   **Headline:** Move Over, "Sad Beige" Cleaning. 
+*   **Body Text:** You can be a minimalist and still want a home that smells like a floral explosion. Our sleek, eco-friendly refills deliver a bold, multifaceted hibiscus fragrance that proves "less is more" only applies to the packaging.
+*   **Call-to-Action:** Get the Refills.
+*   **Reference Trend(s):** YouTube Trend (Minimalist Aesthetics) & Search Trend (Fragrance Depth)
+*   **Rationale:** Plays on the Gen Z move away from quiet basics toward "Maximalist" sensory experiences within a sustainable frame.
+*   **Social Media Caption:** Minimalist bottles. Maximalist fragrance. 🌸✨ Who said eco-cleaning had to be boring? #HomeDecor #ScentMaximalism #TideEco
+
+### 10. The Garment Longevity Hack
+*   **Headline:** Soften the Impact. Extend the Life. 
+*   **Body Text:** Sustainable laundry isn't just about the soap—it's about making your thrift flips last. Tide Hibiscus protects delicate fibers and prevents fading, so your favorite pieces stay in rotation for years, not weeks.
+*   **Call-to-Action:** Protect Your Wardrobe.
+*   **Reference Trend(s):** Search Trend (Garment Longevity / Professional Fabric Care)
+*   **Rationale:** Appeals to the "Slow Fashion" community and Gen Z's focus on maintaining second-hand finds.
+*   **Social Media Caption:** Treat your clothes like they're worth it. 👗🌺 Extending the life of my favorite fits with Tide. #SustainableFashion #SlowFashion #GarmentCare
+
+### 11. "I Tried It": The Cleanfluencer Verdict
+*   **Headline:** The "Eco" Fabric Softener That Actually Works.
+*   **Body Text:** I spent 30 days testing Tide Hibiscus against my old eco-brands. The result? 80% better scent longevity and towels that actually feel like towels. Performance met its plant-based match.
+*   **Call-to-Action:** Read the Full Review.
+*   **Reference Trend(s):** YouTube Trend (Eco Product Reviews / Authenticity over Aesthetics)
+*   **Rationale:** Uses a peer-review style to build trust with "intentional shoppers" who research 3+ times before buying.
+*   **Social Media Caption:** I did the testing so you don't have to. 🧪🌺 Finally, an eco-friendly option that brings the *real* freshness. #ProductReview #CleanTokTested #TideReview
+[ad_copy_critic]: As the **ad_copy_critic**, I have evaluated the 11 proposed ad copy candidates against the 2026 market research, search trends, and YouTube cultural data. Below are the **8 BEST ad copies** selected for the Tide Fabric Softener with Hibiscus Scent campaign.
+
+### **Evaluation Summary**
+The selection prioritizes the **"Sensory-Sustainability Paradox"**—the 2026 consumer's demand for high-performance, luxury scents alongside radical environmental transparency. These copies leverage high-growth trends like **#SundayReset (4.3B views)**, **Smellmaxxing**, and **Garment Longevity**, while proactively addressing the **"Trust Crisis"** in eco-branding.
+
+---
+
+### **1. The "Sunday Reset" Meditative Ritual**
+*   **Headline:** Your Sunday Reset Just Got a Botanical Upgrade.
+*   **Body Text:** Ditch the Sunday scaries. Turn your laundry routine into a moment of sensory grounding. Tide Hibiscus offers that "escapism" scent that lingers long after the dryer dings. Gentle on your clothes, even gentler on your mind.
+*   **Call-to-Action:** Shop the Hibiscus Collection.
+*   **Social Media Caption:** Less "chore," more "meditation." 🌺✨ Bringing that Sunday Reset energy into the new week with Tide Hibiscus. #SundayReset #CleanTok #MindfulCleaning
+*   **Trend(s) Referenced:** YouTube Trend (#SundayReset / Eco-Routine).
+*   **Target Audience Appeal:** Appeals to the wellness-focused Gen Z consumer who views household chores as a form of mental preparation and self-care.
+*   **Performance Rationale:** With #SundayReset generating over 4.3 billion views and peak engagement on Sunday evenings, this copy inserts Tide into a pre-existing, high-intent ritual. It frames the product as a "mood resetter" rather than just a cleaner.
+
+### **2. "Smellmaxxing" with a Conscience**
+*   **Headline:** Peak Freshness, Zero Trade-offs.
+*   **Body Text:** You want a fragrance that makes a statement without the harsh footprint. Layer the botanical notes of Hibiscus with Tide’s 2x cleaning power. It’s the "Smellmaxxing" hack your wardrobe—and the planet—has been waiting for.
+*   **Call-to-Action:** Start Your Eco-Scent Journey.
+*   **Social Media Caption:** Why choose between smelling like a tropical dream and saving the planet? 🌴🌎 Tide Hibiscus does both. #Smellmaxxing #EcoFresh #LaundryHack
+*   **Trend(s) Referenced:** YouTube Trend (Scent Layering / "Smellmaxxing").
+*   **Target Audience Appeal:** Targets the "Identity Scenting" Gen Z demographic who uses fragrance as a personal signature.
+*   **Performance Rationale:** "Smellmaxxing" is a dominant 2025-2026 term for maximizing scent longevity. By positioning laundry as a "scent flex," it moves the product from a commodity to a lifestyle accessory, driving 18–34-year-old interest.
+
+### **3. The "Ingredient Receipt" (Radical Transparency)**
+*   **Headline:** We’re Showing Our Work.
+*   **Body Text:** No greenwashing, just results. Our Hibiscus formula uses plant-derived surfactants and SmartLabel® transparency. Learn exactly why we chose synthetic botanical blends for better resource efficiency than intensive farming.
+*   **Call-to-Action:** See the Ingredients.
+*   **Social Media Caption:** Transparency is the new "Natural." 🔎🌱 Scanning the receipts on our favorite botanical scent. #GreenCleaning #IngredientSafety #CleanLabel
+*   **Trend(s) Referenced:** YouTube Trend (Ingredient Receipts / Transparency).
+*   **Target Audience Appeal:** Directly targets the 65% of Gen Z consumers who do not trust brand sustainability claims.
+*   **Performance Rationale:** Proactive disclosure of "why synthetic" (resource efficiency) builds immense trust with "intentional shoppers" who research products 3+ times before buying. It turns a potential weakness into a scientific strength.
+
+### **4. The "No Plastic" Power Move**
+*   **Headline:** 2x Power. 0x Plastic Waste.
+*   **Body Text:** Tired of the giant plastic jugs? Meet the Hibiscus fiber tiles. FSC-certified paperboard meets botanical softness. It’s the high-performance sustainable laundry solution that actually fits in your aesthetic laundry jar.
+*   **Call-to-Action:** Join the Plastic-Free Revolution.
+*   **Social Media Caption:** The future of laundry is fiber. 📦🌺 Clean clothes, cleaner oceans. No compromises. #ZeroWaste #SustainableLiving #TideEvo
+*   **Trend(s) Referenced:** Search Trend (Sustainable Laundry / Packaging Innovation).
+*   **Target Audience Appeal:** Appeals to the 90% of Gen Z shoppers who prefer brands with eco-friendly packaging.
+*   **Performance Rationale:** Highlights the Tide Evo fiber tile innovation, which solves the "aesthetic" and "environmental" pain points of plastic jugs. It aligns with the "Refillable/Zero-Waste" search surge.
+
+### **5. The Vacation Aesthetic (Digital Escapism)**
+*   **Headline:** Fresh Out of the Dryer. Fresh Out of the Tropics.
+*   **Body Text:** Why wait for PTO? Tide Hibiscus brings the vacation to your laundry room. Long-lasting scent longevity means your hoodie smells like a Caribbean breeze until your next wash cycle.
+*   **Call-to-Action:** Escape the Mundane.
+*   **Social Media Caption:** This hoodie smells like a 10-day tropical getaway. ✈️🏝️ Catch flights *and* feelings with Tide Hibiscus. #VacationAesthetic #LaundryDay #HibiscusVibes
+*   **Trend(s) Referenced:** Campaign Insight (The Escapism Narrative / Natural Escapism).
+*   **Target Audience Appeal:** Connects with the desire for "digital self-care" and emotional grounding through pleasant domestic tasks.
+*   **Performance Rationale:** Hibiscus is identified as a high-growth "escapism" scent (7.7% MoM search increase). This copy sells a feeling (vacation) rather than a function (cleaning), which resonates emotionally.
+
+### **6. Cold-Wash, Tropical-Heat (Eco-Efficiency)**
+*   **Headline:** Cold Water. Hot Scents.
+*   **Body Text:** 90% of laundry energy goes to heating the water. Save the planet (and your bills) by switching to cold cycles with Tide’s 2x performance. Hibiscus is formulated to bloom even in chilly water.
+*   **Call-to-Action:** Save with Cold Wash.
+*   **Social Media Caption:** Cold water = less energy = longer garment life. 🥶🌺 And it still smells like paradise. #ColdWaterClean #EnergySaving #EcoHack
+*   **Trend(s) Referenced:** Search Trend (Sustainable Laundry) & YouTube Trend (Eco Cleaning Hacks).
+*   **Target Audience Appeal:** Appeals to the "Financial Pragmatism" of 2026, where consumers want to save money while being eco-friendly.
+*   **Performance Rationale:** Combines technical performance (cleaning in cold water) with economic benefit. It frames "Cold Wash" as a hack for both the planet and the wallet.
+
+### **7. The Garment Longevity Hack**
+*   **Headline:** Soften the Impact. Extend the Life.
+*   **Body Text:** Sustainable laundry isn't just about the soap—it's about making your thrift flips last. Tide Hibiscus protects delicate fibers and prevents fading, so your favorite pieces stay in rotation for years, not weeks.
+*   **Call-to-Action:** Protect Your Wardrobe.
+*   **Social Media Caption:** Treat your clothes like they're worth it. 👗🌺 Extending the life of my favorite fits with Tide. #SustainableFashion #SlowFashion #GarmentCare
+*   **Trend(s) Referenced:** Search Trend (Garment Longevity / Slow Fashion).
+*   **Target Audience Appeal:** Targets the 83% of Gen Z who shop second-hand and the "Slow Fashion" community.
+*   **Performance Rationale:** Repositions fabric softener as a "preservation tool." In a 2026 market focused on circularity and resale value, "protecting the investment" is a high-converting message.
+
+### **8. Minimalist Form, Maximalist Scent**
+*   **Headline:** Move Over, "Sad Beige" Cleaning.
+*   **Body Text:** You can be a minimalist and still want a home that smells like a floral explosion. Our sleek, eco-friendly refills deliver a bold, multifaceted hibiscus fragrance that proves "less is more" only applies to the packaging.
+*   **Call-to-Action:** Get the Refills.
+*   **Social Media Caption:** Minimalist bottles. Maximalist fragrance. 🌸✨ Who said eco-cleaning had to be boring? #HomeDecor #ScentMaximalism #TideEco
+*   **Trend(s) Referenced:** YouTube Trend (Minimalist Aesthetics) & Search Trend (Fragrance Depth).
+*   **Target Audience Appeal:** Appeals to the aesthetic-conscious consumer who wants "countertop-worthy" packaging without sacrificing sensory intensity.
+*   **Performance Rationale:** Plays on the 2026 "Laundry-Core" aesthetic where the laundry room is a designed space. It bridges the gap between the "clean girl" minimalist look and the "maximalist" scent experience.
+[creative_production_orchestrator]: Generating campaign images from visual concepts...
+[creative_production_orchestrator]: No visual concepts found — skipping image generation.
+[creative_production_orchestrator]: Producing commercial in AV editing studio...
+[creative_production_orchestrator]: Deterministic AV studio attempt 1/3...
+[creative_production_orchestrator]: Submitting commercial to Veo...
