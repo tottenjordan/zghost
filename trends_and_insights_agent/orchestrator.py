@@ -30,6 +30,54 @@ from .shared_libraries.skill_evolution import run_skill_council
 
 logger = logging.getLogger("google_adk." + __name__)
 
+
+def _parse_search_trends(gtrends_result: dict) -> list[dict]:
+    """Parse ALL search trends from get_daily_gtrends() markdown table output.
+
+    Returns list of dicts with trend_title, trend_rank, trend_refresh_date.
+    """
+    if gtrends_result.get("status") != "ok":
+        return []
+    md_table = gtrends_result.get("markdown_table", "")
+    if not md_table:
+        return []
+    # Markdown table format (from pandas to_markdown with index=True):
+    #   |    | term   |   rank | refresh_date   |
+    #   |---:|:-------|-------:|:---------------|
+    #   |  1 | topic  |      1 | 2026-03-10     |
+    lines = [l.strip() for l in md_table.strip().split("\n") if l.strip()]
+    # Skip header (line 0) and separator (line 1), parse all data rows
+    if len(lines) < 3:
+        return []
+
+    trends = []
+    for row in lines[2:]:  # All rows after header and separator
+        cells = [c.strip() for c in row.split("|") if c.strip()]
+        # cells: [index, term, rank, refresh_date]
+        if len(cells) < 4:
+            continue
+        # Convert YYYY-MM-DD to MM/DD/YYYY if needed (downstream expects MM/DD/YYYY)
+        date_str = str(cells[3])
+        if len(date_str) == 10 and date_str[4] == "-":
+            parts = date_str.split("-")
+            date_str = f"{parts[1]}/{parts[2]}/{parts[0]}"
+        trends.append({
+            "trend_title": cells[1],
+            "trend_rank": int(cells[2]),
+            "trend_refresh_date": date_str,
+        })
+    return trends
+
+
+def _parse_top_search_trend(gtrends_result: dict) -> dict | None:
+    """Parse the #1 search trend from get_daily_gtrends() markdown table output.
+
+    Returns dict with trend_title, trend_rank, trend_refresh_date or None.
+    Kept for backward compatibility.
+    """
+    trends = _parse_search_trends(gtrends_result)
+    return trends[0] if trends else None
+
 STAGES = ["TRENDS", "RESEARCH", "CREATIVE", "FOCUS_GROUP", "SAVE_REPORT", "COMPLETE"]
 
 MAX_CREATIVE_ATTEMPTS = 15  # Max times to re-enter CREATIVE before skipping to FOCUS_GROUP
@@ -128,6 +176,10 @@ class CampaignOrchestrator(BaseAgent):
             # Direct tool call — no LLM needed
             async for event in self._save_final_report(ctx):
                 yield event
+        elif stage == "TRENDS" and state.get("autopilot_mode"):
+            # Deterministic trend gathering — no LLM needed
+            async for event in self._gather_trends_deterministic(ctx):
+                yield event
         else:
             # Route to the sub-agent for this stage
             target = self._get_agent_for_stage(stage)
@@ -196,6 +248,105 @@ class CampaignOrchestrator(BaseAgent):
             return None
         agent_map = {a.name: a for a in self.sub_agents}
         return agent_map.get(agent_name)
+
+    async def _gather_trends_deterministic(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """Deterministic trend selection for autopilot mode — no LLM needed.
+
+        Fetches Google Search trends and YouTube trends directly, auto-selects
+        the #1 ranked items, and persists them via state_delta.
+        """
+        from .common_agents.trend_assistant.tools import get_daily_gtrends, get_youtube_trends
+
+        state = ctx.session.state
+        yield self._status_event(ctx, "Autopilot: gathering trends deterministically...")
+
+        # --- Persist campaign metadata via state_delta ---
+        metadata_delta = {}
+        for key in ("brand", "target_product", "target_audience", "key_selling_points"):
+            val = state.get(key, "")
+            if val:
+                metadata_delta[key] = val
+        if metadata_delta:
+            meta_event = self._status_event(ctx, f"Campaign metadata: {', '.join(metadata_delta.keys())}")
+            meta_event.actions.state_delta.update(metadata_delta)
+            yield meta_event
+
+        # --- Fetch and score Google Search Trends ---
+        try:
+            gtrends_result = get_daily_gtrends()
+            all_trends = _parse_search_trends(gtrends_result)
+            if all_trends:
+                # Build keyword set from brand, product, and selling points
+                brand = state.get("brand", "").lower()
+                product = state.get("target_product", "").lower()
+                selling_points = state.get("key_selling_points", "").lower()
+                keywords = set()
+                for text in [brand, product, selling_points]:
+                    keywords.update(word.strip() for word in text.split() if len(word.strip()) > 3)
+
+                # Score each trend by keyword overlap
+                best_trend = None
+                best_score = -1
+                best_rationale = ""
+
+                for trend in all_trends:
+                    trend_title_lower = trend["trend_title"].lower()
+                    score = sum(1 for kw in keywords if kw in trend_title_lower)
+
+                    if score > best_score or (score == best_score and trend["trend_rank"] < all_trends[0]["trend_rank"]):
+                        best_trend = trend
+                        best_score = score
+                        if score > 0:
+                            matched_kw = [kw for kw in keywords if kw in trend_title_lower]
+                            best_rationale = f"Keyword match: {', '.join(matched_kw[:3])}"
+                        else:
+                            best_rationale = f"Default to rank #{trend['trend_rank']} (no keyword overlap)"
+
+                # If no keyword overlap at all, fall back to rank #1
+                if best_score == 0:
+                    best_trend = all_trends[0]
+                    best_rationale = "No keyword overlap — using rank #1 trend"
+
+                search_delta = {"target_search_trends": [best_trend]}
+                trend_event = self._status_event(
+                    ctx, f"Auto-selected search trend: \"{best_trend['trend_title']}\" (rank {best_trend['trend_rank']}) — {best_rationale}"
+                )
+                trend_event.actions.state_delta["target_search_trends"] = search_delta
+                trend_event.actions.state_delta["trend_relevance_rationale"] = best_rationale
+                yield trend_event
+            else:
+                yield self._status_event(ctx, "Warning: Could not parse search trends. Pipeline may retry.")
+        except Exception as e:
+            logger.warning(f"[CampaignOrchestrator] Failed to fetch search trends: {e}")
+            yield self._status_event(ctx, f"Warning: Search trends fetch failed: {e}")
+
+        # --- Fetch and auto-select YouTube Trends ---
+        try:
+            yt_result = get_youtube_trends()
+            # yt_result format: {"row_1": {"videoId": ..., "videoTitle": ..., "duration": ..., "videoURL": ...}, ...}
+            first_key = next(iter(yt_result), None)
+            if first_key:
+                first_video = yt_result[first_key]
+                yt_selection = {
+                    "video_title": first_video.get("videoTitle", ""),
+                    "video_duration": first_video.get("duration", ""),
+                    "video_url": first_video.get("videoURL", ""),
+                }
+                yt_delta = {"target_yt_trends": [yt_selection]}
+                yt_event = self._status_event(
+                    ctx, f"Auto-selected YouTube trend: \"{yt_selection['video_title']}\""
+                )
+                yt_event.actions.state_delta["target_yt_trends"] = yt_delta
+                yield yt_event
+            else:
+                yield self._status_event(ctx, "Warning: No YouTube trends returned. Pipeline may retry.")
+        except Exception as e:
+            logger.warning(f"[CampaignOrchestrator] Failed to fetch YouTube trends: {e}")
+            yield self._status_event(ctx, f"Warning: YouTube trends fetch failed: {e}")
+
+        yield self._status_event(ctx, "Trend selection complete. Proceeding to research...")
 
     async def _save_final_report(
         self, ctx: InvocationContext

@@ -75,6 +75,7 @@ def deploy_agent_engine(update=False):
         "google-cloud-bigquery",
         "db-dtypes",
         "markdown_pdf",
+        "fpdf2",
         "tabulate",
         "google-cloud-texttospeech",
         "google-cloud-storage",
@@ -139,23 +140,38 @@ def deploy_agent_engine(update=False):
         print(f"Deployed Agent Resource Name: {resource_name}")
         print(f"Deployed Agent Engine ID: {engine_id}")
 
-        # Save deployment info for GE registration
-        deployment_info = {
-            "resource_name": resource_name,
-            "engine_id": engine_id,
-            "project_id": GOOGLE_CLOUD_PROJECT,
-            "project_number": os.getenv("GOOGLE_CLOUD_PROJECT_NUMBER"),
-        }
-        with open("deployment_info.json", "w") as f:
-            json.dump(deployment_info, f, indent=2)
-        print(f"Saved deployment info to deployment_info.json")
+    # Update deployment_info.json with engine ID (always, for both create and update)
+    deployment_info = {
+        "resource_name": f"projects/{os.getenv('GOOGLE_CLOUD_PROJECT_NUMBER')}/locations/us-central1/reasoningEngines/{engine_id}",
+        "engine_id": engine_id,
+        "project_id": GOOGLE_CLOUD_PROJECT,
+        "project_number": os.getenv("GOOGLE_CLOUD_PROJECT_NUMBER"),
+    }
+    # Preserve existing GE fields if present
+    if os.path.exists("deployment_info.json"):
+        with open("deployment_info.json") as f:
+            existing = json.load(f)
+        for key in ("ge_engine", "ge_agent_id"):
+            if key in existing:
+                deployment_info[key] = existing[key]
+    with open("deployment_info.json", "w") as f:
+        json.dump(deployment_info, f, indent=2)
+    print(f"Saved deployment info to deployment_info.json")
 
     return remote_agent
 
 
 def register_gemini_enterprise():
-    """Register the deployed agent with Gemini Enterprise."""
-    from deploy.register_gemini_enterprise import register_agent
+    """Register the deployed agent with Gemini Enterprise (Discovery Engine).
+
+    This creates an agent entry in the GE engine that routes queries to the
+    ADK reasoning engine. The registration is idempotent — if an agent with
+    the same display name already exists, it is skipped.
+
+    The GE agent ID is saved to deployment_info.json for use by streamAssist
+    tests and the GE UI.
+    """
+    from deploy.register_gemini_enterprise import register_agent, list_agents
     from deploy.config import DeployConfig
 
     config = DeployConfig.from_deployment_info()
@@ -163,9 +179,23 @@ def register_gemini_enterprise():
         print("ERROR: No reasoning_engine_id found. Deploy to Agent Engine first or set in deployment_info.json")
         return
     if not config.agentspace_app_id:
-        config.agentspace_app_id = os.getenv("AGENTSPACE_APP_ID", "ed4a91ac-75a2-4f60-b343-1f03b7d22e98")
+        config.agentspace_app_id = os.getenv("AGENTSPACE_APP_ID", "gemini-enterprise-17634901_1763490144996")
 
-    register_agent(config)
+    result = register_agent(config)
+
+    # Save the GE agent ID to deployment_info.json
+    if result and result.get("name"):
+        ge_agent_id = result["name"].split("/")[-1]
+        if os.path.exists("deployment_info.json"):
+            with open("deployment_info.json") as f:
+                info = json.load(f)
+            info["ge_engine"] = config.agentspace_app_id
+            info["ge_agent_id"] = ge_agent_id
+            with open("deployment_info.json", "w") as f:
+                json.dump(info, f, indent=2)
+            print(f"Saved GE agent ID to deployment_info.json: {ge_agent_id}")
+
+    return result
 
 
 if __name__ == "__main__":

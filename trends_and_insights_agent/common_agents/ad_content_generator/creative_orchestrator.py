@@ -34,6 +34,7 @@ from google.adk.utils.feature_decorator import experimental
 from ...shared_libraries.config import config
 from ...shared_libraries.utils import upload_blob_to_gcs
 from ...shared_libraries import callbacks
+from ...shared_libraries.fidelity_eval.gecko import evaluate as gecko_evaluate
 from ...skills.focus_group.tools import analyze_commercial_video
 from .tools import evaluate_media_fidelity
 
@@ -284,6 +285,16 @@ class CreativeProductionOrchestrator(BaseAgent):
                 vis_concepts = [{"concept_name": "product_hero", "description": f"Hero shot of {product}"}]
                 yield self._status_event(ctx, "No visual concepts or ad copies — generating generic product image.")
 
+        # Ensure we have 4 diverse concepts for richer creative output
+        generic_concepts = [
+            {"concept_name": "lifestyle_shot", "description": f"{product} being used in a natural lifestyle setting, warm and inviting"},
+            {"concept_name": "hero_product", "description": f"Clean studio hero shot of {product} with elegant lighting on white background"},
+            {"concept_name": "flat_lay", "description": f"Aesthetic flat-lay arrangement featuring {product} with complementary props"},
+            {"concept_name": "environmental_mood", "description": f"Atmospheric mood shot with {product} in an aspirational environment"},
+        ]
+        while len(vis_concepts) < 4:
+            vis_concepts.append(generic_concepts[len(vis_concepts) % len(generic_concepts)])
+
         product = state.get("target_product", "the product")
         audience = state.get("target_audience", "consumers")
         gcs_folder = state.get("gcs_folder", "")
@@ -291,19 +302,23 @@ class CreativeProductionOrchestrator(BaseAgent):
 
         img_client = genai.Client(vertexai=True)
         generated_images = []
+        num_to_gen = min(4, len(vis_concepts))
+        product_description = state.get("key_selling_points", product)
 
-        for i, concept in enumerate(vis_concepts[:2]):  # Generate max 2 images
+        for i, concept in enumerate(vis_concepts[:4]):  # Generate max 4 images
             concept_name = concept.get("concept_name", f"concept_{i}") if isinstance(concept, dict) else f"concept_{i}"
             description = concept.get("description", str(concept)) if isinstance(concept, dict) else str(concept)
 
             prompt = (
-                f"Professional campaign photography for {product}. "
-                f"Visual concept: {description[:300]}. "
+                f"Award-winning advertising photography for {product}. "
+                f"Campaign concept: {concept_name} — {description[:400]}. "
                 f"Target audience: {audience}. "
-                f"High quality, cinematic lighting, lifestyle aesthetic. "
-                f"No text, no logos, no watermarks."
+                f"Style: Ultra-high quality, 8K resolution, professional studio lighting, "
+                f"lifestyle editorial aesthetic, warm natural color palette. "
+                f"Composition: Rule of thirds, shallow depth of field, product prominently featured. "
+                f"No text, no logos, no watermarks, no UI elements."
             )
-            yield self._status_event(ctx, f"Generating image {i + 1}/2: {concept_name}...")
+            yield self._status_event(ctx, f"Generating image {i + 1}/{num_to_gen}: {concept_name}...")
 
             try:
                 response = None
@@ -371,6 +386,67 @@ class CreativeProductionOrchestrator(BaseAgent):
                             "caption": "",
                             "auto_saved": True,
                         }
+
+                        # Gecko fidelity evaluation (best-effort)
+                        fidelity_score = None
+                        if bucket and gcs_folder:
+                            try:
+                                gcs_uri = f"{bucket}/{gcs_folder}/{artifact_key}"
+                                fidelity_score = gecko_evaluate(
+                                    prompt=product_description,
+                                    media_uri=gcs_uri,
+                                    media_type="image"
+                                )
+                                img_meta["fidelity_score"] = fidelity_score
+                                logger.info(f"[ImageGen] Gecko score for {artifact_key}: {fidelity_score}")
+
+                                # Retry if score < 0.7 (best-effort, one retry max)
+                                if fidelity_score < 0.7:
+                                    yield self._status_event(
+                                        ctx, f"Image quality score {fidelity_score:.2f} < 0.7, regenerating with enhanced prompt..."
+                                    )
+                                    enhanced_prompt = (
+                                        prompt + f" Ensure the product {product} is clearly visible and recognizable."
+                                    )
+                                    retry_response = img_client.models.generate_content(
+                                        model=config.image_gen_model,
+                                        contents=enhanced_prompt,
+                                        config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
+                                    )
+                                    if retry_response and retry_response.candidates:
+                                        for retry_part in retry_response.candidates[0].content.parts:
+                                            if hasattr(retry_part, 'inline_data') and retry_part.inline_data:
+                                                retry_bytes = retry_part.inline_data.data
+                                                retry_key = f"{safe_name}_retry.png"
+                                                retry_path = tempfile.NamedTemporaryFile(suffix=".png", delete=False).name
+                                                with open(retry_path, "wb") as f:
+                                                    f.write(retry_bytes)
+                                                upload_blob_to_gcs(
+                                                    source_file_name=retry_path,
+                                                    destination_blob_name=os.path.join(gcs_folder, retry_key),
+                                                )
+                                                os.unlink(retry_path)
+                                                retry_uri = f"{bucket}/{gcs_folder}/{retry_key}"
+                                                retry_score = gecko_evaluate(
+                                                    prompt=product_description,
+                                                    media_uri=retry_uri,
+                                                    media_type="image"
+                                                )
+                                                logger.info(f"[ImageGen] Retry Gecko score: {retry_score}")
+                                                # Keep better-scoring image
+                                                if retry_score > fidelity_score:
+                                                    image_bytes = retry_bytes
+                                                    artifact_key = retry_key
+                                                    fidelity_score = retry_score
+                                                    img_meta["artifact_key"] = retry_key
+                                                    img_meta["fidelity_score"] = retry_score
+                                                    yield self._status_event(
+                                                        ctx, f"Retry improved score to {retry_score:.2f}"
+                                                    )
+                                                break
+                            except Exception as gecko_err:
+                                logger.warning(f"[ImageGen] Gecko fidelity check failed (non-fatal): {gecko_err}")
+
                         generated_images.append(img_meta)
                         logger.info(f"[ImageGen] Generated: {artifact_key}")
 
@@ -489,23 +565,17 @@ class CreativeProductionOrchestrator(BaseAgent):
     ) -> str:
         """Build a detailed Veo prompt for the commercial."""
         return (
-            f"<SUBJECT> A young eco-conscious person discovers {product} in a bright, "
-            f"modern laundry room. The product bottle is prominently featured throughout. "
-            f"<ACTION> The person picks up the product, opens the cap, smells it and smiles "
-            f"with genuine delight. They pour the softener into a washing machine, then later "
-            f"pull out beautifully soft clothes and bring them to their nose, inhaling deeply "
-            f"with satisfaction. The commercial ends with a hero shot of the product surrounded "
-            f"by fresh hibiscus flowers. "
-            f"<SCENE_AND_CONTEXT> Clean, minimalist laundry room with natural morning light "
-            f"streaming through windows. Fresh plants and eco-friendly decor. Warm, inviting "
-            f"atmosphere. {selling_points[:120]}. "
-            f"<CAMERA_ANGLE> Medium shots transitioning to close-ups for product moments. "
-            f"<CAMERA_MOVEMENTS> Smooth dolly and gentle tracking shots. Slow push-in for "
-            f"the product hero moment at the end. "
-            f"<VISUAL_STYLE_AND_AESTHETICS> Warm golden hour tones, shallow depth of field, "
-            f"cinematic 24fps look. Premium lifestyle commercial quality. Soft lens flares. "
-            f"Targeting {audience}. "
-            f"SUPPRESS SUBTITLES. NO TEXT ON SCREEN. NO WATERMARKS."
+            f"A cinematic {duration}-second commercial for {product}. "
+            f"NARRATIVE: A {audience} discovers {product} — moment of genuine delight "
+            f"as they experience the product — product in action showcasing its benefits — "
+            f"hero shot with satisfied expression. "
+            f"VISUAL STYLE: Premium commercial quality, warm golden-hour lighting, "
+            f"shallow depth of field, smooth camera movements, cinematic color grading. "
+            f"CAMERA: Start medium-wide, dolly in to close-up on product interaction, "
+            f"slow push-in to hero moment. Smooth transitions. "
+            f"MOOD: Fresh, uplifting, naturally luxurious. "
+            f"{selling_points[:200]}. "
+            f"SUPPRESS SUBTITLES. NO TEXT ON SCREEN. NO WATERMARKS. NO LOGOS."
         )
 
     async def _generate_veo_clip(
