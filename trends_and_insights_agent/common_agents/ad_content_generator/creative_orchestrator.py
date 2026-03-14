@@ -126,9 +126,12 @@ class CreativeProductionOrchestrator(BaseAgent):
         if isinstance(img_keys, dict):
             img_keys = img_keys.get("img_artifact_keys", [])
 
-        # If images exist, go to AV_STUDIO
-        if img_keys and len(img_keys) >= 1:
+        # If enough images exist (2), go to AV_STUDIO
+        if img_keys and len(img_keys) >= 2:
             return 2  # AV_STUDIO
+        # If some images exist but < 2, keep generating
+        if img_keys and len(img_keys) >= 1:
+            return 1  # IMAGE_GEN (generate more)
         # If ad copies exist (with or without visual concepts), run IMAGE_GEN
         # IMAGE_GEN will fall back to ad copy descriptions if no visual concepts
         if ad_copies:
