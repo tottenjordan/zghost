@@ -209,7 +209,7 @@ def get_pipeline_status(ae, session_id):
     }
 
 
-def run_e2e():
+def run_e2e(evolve=False):
     start_time = time.time()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     print(f"\n{'#'*60}")
@@ -282,9 +282,92 @@ E2E DEMO RESULTS (CampaignOrchestrator) - {timestamp}
     except Exception as e:
         print(f"  Could not save full state: {e}")
 
+    # Optional: Run NovaStorm skill evolution
+    if evolve and status["stage"] == "COMPLETE":
+        run_skill_evolution(status["state"], timestamp)
+
     return (status["report_len"] > 500 and status["num_images"] >= 1
             and status["has_commercial"]
             and status["has_focus_group"] and status["final_report_len"] > 0)
+
+
+def run_skill_evolution(state, timestamp):
+    """Optional post-pipeline step: evolve skills based on session reflections.
+
+    After the pipeline completes, each skill's after_agent_callback populates
+    `{skill}_reflection` keys in session state with score + suggested_improvements.
+    This function loads those reflections, builds SkillDNA objects, and calls
+    evolve_skill() to create the next generation of instructions in Memory Bank.
+    """
+    from trends_and_insights_agent.shared_libraries.skill_evolution import (
+        SkillDNA, evolve_skill, run_skill_council,
+    )
+
+    SKILLS = ["research", "ad_creative", "av_studio", "focus_group"]
+
+    print(f"\n{'='*60}")
+    print("NOVASTORM SKILL EVOLUTION")
+    print(f"{'='*60}")
+
+    # Step 1: Run Skill Council (cross-skill discussion)
+    print("\n--- Skill Council ---")
+    try:
+        council_result = run_skill_council(state, USER_ID)
+        pipeline_score = council_result.get("pipeline_score", 0)
+        top_improvements = council_result.get("top_improvements", [])
+        print(f"  Pipeline score: {pipeline_score}/10")
+        for i, imp in enumerate(top_improvements[:3], 1):
+            print(f"  Top improvement {i}: {imp[:120]}")
+        save_screenshot(f"98_skill_council_{timestamp}",
+                        json.dumps(council_result, indent=2, default=str)[:10000])
+    except Exception as e:
+        print(f"  Skill Council failed (non-fatal): {e}")
+        council_result = {}
+
+    # Step 2: Evolve each skill that has a reflection
+    evolved = []
+    for skill in SKILLS:
+        reflection = state.get(f"{skill}_reflection")
+        if not reflection:
+            print(f"\n  [{skill}] No reflection found — skipping")
+            continue
+
+        score = reflection.get("score", 0)
+        improvements = reflection.get("improvements", "")
+        version = reflection.get("version", 1)
+
+        print(f"\n  [{skill}] Score: {score}/10, Version: {version}")
+        print(f"  [{skill}] Improvements: {str(improvements)[:150]}")
+
+        # Build SkillDNA from reflection data
+        dna = SkillDNA(
+            skill_name=skill,
+            version=version,
+            score=float(score),
+            suggested_improvements=str(improvements),
+            output_quality=f"From E2E reflection: score={score}",
+        )
+
+        # Pick evolution strategy based on score
+        if score >= 8.0:
+            strategy = "explore"  # High score — try novel approaches
+        elif score >= 5.0:
+            strategy = "mutate"   # Medium — incremental improvements
+        else:
+            strategy = "crossover"  # Low — combine known good patterns
+
+        print(f"  [{skill}] Evolving via '{strategy}' strategy...")
+        try:
+            evolved_dna = evolve_skill(skill, dna, strategy=strategy, user_id=USER_ID)
+            print(f"  [{skill}] Evolved to v{evolved_dna.version}: {evolved_dna.suggested_improvements[:120]}")
+            evolved.append(skill)
+        except Exception as e:
+            print(f"  [{skill}] Evolution failed (non-fatal): {e}")
+
+    summary = f"Evolved {len(evolved)}/{len(SKILLS)} skills: {', '.join(evolved) or 'none'}"
+    print(f"\n  {summary}")
+    save_screenshot(f"98_skill_evolution_{timestamp}", summary)
+    return evolved
 
 
 def parse_args():
@@ -294,6 +377,7 @@ def parse_args():
     parser.add_argument("--location", default=LOCATION, help="AE location (us-central1, global, etc)")
     parser.add_argument("--engine-id", default=ENGINE_ID, help="Reasoning Engine ID")
     parser.add_argument("--max-waves", type=int, default=MAX_WAVES, help="Max re-invocation waves")
+    parser.add_argument("--evolve", action="store_true", help="Run NovaStorm skill evolution after pipeline completes")
     return parser.parse_args()
 
 
@@ -306,5 +390,5 @@ if __name__ == "__main__":
     ENGINE_ID = args.engine_id
     RESOURCE_NAME = f"projects/{PROJECT_NUMBER}/locations/{LOCATION}/reasoningEngines/{ENGINE_ID}"
     MAX_WAVES = args.max_waves
-    success = run_e2e()
+    success = run_e2e(evolve=args.evolve)
     exit(0 if success else 1)
