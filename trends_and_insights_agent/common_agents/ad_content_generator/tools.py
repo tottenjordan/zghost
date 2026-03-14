@@ -753,12 +753,45 @@ async def save_final_report_tool(
         artifact_key = "final_trends_and_creatives_report.pdf"
         report_filepath = f"{DIR}/{artifact_key}"
 
-        # Extract brand and product info from state or defaults
-        brand_name = "Brand"
-        product_name = "Product"
+        def _sanitize_text(text: str) -> str:
+            """Replace Unicode characters unsupported by Helvetica (Latin-1) with safe equivalents."""
+            replacements = {
+                "\u2014": "-", "\u2013": "-",  # em-dash, en-dash
+                "\u2018": "'", "\u2019": "'",  # smart quotes
+                "\u201c": '"', "\u201d": '"',  # smart double quotes
+                "\u2026": "...",  # ellipsis
+                "\u2022": "-",  # bullet
+                "\u2713": "[x]", "\u2717": "[ ]",  # check/cross marks
+                "\u2192": "->", "\u2190": "<-",  # arrows
+                "\u00a0": " ",  # non-breaking space
+                "\u200b": "",  # zero-width space
+            }
+            for old, new in replacements.items():
+                text = text.replace(old, new)
+            # Final fallback: encode to latin-1 replacing unknown chars
+            return text.encode("latin-1", errors="replace").decode("latin-1")
+
+        # Extract brand and product info from report or metadata
+        brand_name = "Campaign Report"
+        product_name = ""
         campaign_tagline = ""
 
-        # Try to extract from img_artifact_list or commercial metadata
+        # Try to extract from commercial metadata (has product name)
+        if commercial_artifact and isinstance(commercial_artifact, dict):
+            metadata = commercial_artifact.get("metadata", {})
+            if isinstance(metadata, dict) and metadata.get("title"):
+                product_name = metadata["title"]
+
+        # Try to extract brand/product from first line of research report
+        if processed_report:
+            first_line = processed_report.strip().split("\n")[0].strip()
+            # Common format: "# Market Research Report: Tide Fabric Softener..."
+            if ":" in first_line:
+                product_name = product_name or first_line.split(":", 1)[1].strip()[:60]
+            elif first_line.startswith("#"):
+                product_name = product_name or first_line.lstrip("# ").strip()[:60]
+
+        # Try to extract tagline from img_artifact_list or commercial metadata
         if img_artifact_list and len(img_artifact_list) > 0:
             first_img = img_artifact_list[0]
             if first_img.get("headline"):
@@ -768,12 +801,18 @@ async def save_final_report_tool(
             if isinstance(metadata, dict) and metadata.get("title"):
                 campaign_tagline = metadata["title"]
 
-        # Custom PDF class with headers/footers
+        # Custom PDF class with headers/footers and auto Unicode sanitization
         class CampaignPDF(FPDF):
             def __init__(self):
                 super().__init__()
                 self.is_cover = False
                 self.is_back_cover = False
+
+            def cell(self, w=0, h=None, text="", *args, **kwargs):
+                return super().cell(w, h, _sanitize_text(str(text)), *args, **kwargs)
+
+            def multi_cell(self, w, h=None, text="", *args, **kwargs):
+                return super().multi_cell(w, h, _sanitize_text(str(text)), *args, **kwargs)
 
             def header(self):
                 if self.is_cover or self.is_back_cover:

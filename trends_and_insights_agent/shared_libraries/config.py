@@ -25,7 +25,7 @@ class ResearchConfiguration:
     lite_planner_model: str = (
         "gemini-3-flash-preview"
     )
-    image_gen_model: str = "gemini-3-pro-image-preview"  # native image gen via response_modalities=["IMAGE"], global endpoint
+    image_gen_model: str = "gemini-3.1-flash-image-preview"  # native image gen via response_modalities=["IMAGE"], global endpoint (Flash is faster for AE wave budget)
     video_gen_model: str = (
         "veo-3.1-fast-generate-001"  # GA model | "veo-3.1-fast-generate-preview"
     )
