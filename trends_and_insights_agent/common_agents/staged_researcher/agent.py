@@ -360,6 +360,29 @@ class ResearchPipelineOrchestrator(BaseAgent):
                 # Deterministic merge — no LLM needed, just concatenate
                 async for event in self._merge_insights_deterministic(ctx):
                     yield event
+            elif stage_name == "PARALLEL_RESEARCH":
+                # Run parallel research with wave-count fallthrough
+                research_waves = state.get("_research_parallel_waves", 0) + 1
+                wave_event = self._status_event(ctx, status_msg)
+                wave_event.actions.state_delta["_research_parallel_waves"] = research_waves
+                yield wave_event
+
+                MAX_RESEARCH_WAVES = 12
+                if research_waves > MAX_RESEARCH_WAVES:
+                    # Exceeded budget — skip to merge with whatever we have
+                    yield self._status_event(ctx, f"Parallel research exceeded {MAX_RESEARCH_WAVES} waves — proceeding with available data")
+                    break  # Move to next stage (MERGE)
+
+                target = self._get_sub_agent(agent_name)
+                if target:
+                    async with Aclosing(target.run_async(ctx)) as agen:
+                        async for event in agen:
+                            yield event
+                            if ctx.should_pause_invocation(event):
+                                pause_invocation = True
+
+                    if pause_invocation:
+                        return
             else:
                 # Run the sub-agent
                 target = self._get_sub_agent(agent_name)
