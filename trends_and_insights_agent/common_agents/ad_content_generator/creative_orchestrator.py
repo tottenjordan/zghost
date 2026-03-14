@@ -415,11 +415,14 @@ class CreativeProductionOrchestrator(BaseAgent):
             elif ad_critique:
                 vis_concepts = [{"concept_name": "campaign_visual", "description": str(ad_critique)[:300]}]
             else:
-                vis_concepts = [{"concept_name": "product_hero", "description": f"Hero shot of {product}"}]
+                brand = state.get("brand", "")
+                vis_concepts = [{"concept_name": "product_hero", "description": f"Hero shot of {product} by {brand}, product packaging with {brand} logo and branding clearly visible, studio lighting"}]
 
+        brand = state.get("brand", "")
+        ksp = state.get("key_selling_points", "")
         generic_concepts = [
-            {"concept_name": "lifestyle_shot", "description": f"{product} in a natural lifestyle setting"},
-            {"concept_name": "hero_product", "description": f"Studio hero shot of {product}"},
+            {"concept_name": "lifestyle_shot", "description": f"{product} by {brand} in a styled lifestyle setting, product packaging with {brand} logo clearly visible, {ksp[:100]}"},
+            {"concept_name": "hero_product", "description": f"Studio hero shot of {product} by {brand}, product bottle/packaging centered with {brand} logo and branding prominent, clean background, dramatic lighting"},
         ]
         while len(vis_concepts) < MAX_IMAGES:
             vis_concepts.append(generic_concepts[len(vis_concepts) % len(generic_concepts)])
@@ -429,12 +432,17 @@ class CreativeProductionOrchestrator(BaseAgent):
             concept_name = concept.get("concept_name", "concept") if isinstance(concept, dict) else "concept"
             description = concept.get("description", str(concept)) if isinstance(concept, dict) else str(concept)
 
+            brand = state.get("brand", "")
+            ksp = state.get("key_selling_points", "")
+
             prompt = (
-                f"Professional advertising photography for {product}. "
+                f"Professional advertising photography for {product} by {brand}. "
                 f"Concept: {description[:300]}. "
+                f"The {brand} brand name and logo must be clearly visible on the product packaging. "
+                f"Key product features: {ksp[:200]}. "
                 f"Target audience: {audience}. "
-                f"High quality, cinematic lighting, lifestyle aesthetic. "
-                f"No text, no logos, no watermarks."
+                f"High quality, cinematic lighting, commercial product photography aesthetic. "
+                f"No watermarks."
             )
 
             yield self._status_event(ctx, f"Generating image {img_idx + 1}/{MAX_IMAGES}...")
@@ -549,27 +557,44 @@ class CreativeProductionOrchestrator(BaseAgent):
         else:
             yield self._status_event(ctx, "Submitting commercial to Veo...")
 
-        # Get first campaign image for first-frame conditioning
-        first_frame_uri = ""
+        # Build reference images from campaign images for Veo
+        # STYLE = visual aesthetic guide, ASSET = subject/product to include
         img_keys = state.get("img_artifact_keys", {})
         if isinstance(img_keys, dict):
             img_list = img_keys.get("img_artifact_keys", [])
         else:
             img_list = img_keys if isinstance(img_keys, list) else []
+
+        first_frame_uri = ""
+        reference_images = []
         if img_list and gcs_folder and bucket:
-            first_img = img_list[0]
-            img_filename = first_img.get("artifact_key", "") if isinstance(first_img, dict) else str(first_img)
-            if img_filename:
-                first_frame_uri = f"{bucket}/{gcs_folder}/{img_filename}"
+            for i, img_meta in enumerate(img_list[:2]):
+                img_filename = img_meta.get("artifact_key", "") if isinstance(img_meta, dict) else str(img_meta)
+                if not img_filename:
+                    continue
+                img_gcs_uri = f"{bucket}/{gcs_folder}/{img_filename}"
+                if i == 0:
+                    first_frame_uri = img_gcs_uri
+                # First image = ASSET (product hero), Second = STYLE (aesthetic)
+                ref_type = types.VideoGenerationReferenceType.ASSET if i == 0 else types.VideoGenerationReferenceType.STYLE
+                reference_images.append(
+                    types.VideoGenerationReferenceImage(
+                        image=types.Image(gcs_uri=img_gcs_uri, mime_type="image/png"),
+                        reference_type=ref_type,
+                    )
+                )
+                logger.info(f"[DetAV] Reference image {i}: {ref_type} -> {img_gcs_uri}")
 
         # Build a detailed Veo prompt
-        prompt = self._build_commercial_prompt(product, audience, selling_points, duration)
+        brand = state.get("brand", "")
+        prompt = self._build_commercial_prompt(product, audience, selling_points, duration, brand=brand)
 
         try:
             gen_config = GenerateVideosConfig(
                 aspect_ratio="16:9",
                 number_of_videos=1,
                 output_gcs_uri=bucket,
+                reference_images=reference_images if reference_images else None,
             )
 
             if pending_op:
@@ -625,13 +650,18 @@ class CreativeProductionOrchestrator(BaseAgent):
 
             if operation.error:
                 logger.warning(f"[DetAV] Veo error: {operation.error}")
-                # Retry without first-frame if it failed with one
-                if first_frame_uri and not pending_op:
-                    logger.info("[DetAV] Retrying without first-frame conditioning...")
+                # Retry without reference images / first-frame if it failed with them
+                if (first_frame_uri or reference_images) and not pending_op:
+                    logger.info("[DetAV] Retrying without reference images...")
+                    retry_config = GenerateVideosConfig(
+                        aspect_ratio="16:9",
+                        number_of_videos=1,
+                        output_gcs_uri=bucket,
+                    )
                     operation = veo_client.models.generate_videos(
                         model=config.video_gen_model,
                         prompt=prompt,
-                        config=gen_config,
+                        config=retry_config,
                     )
                     # Save this new op too
                     if operation.name:
@@ -734,20 +764,22 @@ class CreativeProductionOrchestrator(BaseAgent):
 
     def _build_commercial_prompt(
         self, product: str, audience: str, selling_points: str, duration: int,
+        brand: str = "",
     ) -> str:
         """Build a detailed Veo prompt for the commercial."""
         return (
-            f"A cinematic {duration}-second commercial for {product}. "
+            f"A cinematic {duration}-second commercial for {product} by {brand}. "
             f"NARRATIVE: A {audience} discovers {product} — moment of genuine delight "
             f"as they experience the product — product in action showcasing its benefits — "
-            f"hero shot with satisfied expression. "
+            f"close-up hero shot of the {brand} product packaging with branding visible. "
             f"VISUAL STYLE: Premium commercial quality, warm golden-hour lighting, "
             f"shallow depth of field, smooth camera movements, cinematic color grading. "
-            f"CAMERA: Start medium-wide, dolly in to close-up on product interaction, "
-            f"slow push-in to hero moment. Smooth transitions. "
+            f"CAMERA: Start medium-wide, dolly in to close-up on product, "
+            f"slow push-in to branded hero moment. Smooth transitions. "
             f"MOOD: Fresh, uplifting, naturally luxurious. "
+            f"PRODUCT BRANDING: The {brand} name and product label must appear naturally in at least one shot. "
             f"{selling_points[:200]}. "
-            f"SUPPRESS SUBTITLES. NO TEXT ON SCREEN. NO WATERMARKS. NO LOGOS."
+            f"SUPPRESS SUBTITLES. NO WATERMARKS."
         )
 
     def _status_event(self, ctx: InvocationContext, message: str) -> Event:
