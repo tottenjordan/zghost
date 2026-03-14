@@ -446,48 +446,133 @@ class CreativeProductionOrchestrator(BaseAgent):
         # Build a detailed Veo prompt
         prompt = self._build_commercial_prompt(product, audience, selling_points, duration)
 
-        clip_uri, new_pending = await self._generate_veo_clip(
-            veo_client, prompt, first_frame_uri, bucket,
-            pending_op_name=pending_op,
-        )
-
-        if clip_uri:
-            # Commercial generated! Save artifact
-            clips_cache.pop("_pending_veo_op", None)
-            commercial_data = {
-                "artifact_key": f"commercial_{duration}s.mp4",
-                "gcs_uri": clip_uri,
-                "metadata": {
-                    "title": f"{duration}s commercial for {product}",
-                    "scene_descriptions": [
-                        f"Opening: Character discovers {product}",
-                        f"Middle: Product in use, sensory delight",
-                        f"Closing: Product hero shot",
-                    ],
-                    "total_clips": 1,
-                    "duration_seconds": duration,
-                    "narrative_arc": f"Discovery → delight → product reveal for {product}",
-                    "target_audience_appeal": f"Designed for {audience}",
-                    "deterministic_av_studio": True,
-                },
-            }
-            event = self._status_event(ctx, f"Commercial generated: {clip_uri}")
-            event.actions.state_delta["commercial_artifact"] = commercial_data
-            event.actions.state_delta["_commercial_clips"] = {}
-            yield event
-            logger.info(f"[DetAV] Commercial saved: {clip_uri}")
-
-        elif new_pending:
-            # Veo still generating — save operation for next wave
-            clips_cache["_pending_veo_op"] = new_pending
-            save_event = self._status_event(
-                ctx, "Commercial still generating — will resume on next wave"
+        try:
+            gen_config = GenerateVideosConfig(
+                aspect_ratio="16:9",
+                number_of_videos=1,
+                output_gcs_uri=bucket,
             )
-            save_event.actions.state_delta["_commercial_clips"] = dict(clips_cache)
-            yield save_event
 
-        else:
-            yield self._status_event(ctx, "Commercial generation failed")
+            if pending_op:
+                # Resume polling an already-submitted operation
+                from google.genai.types import GenerateVideosOperation
+                logger.info(f"[DetAV] Resuming Veo operation: {pending_op}")
+                try:
+                    stub_op = GenerateVideosOperation(name=pending_op)
+                    operation = veo_client.operations.get(operation=stub_op)
+                except Exception as e:
+                    logger.warning(f"[DetAV] Could not resume operation {pending_op}: {e}")
+                    pending_op = None
+
+            if not pending_op:
+                # Submit new Veo operation
+                if first_frame_uri:
+                    first_frame_image = types.Image(
+                        gcs_uri=first_frame_uri, mime_type="image/png"
+                    )
+                    operation = veo_client.models.generate_videos(
+                        model=config.video_gen_model,
+                        prompt=prompt,
+                        image=first_frame_image,
+                        config=gen_config,
+                    )
+                else:
+                    operation = veo_client.models.generate_videos(
+                        model=config.video_gen_model,
+                        prompt=prompt,
+                        config=gen_config,
+                    )
+
+                # CRITICAL: Save operation name to state BEFORE polling
+                # If AE wave times out during polling, we can resume next wave
+                op_name = operation.name
+                if op_name:
+                    pre_save = self._status_event(ctx, f"Veo operation submitted: {op_name[:40]}...")
+                    pre_save.actions.state_delta["_commercial_clips"] = {"_pending_veo_op": op_name}
+                    yield pre_save
+
+            # Poll within AE wave budget
+            start_time = time.time()
+            while not operation.done:
+                if time.time() - start_time > AE_WAVE_POLL_BUDGET:
+                    op_name = operation.name
+                    logger.info(f"[DetAV] Veo clip still generating, will resume: {op_name}")
+                    save_event = self._status_event(ctx, "Commercial still generating — will resume on next wave")
+                    save_event.actions.state_delta["_commercial_clips"] = {"_pending_veo_op": op_name}
+                    yield save_event
+                    return
+                time.sleep(10)
+                operation = veo_client.operations.get(operation)
+
+            if operation.error:
+                logger.warning(f"[DetAV] Veo error: {operation.error}")
+                # Retry without first-frame if it failed with one
+                if first_frame_uri and not pending_op:
+                    logger.info("[DetAV] Retrying without first-frame conditioning...")
+                    operation = veo_client.models.generate_videos(
+                        model=config.video_gen_model,
+                        prompt=prompt,
+                        config=gen_config,
+                    )
+                    # Save this new op too
+                    if operation.name:
+                        pre_save2 = self._status_event(ctx, "Retrying Veo without first-frame...")
+                        pre_save2.actions.state_delta["_commercial_clips"] = {"_pending_veo_op": operation.name}
+                        yield pre_save2
+
+                    start_time = time.time()
+                    while not operation.done:
+                        if time.time() - start_time > AE_WAVE_POLL_BUDGET:
+                            save_event = self._status_event(ctx, "Retry still generating — will resume")
+                            save_event.actions.state_delta["_commercial_clips"] = {"_pending_veo_op": operation.name}
+                            yield save_event
+                            return
+                        time.sleep(10)
+                        operation = veo_client.operations.get(operation)
+                    if operation.error:
+                        yield self._status_event(ctx, "Commercial generation failed after retry")
+                        return
+                else:
+                    yield self._status_event(ctx, "Commercial generation failed")
+                    return
+
+            # Success — extract video URI
+            clip_uri = None
+            if operation.result and operation.result.generated_videos:
+                for video in operation.result.generated_videos:
+                    if video.video and video.video.uri:
+                        clip_uri = video.video.uri
+                        break
+
+            if clip_uri:
+                commercial_data = {
+                    "artifact_key": f"commercial_{duration}s.mp4",
+                    "gcs_uri": clip_uri,
+                    "metadata": {
+                        "title": f"{duration}s commercial for {product}",
+                        "scene_descriptions": [
+                            f"Opening: Character discovers {product}",
+                            f"Middle: Product in use, sensory delight",
+                            f"Closing: Product hero shot",
+                        ],
+                        "total_clips": 1,
+                        "duration_seconds": duration,
+                        "narrative_arc": f"Discovery -> delight -> product reveal for {product}",
+                        "target_audience_appeal": f"Designed for {audience}",
+                        "deterministic_av_studio": True,
+                    },
+                }
+                event = self._status_event(ctx, f"Commercial generated: {clip_uri}")
+                event.actions.state_delta["commercial_artifact"] = commercial_data
+                event.actions.state_delta["_commercial_clips"] = {}
+                yield event
+                logger.info(f"[DetAV] Commercial saved: {clip_uri}")
+            else:
+                yield self._status_event(ctx, "Veo completed but no video URI returned")
+
+        except Exception as e:
+            logger.warning(f"[DetAV] Veo exception: {e}")
+            yield self._status_event(ctx, f"Commercial generation error: {str(e)[:100]}")
 
     def _build_commercial_prompt(
         self, product: str, audience: str, selling_points: str, duration: int,
@@ -506,103 +591,6 @@ class CreativeProductionOrchestrator(BaseAgent):
             f"{selling_points[:200]}. "
             f"SUPPRESS SUBTITLES. NO TEXT ON SCREEN. NO WATERMARKS. NO LOGOS."
         )
-
-    async def _generate_veo_clip(
-        self, veo_client, prompt: str, first_frame_gcs_uri: str, bucket: str,
-        pending_op_name: str | None = None,
-    ) -> tuple[str | None, str | None]:
-        """Generate a single Veo clip, optionally with first-frame conditioning.
-
-        Returns (video_uri, pending_operation_name).
-        - If the clip completes within this wave: (uri, None)
-        - If the clip is still generating: (None, operation_name) — caller must
-          save operation_name to state and poll on next wave
-        - If generation failed: (None, None)
-        """
-        try:
-            gen_config = GenerateVideosConfig(
-                aspect_ratio="16:9",
-                number_of_videos=1,
-                output_gcs_uri=bucket,
-            )
-
-            if pending_op_name:
-                # Resume polling an already-submitted operation
-                # Must construct a GenerateVideosOperation object — operations.get
-                # expects an object with .name, not a raw string
-                from google.genai.types import GenerateVideosOperation
-                logger.info(f"[DetAV] Resuming Veo operation: {pending_op_name}")
-                try:
-                    stub_op = GenerateVideosOperation(name=pending_op_name)
-                    operation = veo_client.operations.get(operation=stub_op)
-                except Exception as e:
-                    logger.warning(f"[DetAV] Could not resume operation {pending_op_name}: {e}")
-                    # Operation may have expired — resubmit
-                    pending_op_name = None
-
-            if not pending_op_name:
-                # Submit new Veo operation
-                if first_frame_gcs_uri:
-                    first_frame_image = types.Image(
-                        gcs_uri=first_frame_gcs_uri, mime_type="image/png"
-                    )
-                    operation = veo_client.models.generate_videos(
-                        model=config.video_gen_model,
-                        prompt=prompt,
-                        image=first_frame_image,
-                        config=gen_config,
-                    )
-                else:
-                    operation = veo_client.models.generate_videos(
-                        model=config.video_gen_model,
-                        prompt=prompt,
-                        config=gen_config,
-                    )
-
-            # Poll within AE wave budget
-            start_time = time.time()
-            while not operation.done:
-                if time.time() - start_time > AE_WAVE_POLL_BUDGET:
-                    # Wave budget exhausted — return pending operation for next wave
-                    op_name = operation.name
-                    logger.info(f"[DetAV] Veo clip still generating, will resume: {op_name}")
-                    return (None, op_name)
-                time.sleep(10)
-                operation = veo_client.operations.get(operation)
-
-            if operation.error:
-                logger.warning(f"[DetAV] Veo error: {operation.error}")
-                # Retry without first-frame if it failed with one
-                if first_frame_gcs_uri and not pending_op_name:
-                    logger.info("[DetAV] Retrying without first-frame conditioning...")
-                    operation = veo_client.models.generate_videos(
-                        model=config.video_gen_model,
-                        prompt=prompt,
-                        config=gen_config,
-                    )
-                    start_time = time.time()
-                    while not operation.done:
-                        if time.time() - start_time > AE_WAVE_POLL_BUDGET:
-                            op_name = operation.name
-                            return (None, op_name)
-                        time.sleep(10)
-                        operation = veo_client.operations.get(operation)
-                    if operation.error:
-                        return (None, None)
-                else:
-                    return (None, None)
-
-            if operation.result and operation.result.generated_videos:
-                for video in operation.result.generated_videos:
-                    if video.video and video.video.uri:
-                        return (video.video.uri, None)
-
-            return (None, None)
-
-        except Exception as e:
-            logger.warning(f"[DetAV] Veo clip exception: {e}")
-            return (None, None)
-
 
     def _status_event(self, ctx: InvocationContext, message: str) -> Event:
         logger.info(f"[CreativeProduction] {message}")

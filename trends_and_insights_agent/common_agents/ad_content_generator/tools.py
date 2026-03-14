@@ -1004,18 +1004,11 @@ async def save_final_report_tool(
                 elif line_stripped.startswith('- ') or line_stripped.startswith('* '):
                     pdf.set_x(15)
                     pdf.multi_cell(0, 5, f"• {line_stripped[2:]}", 0)
-                # Bold text
+                # Bold text — strip markers and render as regular text
                 elif '**' in line_stripped:
-                    # Simple bold handling
-                    parts = line_stripped.split('**')
-                    for i, part in enumerate(parts):
-                        if i % 2 == 1:  # Odd indices are bold
-                            pdf.set_font('Helvetica', 'B', 10)
-                        else:
-                            pdf.set_font('Helvetica', '', 10)
-                        if part:
-                            pdf.multi_cell(0, 5, part, 0)
-                    pdf.set_font('Helvetica', '', 10)
+                    clean = line_stripped.replace('**', '')
+                    if clean.strip():
+                        pdf.multi_cell(0, 5, clean, 0)
                 # Regular text
                 elif line_stripped:
                     pdf.multi_cell(0, 5, line_stripped, 0)
