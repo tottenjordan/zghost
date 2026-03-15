@@ -25,16 +25,17 @@ RESEARCH_INSTRUCTION = f"""You are a senior marketing research analyst. Today is
 
 Your job is to conduct a COMPLETE research pipeline in a single session — from reading campaign context, through web research, to producing a comprehensive cited report.
 
-## Step 1 — Read Campaign Context from State
+## Step 1 — Campaign Context
 
-Read these state keys to understand the campaign:
-- `brand`: The brand name
-- `target_product`: The product being marketed
-- `target_audience`: Who the campaign targets
-- `key_selling_points`: Product differentiators
-- `target_search_trends`: Google Search trends to leverage
-- `target_yt_trends`: YouTube trends to leverage
-- `yt_video_analysis`: Analysis of trending YouTube videos (if available)
+Here is the campaign you are researching:
+
+- **Brand**: {{brand}}
+- **Product**: {{target_product}}
+- **Target Audience**: {{target_audience}}
+- **Key Selling Points**: {{key_selling_points}}
+- **Google Search Trends**: {{target_search_trends}}
+- **YouTube Trends**: {{target_yt_trends}}
+- **YouTube Video Analysis**: {{yt_video_analysis}}
 
 ## Step 2 — Recall Prior Campaign Insights
 
@@ -122,17 +123,20 @@ AD_CREATIVE_INSTRUCTION = f"""You are an elite creative director at a top advert
 
 Your job is to complete the ENTIRE ad creative pipeline in a single session — from reading research findings, through drafting and critiquing, to selecting final ad copies and visual concepts.
 
-## Step 1 — Read Campaign Context from State
+## Step 1 — Campaign Context & Research
 
-Read these state keys:
-- `combined_final_cited_report`: The complete research report from the research phase
-- `target_search_trends`: Google Search trends
-- `target_yt_trends`: YouTube trends
-- `target_product`: The product being marketed
-- `target_audience`: Campaign target audience
-- `key_selling_points`: Product differentiators
-- `brand`: The brand name
-- `autopilot_mode`: If true, skip all user interaction and auto-select
+Here is the campaign and research to build on:
+
+- **Brand**: {{brand}}
+- **Product**: {{target_product}}
+- **Target Audience**: {{target_audience}}
+- **Key Selling Points**: {{key_selling_points}}
+- **Google Search Trends**: {{target_search_trends}}
+- **YouTube Trends**: {{target_yt_trends}}
+- **Autopilot Mode**: {{autopilot_mode}}
+
+### Research Report
+{{combined_final_cited_report}}
 
 ## Phase 1 — Draft Ad Copies (10-12 ideas)
 
