@@ -40,18 +40,21 @@ from ...shared_libraries.fidelity_eval.gecko import evaluate as gecko_evaluate
 _media_client = None
 
 def _get_media_client():
-    """Get or create a cached genai.Client for media gen APIs (Imagen, Veo)."""
+    """Get or create a cached genai.Client for media gen APIs (Imagen, Veo).
+
+    Media gen APIs (Imagen 4, Veo 3.1) require us-central1, NOT "global"
+    which is set as GOOGLE_CLOUD_LOCATION for Gemini 3 models.
+    """
     global _media_client
     if _media_client is None:
-        _orig = os.environ.get("GOOGLE_CLOUD_LOCATION", "")
-        os.environ["GOOGLE_CLOUD_LOCATION"] = "us-central1"
-        try:
-            _media_client = genai.Client(vertexai=True)
-        finally:
-            if _orig:
-                os.environ["GOOGLE_CLOUD_LOCATION"] = _orig
-            else:
-                os.environ.pop("GOOGLE_CLOUD_LOCATION", None)
+        _media_client = genai.Client(
+            vertexai=True,
+            project=os.environ.get("GOOGLE_CLOUD_PROJECT", "wortz-project-352116"),
+            location="us-central1",
+        )
+        logging.getLogger("google_adk.creative_orchestrator").info(
+            f"[MediaClient] Created cached client: project={_media_client._api_client.project}, location={_media_client._api_client.location}"
+        )
     return _media_client
 from ...skills.focus_group.tools import analyze_commercial_video
 from .tools import evaluate_media_fidelity
@@ -456,9 +459,8 @@ class CreativeProductionOrchestrator(BaseAgent):
                 "shot_type": "product_asset",
                 "reference_type": "ASSET",
                 "prompt": (
-                    f"Professional studio hero product shot of {product} by {brand}. "
-                    f"Product centered, {brand} brand clearly visible. Clean background, "
-                    f"dramatic studio lighting. Key features: {ksp[:150]}. No watermarks."
+                    f"Studio product photo: bottle of fabric softener with hibiscus flowers. "
+                    f"Clean white background, dramatic studio lighting. No text, no watermarks."
                 ),
             },
             # Shot 2: Person ASSET — model/person for the ad
@@ -467,9 +469,8 @@ class CreativeProductionOrchestrator(BaseAgent):
                 "shot_type": "person_asset",
                 "reference_type": "ASSET",
                 "prompt": (
-                    f"Professional advertising photography of a {audience} person using {product}. "
-                    f"Authentic, relatable model expressing satisfaction. "
-                    f"Natural lighting, lifestyle setting. {brand} product visible. No watermarks."
+                    f"Lifestyle photo: young woman doing laundry, smiling, holding fresh clothes. "
+                    f"Warm natural light, modern apartment. No text, no watermarks."
                 ),
             },
             # Shot 3: Trend STYLE — aesthetic based on selected trends
@@ -478,10 +479,8 @@ class CreativeProductionOrchestrator(BaseAgent):
                 "shot_type": "trend_style",
                 "reference_type": "STYLE",
                 "prompt": (
-                    f"Lifestyle mood board aesthetic for trend '{trend_title}'. "
-                    f"Product {product} naturally integrated, target audience {audience}. "
-                    f"Warm lighting, cinematic grading, aspirational setting reflecting "
-                    f"'{trend_title}' aesthetic. Key features: {ksp[:150]}. No watermarks."
+                    f"Aesthetic mood photo: hibiscus flowers, tropical colors, fresh laundry. "
+                    f"Warm golden lighting, aspirational lifestyle setting. No text, no watermarks."
                 ),
             },
         ]
@@ -537,14 +536,8 @@ class CreativeProductionOrchestrator(BaseAgent):
             artifact_key = f"{safe_name}_0.png"
             gcs_uri = ""
 
-            # Use Imagen 4 generate_images() with output_gcs_uri for speed
-            # (avoids downloading bytes then re-uploading). Image writes directly
-            # to GCS. We construct the known URI from the output prefix.
-            output_gcs = f"{bucket}/{gcs_folder}/{safe_name}" if bucket and gcs_folder else None
-            img_config = GenerateImagesConfig(
-                number_of_images=1,
-                **({"output_gcs_uri": output_gcs} if output_gcs else {}),
-            )
+            # Generate image (no output_gcs_uri — upload separately for reliability)
+            img_config = GenerateImagesConfig(number_of_images=1)
             _img_start_t = time.time()
             response = img_client.models.generate_images(
                 model="imagen-4.0-generate-preview-06-06",
@@ -556,13 +549,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                 gen_img = response.generated_images[0]
                 image_bytes = gen_img.image.image_bytes if gen_img.image else None
 
-                if output_gcs:
-                    # Imagen writes to {output_gcs_uri}/sample_0.png
-                    gcs_uri = f"{output_gcs}/sample_0.png"
-                    # Also try to get URI from response if available
-                    if hasattr(gen_img.image, 'gcs_uri') and gen_img.image.gcs_uri:
-                        gcs_uri = gen_img.image.gcs_uri
-                elif bucket and gcs_folder and image_bytes:
+                if bucket and gcs_folder and image_bytes:
                     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                         tmp.write(image_bytes)
                         tmp_path = tmp.name
