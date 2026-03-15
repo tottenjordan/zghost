@@ -509,7 +509,16 @@ class CampaignOrchestrator(BaseAgent):
         all_text_parts: list[str] = []
         async with Aclosing(target.run_async(ctx)) as agen:
             async for event in agen:
-                yield event
+                # Filter out function_call/function_response events — the ADK web UI
+                # shows "Unexpected tool call" for sub-agent tools the parent doesn't own
+                _has_func = False
+                if hasattr(event, 'content') and event.content and event.content.parts:
+                    _has_func = any(
+                        getattr(p, 'function_call', None) or getattr(p, 'function_response', None)
+                        for p in event.content.parts
+                    )
+                if not _has_func:
+                    yield event
                 # Capture non-thought text from model events — keep the LONGEST
                 if hasattr(event, 'content') and event.content:
                     for part in (event.content.parts or []):
