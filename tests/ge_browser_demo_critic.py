@@ -518,95 +518,51 @@ async def capture_ge_screenshots(session_id):
             print("  Message submitted!", flush=True)
             await page.wait_for_timeout(3000)
 
-            # Step 4: Monitor the GE conversation — take screenshots as it progresses
-            # NOTE: Do NOT check AE pipeline status here — Phase 1 already completed
-            # the pipeline. Phase 2 is a separate GE conversation. Check browser
-            # content only.
-            prev_text_len = 0
-            stale_count = 0
-            ge_max_waves = 40  # GE conversation needs many waves for the full pipeline
-            for wave in range(ge_max_waves):
-                await page.wait_for_timeout(15000)  # Wait 15s between checks
+            # Step 4: Wait for initial agent response, then capture key moments
+            # The GE conversation starts the pipeline from scratch (separate session from Phase 1).
+            # We capture 3-4 key screenshots showing the agent interaction, then move to critic.
+            print("  Waiting for agent response (60s)...", flush=True)
+            await page.wait_for_timeout(60000)  # Wait 60s for initial response
 
-                # Scroll to bottom
-                await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                await page.wait_for_timeout(1000)
+            # Take screenshot of initial response
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await page.wait_for_timeout(1000)
+            path = SS_DIR / f"ge_response_01_{ts}.png"
+            await page.screenshot(path=str(path))
+            screenshots.append(str(path))
+            print(f"  Screenshot: {path.name}", flush=True)
 
-                # Check content — use Playwright native text extraction as primary
-                # (GE may use iframes or shadow DOM that JS evaluate can't access)
-                try:
-                    # Primary: Playwright innerText (cross-frame)
-                    page_text = ""
-                    try:
-                        page_text = await page.inner_text("body", timeout=5000)
-                    except Exception:
-                        pass
-                    info = await page.evaluate(CHECK_CONTENT_JS)
-                    # Use max of JS eval and Playwright innerText
-                    js_text_len = info.get("textLength", 0)
-                    pw_text_len = len(page_text)
-                    text_len = max(js_text_len, pw_text_len)
-                    # Override info with Playwright-detected content
-                    pw_lower = page_text.lower()
-                    if pw_text_len > 0:
-                        info["hasResearch"] = info.get("hasResearch") or "research" in pw_lower or "market intelligence" in pw_lower
-                        info["hasAdCopy"] = info.get("hasAdCopy") or "headline" in pw_lower or "ad copy" in pw_lower
-                        info["hasVideo"] = info.get("hasVideo") or "commercial" in pw_lower or "video" in pw_lower
-                        info["hasFocusGroup"] = info.get("hasFocusGroup") or "focus group" in pw_lower or "panelist" in pw_lower
-                        info["hasPDF"] = info.get("hasPDF") or "pdf" in pw_lower or "final report" in pw_lower
-                        info["hasComplete"] = info.get("hasComplete") or "pipeline complete" in pw_lower or "report saved" in pw_lower
-                        info["hasTrends"] = info.get("hasTrends", False) or "trend" in pw_lower
-                        info["textLength"] = text_len
-                    stages = []
-                    if info.get("hasResearch"): stages.append("RESEARCH")
-                    if info.get("hasAdCopy"): stages.append("AD_COPY")
-                    if info.get("hasImages"): stages.append(f"IMAGES({info.get('imageCount', 0)})")
-                    if info.get("hasVideo"): stages.append("VIDEO")
-                    if info.get("hasFocusGroup"): stages.append("FOCUS_GROUP")
-                    if info.get("hasPDF"): stages.append("PDF")
-                    if info.get("hasComplete"): stages.append("COMPLETE")
-                    print(f"  [Wave {wave+1}] {stages} | text={text_len} chars", flush=True)
+            # Send "continue" to advance, wait, screenshot
+            input_el = await page.query_selector("textarea, [contenteditable], [role='textbox']")
+            if input_el:
+                await input_el.click()
+                await page.keyboard.type("continue", delay=20)
+                await page.keyboard.press("Enter")
+                print("  Sent 'continue'", flush=True)
 
-                    # Take screenshot if content changed or every 3rd wave
-                    if text_len > prev_text_len + 50:
-                        path = SS_DIR / f"ge_wave_{wave+1:02d}_{ts}.png"
-                        await page.screenshot(path=str(path))
-                        screenshots.append(str(path))
-                        print(f"  Screenshot: {path.name}", flush=True)
-                        stale_count = 0  # Content changed — reset stale counter
-                    elif wave % 3 == 0:
-                        path = SS_DIR / f"ge_wave_{wave+1:02d}_{ts}.png"
-                        await page.screenshot(path=str(path))
-                        screenshots.append(str(path))
-                        # Don't reset stale_count for periodic screenshots
-                        stale_count += 1
-                    else:
-                        stale_count += 1
+            await page.wait_for_timeout(90000)  # Wait 90s for research/creative
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await page.wait_for_timeout(1000)
+            path = SS_DIR / f"ge_response_02_{ts}.png"
+            await page.screenshot(path=str(path))
+            screenshots.append(str(path))
+            print(f"  Screenshot: {path.name}", flush=True)
 
-                    prev_text_len = text_len
+            # One more continue + wait
+            input_el = await page.query_selector("textarea, [contenteditable], [role='textbox']")
+            if input_el:
+                await input_el.click()
+                await page.keyboard.type("continue", delay=20)
+                await page.keyboard.press("Enter")
+                print("  Sent 'continue'", flush=True)
 
-                    # Check browser for completion — look for pipeline complete OR PDF
-                    if info.get("hasComplete"):
-                        print(f"\n  Pipeline complete detected in browser at wave {wave + 1}!", flush=True)
-                        # Take one more screenshot to capture final state
-                        await page.wait_for_timeout(5000)
-                        path = SS_DIR / f"ge_complete_{ts}.png"
-                        await page.screenshot(path=str(path))
-                        screenshots.append(str(path))
-                        break
-
-                    # If content is stale for 4+ checks, try sending "continue"
-                    if stale_count >= 4:
-                        print(f"  Content stale for {stale_count} checks, sending 'continue'...", flush=True)
-                        input_el = await page.query_selector("textarea, [contenteditable], [role='textbox']")
-                        if input_el:
-                            await input_el.click()
-                            await page.keyboard.type("continue", delay=20)
-                            await page.keyboard.press("Enter")
-                            stale_count = 0
-
-                except Exception as e:
-                    print(f"  [Wave {wave+1}] Content check error: {e}", flush=True)
+            await page.wait_for_timeout(90000)
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await page.wait_for_timeout(1000)
+            path = SS_DIR / f"ge_response_03_{ts}.png"
+            await page.screenshot(path=str(path))
+            screenshots.append(str(path))
+            print(f"  Screenshot: {path.name}", flush=True)
 
         else:
             print("  ERROR: Could not find GE input element!", flush=True)
