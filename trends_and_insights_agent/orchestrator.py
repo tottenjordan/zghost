@@ -836,7 +836,11 @@ class CampaignOrchestrator(BaseAgent):
         missing = {}
         for key, val in reconstructed.items():
             current = state.get(key)
-            if not current:
+            # For trend keys, check if actual trend DATA exists (not just empty wrapper dict)
+            if key in ("target_search_trends", "target_yt_trends"):
+                if not self._has_trends(current) and self._has_trends(val):
+                    missing[key] = val
+            elif not current:
                 missing[key] = val
             elif key == "combined_web_search_insights" and len(str(val)) > len(str(current)):
                 # Take the longer (more complete) version
@@ -923,7 +927,9 @@ class CampaignOrchestrator(BaseAgent):
                 if ksp_match:
                     meta_delta["key_selling_points"] = ksp_match.group(1).strip()
 
-                # Persist brand via state_delta event (separate from content)
+                # Dual-write: persist via state_delta AND set on session for same-invocation reads
+                for k, v in meta_delta.items():
+                    ctx.session.state[k] = v
                 brand_event = Event(
                     invocation_id=ctx.invocation_id, author=self.name, branch=ctx.branch,
                     actions=EventActions(state_delta=meta_delta),
@@ -1015,7 +1021,8 @@ class CampaignOrchestrator(BaseAgent):
                 selected = all_trends[pick_num]
                 search_delta = {"target_search_trends": [selected]}
 
-                # Persist search trend via state_delta
+                # Dual-write: persist via state_delta AND set on session for same-invocation reads
+                ctx.session.state["target_search_trends"] = search_delta
                 search_event = Event(
                     invocation_id=ctx.invocation_id, author=self.name, branch=ctx.branch,
                     actions=EventActions(state_delta={"target_search_trends": search_delta}),
@@ -1137,7 +1144,8 @@ class CampaignOrchestrator(BaseAgent):
                 elif isinstance(st, list) and st:
                     search_trend_name = st[0].get("trend_title", "")
 
-                # Persist YT trend via state_delta
+                # Dual-write: persist via state_delta AND set on session for same-invocation reads
+                ctx.session.state["target_yt_trends"] = yt_delta
                 yt_event = Event(
                     invocation_id=ctx.invocation_id, author=self.name, branch=ctx.branch,
                     actions=EventActions(state_delta={"target_yt_trends": yt_delta}),
