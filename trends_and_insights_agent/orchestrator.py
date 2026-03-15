@@ -870,16 +870,16 @@ class CampaignOrchestrator(BaseAgent):
         # --- Sub-state: need Google Search trend pick? ---
         has_search = self._has_trends(state.get("target_search_trends"))
         if not has_search:
-            # User should be sending a number to pick a search trend
-            pick_num = self._parse_user_pick(user_text_stripped, 25)
-
-            # Re-fetch trends (stateless — no cache dependency)
+            # Re-fetch trends first so we know actual list size
             try:
                 gtrends_result = get_daily_gtrends()
                 all_trends = _parse_search_trends(gtrends_result)
             except Exception as e:
                 logger.warning(f"[CampaignOrchestrator] Failed to re-fetch search trends: {e}")
                 all_trends = []
+
+            # Parse user pick with actual list size (not hardcoded)
+            pick_num = self._parse_user_pick(user_text_stripped, len(all_trends) if all_trends else 25)
 
             if pick_num is not None and all_trends and pick_num < len(all_trends):
                 selected = all_trends[pick_num]
@@ -969,9 +969,7 @@ class CampaignOrchestrator(BaseAgent):
         # --- Sub-state: need YouTube trend pick? ---
         has_yt = self._has_trends(state.get("target_yt_trends"))
         if not has_yt:
-            pick_num = self._parse_user_pick(user_text_stripped, 10)
-
-            # Re-fetch YouTube trends (stateless)
+            # Re-fetch YouTube trends first so we know the actual list size
             try:
                 yt_result = get_youtube_trends()
             except Exception as e:
@@ -987,6 +985,9 @@ class CampaignOrchestrator(BaseAgent):
                         "video_duration": vid.get("duration", ""),
                         "video_url": vid.get("videoURL", ""),
                     })
+
+            # Parse user pick with actual list size (not hardcoded)
+            pick_num = self._parse_user_pick(user_text_stripped, len(yt_list) if yt_list else 50)
 
             if pick_num is not None and yt_list and pick_num < len(yt_list):
                 selected = yt_list[pick_num]
