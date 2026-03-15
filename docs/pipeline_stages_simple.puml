@@ -1,9 +1,146 @@
 @startuml
+
+' GCP_BRANDING_APPLIED
+!theme materia
+skinparam backgroundColor #F8F9FA
+skinparam roundCorner 10
+skinparam defaultFontName "Open Sans"
+skinparam DefaultFontSize 12
+skinparam Padding 10
+
+skinparam database {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam component {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam rectangle {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam note {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam collections {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam state {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam activity {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #4285F4
+    FontColor #000
+    Shadowing false
+    BorderThickness 2
+}
+skinparam usecase {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam cloud {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam frame {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam package {
+    BackgroundColor #F8F9FA
+    BorderColor #CCCCCC
+    FontColor #000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam node {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam queue {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+
+
+title Trends & Insights - Simplified Pipeline
+
 start
-:Trend Discovery;
-:Market Research;
-:Creative;
-:Evaluation;
-:Reporting;
+:TRENDS\n(Deterministic);
+note right
+  BigQuery + YouTube API
+  No LLM in autopilot
+end note
+
+:RESEARCH\n(LLM Agent);
+note right
+  research_agent
+  Google Search + Memory
+end note
+
+:AD_CREATIVE\n(LLM Agent);
+note right
+  ad_creative_agent
+  Draft/Critique/Select
+end note
+
+:IMAGE_GEN\n(Deterministic);
+note right
+  Imagen 4 + Gecko
+  3 ASSET images
+end note
+
+:AV_STUDIO\n(Deterministic);
+note right
+  Veo 3.1 Fast
+  Single 8s clip
+end note
+
+:FOCUS_GROUP\n(LLM Agent);
+note right
+  focus_group_evaluator_agent
+  3-person simulation
+end note
+
+:SAVE_REPORT\n(Tool);
+note right
+  Branded PDF to GCS
+  No LLM
+end note
+
 stop
 @endum

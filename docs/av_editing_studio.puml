@@ -1,60 +1,142 @@
 @startuml
-!theme spacelab
-skinparam Handwritten false
-skinparam Monochrome false
-skinparam BackgroundColor #f9f9f9
+
+' GCP_BRANDING_APPLIED
+!theme materia
+skinparam backgroundColor #F8F9FA
+skinparam roundCorner 10
+skinparam defaultFontName "Open Sans"
+skinparam DefaultFontSize 12
 skinparam Padding 10
 
-title Trends & Insights - AV Editing Studio
+skinparam database {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam component {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam rectangle {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam note {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam collections {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam state {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam activity {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #4285F4
+    FontColor #000
+    Shadowing false
+    BorderThickness 2
+}
+skinparam usecase {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam cloud {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam frame {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam package {
+    BackgroundColor #F8F9FA
+    BorderColor #CCCCCC
+    FontColor #000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam node {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam queue {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+
+
+
+title Trends & Insights - AV Studio (Single-Clip Veo)
 
 package "Input Assets" {
-  [Script / Storyboard] as Script
-  [Silent Video Clips (Veo)] as Clips
-  [Reference Images] as Refs
+  [Product ASSET Image] as ProductAsset
+  [Trend ASSET Image] as TrendAsset
+  [Ad Copy & Visual Concept] as Concept
 }
 
-package "Audio Generation" {
-  [Voice-Over (Chirp 3 HD)] as VO
-  [Dialogue (Chirp 3 HD)] as Dialogue
-  [Music (Lyria 2)] as Music
-  [Sound Effects] as SFX
+package "Gecko Fidelity Scoring" {
+  [Score Product ASSET] as ScoreProd
+  [Score Trend ASSET] as ScoreTrend
+  [Select Best 2 References] as Select
 }
 
-package "Processing" {
-  component "Parallel Clip Generator" as Generator {
-    [Transition Frames] as Trans
-    [Clip Renderer] as Renderer
-  }
-  component "Audio Mixer" as Mixer {
-    [Audio Balancer] as Balancer
-    [Music Ducker] as Ducker
+package "Veo 3.1 Fast" {
+  component "Single Commercial Clip" as Veo {
+    [8s Commercial Generation] as Gen
+    [ASSET References Only] as Refs
   }
 }
 
 package "Output" {
-  [Final Commercial (MP4)] as Final
+  [Commercial MP4] as Final
+  database "Cloud Storage (GCS)" as GCS
 }
 
 ' Relationships
-Script --> Generator : Directs
-Refs --> Generator : Condition
-Clips --> Generator : Input
+ProductAsset --> ScoreProd : 1. Evaluate
+TrendAsset --> ScoreTrend : 1. Evaluate
 
-Generator --> Trans : 1. Generate
-Trans --> Renderer : 2. Seed
-Renderer --> Clips : 3. Produce
+ScoreProd --> Select : 2. Filter
+ScoreTrend --> Select : 2. Filter
 
-Script --> VO : Narration
-Script --> Dialogue : Characters
+Select --> Refs : 3. Top 2 ASSET refs
+Concept --> Gen : Text prompt
 
-VO --> Mixer
-Dialogue --> Mixer
-Music --> Mixer
-SFX --> Mixer
+Refs --> Gen : Condition
+Gen --> Final : 4. Produce
 
-Balancer --> Ducker : 1. Mix
-Ducker --> Final : 2. Merge with Video
-
-Clips --> Final : Merge with Audio
+Final --> GCS : 5. Upload
 
 @endum

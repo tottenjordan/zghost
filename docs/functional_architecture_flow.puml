@@ -1,42 +1,140 @@
 @startuml
-skinparam Handwritten false
-skinparam Monochrome false
-skinparam BackgroundColor #f9f9f9
+
+' GCP_BRANDING_APPLIED
+!theme materia
+skinparam backgroundColor #F8F9FA
+skinparam roundCorner 10
+skinparam defaultFontName "Open Sans"
+skinparam DefaultFontSize 12
 skinparam Padding 10
 
-title Trends & Insights - Functional Flow
+skinparam database {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam component {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam rectangle {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam note {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam collections {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam state {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam activity {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #4285F4
+    FontColor #000
+    Shadowing false
+    BorderThickness 2
+}
+skinparam usecase {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam cloud {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam frame {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam package {
+    BackgroundColor #F8F9FA
+    BorderColor #CCCCCC
+    FontColor #000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam node {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam queue {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+
+
+
+title Trends & Insights - Functional Flow (Flat Architecture)
 
 | Orchestration |
-| Services |
-| Data |
+| LLM Agents |
+| SDK/Data |
 
 | Orchestration |
 start
-:Campaign Orchestrator;
+:CampaignOrchestrator\n(BaseAgent State Machine);
 
-| Services |
-:Trends & Insights Agent;
-| Data |
-:Query BigQuery;
+| SDK/Data |
+:TRENDS (Deterministic)\nBigQuery + YouTube API;
 
-| Services |
-:Research Orchestrator;
-| Data |
-:Fetch from YouTube;
-:Save to Cloud Storage;
+| LLM Agents |
+:RESEARCH\nresearch_agent (Gemini 3);
+| SDK/Data |
+:Google Search + Memory Bank;
 
-| Services |
-:Creative Production Orchestrator;
-| Data |
-:Generate Assets (Vertex AI);
-:Save to Cloud Storage;
+| LLM Agents |
+:AD_CREATIVE\nad_creative_agent (Gemini 3);
+note right
+  Draft/Critique/Select
+  ad copies + visual concepts
+end note
 
-| Services |
-:Focus Group Evaluator;
-| Data |
-:Analyze Video (Vertex AI);
+| SDK/Data |
+:IMAGE_GEN (Deterministic)\nImagen 4 + Gecko Scoring;
+
+| SDK/Data |
+:AV_STUDIO (Deterministic)\nVeo 3.1 Fast;
+
+| LLM Agents |
+:FOCUS_GROUP\nfocus_group_evaluator_agent;
 
 | Orchestration |
-:Compile Final Report;
+:SAVE_REPORT\nBranded PDF to GCS;
+
+:COMPLETE;
 stop
 @endum

@@ -1,50 +1,138 @@
 @startuml
-skinparam Handwritten false
-skinparam Monochrome false
-skinparam BackgroundColor #FFFFFF
-skinparam Shadowing false
+
+' GCP_BRANDING_APPLIED
+!theme materia
+skinparam backgroundColor #F8F9FA
+skinparam roundCorner 10
+skinparam defaultFontName "Open Sans"
+skinparam DefaultFontSize 12
 skinparam Padding 10
-skinparam BoxPadding 10
+
+skinparam database {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam component {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam rectangle {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam note {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam collections {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam state {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam activity {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #4285F4
+    FontColor #000
+    Shadowing false
+    BorderThickness 2
+}
+skinparam usecase {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam cloud {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam frame {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam package {
+    BackgroundColor #F8F9FA
+    BorderColor #CCCCCC
+    FontColor #000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam node {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam queue {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+
+
 
 ' Participant Styles
-skinparam ParticipantBackgroundColor #4285F4
-skinparam ParticipantBorderColor #3367D6
-skinparam ParticipantFontColor #FFFFFF
 
 ' Actor Styles
-skinparam ActorBackgroundColor #EA4335
-skinparam ActorBorderColor #B32015
 
 ' Database Styles
-skinparam DatabaseBackgroundColor #FBBC05
-skinparam DatabaseBorderColor #D08700
 
 ' Arrow Styles
-skinparam ArrowColor #5F6368
-skinparam ArrowThickness 1.5
 
 ' LifeLine Styles
-skinparam LifeLineBorderColor #5F6368
-skinparam LifeLineBackgroundColor #E8F0FE
 
 
-title Trends & Insights Agent Flow
+title Trends Discovery Flow (Deterministic in Autopilot)
 
-actor "User" as User
-participant "Trends & Insights Agent" as Agent
-participant "Tools" as Tools
+actor "User / Orchestrator" as User
+participant "CampaignOrchestrator" as Orch
+database "BigQuery" as BQ
+database "YouTube Data API v3" as YT
 database "Session State" as State
 
-User -> Agent: Start Session
-Agent -> Tools: get_daily_gtrends
-Tools --> Agent: Google Trends
-Agent -> Tools: get_youtube_trends
-Tools --> Agent: YouTube Trends
-Agent -> Tools: save_search_trends_to_session_state
-Agent -> Tools: save_yt_trends_to_session_state
+User -> Orch: Start TRENDS Stage
+note right of Orch
+  Deterministic mode:
+  No LLM in autopilot
+end note
+
+Orch -> BQ: Query Google Trends (get_daily_gtrends)
+BQ --> Orch: Trending Search Terms
+
+Orch -> YT: Fetch YouTube Trends (get_youtube_trends)
+YT --> Orch: Trending Videos
+
+Orch -> State: Save search_trends_summary
+Orch -> State: Save yt_trends_summary
 State -> State: Update State
-Agent -> Tools: memorize
-Tools --> Agent: Memorized
-Agent --> User: Return Summary
+
+Orch --> User: Trends Summary (No LLM)
 
 @endum

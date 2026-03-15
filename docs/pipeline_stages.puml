@@ -98,7 +98,6 @@ skinparam queue {
 
 
 
-' GCP_BRANDING_APPLIED
 
     BackgroundColor #FBBC05
     BorderColor #E0E0E0
@@ -175,39 +174,47 @@ skinparam queue {
 }
 
 
-title Trends & Insights - Pipeline Stages
 
-| Trend Discovery |
-| Market Research |
-| Creative |
-| Evaluation |
-| Reporting |
+title Trends & Insights - Pipeline Stages (Flat Architecture)
 
-| Trend Discovery |
+| Trends |
+| Research |
+| Ad Creative |
+| Image Gen |
+| AV Studio |
+| Focus Group |
+| Report |
+
+| Trends |
 start
-#4285F4:Query Trends (BigQuery);
-#4285F4:Filter & Select;
+#4285F4:Query BigQuery (Deterministic);
+#4285F4:Fetch YouTube Trends (API);
 
-| Market Research |
-#EA4335:Recall Memory (Prior Insights);
-#EA4335:Fetch Content (Google Search/YouTube);
-#EA4335:Analyze & Synthesize;
-#EA4335:Generate Draft Report;
+| Research |
+#EA4335:Recall Prior Insights (Memory);
+#EA4335:Google Search;
+#EA4335:Synthesize Report (LLM);
 
-| Creative |
-#FBBC05:Draft Ad Copy (Gemini);
-#FBBC05:Draft Visual Concepts;
-#FBBC05:Generate Images (Imagen);
-#FBBC05:Generate Videos (Veo);
+| Ad Creative |
+#FBBC05:Draft Ad Copies (LLM);
+#FBBC05:Draft Visual Concepts (LLM);
+#FBBC05:Critique & Select (LLM);
 
-| Evaluation |
-#34A853:Evaluate Commercial (Gemini Vision);
-#34A853:Simulate Focus Group;
-#34A853:Score Visuals & Qualitative;
+| Image Gen |
+#34A853:Generate 3 ASSET Images (Imagen 4);
+#34A853:Gecko Fidelity Scoring;
 
-| Reporting |
-#4285F4:Compile Final PDF Report;
-#4285F4:Save Artifacts to GCS;
+| AV Studio |
+#EA4335:Select Best 2 ASSET Refs;
+#EA4335:Generate Single Clip (Veo 3.1);
+
+| Focus Group |
+#FBBC05:Simulate Focus Group (LLM);
+#FBBC05:Score & Go/No-Go Decision;
+
+| Report |
+#4285F4:Compile Branded PDF;
+#4285F4:Save to GCS;
 
 stop
 @endum
