@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main, thinking]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run unit tests
+        env:
+          GOOGLE_GENAI_USE_VERTEXAI: "1"
+          GOOGLE_CLOUD_PROJECT: "test-project"
+          GOOGLE_CLOUD_PROJECT_NUMBER: "123456789"
+          GOOGLE_CLOUD_LOCATION: "us-central1"
+          BUCKET: "test-bucket"
+          YT_SECRET_MNGR_NAME: "test-yt-secret"
+          ENABLE_LLM_STATUS: "false"
+        run: uv run pytest tests/ -m "unit" -v --tb=short -x

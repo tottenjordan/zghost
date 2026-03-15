@@ -1290,7 +1290,17 @@ class CampaignOrchestrator(BaseAgent):
                 continue
             elif (existing.get("fidelity_score") is not None
                   and existing["fidelity_score"] < GECKO_THRESHOLD):
-                # Below Gecko threshold — regenerate
+                # Below Gecko threshold — regenerate with trajectory feedback
+                # Append prior failing verdicts to the prompt so the model avoids same mistakes
+                failing_verdicts = existing.get("gecko_failing_verdicts", [])
+                if failing_verdicts:
+                    verdict_text = "; ".join(failing_verdicts[:5])
+                    shot = dict(shot)  # Copy to avoid mutating shot_list
+                    shot["prompt"] = (
+                        shot["prompt"].rstrip(". ")
+                        + f". IMPORTANT: A previous generation failed these quality checks: [{verdict_text}]. "
+                        f"Fix these issues in this generation."
+                    )
                 slots_to_generate.append((i, shot, fail_count))
 
         if not slots_to_generate:
@@ -1375,6 +1385,11 @@ class CampaignOrchestrator(BaseAgent):
                     )
                     if isinstance(result, dict) and result.get("status") == "success":
                         img_meta["fidelity_score"] = result.get("score", 0.0)
+                        # Store failing verdicts for trajectory feedback on regeneration
+                        if result.get("failing"):
+                            img_meta["gecko_failing_verdicts"] = result["failing"]
+                        if result.get("passing"):
+                            img_meta["gecko_passing_verdicts"] = result["passing"]
                     elif isinstance(result, (int, float)):
                         img_meta["fidelity_score"] = float(result)
                 except Exception as e:
@@ -1447,17 +1462,19 @@ class CampaignOrchestrator(BaseAgent):
                     f"reference type: {ref_type} (Gecko skipped)"
                 )
 
-            # Save as ADK artifact (async — must be done sequentially)
+            # Save ALL images as ADK artifacts (including Gecko-failed ones)
+            # so they appear in the ADK web UI for user review
             image_bytes = result.get("image_bytes")
             artifact_key = result.get("artifact_key")
+            art_version = None
             if ctx.artifact_service and image_bytes and artifact_key:
                 try:
-                    version = await ctx.artifact_service.save_artifact(
+                    art_version = await ctx.artifact_service.save_artifact(
                         app_name=ctx.app_name, user_id=ctx.user_id,
                         session_id=ctx.session.id, filename=artifact_key,
                         artifact=types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
                     )
-                    logger.info(f"[ImageGen] Saved artifact: {artifact_key} v{version}")
+                    logger.info(f"[ImageGen] Saved artifact: {artifact_key} v{art_version}")
                 except Exception as e:
                     logger.warning(f"[ImageGen] Failed to save artifact: {e}")
 
@@ -1473,6 +1490,9 @@ class CampaignOrchestrator(BaseAgent):
             per_img_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": current_list}
             if gecko_passed:
                 per_img_event.actions.state_delta[f"_img_fail_{i}"] = 0
+            # Set artifact_delta so image appears inline in ADK web UI / GE
+            if art_version is not None and artifact_key:
+                per_img_event.actions.artifact_delta[artifact_key] = art_version
             # Also write to ctx.session.state for same-invocation reads
             ctx.session.state["img_artifact_keys"] = {"img_artifact_keys": current_list}
             yield per_img_event
@@ -1937,9 +1957,13 @@ class CampaignOrchestrator(BaseAgent):
                 "version": result.get("version"),
             }
             # Set artifact_delta so PDF appears inline in ADK web UI / GE
+            # version can be 0 (falsy but valid), so check explicitly for None
             version = result.get("version")
             if version is not None:
                 report_event.actions.artifact_delta[artifact_key] = version
+            else:
+                # Fallback: set version 0 so artifact_delta is always present
+                report_event.actions.artifact_delta[artifact_key] = 0
             yield report_event
         else:
             msg = f"Failed to save final report: {result.get('error', 'unknown')}"
