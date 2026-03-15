@@ -501,7 +501,12 @@ class CreativeProductionOrchestrator(BaseAgent):
             yield skip_event
             return
 
-        yield self._status_event(ctx, f"Generating image {img_idx + 1}/{MAX_IMAGES} ({shot['shot_type']}: {concept_name})...")
+        # Pre-increment failure counter BEFORE calling generate_images().
+        # If AE wave times out during the call, the counter is already saved,
+        # preventing infinite retry on the same image.
+        pre_fail_event = self._status_event(ctx, f"Generating image {img_idx + 1}/{MAX_IMAGES} ({shot['shot_type']}: {concept_name})...")
+        pre_fail_event.actions.state_delta[img_fail_key] = img_failures + 1
+        yield pre_fail_event
 
         try:
             import re as _re
@@ -520,6 +525,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                 number_of_images=1,
                 **({"output_gcs_uri": output_gcs} if output_gcs else {}),
             )
+            _img_start_t = time.time()
             response = img_client.models.generate_images(
                 model="imagen-4.0-generate-preview-06-06",
                 prompt=prompt,
@@ -563,9 +569,10 @@ class CreativeProductionOrchestrator(BaseAgent):
                 if gcs_uri:
                     img_meta["gcs_uri"] = gcs_uri
 
-                # Gecko fidelity (best-effort)
+                # Gecko fidelity (best-effort, skip if tight on time)
                 fidelity_score = None
-                if gcs_uri:
+                _img_gen_elapsed = time.time() - _img_start_t
+                if gcs_uri and _img_gen_elapsed < 30:  # Only run gecko if <30s spent on image gen
                     try:
                         result = gecko_evaluate(
                             prompt=state.get("key_selling_points", product),
@@ -581,7 +588,8 @@ class CreativeProductionOrchestrator(BaseAgent):
                         img_meta["fidelity_score"] = fidelity_score
                     except Exception as e:
                         logger.warning(f"[ImageGen] Gecko fidelity eval failed (non-fatal): {e}")
-                        pass
+                elif gcs_uri:
+                    logger.info(f"[ImageGen] Skipping Gecko eval — image gen took {_img_gen_elapsed:.0f}s (budget: 30s)")
 
                 new_list = list(existing_imgs) + [img_meta]
                 existing_imgs = new_list
@@ -602,6 +610,8 @@ class CreativeProductionOrchestrator(BaseAgent):
                         f"{'exceeds 0.70 threshold, approved as ' + ref_type + ' reference for video generation' if fidelity_score >= 0.7 else 'below threshold, will regenerate'}"
                     )
                 save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": new_list}
+                # Reset failure counter on success (was pre-incremented)
+                save_event.actions.state_delta[img_fail_key] = 0
                 # Save as ADK artifact for inline display
                 if ctx.artifact_service and image_bytes:
                     try:

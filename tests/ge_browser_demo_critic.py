@@ -437,27 +437,27 @@ async def capture_ge_screenshots(session_id):
             screenshots.append(str(path))
             print(f"  Screenshot: {path.name}", flush=True)
 
-            # Click our agent — the "projects/679926387543/locatio..." entry (3rd item)
-            # IMPORTANT: Must NOT click "Deep Research" (2nd item) or "Data Agent" (1st)
+            # Click our agent — displayName is "trends2insights" in the @mention picker
+            # IMPORTANT: Must NOT click "Deep Research" or "Data Agent" or the HR agent
+            # (whose displayName is literally "projects/679926387543/locatio...")
             agent_clicked = False
             try:
-                # Strategy 1: Click by text content matching our project number
-                proj_item = await page.query_selector(f"text=projects/{PROJECT_NUMBER}")
-                if proj_item:
-                    await proj_item.click()
+                # Strategy 1: Click by our agent's display name "trends2insights"
+                t2i_item = await page.query_selector("text=trends2insights")
+                if t2i_item:
+                    await t2i_item.click()
                     agent_clicked = True
-                    print(f"  Selected agent via text match: projects/{PROJECT_NUMBER}", flush=True)
+                    print("  Selected agent via text match: trends2insights", flush=True)
 
                 if not agent_clicked:
-                    # Strategy 2: Find all visible text in the picker and click the right one
-                    # The picker shows: 1) Data Agent - Baseline, 2) Deep Research, 3) projects/...
+                    # Strategy 2: DOM scan for "trends2insights" text
                     all_visible = await page.query_selector_all("div, span, li, a")
                     for el in all_visible:
                         try:
                             text = await el.inner_text()
-                            if "projects/" in text and "679926387543" in text:
+                            if "trends2insights" in text.lower():
                                 bbox = await el.bounding_box()
-                                if bbox and bbox["width"] > 50:  # Must be a real clickable element
+                                if bbox and bbox["width"] > 50:
                                     await el.click()
                                     agent_clicked = True
                                     print(f"  Selected agent via DOM scan: {text[:60]}", flush=True)
@@ -466,21 +466,20 @@ async def capture_ge_screenshots(session_id):
                             continue
 
                 if not agent_clicked:
-                    # Strategy 3: Keyboard — ArrowDown twice to reach 3rd item, then Enter
-                    # Item 1 is pre-highlighted, so ArrowDown once = item 2, twice = item 3
-                    await page.keyboard.press("ArrowDown")
-                    await page.keyboard.press("ArrowDown")
+                    # Strategy 3: Type "trend" to filter the picker, then Enter
+                    await page.keyboard.type("trend", delay=50)
+                    await page.wait_for_timeout(1000)
                     await page.keyboard.press("Enter")
                     agent_clicked = True
-                    print("  Selected agent (keyboard: 2x ArrowDown + Enter)", flush=True)
+                    print("  Selected agent (typed 'trend' to filter + Enter)", flush=True)
 
             except Exception as e:
                 print(f"  Picker click error: {e}", flush=True)
-                # Emergency fallback
-                await page.keyboard.press("ArrowDown")
-                await page.keyboard.press("ArrowDown")
+                # Emergency fallback: type to filter
+                await page.keyboard.type("trend", delay=50)
+                await page.wait_for_timeout(1000)
                 await page.keyboard.press("Enter")
-                print("  Selected agent (emergency keyboard fallback)", flush=True)
+                print("  Selected agent (emergency: typed 'trend' + Enter)", flush=True)
 
             await page.wait_for_timeout(1000)
 
