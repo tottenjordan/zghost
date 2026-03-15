@@ -3,11 +3,13 @@
 Replaces the LLM root_agent with a BaseAgent that checks session state keys
 to decide which pipeline stage to run next. No LLM decision-making at the top level.
 
-Pipeline stages:
-  TRENDS      -> trends_and_insights_agent
-  RESEARCH    -> research_orchestrator
-  CREATIVE    -> creative_production_orchestrator (ad creative + AV studio + QA)
-  FOCUS_GROUP -> focus_group_evaluator_agent
+Pipeline stages (flat — no intermediate orchestrators):
+  TRENDS      -> deterministic (autopilot) OR interactive trend selection
+  RESEARCH    -> research_agent (LLM sub-agent)
+  AD_CREATIVE -> ad_creative_agent (LLM sub-agent)
+  IMAGE_GEN   -> deterministic SDK (Imagen 4)
+  AV_STUDIO   -> deterministic SDK (Veo 3.1)
+  FOCUS_GROUP -> focus_group_evaluator_agent (LLM sub-agent)
   SAVE_REPORT -> save_final_report_tool (direct call, no LLM)
   COMPLETE    -> done
 """
@@ -16,9 +18,13 @@ from __future__ import annotations
 
 import logging
 import os
+import tempfile
+import time
 from typing import AsyncGenerator
 
+from google import genai
 from google.genai import types
+from google.genai.types import GenerateVideosConfig
 from google.adk.agents.base_agent import BaseAgent, BaseAgentState
 from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events.event import Event, EventActions
@@ -26,9 +32,32 @@ from google.adk.utils.context_utils import Aclosing
 from google.adk.utils.feature_decorator import experimental
 
 from .common_agents.ad_content_generator.tools import save_final_report_tool
-from .shared_libraries.skill_evolution import run_skill_council
+from .shared_libraries.config import config
+from .shared_libraries.utils import upload_blob_to_gcs, download_blob
+from .shared_libraries.fidelity_eval.gecko import evaluate as gecko_evaluate
 
 logger = logging.getLogger("google_adk." + __name__)
+
+# Cached media gen client (us-central1 for Imagen/Veo, NOT "global")
+_media_client = None
+
+def _get_media_client():
+    """Get or create a cached genai.Client for media gen APIs (Imagen, Veo).
+
+    Media gen APIs (Imagen 4, Veo 3.1) require us-central1, NOT "global"
+    which is set as GOOGLE_CLOUD_LOCATION for Gemini 3 models.
+    """
+    global _media_client
+    if _media_client is None:
+        _media_client = genai.Client(
+            vertexai=True,
+            project=os.environ.get("GOOGLE_CLOUD_PROJECT", "wortz-project-352116"),
+            location="us-central1",
+        )
+        logger.info(
+            f"[MediaClient] Created cached client: project={_media_client._api_client.project}, location={_media_client._api_client.location}"
+        )
+    return _media_client
 
 
 def _parse_search_trends(gtrends_result: dict) -> list[dict]:
@@ -78,9 +107,11 @@ def _parse_top_search_trend(gtrends_result: dict) -> dict | None:
     trends = _parse_search_trends(gtrends_result)
     return trends[0] if trends else None
 
-STAGES = ["TRENDS", "RESEARCH", "CREATIVE", "FOCUS_GROUP", "SAVE_REPORT", "COMPLETE"]
+STAGES = ["TRENDS", "RESEARCH", "AD_CREATIVE", "IMAGE_GEN", "AV_STUDIO", "FOCUS_GROUP", "SAVE_REPORT", "COMPLETE"]
 
-MAX_CREATIVE_ATTEMPTS = 15  # Max times to re-enter CREATIVE before skipping to FOCUS_GROUP
+MAX_CREATIVE_ATTEMPTS = 15  # Max times to re-enter IMAGE_GEN before skipping
+AV_STUDIO_MAX_RUNS = 5  # Max AV_STUDIO invocations before skipping
+AE_WAVE_POLL_BUDGET = 55  # seconds to poll Veo within a single AE wave
 
 def _dynamic_stage_message(stage: str, state: dict) -> str:
     """Build contextual, CEO-friendly status messages using campaign metadata."""
@@ -109,10 +140,16 @@ def _dynamic_stage_message(stage: str, state: dict) -> str:
             + (f" — analyzing what motivates {audience}" if audience else "")
             + ". Synthesizing YouTube, Google Search, and competitive insights."
         ),
-        "CREATIVE": (
-            f"Entering the creative studio for {descriptor}"
+        "AD_CREATIVE": (
+            f"Brainstorming ad concepts for {descriptor}"
             + (f" — leading with '{first_sp}'" if first_sp else "")
-            + ". Generating ad copy, hero images, and a video commercial."
+            + ". Drafting headlines, copy, and visual concepts."
+        ),
+        "IMAGE_GEN": (
+            f"Rendering reference images for {descriptor} — product hero, lifestyle, and trend aesthetic."
+        ),
+        "AV_STUDIO": (
+            f"Directing a video commercial for {descriptor} — cinematic footage with Veo."
         ),
         "FOCUS_GROUP": (
             f"Assembling a simulated focus group to evaluate the {descriptor} campaign"
@@ -131,11 +168,10 @@ def _dynamic_stage_message(stage: str, state: dict) -> str:
     return messages.get(stage, f"Running stage: {stage}")
 
 STAGE_AGENT_MAP = {
-    "TRENDS": "trends_and_insights_agent",
-    "RESEARCH": "research_orchestrator",
-    "CREATIVE": "creative_production_orchestrator",
+    "RESEARCH": "research_agent",
+    "AD_CREATIVE": "ad_creative_agent",
     "FOCUS_GROUP": "focus_group_evaluator_agent",
-    # SAVE_REPORT is handled directly (no agent)
+    # TRENDS, IMAGE_GEN, AV_STUDIO, SAVE_REPORT are deterministic — no agent needed
 }
 
 
@@ -187,23 +223,27 @@ class CampaignOrchestrator(BaseAgent):
                 # Refresh state after delta
                 state = ctx.session.state
 
+        # Reconstruct state from conversation history (GE may not persist state_delta between waves)
+        async for event in self._reconstruct_state_from_history(ctx):
+            yield event
+        state = ctx.session.state
+
         stage = self._determine_stage(ctx)
         state = ctx.session.state
 
-        # Track creative pipeline attempts to break infinite loops
-        # Counter is persisted via event state_delta (not direct state mutation)
-        if stage == "CREATIVE":
+        # Track image gen attempts to break infinite loops
+        if stage == "IMAGE_GEN":
             creative_attempts = state.get("_creative_pipeline_attempts", 0) + 1
             if creative_attempts > MAX_CREATIVE_ATTEMPTS:
                 logger.warning(
-                    f"[CampaignOrchestrator] Creative pipeline exhausted "
+                    f"[CampaignOrchestrator] Image gen pipeline exhausted "
                     f"({creative_attempts} attempts). Skipping to FOCUS_GROUP."
                 )
                 stage = "FOCUS_GROUP"
             else:
                 # Persist counter via state_delta event
                 counter_event = self._status_event(
-                    ctx, f"Creative pipeline attempt {creative_attempts}/{MAX_CREATIVE_ATTEMPTS}..."
+                    ctx, f"Image generation attempt {creative_attempts}/{MAX_CREATIVE_ATTEMPTS}..."
                 )
                 counter_event.actions.state_delta["_creative_pipeline_attempts"] = creative_attempts
                 yield counter_event
@@ -243,35 +283,56 @@ class CampaignOrchestrator(BaseAgent):
             ),
         )
 
-        if stage == "SAVE_REPORT":
-            # Direct tool call — no LLM needed
-            async for event in self._save_final_report(ctx):
-                yield event
-        elif stage == "TRENDS" and state.get("autopilot_mode"):
-            # Deterministic trend gathering — no LLM needed
+        # --- Handle each stage ---
+
+        if stage == "TRENDS" and state.get("autopilot_mode"):
             async for event in self._gather_trends_deterministic(ctx):
                 yield event
-        else:
+        elif stage == "TRENDS":
+            async for event in self._gather_trends_interactive(ctx):
+                yield event
+        elif stage == "RESEARCH":
+            async for event in self._run_agent_and_capture(ctx, "research_agent", "combined_final_cited_report"):
+                yield event
+            # Mark research complete
+            done_event = self._status_event(ctx, "Research pipeline complete.")
+            done_event.actions.state_delta["_research_pipeline_complete"] = True
+            yield done_event
+        elif stage == "AD_CREATIVE":
+            async for event in self._run_agent_and_capture(ctx, "ad_creative_agent", "ad_creative_output"):
+                yield event
+            done_event = self._status_event(ctx, "Ad creative pipeline complete.")
+            done_event.actions.state_delta["_ad_creative_complete"] = True
+            yield done_event
+        elif stage == "IMAGE_GEN":
+            async for event in self._generate_images_deterministic(ctx):
+                yield event
+        elif stage == "AV_STUDIO":
+            # Track AV studio runs
+            av_runs = state.get("_av_studio_runs", 0) + 1
+            av_event = self._status_event(ctx, f"AV Studio run {av_runs}/{AV_STUDIO_MAX_RUNS}...")
+            av_event.actions.state_delta["_av_studio_runs"] = av_runs
+            yield av_event
+            async for event in self._generate_commercial_deterministic(ctx):
+                yield event
+        elif stage == "FOCUS_GROUP":
             # Track focus group attempts to prevent infinite loop
-            if stage == "FOCUS_GROUP":
-                fg_count = state.get("_focus_group_attempts", 0) + 1
-                fg_event = Event(
-                    invocation_id=ctx.invocation_id, author=self.name, branch=ctx.branch,
-                    actions=EventActions(state_delta={"_focus_group_attempts": fg_count}),
-                )
-                yield fg_event
-            # Route to the sub-agent for this stage
-            target = self._get_agent_for_stage(stage)
+            fg_count = state.get("_focus_group_attempts", 0) + 1
+            fg_event = Event(
+                invocation_id=ctx.invocation_id, author=self.name, branch=ctx.branch,
+                actions=EventActions(state_delta={"_focus_group_attempts": fg_count}),
+            )
+            yield fg_event
+            # Run focus group agent and capture evaluation text
+            _fg_persisted = False
+            _captured_fg_parts: list[str] = []
+            target = self._get_agent_for_stage_by_name("focus_group_evaluator_agent")
             if target:
-                _fg_persisted = False
-                _captured_fg_parts: list[str] = []
                 async with Aclosing(target.run_async(ctx)) as agen:
                     async for event in agen:
                         yield event
                         # Capture focus group text and persist via state_delta
-                        # BEFORE the pause check (AE always pauses, so post-loop
-                        # code never runs)
-                        if stage == "FOCUS_GROUP" and not _fg_persisted:
+                        if not _fg_persisted:
                             if getattr(event, "content", None):
                                 for part in (event.content.parts or []):
                                     if getattr(part, "text", None):
@@ -292,11 +353,13 @@ class CampaignOrchestrator(BaseAgent):
                                 yield persist_event
                                 _fg_persisted = True
                         if ctx.should_pause_invocation(event):
-                            # Yield wave-boundary context before pausing
                             descriptor = f"{state.get('brand', '')} {state.get('target_product', '')}".strip() or "the campaign"
                             wave_msg = f"{status_msg.rstrip('.')} — say 'continue' to proceed."
                             yield self._status_event(ctx, wave_msg)
                             return
+        elif stage == "SAVE_REPORT":
+            async for event in self._save_final_report(ctx):
+                yield event
 
         # After sub-agent completes, mark end for AE
         if ctx.is_resumable:
@@ -310,6 +373,13 @@ class CampaignOrchestrator(BaseAgent):
         # Stage 0: Need trends
         search_trends = state.get("target_search_trends")
         yt_trends = state.get("target_yt_trends")
+        trends_waves = state.get("_trends_wave_count", 0)
+        logger.info(
+            f"[CampaignOrchestrator] _determine_stage: "
+            f"search_trends={search_trends}, has={self._has_trends(search_trends)}, "
+            f"yt_trends={yt_trends}, has={self._has_trends(yt_trends)}, "
+            f"trends_waves={trends_waves}"
+        )
         if not self._has_trends(search_trends) or not self._has_trends(yt_trends):
             return "TRENDS"
 
@@ -319,25 +389,36 @@ class CampaignOrchestrator(BaseAgent):
         if not research_done and (not report or len(str(report)) < 500):
             return "RESEARCH"
 
-        # Stage 2: Need commercial (images are optional)
-        creative_attempts = state.get("_creative_pipeline_attempts", 0)
-        creative_exhausted = creative_attempts >= MAX_CREATIVE_ATTEMPTS
-        has_commercial = bool(state.get("commercial_artifact"))
+        # Stage 2: Need ad copies and visual concepts
+        ad_copies = state.get("final_select_ad_copies", {})
+        if isinstance(ad_copies, dict):
+            ad_copies = ad_copies.get("final_select_ad_copies", [])
+        if not ad_copies and not state.get("_ad_creative_complete"):
+            return "AD_CREATIVE"
 
-        # Re-enter CREATIVE if Veo has a pending operation (even if retry counter exhausted)
+        # Stage 3: Need 3 reference images
+        img_keys = state.get("img_artifact_keys", {})
+        if isinstance(img_keys, dict):
+            img_keys = img_keys.get("img_artifact_keys", [])
+        if not img_keys or len(img_keys) < 3:
+            img_attempts = state.get("_creative_pipeline_attempts", 0)
+            if img_attempts < MAX_CREATIVE_ATTEMPTS:
+                return "IMAGE_GEN"
+
+        # Stage 4: Need commercial video
+        has_commercial = bool(state.get("commercial_artifact"))
         clips_cache = state.get("_commercial_clips", {})
         has_pending_veo = bool(clips_cache.get("_pending_veo_op")) if isinstance(clips_cache, dict) else False
-        av_exhausted = state.get("_av_studio_runs", 0) >= 5  # AV_STUDIO_MAX_RUNS
+        av_runs = state.get("_av_studio_runs", 0)
+        if not has_commercial and (has_pending_veo or av_runs < AV_STUDIO_MAX_RUNS):
+            return "AV_STUDIO"
 
-        if not has_commercial and (has_pending_veo or (not creative_exhausted and not av_exhausted)):
-            return "CREATIVE"
-
-        # Stage 3: Need focus group evaluation
+        # Stage 5: Need focus group evaluation
         fg_attempts = state.get("_focus_group_attempts", 0)
         if not state.get("focus_group_evaluation") and not state.get("_focus_group_complete") and fg_attempts < 5:
             return "FOCUS_GROUP"
 
-        # Stage 4: Need final report PDF
+        # Stage 6: Need final report PDF
         if not state.get("final_report_with_citations"):
             return "SAVE_REPORT"
 
@@ -363,6 +444,68 @@ class CampaignOrchestrator(BaseAgent):
             return None
         agent_map = {a.name: a for a in self.sub_agents}
         return agent_map.get(agent_name)
+
+    def _get_agent_for_stage_by_name(self, name: str):
+        """Look up a sub-agent by name."""
+        for agent in self.sub_agents:
+            if agent.name == name:
+                return agent
+        return None
+
+    async def _run_agent_and_capture(
+        self, ctx: InvocationContext, agent_name: str, state_key: str
+    ) -> AsyncGenerator[Event, None]:
+        """Run a sub-agent and capture its text output via state_delta.
+
+        This replaces output_key — the orchestrator captures the longest non-thought
+        text from the agent's events and persists it via its own state_delta event
+        AND directly to ctx.session.state for same-invocation reads.
+        """
+        target = self._get_agent_for_stage_by_name(agent_name)
+        if not target:
+            yield self._status_event(ctx, f"Agent '{agent_name}' not found in sub_agents")
+            return
+
+        captured_text = ""
+        all_text_parts: list[str] = []
+        async with Aclosing(target.run_async(ctx)) as agen:
+            async for event in agen:
+                yield event
+                # Capture non-thought text from model events — keep the LONGEST
+                if hasattr(event, 'content') and event.content:
+                    for part in (event.content.parts or []):
+                        if hasattr(part, 'text') and part.text and len(part.text) > 100:
+                            if not getattr(part, 'thought', False):
+                                all_text_parts.append(part.text)
+                                if len(part.text) > len(captured_text):
+                                    captured_text = part.text
+                if ctx.should_pause_invocation(event):
+                    # Persist what we have before pausing
+                    if captured_text and len(captured_text) > 200:
+                        ctx.session.state[state_key] = captured_text
+                        persist_event = self._status_event(ctx, f"Persisting {state_key} ({len(captured_text)} chars) before wave pause")
+                        persist_event.actions.state_delta[state_key] = captured_text
+                        yield persist_event
+                    return
+
+        # Persist captured text — both via state_delta AND direct state write
+        if captured_text and len(captured_text) > 200:
+            ctx.session.state[state_key] = captured_text
+            persist_event = self._status_event(ctx, f"{state_key} captured ({len(captured_text)} chars)")
+            persist_event.actions.state_delta[state_key] = captured_text
+            yield persist_event
+            logger.info(f"[CampaignOrchestrator] Captured {state_key}: {len(captured_text)} chars (from {len(all_text_parts)} text parts)")
+        else:
+            # Fallback: concatenate all text parts if individual parts were too short
+            combined = "\n\n".join(all_text_parts)
+            if combined and len(combined) > 200:
+                ctx.session.state[state_key] = combined
+                persist_event = self._status_event(ctx, f"{state_key} captured ({len(combined)} chars, concatenated from {len(all_text_parts)} parts)")
+                persist_event.actions.state_delta[state_key] = combined
+                yield persist_event
+                logger.info(f"[CampaignOrchestrator] Captured {state_key} via concatenation: {len(combined)} chars")
+            else:
+                logger.warning(f"[CampaignOrchestrator] Failed to capture {state_key} — no qualifying text found (parts: {len(all_text_parts)}, longest: {len(captured_text)})")
 
     async def _gather_trends_deterministic(
         self, ctx: InvocationContext
@@ -463,14 +606,1330 @@ class CampaignOrchestrator(BaseAgent):
 
         yield self._status_event(ctx, "Trend selection complete. Proceeding to research...")
 
+    async def _reconstruct_state_from_history(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """Scan conversation history to reconstruct ALL state that may not have persisted.
+
+        On GE, state_delta may not persist between waves, but conversation history does.
+        This method scans ALL past events for state_delta values and re-persists any
+        that are missing from current session state. This covers trends, research,
+        creative, focus group, and all other pipeline state.
+        """
+        import re
+        state = ctx.session.state
+
+        # Keys we care about reconstructing (pipeline-critical state)
+        RECONSTRUCTABLE_KEYS = {
+            # Campaign metadata
+            "brand", "target_product", "target_audience", "key_selling_points",
+            "commercial_duration", "autopilot_mode",
+            # Trends
+            "target_search_trends", "target_yt_trends", "trend_relevance_rationale",
+            # Research pipeline
+            "gs_web_search_insights", "yt_web_search_insights", "campaign_web_search_insights",
+            "combined_web_search_insights", "combined_research_evaluation",
+            "combined_final_cited_report", "prior_campaign_insights",
+            "_memory_recall_done", "_research_pipeline_complete", "_research_parallel_waves",
+            "yt_video_analysis", "sources",
+            # Creative pipeline
+            "ad_copy_draft", "ad_copy_critique", "ad_copy_final",
+            "ad_creative_output", "_ad_creative_complete",
+            "img_artifact_keys", "vid_artifact_keys", "commercial_artifact",
+            "_creative_pipeline_attempts", "_av_studio_runs", "_commercial_clips",
+            "reference_images",
+            # Focus group
+            "focus_group_evaluation", "focus_group_panelists",
+            "_focus_group_attempts", "_focus_group_complete",
+            # Final report
+            "final_report_with_citations",
+            # GCS
+            "gcs_folder",
+        }
+
+        reconstructed = {}
+
+        # Pass 1: Scan ALL events for state_delta values
+        for event in (ctx.session.events or []):
+            if hasattr(event, "actions") and event.actions and event.actions.state_delta:
+                delta = event.actions.state_delta
+                for key in RECONSTRUCTABLE_KEYS:
+                    if key in delta and delta[key]:
+                        # Always take the LATEST value (later events override earlier)
+                        reconstructed[key] = delta[key]
+
+            # Also check function_response parts for save tool results
+            if hasattr(event, "content") and event.content and event.content.parts:
+                for part in event.content.parts:
+                    if hasattr(part, "function_response") and part.function_response:
+                        fn_name = part.function_response.name if hasattr(part.function_response, "name") else ""
+                        fn_result = part.function_response.response if hasattr(part.function_response, "response") else {}
+                        if fn_name == "save_search_trends_to_session_state" and fn_result.get("status") == "ok":
+                            saved_data = fn_result.get("saved_data", {})
+                            if saved_data:
+                                reconstructed["target_search_trends"] = {"target_search_trends": [saved_data]}
+                        elif fn_name == "save_yt_trends_to_session_state" and fn_result.get("status") == "ok":
+                            saved_data = fn_result.get("saved_data", {})
+                            if saved_data:
+                                reconstructed["target_yt_trends"] = {"target_yt_trends": [saved_data]}
+
+                    # Check memorize calls for brand data
+                    if hasattr(part, "function_call") and part.function_call:
+                        fn_name = getattr(part.function_call, "name", "")
+                        fn_args = getattr(part.function_call, "args", {}) or {}
+                        if fn_name == "memorize":
+                            key = fn_args.get("key", "")
+                            val = fn_args.get("value", "")
+                            if key in RECONSTRUCTABLE_KEYS and val:
+                                reconstructed[key] = val
+
+            # Scan user messages for brand info (fallback if tools weren't called)
+            if hasattr(event, "content") and event.content:
+                if getattr(event.content, "role", "") == "user":
+                    for part in (event.content.parts or []):
+                        if hasattr(part, "text") and part.text and "brand" not in reconstructed:
+                            text = part.text
+                            brand_m = re.search(r'brand:\s*(.+?)(?:\n|$)', text, re.IGNORECASE)
+                            if brand_m:
+                                reconstructed["brand"] = brand_m.group(1).strip()
+                                prod_m = re.search(r'product:\s*(.+?)(?:\n|$)', text, re.IGNORECASE)
+                                aud_m = re.search(r'(?:audience):\s*(.+?)(?:\n|$)', text, re.IGNORECASE)
+                                feat_m = re.search(r'(?:features|selling points):\s*(.+?)(?:\n|$)', text, re.IGNORECASE)
+                                if prod_m:
+                                    reconstructed["target_product"] = prod_m.group(1).strip()
+                                if aud_m:
+                                    reconstructed["target_audience"] = aud_m.group(1).strip()
+                                if feat_m:
+                                    reconstructed["key_selling_points"] = feat_m.group(1).strip()
+
+        # Pass 2: Only emit state that's actually missing from current session state
+        missing = {}
+        for key, val in reconstructed.items():
+            current = state.get(key)
+            if not current:
+                missing[key] = val
+            elif key == "combined_web_search_insights" and len(str(val)) > len(str(current)):
+                # Take the longer (more complete) version
+                missing[key] = val
+            elif key == "combined_final_cited_report" and len(str(val)) > len(str(current)):
+                missing[key] = val
+
+        # Emit reconstructed state AND apply directly to session state
+        # (state_delta events may not be applied to ctx.session.state within same invocation)
+        if missing:
+            logger.info(
+                f"[CampaignOrchestrator] Reconstructed {len(missing)} state keys from history: "
+                f"{list(missing.keys())}"
+            )
+            # Apply directly so downstream code in this invocation sees the values
+            for key, val in missing.items():
+                ctx.session.state[key] = val
+            # Also emit as state_delta for AE persistence
+            reconstruct_event = Event(
+                invocation_id=ctx.invocation_id,
+                author=self.name,
+                branch=ctx.branch,
+                actions=EventActions(state_delta=missing),
+            )
+            yield reconstruct_event
+        else:
+            logger.info("[CampaignOrchestrator] No state reconstruction needed — all keys present")
+
+    async def _persist_trends_from_conversation(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """After LLM trends agent runs, scan latest events for tool call results and persist."""
+        # The _reconstruct_state_from_history at the start of the next wave handles this
+        # This method is a no-op — the real work happens at wave entry
+        return
+        yield  # Make it a generator
+
+    async def _gather_trends_interactive(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """Deterministic interactive trend selection — no LLM needed.
+
+        Stateless per-wave: re-parses brand from user text and re-fetches trends
+        each wave to avoid state persistence issues on AE/GE. The only state
+        that must persist between waves is target_search_trends (saved via state_delta
+        when the user picks a search trend).
+
+        Flow:
+          Wave 1: No brand in message -> ask for campaign metadata
+          Wave 2: Brand in message, no search trend -> parse brand, fetch & display Google trends
+          Wave 3: Number in message, no search trend saved -> re-fetch trends, save pick, show YT trends
+          Wave 4: Number in message, has search trend -> save YT pick, advance to RESEARCH
+        """
+        import re
+        from .common_agents.trend_assistant.tools import get_daily_gtrends, get_youtube_trends
+
+        state = ctx.session.state
+
+        # --- Extract user message text ---
+        user_text = ""
+        if ctx.user_content and ctx.user_content.parts:
+            for part in ctx.user_content.parts:
+                if hasattr(part, "text") and part.text:
+                    user_text += part.text
+        user_text_stripped = user_text.strip()
+
+        # --- Always try to parse and persist brand from user text ---
+        has_brand = bool(state.get("brand"))
+        if not has_brand:
+            brand_match = re.search(r'brand:\s*(.+?)(?:\n|$)', user_text, re.IGNORECASE)
+            product_match = re.search(r'product:\s*(.+?)(?:\n|$)', user_text, re.IGNORECASE)
+            audience_match = re.search(r'(?:target audience|audience):\s*(.+?)(?:\n|$)', user_text, re.IGNORECASE)
+            ksp_match = re.search(r'(?:key selling points|selling points|features):\s*(.+?)(?:\n|$)', user_text, re.IGNORECASE)
+
+            if brand_match:
+                meta_delta = {
+                    "brand": brand_match.group(1).strip(),
+                    "commercial_duration": 8,
+                }
+                if product_match:
+                    meta_delta["target_product"] = product_match.group(1).strip()
+                if audience_match:
+                    meta_delta["target_audience"] = audience_match.group(1).strip()
+                if ksp_match:
+                    meta_delta["key_selling_points"] = ksp_match.group(1).strip()
+
+                # Persist brand via state_delta event (separate from content)
+                brand_event = Event(
+                    invocation_id=ctx.invocation_id, author=self.name, branch=ctx.branch,
+                    actions=EventActions(state_delta=meta_delta),
+                )
+                yield brand_event
+                has_brand = True
+
+                # Fetch Google trends and display them in the SAME wave
+                try:
+                    gtrends_result = get_daily_gtrends()
+                    all_trends = _parse_search_trends(gtrends_result)
+                except Exception as e:
+                    logger.warning(f"[CampaignOrchestrator] Failed to fetch search trends: {e}")
+                    all_trends = []
+
+                if all_trends:
+                    rows = []
+                    for i, t in enumerate(all_trends):
+                        rows.append(f"| {i+1} | {t['trend_title']} | {t['trend_rank']} | {t['trend_refresh_date']} |")
+                    table = (
+                        "| # | Trend | Rank | Date |\n"
+                        "|---|-------|------|------|\n"
+                        + "\n".join(rows)
+                    )
+                    yield Event(
+                        invocation_id=ctx.invocation_id,
+                        author=self.name,
+                        branch=ctx.branch,
+                        content=types.Content(
+                            role="model",
+                            parts=[types.Part(text=(
+                                f"Campaign details saved: **{meta_delta.get('brand', '')}** — "
+                                f"{meta_delta.get('target_product', '')} for {meta_delta.get('target_audience', '')}\n\n"
+                                f"**Top {len(all_trends)} Google Search Trends** (live data)\n\n"
+                                f"{table}\n\n"
+                                f"Which trend would you like to target? Enter a number (1-{len(all_trends)})."
+                            ))],
+                        ),
+                    )
+                else:
+                    yield self._status_event(ctx, "Could not fetch Google trends — auto-selecting...")
+                    async for event in self._gather_trends_deterministic(ctx):
+                        yield event
+                return
+            else:
+                # No brand info — ask for it
+                yield Event(
+                    invocation_id=ctx.invocation_id,
+                    author=self.name,
+                    branch=ctx.branch,
+                    content=types.Content(
+                        role="model",
+                        parts=[types.Part(text=(
+                            "Welcome! Let's build your marketing campaign brief.\n\n"
+                            "Please provide your campaign details:\n\n"
+                            "```\n"
+                            "Brand: [brand name]\n"
+                            "Product: [product name]\n"
+                            "Audience: [target audience]\n"
+                            "Features: [key selling points]\n"
+                            "```\n\n"
+                            "For example:\n"
+                            "```\n"
+                            "Brand: Tide\n"
+                            "Product: Tide Fabric Softener\n"
+                            "Audience: Gen Z\n"
+                            "Features: New Hibiscus Scent\n"
+                            "```"
+                        ))],
+                    ),
+                )
+                return
+
+        # --- Sub-state: need Google Search trend pick? ---
+        has_search = self._has_trends(state.get("target_search_trends"))
+        if not has_search:
+            # User should be sending a number to pick a search trend
+            pick_num = self._parse_user_pick(user_text_stripped, 25)
+
+            # Re-fetch trends (stateless — no cache dependency)
+            try:
+                gtrends_result = get_daily_gtrends()
+                all_trends = _parse_search_trends(gtrends_result)
+            except Exception as e:
+                logger.warning(f"[CampaignOrchestrator] Failed to re-fetch search trends: {e}")
+                all_trends = []
+
+            if pick_num is not None and all_trends and pick_num < len(all_trends):
+                selected = all_trends[pick_num]
+                search_delta = {"target_search_trends": [selected]}
+
+                # Persist search trend via state_delta
+                search_event = Event(
+                    invocation_id=ctx.invocation_id, author=self.name, branch=ctx.branch,
+                    actions=EventActions(state_delta={"target_search_trends": search_delta}),
+                )
+                yield search_event
+
+                # Fetch YouTube trends and display in SAME wave
+                try:
+                    yt_result = get_youtube_trends()
+                except Exception as e:
+                    logger.warning(f"[CampaignOrchestrator] Failed to fetch YouTube trends: {e}")
+                    yt_result = {}
+
+                if yt_result:
+                    yt_list = []
+                    for key in sorted(yt_result.keys()):
+                        vid = yt_result[key]
+                        yt_list.append({
+                            "video_title": vid.get("videoTitle", ""),
+                            "video_duration": vid.get("duration", ""),
+                            "video_url": vid.get("videoURL", ""),
+                        })
+
+                    lines = []
+                    for i, vid in enumerate(yt_list):
+                        lines.append(f"| {i+1} | {vid['video_title']} | {vid['video_duration']} | [Watch]({vid['video_url']}) |")
+                    table = (
+                        "| # | Title | Duration | Link |\n"
+                        "|---|-------|----------|------|\n"
+                        + "\n".join(lines)
+                    )
+
+                    yield Event(
+                        invocation_id=ctx.invocation_id,
+                        author=self.name,
+                        branch=ctx.branch,
+                        content=types.Content(
+                            role="model",
+                            parts=[types.Part(text=(
+                                f"Search trend selected: **\"{selected['trend_title']}\"** (rank #{selected['trend_rank']})\n\n"
+                                f"**Top {len(yt_list)} Trending YouTube Videos** (live data)\n\n"
+                                f"{table}\n\n"
+                                f"Which video would you like to target? Enter a number (1-{len(yt_list)})."
+                            ))],
+                        ),
+                    )
+                else:
+                    yield self._status_event(ctx, "Could not fetch YouTube trends — auto-selecting...")
+                    async for event in self._gather_trends_deterministic(ctx):
+                        yield event
+                return
+            else:
+                # Show trends again (user sent non-numeric or invalid)
+                if all_trends:
+                    rows = []
+                    for i, t in enumerate(all_trends):
+                        rows.append(f"| {i+1} | {t['trend_title']} | {t['trend_rank']} | {t['trend_refresh_date']} |")
+                    table = (
+                        "| # | Trend | Rank | Date |\n"
+                        "|---|-------|------|------|\n"
+                        + "\n".join(rows)
+                    )
+                    yield Event(
+                        invocation_id=ctx.invocation_id,
+                        author=self.name,
+                        branch=ctx.branch,
+                        content=types.Content(
+                            role="model",
+                            parts=[types.Part(text=(
+                                f"**Google Search Trends** — please enter a number (1-{len(all_trends)}) to select a trend:\n\n"
+                                f"{table}"
+                            ))],
+                        ),
+                    )
+                else:
+                    yield self._status_event(ctx, "Could not fetch trends — auto-selecting...")
+                    async for event in self._gather_trends_deterministic(ctx):
+                        yield event
+                return
+
+        # --- Sub-state: need YouTube trend pick? ---
+        has_yt = self._has_trends(state.get("target_yt_trends"))
+        if not has_yt:
+            pick_num = self._parse_user_pick(user_text_stripped, 10)
+
+            # Re-fetch YouTube trends (stateless)
+            try:
+                yt_result = get_youtube_trends()
+            except Exception as e:
+                logger.warning(f"[CampaignOrchestrator] Failed to re-fetch YouTube trends: {e}")
+                yt_result = {}
+
+            yt_list = []
+            if yt_result:
+                for key in sorted(yt_result.keys()):
+                    vid = yt_result[key]
+                    yt_list.append({
+                        "video_title": vid.get("videoTitle", ""),
+                        "video_duration": vid.get("duration", ""),
+                        "video_url": vid.get("videoURL", ""),
+                    })
+
+            if pick_num is not None and yt_list and pick_num < len(yt_list):
+                selected = yt_list[pick_num]
+                yt_delta = {"target_yt_trends": [selected]}
+
+                # Build campaign summary
+                brand = state.get("brand", "")
+                product = state.get("target_product", "")
+                audience = state.get("target_audience", "")
+                features = state.get("key_selling_points", "")
+                search_trend_name = ""
+                st = state.get("target_search_trends")
+                if isinstance(st, dict):
+                    st_list = st.get("target_search_trends", [])
+                    if st_list:
+                        search_trend_name = st_list[0].get("trend_title", "")
+                elif isinstance(st, list) and st:
+                    search_trend_name = st[0].get("trend_title", "")
+
+                # Persist YT trend via state_delta
+                yt_event = Event(
+                    invocation_id=ctx.invocation_id, author=self.name, branch=ctx.branch,
+                    actions=EventActions(state_delta={"target_yt_trends": yt_delta}),
+                )
+                yield yt_event
+
+                yield Event(
+                    invocation_id=ctx.invocation_id,
+                    author=self.name,
+                    branch=ctx.branch,
+                    content=types.Content(
+                        role="model",
+                        parts=[types.Part(text=(
+                            f"YouTube trend selected: **\"{selected.get('video_title', '')}\"**\n\n"
+                            f"---\n\n"
+                            f"**Campaign Brief Complete!**\n\n"
+                            f"| Field | Value |\n"
+                            f"|-------|-------|\n"
+                            f"| Brand | {brand} |\n"
+                            f"| Product | {product} |\n"
+                            f"| Audience | {audience} |\n"
+                            f"| Features | {features} |\n"
+                            f"| Search Trend | {search_trend_name} |\n"
+                            f"| YouTube Trend | {selected.get('video_title', '')} |\n\n"
+                            f"Launching research pipeline — deep-diving into market intelligence..."
+                        ))],
+                    ),
+                )
+                return
+            else:
+                # Show YT trends again
+                if yt_list:
+                    lines = []
+                    for i, vid in enumerate(yt_list):
+                        lines.append(f"| {i+1} | {vid['video_title']} | {vid['video_duration']} | [Watch]({vid['video_url']}) |")
+                    table = (
+                        "| # | Title | Duration | Link |\n"
+                        "|---|-------|----------|------|\n"
+                        + "\n".join(lines)
+                    )
+                    yield Event(
+                        invocation_id=ctx.invocation_id,
+                        author=self.name,
+                        branch=ctx.branch,
+                        content=types.Content(
+                            role="model",
+                            parts=[types.Part(text=(
+                                f"**YouTube Trends** — please enter a number (1-{len(yt_list)}) to select a video:\n\n"
+                                f"{table}"
+                            ))],
+                        ),
+                    )
+                else:
+                    yield self._status_event(ctx, "Could not fetch YouTube trends — auto-selecting...")
+                    async for event in self._gather_trends_deterministic(ctx):
+                        yield event
+                return
+
+        # Both trends selected — advance
+        yield self._status_event(ctx, "All trends captured. Proceeding to research...")
+
+    def _parse_user_pick(self, user_text: str, max_items: int) -> int | None:
+        """Parse a numeric pick from user text. Returns 0-indexed or None."""
+        import re
+        numbers = re.findall(r'\b(\d+)\b', user_text.strip())
+        if numbers:
+            pick = int(numbers[0])
+            if 1 <= pick <= max_items:
+                return pick - 1
+        return None
+
+    # -------------------------------------------------------------------------
+    # IMAGE_GEN — deterministic Imagen 4 image generation
+    # -------------------------------------------------------------------------
+
+    async def _generate_images_deterministic(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """Generate 3 purpose-built reference images for Veo video generation.
+
+        1. Product ASSET — hero product shot (VideoGenerationReferenceType.ASSET)
+        2. Person ASSET — model/person for the ad (VideoGenerationReferenceType.ASSET)
+        3. Trend STYLE — trend mood/aesthetic (VideoGenerationReferenceType.STYLE)
+
+        All images scored with Gecko fidelity. One image per AE wave.
+        The 2 best Gecko-scoring refs are sent to Veo.
+        """
+        state = ctx.session.state
+        product = state.get("target_product", "the product")
+        audience = state.get("target_audience", "consumers")
+        brand = state.get("brand", "")
+        ksp = state.get("key_selling_points", "")
+        gcs_folder = state.get("gcs_folder", "")
+        bucket = os.getenv("BUCKET", "")
+        MAX_IMAGES = 3  # Product ASSET + Person ASSET + Trend STYLE
+
+        existing_imgs = state.get("img_artifact_keys", {})
+        if isinstance(existing_imgs, dict):
+            existing_imgs = existing_imgs.get("img_artifact_keys", [])
+        if not isinstance(existing_imgs, list):
+            existing_imgs = []
+        already_generated = len(existing_imgs)
+
+        if already_generated >= MAX_IMAGES:
+            yield self._status_event(ctx, f"All {MAX_IMAGES} reference images already generated.")
+            return
+
+        # Get the best ad idea name for naming
+        ad_copies = state.get("final_select_ad_copies", {})
+        if isinstance(ad_copies, dict):
+            ad_copies = ad_copies.get("final_select_ad_copies", [])
+        idea_name = "campaign"
+        if ad_copies and isinstance(ad_copies[0], dict):
+            idea_name = ad_copies[0].get("name", ad_copies[0].get("concept_name", "campaign"))
+        idea_name = idea_name.replace(",", "").replace(" ", "_")
+
+        # Get trend titles for STYLE image
+        trend_desc = state.get("target_search_trends", {})
+        search_trend_title = ""
+        if isinstance(trend_desc, dict):
+            trends_list = trend_desc.get("target_search_trends", [])
+            if trends_list:
+                search_trend_title = trends_list[0].get("title", "") if isinstance(trends_list[0], dict) else str(trends_list[0])
+
+        yt_trend_desc = state.get("target_yt_trends", {})
+        yt_trend_title = ""
+        if isinstance(yt_trend_desc, dict):
+            yt_list = yt_trend_desc.get("target_yt_trends", [])
+            if yt_list:
+                yt_trend_title = yt_list[0].get("title", "") if isinstance(yt_list[0], dict) else str(yt_list[0])
+
+        # Get the winning ad copy's headline/concept for creative direction
+        ad_headline = ""
+        ad_rationale = ""
+        if ad_copies and isinstance(ad_copies[0], dict):
+            ad_headline = ad_copies[0].get("headline", "")
+            ad_rationale = ad_copies[0].get("rationale", "")
+
+        # Get visual concept prompt if available
+        visual_concepts = state.get("final_select_visual_concepts", {})
+        if isinstance(visual_concepts, dict):
+            visual_concepts = visual_concepts.get("final_select_visual_concepts", [])
+        visual_prompt_hint = ""
+        if visual_concepts and isinstance(visual_concepts[0], dict):
+            visual_prompt_hint = visual_concepts[0].get("prompt", "")
+
+        # Build trend context string
+        trend_context = ""
+        if search_trend_title:
+            trend_context += f'inspired by the "{search_trend_title}" trend'
+        if yt_trend_title:
+            trend_context += f' and the "{yt_trend_title}" YouTube trend' if trend_context else f'inspired by the "{yt_trend_title}" YouTube trend'
+
+        # Build 3 purpose-built reference images with dynamic brand/trend context
+        shot_list = [
+            # Shot 1: Product ASSET — hero product shot with brand identity
+            {
+                "concept_name": f"{idea_name}_product_asset",
+                "shot_type": "product_asset",
+                "reference_type": "ASSET",
+                "prompt": (
+                    f"Studio product photo: {brand} {product} bottle prominently displayed"
+                    + (f", {ksp}" if ksp else "")
+                    + ". Clean white background, dramatic studio lighting, premium beauty product aesthetic. "
+                    f"No text, no watermarks, no logos."
+                ),
+            },
+            # Shot 2: Person ASSET — model/person reflecting target audience + ad concept
+            {
+                "concept_name": f"{idea_name}_person_asset",
+                "shot_type": "person_asset",
+                "reference_type": "ASSET",
+                "prompt": (
+                    f"Lifestyle photo: {audience} person"
+                    + (f" embodying \"{ad_headline}\"" if ad_headline else "")
+                    + f", interacting with {product}"
+                    + (f", {trend_context}" if trend_context else "")
+                    + ". Warm natural light, modern setting, authentic emotion. "
+                    f"No text, no watermarks."
+                ),
+            },
+            # Shot 3: Trend STYLE — aesthetic derived from actual selected trends
+            {
+                "concept_name": f"{idea_name}_trend_style",
+                "shot_type": "trend_style",
+                "reference_type": "STYLE",
+                "prompt": (
+                    f"Aesthetic mood board photo"
+                    + (f" {trend_context}" if trend_context else "")
+                    + (f", visual style: {visual_prompt_hint[:200]}" if visual_prompt_hint else "")
+                    + f". Cinematic color grading, aspirational lifestyle setting"
+                    + (f", evoking {brand}'s brand identity" if brand else "")
+                    + ". No text, no watermarks."
+                ),
+            },
+        ]
+
+        # Generate one image per wave (AE-safe)
+        img_idx = already_generated
+        if img_idx >= len(shot_list):
+            yield self._status_event(ctx, f"All {len(shot_list)} images already generated.")
+            return
+
+        # Track failures per image index to avoid infinite retry
+        img_fail_key = f"_img_fail_{img_idx}"
+        img_failures = state.get(img_fail_key, 0)
+        MAX_IMG_RETRIES = 5
+
+        shot = shot_list[img_idx]
+        concept_name = shot["concept_name"]
+        prompt = shot["prompt"]
+
+        if img_failures >= MAX_IMG_RETRIES:
+            # Skip this image after too many failures — add placeholder to advance
+            import re as _re
+            logger.warning(f"[ImageGen] Skipping image {img_idx+1} after {img_failures} failures")
+            _skip_safe = _re.sub(r"[^a-zA-Z0-9_\-]", "", concept_name.replace(" ", "_"))
+            placeholder = {
+                "artifact_key": f"skipped_{_skip_safe}_0.png",
+                "concept_name": concept_name,
+                "shot_type": shot["shot_type"],
+                "reference_type": shot.get("reference_type", "ASSET"),
+                "skipped": True,
+            }
+            new_list = list(existing_imgs) + [placeholder]
+            skip_event = self._status_event(
+                ctx, f"Image {img_idx + 1}/{MAX_IMAGES} skipped after {img_failures} attempts — advancing pipeline."
+            )
+            skip_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": new_list}
+            yield skip_event
+            return
+
+        # Pre-increment failure counter BEFORE calling generate_images().
+        # If AE wave times out during the call, the counter is already saved,
+        # preventing infinite retry on the same image.
+        pre_fail_event = self._status_event(ctx, f"Generating image {img_idx + 1}/{MAX_IMAGES} ({shot['shot_type']}: {concept_name})...")
+        pre_fail_event.actions.state_delta[img_fail_key] = img_failures + 1
+        yield pre_fail_event
+
+        try:
+            import re as _re
+            from google.genai.types import GenerateImagesConfig
+            img_client = _get_media_client()
+            # Sanitize name: alphanumeric, underscores, hyphens only
+            safe_name = _re.sub(r"[^a-zA-Z0-9_\-]", "", concept_name.replace(" ", "_"))
+            artifact_key = f"{safe_name}_0.png"
+            gcs_uri = ""
+
+            # Generate image (no output_gcs_uri — upload separately for reliability)
+            img_config = GenerateImagesConfig(number_of_images=1)
+            _img_start_t = time.time()
+            response = img_client.models.generate_images(
+                model="imagen-4.0-generate-preview-06-06",
+                prompt=prompt,
+                config=img_config,
+            )
+
+            if response and response.generated_images:
+                gen_img = response.generated_images[0]
+                image_bytes = gen_img.image.image_bytes if gen_img.image else None
+
+                if bucket and gcs_folder and image_bytes:
+                    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                        tmp.write(image_bytes)
+                        tmp_path = tmp.name
+                    try:
+                        upload_blob_to_gcs(
+                            source_file_name=tmp_path,
+                            destination_blob_name=os.path.join(gcs_folder, artifact_key),
+                        )
+                        gcs_uri = f"{bucket}/{gcs_folder}/{artifact_key}"
+                    finally:
+                        os.unlink(tmp_path)
+
+                img_meta = {
+                    "artifact_key": artifact_key,
+                    "img_prompt": prompt[:500],
+                    "concept": concept_name,
+                    "concept_name": concept_name,
+                    "headline": shot.get("headline", ""),
+                    "caption": shot.get("caption", ""),
+                    "shot_type": shot["shot_type"],
+                    "reference_type": shot.get("reference_type", "ASSET"),
+                    "auto_saved": True,
+                }
+                if gcs_uri:
+                    img_meta["gcs_uri"] = gcs_uri
+
+                # Gecko fidelity (best-effort, skip if tight on time)
+                fidelity_score = None
+                _img_gen_elapsed = time.time() - _img_start_t
+                if gcs_uri and _img_gen_elapsed < 20:  # Only run gecko if <20s spent on image gen
+                    try:
+                        result = gecko_evaluate(
+                            prompt=state.get("key_selling_points", product),
+                            media_uri=gcs_uri,
+                            media_type="image",
+                            project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", ""),
+                            location="us-central1",
+                        )
+                        if isinstance(result, dict) and result.get("status") == "success":
+                            fidelity_score = result.get("score", 0.0)
+                        elif isinstance(result, (int, float)):
+                            fidelity_score = float(result)
+                        img_meta["fidelity_score"] = fidelity_score
+                    except Exception as e:
+                        logger.warning(f"[ImageGen] Gecko fidelity eval failed (non-fatal): {e}")
+                elif gcs_uri:
+                    logger.info(f"[ImageGen] Skipping Gecko eval — image gen took {_img_gen_elapsed:.0f}s (budget: 20s)")
+
+                new_list = list(existing_imgs) + [img_meta]
+                existing_imgs = new_list
+                ref_type = shot.get("reference_type", "ASSET")
+                fidelity_msg = (
+                    f"Gecko fidelity: {fidelity_score:.2f}/1.00 "
+                    f"({'PASS' if fidelity_score >= 0.7 else 'BELOW THRESHOLD'}) — "
+                    f"reference type: {ref_type}"
+                ) if fidelity_score is not None else f"reference type: {ref_type}"
+                save_event = self._status_event(
+                    ctx, f"Image {img_idx + 1}/{MAX_IMAGES} saved: {concept_name} | {fidelity_msg}"
+                )
+                # Emit fidelity narrative status
+                if fidelity_score is not None:
+                    yield self._status_event(
+                        ctx,
+                        f"Image fidelity analysis: {concept_name} scored {fidelity_score:.2f}/1.00 via Gecko embeddings — "
+                        f"{'exceeds 0.70 threshold, approved as ' + ref_type + ' reference for video generation' if fidelity_score >= 0.7 else 'below threshold, will regenerate'}"
+                    )
+                save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": new_list}
+                # Reset failure counter on success (was pre-incremented)
+                save_event.actions.state_delta[img_fail_key] = 0
+                # Save as ADK artifact for inline display
+                if ctx.artifact_service and image_bytes:
+                    try:
+                        version = await ctx.artifact_service.save_artifact(
+                            app_name=ctx.app_name, user_id=ctx.user_id,
+                            session_id=ctx.session.id, filename=artifact_key,
+                            artifact=types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+                        )
+                        save_event.actions.artifact_delta[artifact_key] = version
+                        logger.info(f"[ImageGen] Saved artifact: {artifact_key} v{version}")
+                    except Exception as e:
+                        logger.warning(f"[ImageGen] Failed to save artifact: {e}")
+                yield save_event
+            else:
+                fail_event = self._status_event(ctx, f"Image {img_idx + 1} returned empty — retry {img_failures+1}/{MAX_IMG_RETRIES}.")
+                fail_event.actions.state_delta[img_fail_key] = img_failures + 1
+                yield fail_event
+
+        except Exception as e:
+            _elapsed = time.time() - _img_start_t if '_img_start_t' in dir() else 0
+            logger.warning(f"[ImageGen] Failed after {_elapsed:.1f}s: {type(e).__name__}: {e}")
+            fail_event = self._status_event(ctx, f"Image gen error ({_elapsed:.0f}s): {type(e).__name__}: {str(e)[:200]} — retry {img_failures+1}/{MAX_IMG_RETRIES}.")
+            fail_event.actions.state_delta[img_fail_key] = img_failures + 1
+            yield fail_event
+
+    # -------------------------------------------------------------------------
+    # AV_STUDIO — deterministic Veo commercial generation
+    # -------------------------------------------------------------------------
+
+    async def _generate_commercial_deterministic(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
+        """Generate a multi-clip commercial using Veo with first-frame chaining.
+
+        Generates NUM_CLIPS video clips (default 1) and concatenates them into
+        a single commercial. The second clip uses the last frame of the first
+        clip as its first-frame conditioning for visual continuity.
+
+        Wave-safe: saves pending operations to state so AE can resume polling.
+        Uses campaign images as ASSET (product) and STYLE (aesthetic) references.
+        """
+        state = ctx.session.state
+        product = state.get("target_product", "the product")
+        audience = state.get("target_audience", "target consumers")
+        selling_points = state.get("key_selling_points", "")
+        duration = state.get("commercial_duration", 15)
+        brand = state.get("brand", "")
+        gcs_folder = state.get("gcs_folder", "")
+        bucket = os.getenv("BUCKET", "")
+        bucket_name = bucket.replace("gs://", "")
+        NUM_CLIPS = 1  # Single-clip for AE reliability (multi-clip causes state loss)
+        clip_duration = duration
+
+        veo_client = _get_media_client()
+        clips_cache = state.get("_commercial_clips", {})
+
+        # Track completed clips and pending op
+        completed_clips = clips_cache.get("_completed_clip_uris", [])
+        pending_op = clips_cache.get("_pending_veo_op")
+        current_clip_idx = clips_cache.get("_current_clip_idx", 0)
+
+        if pending_op:
+            yield self._status_event(ctx, f"Polling Veo clip {current_clip_idx + 1}/{NUM_CLIPS} (resuming)...")
+        else:
+            yield self._status_event(ctx, f"Generating clip {current_clip_idx + 1}/{NUM_CLIPS} for {duration}s commercial...")
+
+        # Build reference images from campaign images — select best Gecko-scored refs
+        img_keys = state.get("img_artifact_keys", {})
+        if isinstance(img_keys, dict):
+            img_list = img_keys.get("img_artifact_keys", [])
+        else:
+            img_list = img_keys if isinstance(img_keys, list) else []
+
+        first_frame_uri = ""
+        reference_images = []
+        if img_list and gcs_folder and bucket:
+            # Select product ASSET + trend STYLE for Veo reference_images
+            # Exclude skipped images (no actual GCS content)
+            _valid = [m for m in img_list if isinstance(m, dict) and not m.get("skipped")]
+            product_refs = [m for m in _valid if m.get("shot_type") == "product_asset"]
+            style_refs = [m for m in _valid if m.get("reference_type") == "STYLE"]
+            person_refs = [m for m in _valid if m.get("shot_type") == "person_asset"]
+
+            # Product ASSET + Trend STYLE (prefer STYLE over person for video aesthetic)
+            selected_refs = product_refs[:1] + style_refs[:1]
+            if not style_refs and person_refs:
+                selected_refs = product_refs[:1] + person_refs[:1]
+
+            for img_meta in selected_refs:
+                # Use the actual GCS URI stored during image gen, not reconstructed path
+                img_gcs_uri = img_meta.get("gcs_uri", "")
+                if not img_gcs_uri:
+                    img_filename = img_meta.get("artifact_key", "")
+                    if not img_filename:
+                        continue
+                    img_gcs_uri = f"{bucket}/{gcs_folder}/{img_filename}"
+                if not first_frame_uri:
+                    first_frame_uri = img_gcs_uri
+                ref_type_str = img_meta.get("reference_type", "ASSET")
+                ref_type = (types.VideoGenerationReferenceType.STYLE
+                            if ref_type_str == "STYLE"
+                            else types.VideoGenerationReferenceType.ASSET)
+                reference_images.append(
+                    types.VideoGenerationReferenceImage(
+                        image=types.Image(gcs_uri=img_gcs_uri, mime_type="image/png"),
+                        reference_type=ref_type,
+                    )
+                )
+                logger.info(f"[DetAV] Reference: {ref_type_str} (Gecko: {img_meta.get('fidelity_score', 'N/A')}) -> {img_gcs_uri}")
+
+            # Status message highlighting Gecko-rated reference selection
+            if reference_images:
+                ref_summary = ", ".join([
+                    f"{m.get('shot_type','?')} {m.get('reference_type','?')} (Gecko: {m.get('fidelity_score', 0):.2f})"
+                    for m in selected_refs if isinstance(m, dict)
+                ])
+                yield self._status_event(
+                    ctx, f"Selected {len(reference_images)} best Gecko-rated reference images for Veo: {ref_summary}"
+                )
+
+        # Get trend context for video prompts
+        _search_trends = state.get("target_search_trends", {})
+        _search_trend_title = ""
+        if isinstance(_search_trends, dict):
+            _st_list = _search_trends.get("target_search_trends", [])
+            if _st_list:
+                _search_trend_title = _st_list[0].get("title", "") if isinstance(_st_list[0], dict) else str(_st_list[0])
+        _yt_trends = state.get("target_yt_trends", {})
+        _yt_trend_title = ""
+        if isinstance(_yt_trends, dict):
+            _yt_list = _yt_trends.get("target_yt_trends", [])
+            if _yt_list:
+                _yt_trend_title = _yt_list[0].get("title", "") if isinstance(_yt_list[0], dict) else str(_yt_list[0])
+        trend_context = ""
+        if _search_trend_title:
+            trend_context += f'the "{_search_trend_title}" trend'
+        if _yt_trend_title:
+            trend_context += f' and the "{_yt_trend_title}" YouTube trend' if trend_context else f'the "{_yt_trend_title}" YouTube trend'
+
+        # Clip-specific prompts for narrative arc
+        clip_prompts = self._build_clip_prompts(product, audience, selling_points, brand, NUM_CLIPS, clip_duration, trend_context)
+
+        try:
+            # Process one clip per wave iteration
+            while current_clip_idx < NUM_CLIPS:
+                clip_prompt = clip_prompts[current_clip_idx] if current_clip_idx < len(clip_prompts) else clip_prompts[-1]
+
+                gen_config = GenerateVideosConfig(
+                    aspect_ratio="16:9",
+                    number_of_videos=1,
+                    output_gcs_uri=bucket,
+                    reference_images=reference_images if reference_images else None,
+                )
+
+                if pending_op:
+                    from google.genai.types import GenerateVideosOperation
+                    logger.info(f"[DetAV] Resuming Veo operation: {pending_op}")
+                    try:
+                        stub_op = GenerateVideosOperation(name=pending_op)
+                        operation = veo_client.operations.get(operation=stub_op)
+                    except Exception as e:
+                        logger.warning(f"[DetAV] Could not resume operation {pending_op}: {e}")
+                        pending_op = None
+
+                if not pending_op:
+                    # Determine first-frame for this clip
+                    clip_first_frame = None
+                    if current_clip_idx == 0 and first_frame_uri:
+                        # First clip: use campaign hero image
+                        clip_first_frame = types.Image(gcs_uri=first_frame_uri, mime_type="image/png")
+                        logger.info(f"[DetAV] Clip 1 first-frame: campaign image {first_frame_uri}")
+                    elif current_clip_idx > 0 and completed_clips:
+                        # Subsequent clips: extract last frame from previous clip for continuity
+                        prev_clip_uri = completed_clips[-1]
+                        last_frame_uri = self._extract_last_frame(prev_clip_uri, bucket_name, gcs_folder, bucket)
+                        if last_frame_uri:
+                            clip_first_frame = types.Image(gcs_uri=last_frame_uri, mime_type="image/png")
+                            logger.info(f"[DetAV] Clip {current_clip_idx + 1} first-frame: last frame of clip {current_clip_idx}")
+
+                    if clip_first_frame:
+                        # Veo does NOT allow image + reference_images together
+                        ff_config = GenerateVideosConfig(
+                            aspect_ratio="16:9",
+                            number_of_videos=1,
+                            output_gcs_uri=bucket,
+                        )
+                        operation = veo_client.models.generate_videos(
+                            model=config.video_gen_model,
+                            prompt=clip_prompt,
+                            image=clip_first_frame,
+                            config=ff_config,
+                        )
+                    else:
+                        operation = veo_client.models.generate_videos(
+                            model=config.video_gen_model,
+                            prompt=clip_prompt,
+                            config=gen_config,
+                        )
+
+                    op_name = operation.name
+                    if op_name:
+                        pre_save = self._status_event(ctx, f"Veo clip {current_clip_idx + 1}/{NUM_CLIPS} submitted")
+                        pre_save.actions.state_delta["_commercial_clips"] = {
+                            "_pending_veo_op": op_name,
+                            "_current_clip_idx": current_clip_idx,
+                            "_completed_clip_uris": completed_clips,
+                        }
+                        yield pre_save
+
+                # Poll within AE wave budget
+                start_time = time.time()
+                poll_count = 0
+                while not operation.done:
+                    elapsed = time.time() - start_time
+                    if elapsed > AE_WAVE_POLL_BUDGET:
+                        logger.info(f"[DetAV] Clip {current_clip_idx + 1} still generating, will resume")
+                        save_event = self._status_event(ctx, f"Clip {current_clip_idx + 1}/{NUM_CLIPS} still generating — will resume")
+                        save_event.actions.state_delta["_commercial_clips"] = {
+                            "_pending_veo_op": operation.name,
+                            "_current_clip_idx": current_clip_idx,
+                            "_completed_clip_uris": completed_clips,
+                        }
+                        yield save_event
+                        return
+                    time.sleep(10)
+                    poll_count += 1
+                    yield self._status_event(
+                        ctx, f"Veo generating clip {current_clip_idx + 1}... {int(elapsed)}s elapsed"
+                    )
+                    operation = veo_client.operations.get(operation)
+
+                if operation.error:
+                    err_msg = str(operation.error)[:200]
+                    logger.warning(f"[DetAV] Veo error on clip {current_clip_idx + 1}: {err_msg}")
+                    yield self._status_event(ctx, f"Veo clip failed: {err_msg[:100]}. Retrying without reference images...")
+                    # Always retry without reference images on failure
+                    retry_config = GenerateVideosConfig(
+                        aspect_ratio="16:9", number_of_videos=1, output_gcs_uri=bucket,
+                    )
+                    operation = veo_client.models.generate_videos(
+                        model=config.video_gen_model, prompt=clip_prompt, config=retry_config,
+                    )
+                    if operation.name:
+                        retry_save = self._status_event(ctx, f"Retrying clip {current_clip_idx + 1} without references...")
+                        retry_save.actions.state_delta["_commercial_clips"] = {
+                            "_pending_veo_op": operation.name,
+                            "_current_clip_idx": current_clip_idx,
+                            "_completed_clip_uris": completed_clips,
+                        }
+                        yield retry_save
+                    pending_op = None  # Mark as fresh retry
+                    start_time = time.time()
+                    while not operation.done:
+                        elapsed = time.time() - start_time
+                        if elapsed > AE_WAVE_POLL_BUDGET:
+                            save_event = self._status_event(ctx, "Retry still generating — will resume")
+                            save_event.actions.state_delta["_commercial_clips"] = {
+                                "_pending_veo_op": operation.name,
+                                "_current_clip_idx": current_clip_idx,
+                                "_completed_clip_uris": completed_clips,
+                            }
+                            yield save_event
+                            return
+                        time.sleep(10)
+                        yield self._status_event(
+                            ctx, f"Veo retry clip {current_clip_idx + 1}... {int(elapsed)}s elapsed"
+                        )
+                        operation = veo_client.operations.get(operation)
+                    if operation.error:
+                        yield self._status_event(ctx, f"Clip {current_clip_idx + 1} failed after retry — skipping")
+                        current_clip_idx += 1
+                        pending_op = None
+                        continue
+
+                # Extract clip URI
+                clip_uri = None
+                if operation.result and operation.result.generated_videos:
+                    for video in operation.result.generated_videos:
+                        if video.video and video.video.uri:
+                            clip_uri = video.video.uri
+                            break
+
+                if clip_uri:
+                    completed_clips.append(clip_uri)
+                    yield self._status_event(ctx, f"Clip {current_clip_idx + 1}/{NUM_CLIPS} complete: {clip_uri[-60:]}")
+                    # Save progress
+                    progress_event = self._status_event(ctx, f"Clips done: {len(completed_clips)}/{NUM_CLIPS}")
+                    progress_event.actions.state_delta["_commercial_clips"] = {
+                        "_completed_clip_uris": completed_clips,
+                        "_current_clip_idx": current_clip_idx + 1,
+                    }
+                    yield progress_event
+                else:
+                    logger.warning(f"[DetAV] Clip {current_clip_idx + 1}: no video URI in result")
+                    clear_event = self._status_event(ctx, f"Clip {current_clip_idx + 1} returned empty — will retry")
+                    clear_event.actions.state_delta["_commercial_clips"] = {
+                        "_completed_clip_uris": completed_clips,
+                        "_current_clip_idx": current_clip_idx,
+                    }
+                    yield clear_event
+                    return  # Retry on next wave
+
+                current_clip_idx += 1
+                pending_op = None
+
+            # All clips done — concatenate into final commercial
+            if not completed_clips:
+                # Clear stale clips state to prevent infinite resume loop
+                clear_event = self._status_event(ctx, "No clips generated — commercial failed")
+                clear_event.actions.state_delta["_commercial_clips"] = {}
+                yield clear_event
+                return
+
+            # Single clip: use directly (skip ffmpeg concatenation)
+            if len(completed_clips) == 1:
+                yield self._status_event(ctx, f"Commercial (single clip fallback): {completed_clips[0][-60:]}")
+                final_gcs_uri = completed_clips[0]
+                # Copy to canonical name in GCS
+                video_bytes = None
+                try:
+                    source_blob = completed_clips[0].replace(f"gs://{bucket_name}/", "")
+                    video_bytes = download_blob(bucket_name=bucket_name, source_blob_name=source_blob)
+                    if gcs_folder and bucket:
+                        art_blob = f"{gcs_folder}/commercial_{duration}s.mp4"
+                        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+                            tmp.write(video_bytes)
+                            tmp_path = tmp.name
+                        try:
+                            upload_blob_to_gcs(source_file_name=tmp_path, destination_blob_name=art_blob)
+                            final_gcs_uri = f"{bucket}/{art_blob}"
+                        finally:
+                            os.unlink(tmp_path)
+                except Exception as e:
+                    logger.warning(f"[DetAV] Single clip copy failed (non-fatal): {e}")
+            else:
+                yield self._status_event(ctx, f"Concatenating {len(completed_clips)} clips into {duration}s commercial...")
+                final_gcs_uri, video_bytes = self._concatenate_clips(
+                    completed_clips, bucket_name, gcs_folder, bucket, product, duration,
+                )
+            art_fname = f"commercial_{duration}s.mp4"
+
+            if final_gcs_uri:
+                commercial_data = {
+                    "artifact_key": art_fname,
+                    "gcs_uri": final_gcs_uri,
+                    "metadata": {
+                        "title": f"{duration}s commercial for {product}",
+                        "scene_descriptions": [
+                            f"Clip {i+1}: {clip_prompts[i][:100]}..." if i < len(clip_prompts) else f"Clip {i+1}"
+                            for i in range(len(completed_clips))
+                        ],
+                        "total_clips": len(completed_clips),
+                        "duration_seconds": duration,
+                        "narrative_arc": f"Multi-clip narrative for {product} by {brand}",
+                        "target_audience_appeal": f"Designed for {audience}",
+                        "deterministic_av_studio": True,
+                    },
+                }
+                event = self._status_event(ctx, f"Commercial generated: {len(completed_clips)} clips, {duration}s")
+                event.actions.state_delta["commercial_artifact"] = commercial_data
+                event.actions.state_delta["vid_artifact_keys"] = {"vid_artifact_keys": [commercial_data]}
+                event.actions.state_delta["_commercial_clips"] = {}
+                if ctx.artifact_service and video_bytes:
+                    try:
+                        version = await ctx.artifact_service.save_artifact(
+                            app_name=ctx.app_name, user_id=ctx.user_id,
+                            session_id=ctx.session.id, filename=art_fname,
+                            artifact=types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
+                        )
+                        event.actions.artifact_delta[art_fname] = version
+                    except Exception as e:
+                        logger.warning(f"[DetAV] Failed to save commercial artifact: {e}")
+                yield event
+                logger.info(f"[DetAV] Multi-clip commercial saved: {final_gcs_uri}")
+            else:
+                # Fallback: use first clip as the commercial
+                if completed_clips:
+                    clip_uri = completed_clips[0]
+                    source_blob = clip_uri.replace(f"gs://{bucket_name}/", "")
+                    try:
+                        video_bytes = download_blob(bucket_name=bucket_name, source_blob_name=source_blob)
+                        if gcs_folder and bucket:
+                            dest_blob = f"{gcs_folder}/{art_fname}"
+                            with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+                                tmp.write(video_bytes)
+                                tmp_path = tmp.name
+                            try:
+                                upload_blob_to_gcs(source_file_name=tmp_path, destination_blob_name=dest_blob)
+                                final_gcs_uri = f"{bucket}/{dest_blob}"
+                            finally:
+                                os.unlink(tmp_path)
+                    except Exception as e:
+                        final_gcs_uri = clip_uri
+                        video_bytes = None
+                        logger.warning(f"[DetAV] Fallback copy failed: {e}")
+
+                    commercial_data = {
+                        "artifact_key": art_fname,
+                        "gcs_uri": final_gcs_uri,
+                        "metadata": {
+                            "title": f"{duration}s commercial for {product} (single clip fallback)",
+                            "total_clips": 1,
+                            "duration_seconds": duration,
+                            "deterministic_av_studio": True,
+                        },
+                    }
+                    event = self._status_event(ctx, f"Commercial (single clip fallback): {final_gcs_uri}")
+                    event.actions.state_delta["commercial_artifact"] = commercial_data
+                    event.actions.state_delta["vid_artifact_keys"] = {"vid_artifact_keys": [commercial_data]}
+                    event.actions.state_delta["_commercial_clips"] = {}
+                    if ctx.artifact_service and video_bytes:
+                        try:
+                            version = await ctx.artifact_service.save_artifact(
+                                app_name=ctx.app_name, user_id=ctx.user_id,
+                                session_id=ctx.session.id, filename=art_fname,
+                                artifact=types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
+                            )
+                            event.actions.artifact_delta[art_fname] = version
+                        except Exception as e:
+                            logger.warning(f"[DetAV] Failed to save fallback artifact: {e}")
+                    yield event
+
+        except Exception as e:
+            logger.warning(f"[DetAV] Veo exception: {e}")
+            yield self._status_event(ctx, f"Commercial generation error: {str(e)[:100]}")
+
+    def _extract_last_frame(self, clip_uri: str, bucket_name: str, gcs_folder: str, bucket: str) -> str:
+        """Extract the last frame from a video clip and upload as PNG for first-frame chaining."""
+        try:
+            import cv2
+            source_blob = clip_uri.replace(f"gs://{bucket_name}/", "")
+            video_bytes = download_blob(bucket_name=bucket_name, source_blob_name=source_blob)
+
+            with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+                tmp.write(video_bytes)
+                tmp_path = tmp.name
+
+            try:
+                cap = cv2.VideoCapture(tmp_path)
+                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                if total_frames > 0:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, total_frames - 1)
+                    ret, frame = cap.read()
+                    cap.release()
+                    if ret:
+                        frame_path = tmp_path.replace(".mp4", "_lastframe.png")
+                        cv2.imwrite(frame_path, frame)
+                        dest_blob = f"{gcs_folder}/_lastframe_clip.png"
+                        upload_blob_to_gcs(source_file_name=frame_path, destination_blob_name=dest_blob)
+                        os.unlink(frame_path)
+                        return f"{bucket}/{dest_blob}"
+                cap.release()
+            finally:
+                os.unlink(tmp_path)
+        except Exception as e:
+            logger.warning(f"[DetAV] Last frame extraction failed: {e}")
+        return ""
+
+    def _concatenate_clips(
+        self, clip_uris: list, bucket_name: str, gcs_folder: str, bucket: str,
+        product: str, duration: int,
+    ) -> tuple:
+        """Download clips and concatenate with ffmpeg. Returns (gcs_uri, video_bytes)."""
+        try:
+            import subprocess
+            clip_paths = []
+            for i, uri in enumerate(clip_uris):
+                source_blob = uri.replace(f"gs://{bucket_name}/", "")
+                clip_bytes = download_blob(bucket_name=bucket_name, source_blob_name=source_blob)
+                clip_path = tempfile.NamedTemporaryFile(suffix=f"_clip{i}.mp4", delete=False).name
+                with open(clip_path, "wb") as f:
+                    f.write(clip_bytes)
+                clip_paths.append(clip_path)
+
+            # Build ffmpeg concat filter
+            output_path = tempfile.NamedTemporaryFile(suffix="_commercial.mp4", delete=False).name
+
+            # Create concat list file
+            list_path = tempfile.NamedTemporaryFile(suffix=".txt", delete=False, mode="w").name
+            with open(list_path, "w") as f:
+                for cp in clip_paths:
+                    f.write(f"file '{cp}'\n")
+
+            # Normalize and concat
+            ffmpeg_cmd = [
+                "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_path,
+                "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+                "-c:a", "aac", "-b:a", "128k",
+                "-t", str(duration),
+                "-pix_fmt", "yuv420p",
+                output_path,
+            ]
+            result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=120)
+            if result.returncode != 0:
+                logger.warning(f"[DetAV] ffmpeg concat failed: {result.stderr[:200]}")
+                # Cleanup
+                for p in clip_paths:
+                    os.unlink(p)
+                os.unlink(list_path)
+                return "", None
+
+            with open(output_path, "rb") as f:
+                video_bytes = f.read()
+
+            # Upload concatenated video
+            art_fname = f"commercial_{duration}s.mp4"
+            dest_blob = f"{gcs_folder}/{art_fname}"
+            upload_blob_to_gcs(source_file_name=output_path, destination_blob_name=dest_blob)
+            final_uri = f"{bucket}/{dest_blob}"
+
+            # Cleanup
+            for p in clip_paths:
+                os.unlink(p)
+            os.unlink(list_path)
+            os.unlink(output_path)
+
+            logger.info(f"[DetAV] Concatenated {len(clip_uris)} clips -> {final_uri}")
+            return final_uri, video_bytes
+
+        except Exception as e:
+            logger.warning(f"[DetAV] Clip concatenation failed: {e}")
+            return "", None
+
+    def _build_clip_prompts(
+        self, product: str, audience: str, selling_points: str,
+        brand: str, num_clips: int, clip_duration: int,
+        trend_context: str = "",
+    ) -> list:
+        """Build per-clip Veo prompts that form a narrative arc across clips."""
+        if num_clips == 1:
+            return [self._build_commercial_prompt(product, audience, selling_points, clip_duration, brand, trend_context)]
+
+        trend_line = f"TREND INTEGRATION: Visually evoke {trend_context}. " if trend_context else ""
+        # 2-clip narrative: discovery -> hero reveal
+        prompts = [
+            (
+                f"A cinematic {clip_duration}-second commercial opening for {brand} {product}. "
+                f"SCENE: A {audience} in a vibrant, relatable setting discovers {brand} {product}. "
+                f"They pick it up with curiosity, examining the {brand} packaging. "
+                f"{trend_line}"
+                f"Warm golden-hour lighting, shallow depth of field, smooth dolly-in. "
+                f"MOOD: Fresh, intriguing, slice-of-life authenticity. "
+                f"PRODUCT: {selling_points[:150]}. "
+                f"SUPPRESS SUBTITLES. NO WATERMARKS."
+            ),
+            (
+                f"A cinematic {clip_duration}-second commercial finale for {brand} {product}. "
+                f"SCENE: The {audience} experiences the product — genuine moment of delight. "
+                f"Transition to a hero close-up of {brand} {product} packaging with logo clearly visible. "
+                f"{trend_line}"
+                f"Dramatic lighting, slow push-in to branded hero moment. "
+                f"MOOD: Uplifting, satisfying, aspirational. "
+                f"PRODUCT BRANDING: {brand} name and label prominent in final frames. "
+                f"{selling_points[:150]}. "
+                f"SUPPRESS SUBTITLES. NO WATERMARKS."
+            ),
+        ]
+        # If more clips requested, extend with variations
+        while len(prompts) < num_clips:
+            prompts.append(prompts[-1])
+        return prompts[:num_clips]
+
+    def _build_commercial_prompt(
+        self, product: str, audience: str, selling_points: str, duration: int,
+        brand: str = "", trend_context: str = "",
+    ) -> str:
+        """Build a detailed Veo prompt for the commercial."""
+        trend_line = f"TREND INTEGRATION: Visually evoke {trend_context} through the aesthetic, setting, and mood. " if trend_context else ""
+        return (
+            f"A cinematic {duration}-second commercial for {brand} {product}. "
+            f"NARRATIVE: A {audience} discovers {brand} {product} — moment of genuine delight "
+            f"as they experience the product — product in action showcasing its benefits — "
+            f"close-up hero shot of the {brand} product packaging with branding visible. "
+            f"{trend_line}"
+            f"VISUAL STYLE: Premium commercial quality, warm golden-hour lighting, "
+            f"shallow depth of field, smooth camera movements, cinematic color grading. "
+            f"CAMERA: Start medium-wide, dolly in to close-up on product, "
+            f"slow push-in to branded hero moment. Smooth transitions. "
+            f"MOOD: Fresh, uplifting, naturally luxurious. "
+            f"PRODUCT BRANDING: The {brand} name and product label must appear naturally in at least one shot. "
+            f"{selling_points[:200]}. "
+            f"SUPPRESS SUBTITLES. NO WATERMARKS."
+        )
+
+    # -------------------------------------------------------------------------
+    # SAVE_REPORT
+    # -------------------------------------------------------------------------
+
     async def _save_final_report(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        """Call save_final_report_tool directly — no LLM needed.
-
-        Also runs the NovaStorm Skill Council if enabled, so skills
-        discuss each other's handoffs and store cross-skill recommendations.
-        """
+        """Call save_final_report_tool directly — no LLM needed."""
         state = ctx.session.state
         processed_report = state.get("combined_final_cited_report", "")
         gcs_folder = state.get("gcs_folder", "")
@@ -558,20 +2017,6 @@ class CampaignOrchestrator(BaseAgent):
             fail_event = self._status_event(ctx, msg)
             fail_event.actions.state_delta["final_report_with_citations"] = processed_report
             yield fail_event
-
-        # Run Skill Council AFTER report save (non-blocking, best-effort)
-        novastorm_enabled = (
-            os.environ.get("NOVASTORM_ENABLED", "").lower() == "true"
-            or state.get("novastorm_enabled", False)
-        )
-        if novastorm_enabled:
-            try:
-                user_id = ctx.user_id or "default"
-                council_result = run_skill_council(dict(state), user_id)
-                pipeline_score = council_result.get("pipeline_score", 0)
-                yield self._status_event(ctx, f"Skill Council: pipeline score {pipeline_score}/10")
-            except Exception as e:
-                logger.warning(f"[NovaStorm] Skill Council failed (non-fatal): {e}")
 
     def _status_event(self, ctx: InvocationContext, message: str) -> Event:
         """Create an event with a status message and ui:status_update."""

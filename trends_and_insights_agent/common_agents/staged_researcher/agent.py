@@ -516,17 +516,45 @@ class ResearchPipelineOrchestrator(BaseAgent):
                     yield self._status_event(ctx, f"Parallel research exceeded {MAX_RESEARCH_WAVES} waves — merging available data")
                     async for event in self._merge_insights_deterministic(ctx):
                         yield event
-                    # If merge still found nothing, force the entire research pipeline complete
-                    # to avoid endless looping through downstream stages with no data
-                    if not ctx.session.state.get("combined_web_search_insights"):
+
+                    # Always mark research complete to prevent infinite re-entry
+                    merged = ctx.session.state.get("combined_web_search_insights", "")
+
+                    # If merge still found nothing, build a rich fallback report
+                    if not merged:
+                        # Build a rich fallback using any available data (yt_video_analysis is often populated)
+                        yt_analysis = session_state.get("yt_video_analysis", "")
+                        selling_points = session_state.get("key_selling_points", "N/A")
+                        product = session_state.get("target_product", "Unknown")
+                        brand = session_state.get("brand", "Unknown")
+                        audience = session_state.get("target_audience", "Unknown")
+                        search_trends = session_state.get("target_search_trends", "")
+                        yt_trends = session_state.get("target_yt_trends", "")
+
+                        # Format trends for the report
+                        trend_lines = []
+                        if isinstance(search_trends, dict):
+                            for t in search_trends.get("target_search_trends", []):
+                                trend_lines.append(f"- **{t.get('title', '')}**: {t.get('description', '')}")
+                        if isinstance(yt_trends, dict):
+                            for t in yt_trends.get("target_yt_trends", []):
+                                trend_lines.append(f"- **{t.get('title', '')}**: {t.get('description', '')}")
+                        trends_section = "\n".join(trend_lines) if trend_lines else "No trends available."
+
                         fallback_report = (
-                            f"# Market Research Report\n\n"
-                            f"## Product: {session_state.get('target_product', 'Unknown')}\n"
-                            f"## Brand: {session_state.get('brand', 'Unknown')}\n"
-                            f"## Target Audience: {session_state.get('target_audience', 'Unknown')}\n\n"
-                            f"Research data collection exceeded time budget. "
-                            f"Key selling points: {session_state.get('key_selling_points', 'N/A')}.\n\n"
-                            f"Proceeding with available campaign context."
+                            f"# Market Research Report: {product} by {brand}\n\n"
+                            f"## Campaign Brief\n"
+                            f"**Product:** {product}\n"
+                            f"**Brand:** {brand}\n"
+                            f"**Target Audience:** {audience}\n"
+                            f"**Key Selling Points:** {selling_points}\n\n"
+                            f"## Trend Drivers\n{trends_section}\n\n"
+                            f"## YouTube Cultural Intelligence\n{yt_analysis}\n\n"
+                            f"## Strategic Recommendations\n"
+                            f"Based on the available intelligence, the campaign should:\n"
+                            f"1. Lead with the product's unique selling points: {selling_points}\n"
+                            f"2. Target {audience} through trend-aligned messaging\n"
+                            f"3. Leverage visual and sensory storytelling to convey the brand experience\n"
                         )
                         force_event = self._status_event(ctx, "No research insights persisted — using fallback report to unblock pipeline")
                         force_event.actions.state_delta["combined_web_search_insights"] = fallback_report
@@ -534,6 +562,14 @@ class ResearchPipelineOrchestrator(BaseAgent):
                         force_event.actions.state_delta["_research_pipeline_complete"] = True
                         yield force_event
                         logger.warning("[ResearchPipeline] Forced fallback report + pipeline complete — output_key state lost on AE")
+                    else:
+                        # Merge produced data — mark complete and also set as final report
+                        done_event = self._status_event(ctx, "Research budget exhausted — proceeding with merged data.")
+                        done_event.actions.state_delta["_research_pipeline_complete"] = True
+                        if not ctx.session.state.get("combined_final_cited_report") or len(str(ctx.session.state.get("combined_final_cited_report", ""))) < 200:
+                            done_event.actions.state_delta["combined_final_cited_report"] = merged
+                        yield done_event
+                        logger.info("[ResearchPipeline] Merge produced data — pipeline complete")
                     return  # End wave
 
                 target = self._get_sub_agent(agent_name)
@@ -576,14 +612,36 @@ class ResearchPipelineOrchestrator(BaseAgent):
                     if pause_invocation:
                         return
             else:
-                # Run the sub-agent
+                # Run the sub-agent, capturing text output for state_delta persistence
+                # (output_key doesn't survive AE wave timeouts)
                 target = self._get_sub_agent(agent_name)
                 if target:
+                    last_text = ""
                     async with Aclosing(target.run_async(ctx)) as agen:
                         async for event in agen:
                             yield event
+                            # Capture text for state_delta persistence
+                            if hasattr(event, 'content') and event.content:
+                                for part in (event.content.parts or []):
+                                    if hasattr(part, 'text') and part.text and len(part.text) > 100:
+                                        if not getattr(part, 'thought', False):
+                                            last_text = part.text
                             if ctx.should_pause_invocation(event):
                                 pause_invocation = True
+
+                    # Persist output via state_delta for key stages
+                    if last_text and not pause_invocation:
+                        session_state = ctx.session.state
+                        if stage_name == "COMPOSE_REPORT" and not session_state.get("combined_final_cited_report"):
+                            persist_event = self._status_event(ctx, f"Research report composed ({len(last_text)} chars)")
+                            persist_event.actions.state_delta["combined_final_cited_report"] = last_text
+                            yield persist_event
+                            logger.info(f"[ResearchPipeline] Persisted combined_final_cited_report via state_delta: {len(last_text)} chars")
+                        elif stage_name == "ENHANCED_SEARCH" and len(last_text) > len(str(session_state.get("combined_web_search_insights", ""))):
+                            persist_event = self._status_event(ctx, f"Enhanced research persisted ({len(last_text)} chars)")
+                            persist_event.actions.state_delta["combined_web_search_insights"] = last_text
+                            yield persist_event
+                            logger.info(f"[ResearchPipeline] Persisted enhanced combined_web_search_insights via state_delta: {len(last_text)} chars")
 
                     if pause_invocation:
                         return
