@@ -603,6 +603,7 @@ def run_demo_critic(status, screenshots):
     """
     from google import genai
     from google.genai import types
+    from trends_and_insights_agent.shared_libraries.utils import download_blob
 
     print(f"\n{'#'*60}")
     print("PHASE 3: Demo Critic Evaluation")
@@ -628,29 +629,48 @@ CAMPAIGN:
 - Features: New Hibiscus Scent, Plant-based formula, 2x cleaning power, Biodegradable packaging
 """
 
+    # Build image/video info from state
+    state = status.get("state", {})
+    img_keys = state.get("img_artifact_keys", {})
+    if isinstance(img_keys, dict):
+        img_list = img_keys.get("img_artifact_keys", [])
+    else:
+        img_list = img_keys if isinstance(img_keys, list) else []
+    img_info = "\n".join([
+        f"  - {m.get('concept_name', '?')}: {m.get('shot_type', '?')} ({m.get('reference_type', '?')}) "
+        f"Gecko: {m.get('fidelity_score', 'N/A')} | GCS: {m.get('gcs_uri', 'N/A')[:80]}"
+        for m in img_list if isinstance(m, dict) and not m.get("skipped")
+    ]) or "  No images generated"
+
     # Build parts list with screenshots
     parts = [types.Part(text=f"""You are a Demo Critic evaluating a marketing AI demo for a CEO audience.
 
-This demo uses AI agents to automatically create a full marketing campaign from trending topics.
-The pipeline goes: Trend Discovery -> Research -> Ad Creative -> Image Generation -> Video Commercial -> Focus Group -> PDF Report.
+This demo uses AI agents to automatically create a full marketing campaign. The system runs in Gemini Enterprise (Google's enterprise AI platform).
+
+The demo has TWO components:
+1. **Pipeline Output** (backend) — The actual campaign assets produced by the AI agents
+2. **Gemini Enterprise UI** (screenshots) — How the user interacts with the agent via @mention in the GE chat
 
 {pipeline_summary}
 
-{'I am also showing you ' + str(len(screenshots)) + ' browser screenshots from the Gemini Enterprise UI.' if screenshots else 'No browser screenshots were captured.'}
+GENERATED IMAGES (with Gecko fidelity scores):
+{img_info}
+
+The screenshots show the Gemini Enterprise UI where a user @mentions the "trends2insights" agent to kick off the campaign. The agent responds with real-time status updates as it works through the pipeline. Note: images and video are stored in GCS and linked in the final PDF, not always rendered inline in the GE chat.
 
 EVALUATE THIS DEMO on these criteria (score each 1-10):
 
-1. **Visual Impact** - Are there flashy, impressive generated images? Do they look professional and on-brand for Tide?
-2. **Trend Integration** - Does the creative clearly connect to current trends (sustainable laundry, eco cleaning)?
-3. **End-to-End Wow Factor** - Does seeing research -> ads -> images -> video -> focus group -> report feel like magic?
-4. **CEO Impressiveness** - Would a CEO watching this demo say "wow, I need this for my brand"?
-5. **Completeness** - Did all pipeline stages produce meaningful output (not errors or empty)?
+1. **Visual Impact** - Were campaign images actually generated? Do the image concepts sound professional and on-brand?
+2. **Trend Integration** - Does the research connect cultural trends to the product strategy?
+3. **End-to-End Wow Factor** - Research -> Ad copy -> Images -> Video -> Focus group -> PDF report — does this flow impress?
+4. **CEO Impressiveness** - Would a CEO say "I need this for my brand" based on the pipeline output quality?
+5. **Completeness** - Did all stages produce meaningful output (research chars, images count, commercial, focus group, PDF)?
 
 For each criterion, give a score and one sentence of feedback.
 
-Then give an OVERALL SCORE (1-10) and a VERDICT:
-- Score >= 7: **PASS** - Demo is impressive enough to show a CEO
-- Score < 7: **FAIL** - Explain exactly what needs to improve
+OVERALL SCORE (1-10) and VERDICT:
+- Score >= 7: **PASS** - Demo quality is CEO-ready
+- Score < 7: **FAIL** - What needs to improve
 
 Format as JSON:
 {{
@@ -665,6 +685,24 @@ Format as JSON:
     "improvements": ["specific improvement 1", "specific improvement 2"]
 }}
 """)]
+
+    # Add generated campaign images from GCS
+    for img_meta in img_list[:5]:
+        if isinstance(img_meta, dict) and not img_meta.get("skipped"):
+            gcs_uri = img_meta.get("gcs_uri", "")
+            if gcs_uri and gcs_uri.startswith("gs://"):
+                try:
+                    bucket_name = gcs_uri.split("/")[2]
+                    blob_name = "/".join(gcs_uri.split("/")[3:])
+                    img_bytes = download_blob(bucket_name=bucket_name, source_blob_name=blob_name)
+                    if img_bytes:
+                        parts.append(types.Part(text=f"[Generated campaign image: {img_meta.get('concept_name', '?')} — {img_meta.get('shot_type', '?')} ({img_meta.get('reference_type', '?')})]"))
+                        parts.append(types.Part(
+                            inline_data=types.Blob(mime_type="image/png", data=img_bytes)
+                        ))
+                        print(f"  Added generated image: {img_meta.get('concept_name', '?')}", flush=True)
+                except Exception as e:
+                    print(f"  Could not load GCS image {gcs_uri}: {e}", flush=True)
 
     # Add screenshot images
     for ss_path in screenshots[-10:]:  # Last 10 screenshots (most recent / final)
