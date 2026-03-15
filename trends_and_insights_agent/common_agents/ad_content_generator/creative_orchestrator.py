@@ -41,7 +41,7 @@ from .tools import evaluate_media_fidelity
 logger = logging.getLogger("google_adk." + __name__)
 
 MAX_COMMERCIAL_RETRIES = 2
-AV_STUDIO_MAX_RUNS = 3  # Max AV_STUDIO invocations before deterministic commercial
+AV_STUDIO_MAX_RUNS = 5  # Max AV_STUDIO invocations before deterministic commercial
 AE_WAVE_POLL_BUDGET = 55  # seconds to poll Veo within a single AE wave
 
 # --- Commercial QA Agent ---
@@ -152,10 +152,19 @@ class CreativeProductionOrchestrator(BaseAgent):
         if isinstance(img_keys, dict):
             img_keys = img_keys.get("img_artifact_keys", [])
 
-        # If enough images exist (6 = 3 ideas x 2 shots), go to AV_STUDIO
-        if img_keys and len(img_keys) >= 6:
+        # If enough images exist (3 ref images), go to AV_STUDIO
+        # But skip if AV studio already exhausted all attempts
+        av_runs = state.get("_av_studio_runs", 0)
+        clips_cache = state.get("_commercial_clips", {})
+        has_pending_veo = bool(clips_cache.get("_pending_veo_op")) if isinstance(clips_cache, dict) else False
+
+        if img_keys and len(img_keys) >= 3:
+            if has_pending_veo:
+                return 2  # Must poll pending Veo operation
+            if av_runs >= AV_STUDIO_MAX_RUNS:
+                return len(CREATIVE_STAGES)  # Skip — all AV attempts exhausted
             return 2  # AV_STUDIO
-        # If some images exist but < 6, keep generating
+        # If some images exist but < 3, keep generating
         if img_keys and len(img_keys) >= 1:
             return 1  # IMAGE_GEN (generate more)
         # If ad copies exist (with or without visual concepts), run IMAGE_GEN
@@ -375,14 +384,14 @@ class CreativeProductionOrchestrator(BaseAgent):
     async def _generate_images_deterministic(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        """Generate 6 campaign images: top 3 ad ideas x 2 shots each.
+        """Generate 3 purpose-built reference images for Veo video generation.
 
-        For each of the top 3 ad copy ideas:
-        1. Hero product shot — product with clear branding, studio lighting
-        2. Lifestyle/asset shot — product in context matching the ad concept
+        1. Product ASSET — hero product shot (VideoGenerationReferenceType.ASSET)
+        2. Person ASSET — model/person for the ad (VideoGenerationReferenceType.ASSET)
+        3. Trend STYLE — trend mood/aesthetic (VideoGenerationReferenceType.STYLE)
 
-        Uses generate_content() with response_modalities=["IMAGE"].
         All images scored with Gecko fidelity. One image per AE wave.
+        The 2 best Gecko-scoring refs are sent to Veo.
         """
         state = ctx.session.state
         product = state.get("target_product", "the product")
@@ -391,9 +400,7 @@ class CreativeProductionOrchestrator(BaseAgent):
         ksp = state.get("key_selling_points", "")
         gcs_folder = state.get("gcs_folder", "")
         bucket = os.getenv("BUCKET", "")
-        NUM_IDEAS = 3
-        SHOTS_PER_IDEA = 2
-        MAX_IMAGES = NUM_IDEAS * SHOTS_PER_IDEA  # 6 total
+        MAX_IMAGES = 3  # Product ASSET + Person ASSET + Trend STYLE
 
         existing_imgs = state.get("img_artifact_keys", {})
         if isinstance(existing_imgs, dict):
@@ -403,75 +410,63 @@ class CreativeProductionOrchestrator(BaseAgent):
         already_generated = len(existing_imgs)
 
         if already_generated >= MAX_IMAGES:
-            yield self._status_event(ctx, f"All {MAX_IMAGES} images already generated.")
+            yield self._status_event(ctx, f"All {MAX_IMAGES} reference images already generated.")
             return
 
-        # Build idea list from ad copies / visual concepts / critique
+        # Get the best ad idea name for naming
         ad_copies = state.get("final_select_ad_copies", {})
         if isinstance(ad_copies, dict):
             ad_copies = ad_copies.get("final_select_ad_copies", [])
-        vis_concepts = state.get("final_select_vis_concepts", {})
-        if isinstance(vis_concepts, dict):
-            vis_concepts = vis_concepts.get("final_select_vis_concepts", [])
-        ad_critique = state.get("ad_copy_critique", "")
+        idea_name = "campaign"
+        if ad_copies and isinstance(ad_copies[0], dict):
+            idea_name = ad_copies[0].get("name", ad_copies[0].get("concept_name", "campaign"))
+        idea_name = idea_name.replace(",", "").replace(" ", "_")
 
-        # Build the top 3 ideas — prefer ad copies, fall back to vis concepts
-        ideas = []
-        source_list = ad_copies or vis_concepts
-        for i, item in enumerate(source_list[:NUM_IDEAS]):
-            if isinstance(item, dict):
-                name = item.get("name", item.get("concept_name", f"idea_{i+1}"))
-                headline = item.get("headline", item.get("concept_name", ""))
-                desc = item.get("description", item.get("call_to_action", str(item)))
-                caption = item.get("caption", "")
-            else:
-                name, headline, desc, caption = f"idea_{i+1}", "", str(item), ""
-            ideas.append({"name": name, "headline": headline, "description": desc, "caption": caption})
+        # Get trend title for STYLE image
+        trend_desc = state.get("target_search_trends", {})
+        trend_title = ""
+        if isinstance(trend_desc, dict):
+            trends_list = trend_desc.get("target_search_trends", [])
+            if trends_list:
+                trend_title = trends_list[0].get("title", "") if isinstance(trends_list[0], dict) else str(trends_list[0])
 
-        # Pad to 3 ideas with generic concepts if needed
-        while len(ideas) < NUM_IDEAS:
-            idx = len(ideas)
-            ideas.append({
-                "name": f"hero_{idx+1}",
-                "headline": f"{brand} {product}",
-                "description": f"Professional product photography of {product} by {brand}, {ksp[:150]}",
-                "caption": "",
-            })
-
-        # Build the full shot list: for each idea, hero + lifestyle
-        shot_list = []
-        for idea in ideas:
-            idea_name = idea["name"].replace(",", "").replace(" ", "_")
-            idea_desc = idea["description"][:300]
-            # Shot 1: Hero product shot with clear branding
-            shot_list.append({
-                "concept_name": f"{idea_name}_hero",
-                "headline": idea.get("headline", ""),
-                "caption": idea.get("caption", ""),
-                "shot_type": "hero",
+        # Build 3 purpose-built reference images
+        shot_list = [
+            # Shot 1: Product ASSET — hero product shot
+            {
+                "concept_name": f"{idea_name}_product_asset",
+                "shot_type": "product_asset",
+                "reference_type": "ASSET",
                 "prompt": (
                     f"Professional studio hero product shot of {product} by {brand}. "
-                    f"Product centered, {brand} brand name and logo clearly visible on packaging. "
-                    f"Clean background, dramatic studio lighting, 4K commercial photography. "
-                    f"Ad concept: {idea_desc}. "
-                    f"Key features: {ksp[:150]}. No watermarks."
+                    f"Product centered, {brand} brand clearly visible. Clean background, "
+                    f"dramatic studio lighting. Key features: {ksp[:150]}. No watermarks."
                 ),
-            })
-            # Shot 2: Lifestyle/asset shot matching the ad concept
-            shot_list.append({
-                "concept_name": f"{idea_name}_lifestyle",
-                "headline": idea.get("headline", ""),
-                "caption": idea.get("caption", ""),
-                "shot_type": "lifestyle",
+            },
+            # Shot 2: Person ASSET — model/person for the ad
+            {
+                "concept_name": f"{idea_name}_person_asset",
+                "shot_type": "person_asset",
+                "reference_type": "ASSET",
                 "prompt": (
-                    f"Lifestyle advertising photography for {product} by {brand}. "
-                    f"Scene: {idea_desc}. "
-                    f"Product naturally integrated in scene, {brand} packaging visible. "
-                    f"Target audience: {audience}. "
-                    f"Warm natural lighting, aspirational setting, cinematic color grading. "
-                    f"Key features: {ksp[:150]}. No watermarks."
+                    f"Professional advertising photography of a {audience} person using {product}. "
+                    f"Authentic, relatable model expressing satisfaction. "
+                    f"Natural lighting, lifestyle setting. {brand} product visible. No watermarks."
                 ),
-            })
+            },
+            # Shot 3: Trend STYLE — aesthetic based on selected trends
+            {
+                "concept_name": f"{idea_name}_trend_style",
+                "shot_type": "trend_style",
+                "reference_type": "STYLE",
+                "prompt": (
+                    f"Lifestyle mood board aesthetic for trend '{trend_title}'. "
+                    f"Product {product} naturally integrated, target audience {audience}. "
+                    f"Warm lighting, cinematic grading, aspirational setting reflecting "
+                    f"'{trend_title}' aesthetic. Key features: {ksp[:150]}. No watermarks."
+                ),
+            },
+        ]
 
         # Generate one image per wave (AE-safe)
         img_idx = already_generated
@@ -486,81 +481,103 @@ class CreativeProductionOrchestrator(BaseAgent):
         yield self._status_event(ctx, f"Generating image {img_idx + 1}/{MAX_IMAGES} ({shot['shot_type']}: {concept_name})...")
 
         try:
+            from google.genai.types import GenerateImagesConfig
             img_client = genai.Client(vertexai=True)
+            safe_name = concept_name.replace(",", "").replace(" ", "_")
+            artifact_key = f"{safe_name}_0.png"
+            gcs_uri = ""
 
-            response = img_client.models.generate_content(
-                model=config.image_gen_model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_modalities=["IMAGE"],
-                ),
+            # Use Imagen 4 generate_images() — synchronous, reliable on AE
+            output_gcs = f"{bucket}/{gcs_folder}" if bucket and gcs_folder else None
+            img_config = GenerateImagesConfig(
+                number_of_images=1,
+                **({"output_gcs_uri": output_gcs} if output_gcs else {}),
+            )
+            response = img_client.models.generate_images(
+                model="imagen-4.0-generate-preview-06-06",
+                prompt=prompt,
+                config=img_config,
             )
 
-            if response and response.candidates and response.candidates[0].content.parts:
-                for part in response.candidates[0].content.parts:
-                    if hasattr(part, 'inline_data') and part.inline_data and part.inline_data.data:
-                        image_bytes = part.inline_data.data
-                        safe_name = concept_name.replace(",", "").replace(" ", "_")
-                        artifact_key = f"{safe_name}_0.png"
-                        gcs_uri = ""
+            if response and response.generated_images:
+                gen_img = response.generated_images[0]
+                image_bytes = gen_img.image.image_bytes if gen_img.image else None
 
-                        if bucket and gcs_folder:
-                            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                                tmp.write(image_bytes)
-                                tmp_path = tmp.name
-                            try:
-                                upload_blob_to_gcs(
-                                    source_file_name=tmp_path,
-                                    destination_blob_name=os.path.join(gcs_folder, artifact_key),
-                                )
-                                gcs_uri = f"{bucket}/{gcs_folder}/{artifact_key}"
-                            finally:
-                                os.unlink(tmp_path)
+                if output_gcs and hasattr(gen_img, 'gcs_uri') and gen_img.gcs_uri:
+                    gcs_uri = gen_img.gcs_uri
+                elif bucket and gcs_folder and image_bytes:
+                    # Upload manually if GCS output wasn't set
+                    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                        tmp.write(image_bytes)
+                        tmp_path = tmp.name
+                    try:
+                        upload_blob_to_gcs(
+                            source_file_name=tmp_path,
+                            destination_blob_name=os.path.join(gcs_folder, artifact_key),
+                        )
+                        gcs_uri = f"{bucket}/{gcs_folder}/{artifact_key}"
+                    finally:
+                        os.unlink(tmp_path)
 
-                        img_meta = {
-                            "artifact_key": artifact_key,
-                            "img_prompt": prompt[:500],
-                            "concept": concept_name,
-                            "headline": shot.get("headline", ""),
-                            "caption": shot.get("caption", ""),
-                            "shot_type": shot["shot_type"],
-                            "auto_saved": True,
-                        }
-                        if gcs_uri:
-                            img_meta["gcs_uri"] = gcs_uri
+                img_meta = {
+                    "artifact_key": artifact_key,
+                    "img_prompt": prompt[:500],
+                    "concept": concept_name,
+                    "concept_name": concept_name,
+                    "headline": shot.get("headline", ""),
+                    "caption": shot.get("caption", ""),
+                    "shot_type": shot["shot_type"],
+                    "reference_type": shot.get("reference_type", "ASSET"),
+                    "auto_saved": True,
+                }
+                if gcs_uri:
+                    img_meta["gcs_uri"] = gcs_uri
 
-                        # Gecko fidelity (best-effort)
-                        if bucket and gcs_folder:
-                            try:
-                                fidelity_score = gecko_evaluate(
-                                    prompt=state.get("key_selling_points", product),
-                                    media_uri=f"{bucket}/{gcs_folder}/{artifact_key}",
-                                    media_type="image",
-                                )
-                                img_meta["fidelity_score"] = fidelity_score
-                            except Exception:
-                                pass
+                # Gecko fidelity (best-effort)
+                fidelity_score = None
+                if gcs_uri:
+                    try:
+                        fidelity_score = gecko_evaluate(
+                            prompt=state.get("key_selling_points", product),
+                            media_uri=gcs_uri,
+                            media_type="image",
+                        )
+                        img_meta["fidelity_score"] = fidelity_score
+                    except Exception:
+                        pass
 
-                        new_list = list(existing_imgs) + [img_meta]
-                        existing_imgs = new_list
-                        save_event = self._status_event(ctx, f"Image saved: {artifact_key} (Gecko: {img_meta.get('fidelity_score', 'N/A')})")
-                        save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": new_list}
-                        # Save as ADK artifact for inline display
-                        if ctx.artifact_service:
-                            try:
-                                version = await ctx.artifact_service.save_artifact(
-                                    app_name=ctx.app_name, user_id=ctx.user_id,
-                                    session_id=ctx.session.id, filename=artifact_key,
-                                    artifact=types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
-                                )
-                                save_event.actions.artifact_delta[artifact_key] = version
-                                logger.info(f"[ImageGen] Saved artifact: {artifact_key} v{version}")
-                            except Exception as e:
-                                logger.warning(f"[ImageGen] Failed to save artifact: {e}")
-                        else:
-                            logger.warning(f"[ImageGen] No artifact_service on ctx — cannot save {artifact_key}")
-                        yield save_event
-                        break  # Got one image from this shot
+                new_list = list(existing_imgs) + [img_meta]
+                existing_imgs = new_list
+                ref_type = shot.get("reference_type", "ASSET")
+                fidelity_msg = (
+                    f"Gecko fidelity: {fidelity_score:.2f}/1.00 "
+                    f"({'PASS' if fidelity_score >= 0.7 else 'BELOW THRESHOLD'}) — "
+                    f"reference type: {ref_type}"
+                ) if fidelity_score is not None else f"reference type: {ref_type}"
+                save_event = self._status_event(
+                    ctx, f"Image {img_idx + 1}/{MAX_IMAGES} saved: {concept_name} | {fidelity_msg}"
+                )
+                # Emit fidelity narrative status
+                if fidelity_score is not None:
+                    yield self._status_event(
+                        ctx,
+                        f"Image fidelity analysis: {concept_name} scored {fidelity_score:.2f}/1.00 via Gecko embeddings — "
+                        f"{'exceeds 0.70 threshold, approved as ' + ref_type + ' reference for video generation' if fidelity_score >= 0.7 else 'below threshold, will regenerate'}"
+                    )
+                save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": new_list}
+                # Save as ADK artifact for inline display
+                if ctx.artifact_service and image_bytes:
+                    try:
+                        version = await ctx.artifact_service.save_artifact(
+                            app_name=ctx.app_name, user_id=ctx.user_id,
+                            session_id=ctx.session.id, filename=artifact_key,
+                            artifact=types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+                        )
+                        save_event.actions.artifact_delta[artifact_key] = version
+                        logger.info(f"[ImageGen] Saved artifact: {artifact_key} v{version}")
+                    except Exception as e:
+                        logger.warning(f"[ImageGen] Failed to save artifact: {e}")
+                yield save_event
             else:
                 yield self._status_event(ctx, f"Image {img_idx + 1} returned empty — will retry next wave.")
 
@@ -589,8 +606,8 @@ class CreativeProductionOrchestrator(BaseAgent):
         gcs_folder = state.get("gcs_folder", "")
         bucket = os.getenv("BUCKET", "")
         bucket_name = bucket.replace("gs://", "")
-        NUM_CLIPS = 2
-        clip_duration = max(duration // NUM_CLIPS, 5)
+        NUM_CLIPS = 1  # Single-clip for AE reliability (multi-clip causes state loss)
+        clip_duration = duration
 
         veo_client = genai.Client(vertexai=True)
         clips_cache = state.get("_commercial_clips", {})
@@ -605,7 +622,7 @@ class CreativeProductionOrchestrator(BaseAgent):
         else:
             yield self._status_event(ctx, f"Generating clip {current_clip_idx + 1}/{NUM_CLIPS} for {duration}s commercial...")
 
-        # Build reference images from campaign images
+        # Build reference images from campaign images — select best Gecko-scored refs
         img_keys = state.get("img_artifact_keys", {})
         if isinstance(img_keys, dict):
             img_list = img_keys.get("img_artifact_keys", [])
@@ -615,21 +632,41 @@ class CreativeProductionOrchestrator(BaseAgent):
         first_frame_uri = ""
         reference_images = []
         if img_list and gcs_folder and bucket:
-            for i, img_meta in enumerate(img_list[:2]):
-                img_filename = img_meta.get("artifact_key", "") if isinstance(img_meta, dict) else str(img_meta)
+            # Product ASSET always included; between person ASSET and trend STYLE, higher Gecko wins
+            product_refs = [m for m in img_list if isinstance(m, dict) and m.get("shot_type") == "product_asset"]
+            other_refs = [m for m in img_list if isinstance(m, dict) and m.get("shot_type") != "product_asset"]
+            other_refs.sort(key=lambda m: m.get("fidelity_score", 0), reverse=True)
+
+            selected_refs = product_refs[:1] + other_refs[:1]  # Product ASSET + best of person/trend
+
+            for img_meta in selected_refs:
+                img_filename = img_meta.get("artifact_key", "")
                 if not img_filename:
                     continue
                 img_gcs_uri = f"{bucket}/{gcs_folder}/{img_filename}"
-                if i == 0:
+                if not first_frame_uri:
                     first_frame_uri = img_gcs_uri
-                ref_type = types.VideoGenerationReferenceType.ASSET if i == 0 else types.VideoGenerationReferenceType.STYLE
+                ref_type_str = img_meta.get("reference_type", "ASSET")
+                ref_type = (types.VideoGenerationReferenceType.STYLE
+                            if ref_type_str == "STYLE"
+                            else types.VideoGenerationReferenceType.ASSET)
                 reference_images.append(
                     types.VideoGenerationReferenceImage(
                         image=types.Image(gcs_uri=img_gcs_uri, mime_type="image/png"),
                         reference_type=ref_type,
                     )
                 )
-                logger.info(f"[DetAV] Reference image {i}: {ref_type} -> {img_gcs_uri}")
+                logger.info(f"[DetAV] Reference: {ref_type_str} (Gecko: {img_meta.get('fidelity_score', 'N/A')}) -> {img_gcs_uri}")
+
+            # Status message highlighting Gecko-rated reference selection
+            if reference_images:
+                ref_summary = ", ".join([
+                    f"{m.get('shot_type','?')} {m.get('reference_type','?')} (Gecko: {m.get('fidelity_score', 0):.2f})"
+                    for m in selected_refs if isinstance(m, dict)
+                ])
+                yield self._status_event(
+                    ctx, f"Selected {len(reference_images)} best Gecko-rated reference images for Veo: {ref_summary}"
+                )
 
         # Clip-specific prompts for narrative arc
         clip_prompts = self._build_clip_prompts(product, audience, selling_points, brand, NUM_CLIPS, clip_duration)
@@ -672,11 +709,17 @@ class CreativeProductionOrchestrator(BaseAgent):
                             logger.info(f"[DetAV] Clip {current_clip_idx + 1} first-frame: last frame of clip {current_clip_idx}")
 
                     if clip_first_frame:
+                        # Veo does NOT allow image + reference_images together
+                        ff_config = GenerateVideosConfig(
+                            aspect_ratio="16:9",
+                            number_of_videos=1,
+                            output_gcs_uri=bucket,
+                        )
                         operation = veo_client.models.generate_videos(
                             model=config.video_gen_model,
                             prompt=clip_prompt,
                             image=clip_first_frame,
-                            config=gen_config,
+                            config=ff_config,
                         )
                     else:
                         operation = veo_client.models.generate_videos(
@@ -787,7 +830,10 @@ class CreativeProductionOrchestrator(BaseAgent):
 
             # All clips done — concatenate into final commercial
             if not completed_clips:
-                yield self._status_event(ctx, "No clips generated — commercial failed")
+                # Clear stale clips state to prevent infinite resume loop
+                clear_event = self._status_event(ctx, "No clips generated — commercial failed")
+                clear_event.actions.state_delta["_commercial_clips"] = {}
+                yield clear_event
                 return
 
             yield self._status_event(ctx, f"Concatenating {len(completed_clips)} clips into {duration}s commercial...")

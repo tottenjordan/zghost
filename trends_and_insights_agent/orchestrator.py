@@ -155,6 +155,38 @@ class CampaignOrchestrator(BaseAgent):
     async def _run_async_impl(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
+        state = ctx.session.state
+
+        # Auto-detect autopilot from user message (e.g. GE sends raw message text)
+        if not state.get("autopilot_mode") and not state.get("_state_init"):
+            user_text = ""
+            if ctx.user_content and ctx.user_content.parts:
+                for part in ctx.user_content.parts:
+                    if hasattr(part, "text") and part.text:
+                        user_text += part.text.lower()
+            if "autopilot" in user_text:
+                init_event = self._status_event(ctx, "Autopilot mode activated — running full pipeline automatically.")
+                init_event.actions.state_delta["autopilot_mode"] = True
+                init_event.actions.state_delta["_state_init"] = True
+                # Extract campaign parameters from message if present
+                import re
+                brand_match = re.search(r'brand:\s*(\w+)', user_text, re.IGNORECASE)
+                product_match = re.search(r'product:\s*(.+?)(?:\n|$)', user_text, re.IGNORECASE)
+                audience_match = re.search(r'(?:target audience|audience):\s*(.+?)(?:\n|$)', user_text, re.IGNORECASE)
+                ksp_match = re.search(r'(?:key selling points|selling points|features):\s*(.+?)(?:\n|$)', user_text, re.IGNORECASE)
+                if brand_match:
+                    init_event.actions.state_delta["brand"] = brand_match.group(1).strip()
+                if product_match:
+                    init_event.actions.state_delta["target_product"] = product_match.group(1).strip()
+                if audience_match:
+                    init_event.actions.state_delta["target_audience"] = audience_match.group(1).strip()
+                if ksp_match:
+                    init_event.actions.state_delta["key_selling_points"] = ksp_match.group(1).strip()
+                init_event.actions.state_delta["commercial_duration"] = 8
+                yield init_event
+                # Refresh state after delta
+                state = ctx.session.state
+
         stage = self._determine_stage(ctx)
         state = ctx.session.state
 
@@ -250,7 +282,8 @@ class CampaignOrchestrator(BaseAgent):
 
         # Stage 1: Need research report
         report = state.get("combined_final_cited_report", "")
-        if not report or len(str(report)) < 500:
+        research_done = state.get("_research_pipeline_complete", False)
+        if not research_done and (not report or len(str(report)) < 500):
             return "RESEARCH"
 
         # Stage 2: Need commercial (images are optional)
@@ -258,7 +291,12 @@ class CampaignOrchestrator(BaseAgent):
         creative_exhausted = creative_attempts >= MAX_CREATIVE_ATTEMPTS
         has_commercial = bool(state.get("commercial_artifact"))
 
-        if not has_commercial and not creative_exhausted:
+        # Re-enter CREATIVE if Veo has a pending operation (even if retry counter exhausted)
+        clips_cache = state.get("_commercial_clips", {})
+        has_pending_veo = bool(clips_cache.get("_pending_veo_op")) if isinstance(clips_cache, dict) else False
+        av_exhausted = state.get("_av_studio_runs", 0) >= 5  # AV_STUDIO_MAX_RUNS
+
+        if not has_commercial and (has_pending_veo or (not creative_exhausted and not av_exhausted)):
             return "CREATIVE"
 
         # Stage 3: Need focus group evaluation
@@ -403,26 +441,6 @@ class CampaignOrchestrator(BaseAgent):
         processed_report = state.get("combined_final_cited_report", "")
         gcs_folder = state.get("gcs_folder", "")
 
-        # Run Skill Council — all skills discuss and improve each other
-        novastorm_enabled = (
-            os.environ.get("NOVASTORM_ENABLED", "").lower() == "true"
-            or state.get("novastorm_enabled", False)
-        )
-        if novastorm_enabled:
-            yield self._status_event(ctx, "Running Skill Council — skills discussing pipeline improvements...")
-            try:
-                user_id = ctx.user_id or "default"
-                council_result = run_skill_council(dict(state), user_id)
-                state["skill_council_result"] = council_result
-                pipeline_score = council_result.get("pipeline_score", 0)
-                top = council_result.get("top_improvements", [])
-                summary = f"Skill Council complete: pipeline score {pipeline_score}/10."
-                if top:
-                    summary += f" Top priority: {top[0][:80]}"
-                yield self._status_event(ctx, summary)
-            except Exception as e:
-                logger.warning(f"[NovaStorm] Skill Council failed (non-fatal): {e}")
-
         if not processed_report:
             yield self._status_event(ctx, "No research report to save — skipping PDF generation.")
             return
@@ -481,7 +499,17 @@ class CampaignOrchestrator(BaseAgent):
             report_event = self._status_event(
                 ctx, f"Final campaign report saved as PDF: {artifact_key}"
             )
-            report_event.actions.state_delta["final_report_with_citations"] = processed_report
+            # Enrich report with creative assets summary
+            asset_summary = f"\n\n## Creative Assets\n- Images: {len(img_artifact_list)} generated"
+            for img in img_artifact_list:
+                if isinstance(img, dict):
+                    asset_summary += f"\n  - {img.get('concept_name', img.get('artifact_key', '?'))}: Gecko {img.get('fidelity_score', 'N/A')}, type: {img.get('reference_type', 'N/A')}"
+            if isinstance(commercial_artifact, dict) and commercial_artifact.get("gcs_uri"):
+                asset_summary += f"\n- Commercial: {commercial_artifact['gcs_uri']}"
+            if focus_group_evaluation:
+                asset_summary += f"\n\n## Focus Group\n{str(focus_group_evaluation)[:500]}"
+
+            report_event.actions.state_delta["final_report_with_citations"] = processed_report + asset_summary
             # Set artifact_delta so PDF appears inline in ADK web UI / GE
             version = result.get("version")
             if version is not None:
@@ -490,6 +518,20 @@ class CampaignOrchestrator(BaseAgent):
         else:
             msg = f"Failed to save final report: {result.get('error', 'unknown')}"
             yield self._status_event(ctx, msg)
+
+        # Run Skill Council AFTER report save (non-blocking, best-effort)
+        novastorm_enabled = (
+            os.environ.get("NOVASTORM_ENABLED", "").lower() == "true"
+            or state.get("novastorm_enabled", False)
+        )
+        if novastorm_enabled:
+            try:
+                user_id = ctx.user_id or "default"
+                council_result = run_skill_council(dict(state), user_id)
+                pipeline_score = council_result.get("pipeline_score", 0)
+                yield self._status_event(ctx, f"Skill Council: pipeline score {pipeline_score}/10")
+            except Exception as e:
+                logger.warning(f"[NovaStorm] Skill Council failed (non-fatal): {e}")
 
     def _status_event(self, ctx: InvocationContext, message: str) -> Event:
         """Create an event with a status message and ui:status_update."""

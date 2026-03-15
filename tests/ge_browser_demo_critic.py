@@ -40,7 +40,7 @@ GE_CHAT_URL = "https://vertexaisearch.cloud.google.com/home/cid/c4da98d6-1b97-4e
 
 SS_DIR = Path("demo_screenshots/ge_demo_critic")
 USER_ID = "demo_critic_user"
-MAX_WAVES = 45
+MAX_WAVES = 50
 
 INITIAL_STATE = {
     "brand": "Tide",
@@ -53,7 +53,23 @@ INITIAL_STATE = {
     "target_yt_trends": {"target_yt_trends": [
         {"title": "Eco Cleaning Hacks", "description": "YouTube creators sharing sustainable cleaning routines and eco-friendly product reviews"}
     ]},
-    "yt_video_analysis": "YouTube trend analysis: Gen Z audiences are highly engaged with sustainable product content. Key themes: eco-friendly lifestyle, plant-based products, aesthetic packaging, fresh floral scents.",
+    "yt_video_analysis": (
+        "### YouTube Intelligence Final Synthesis: The 'Sensory Domesticity' Trend\n\n"
+        "* **Main Thesis:** Laundry has evolved from a utilitarian chore into a 'Sensory Ritual' centered on mental wellness "
+        "and curated living spaces. Trending content reveals consumers are abandoning underperforming DIY cleaners in favor of "
+        "'High-Performance Botanicals' — products combining trusted cleaning power with nature-inspired experiences.\n\n"
+        "* **The 'Hibiscus' Opportunity:** Research confirms Hibiscus is a high-growth 'lifestyle' fragrance perceived as "
+        "'Sophisticated,' 'Tropical,' and 'Authentic,' sharply contrasting with synthetic 'Linen' or 'Spring' scents. In "
+        "'Sunday Reset' and 'Laundry ASMR' video formats, Hibiscus scent serves as a psychological signal of a fresh start.\n\n"
+        "* **Key Trend: 'The Efficacy Hybrid':** Video analysis identifies clear 'DIY fatigue.' Consumers who switched to "
+        "vinegar-based cleaners are returning to established brands offering 'sustainable luxury' — concentrated formulas and "
+        "plant-inspired profiles. Tide Hibiscus fills this 'Efficacy Gap.'\n\n"
+        "### Strategic Directives:\n"
+        "1. **'Ritual-First' Marketing:** Feature product in 'Sunday Reset' and 'Home Wellness' formats\n"
+        "2. **Messaging: 'Trusted Performance, Botanical Soul.'** Position as premium eco-upgrade without performance trade-offs\n"
+        "3. **Visual Language:** Shift from 'detergent blue' to lush hibiscus florals and aesthetic pouring shots, "
+        "aligning with 'Botanical Home' and 'Clean-Girl Aesthetic' movements"
+    ),
     "final_select_ad_copies": {"final_select_ad_copies": []},
     "final_select_vis_concepts": {"final_select_vis_concepts": []},
     "img_artifact_keys": {"img_artifact_keys": []},
@@ -66,7 +82,7 @@ INITIAL_STATE = {
     "sources": {},
     "final_report_with_citations": "",
     "autopilot_mode": True,
-    "commercial_duration": 15,
+    "commercial_duration": 8,
     "commercial_artifact": "",
     "campaign_guide_content": "",
     "gcs_folder": "",
@@ -79,7 +95,7 @@ Product: Tide Fabric Softener with Hibiscus Scent
 Target Audience: Gen Z eco-conscious consumers
 Key Selling Points: New Hibiscus Scent, Plant-based formula, 2x cleaning power, Biodegradable packaging
 
-Run in autopilot mode - auto-select trend 1 for both search and YouTube trends, then proceed through the full pipeline: research, ad creative, image generation, 15s video commercial, focus group evaluation, and final PDF campaign brief."""
+Run in autopilot mode - auto-select trend 1 for both search and YouTube trends, then proceed through the full pipeline: research, ad creative, 3 reference images with Gecko fidelity scoring (product ASSET, person ASSET, trend STYLE), 8s video commercial with best Gecko-rated reference assets, focus group evaluation, and final PDF campaign brief."""
 
 # JS helpers for GE browser
 CHECK_CONTENT_JS = """() => {
@@ -186,7 +202,8 @@ def get_pipeline_status(ae, session_id):
     imgs = state.get("img_artifact_keys", {})
     vids = state.get("vid_artifact_keys", {})
     final = state.get("final_report_with_citations", "")
-    commercial = state.get("commercial_artifact", "")
+    commercial_raw = state.get("commercial_artifact", "")
+    commercial = commercial_raw
     focus_group = state.get("focus_group_evaluation", "")
     ad_copies = state.get("final_select_ad_copies", {})
     vis_concepts = state.get("final_select_vis_concepts", {})
@@ -231,7 +248,7 @@ def get_pipeline_status(ae, session_id):
         "has_commercial": has_commercial,
         "has_focus_group": has_focus_group,
         "final_report_len": final_len,
-        "commercial_uri": commercial,
+        "commercial_uri": commercial_raw.get("gcs_uri", str(commercial_raw)[:200]) if isinstance(commercial_raw, dict) else str(commercial_raw)[:200],
         "focus_group_text": focus_group[:500] if isinstance(focus_group, str) else "",
         "state": state,
     }
@@ -329,13 +346,18 @@ async def capture_ge_screenshots(session_id):
         if not chat_sent:
             print("  Could not find chat input — taking screenshots of existing content", flush=True)
 
-        # Monitor for content appearing (up to 30 waves, 30s each)
+        # Monitor for content appearing (up to 40 waves, 15s each)
+        # Bail early if content stops changing (3 stale waves)
         print("\n  Monitoring GE for inline content...", flush=True)
         best_info = {}
-        for wave in range(30):
-            await page.wait_for_timeout(30000)
+        prev_text_len = 0
+        stale_count = 0
+        MAX_STALE = 3  # bail after 3 waves with no change
+
+        for wave in range(40):
+            await page.wait_for_timeout(15000)
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(1000)
 
             # Take screenshot
             path = SS_DIR / f"ge_wave_{wave+1:02d}_{ts}.png"
@@ -356,8 +378,19 @@ async def capture_ge_screenshots(session_id):
             if info.get("hasFocusGroup"): stages.append("FOCUS_GROUP")
             if info.get("hasPDF"): stages.append("PDF")
 
-            print(f"  Wave {wave+1}: {stages} | text={info.get('textLength', 0)} chars", flush=True)
+            cur_text_len = info.get("textLength", 0)
+            print(f"  Wave {wave+1}: {stages} | text={cur_text_len} chars", flush=True)
             best_info = info
+
+            # Stale detection — bail if content stopped changing
+            if cur_text_len == prev_text_len and wave > 2:
+                stale_count += 1
+                if stale_count >= MAX_STALE:
+                    print(f"\n  Content stale for {MAX_STALE} waves — GE pipeline paused/complete.", flush=True)
+                    break
+            else:
+                stale_count = 0
+            prev_text_len = cur_text_len
 
             # Done when pipeline is complete
             if info.get("hasComplete") or (info.get("hasFocusGroup") and info.get("hasPDF")):
@@ -373,15 +406,15 @@ async def capture_ge_screenshots(session_id):
                     print(f"  Final screenshot: {path.name}", flush=True)
                 break
 
-        # If pipeline didn't complete in GE, still take scrolling screenshots
-        if not (best_info.get("hasComplete") or best_info.get("hasPDF")):
-            height = await page.evaluate("document.body.scrollHeight")
-            for pct in [0, 50, 100]:
-                await page.evaluate(f"window.scrollTo(0, {int(height * pct / 100)})")
-                await page.wait_for_timeout(500)
-                path = SS_DIR / f"ge_partial_scroll{pct}_{ts}.png"
-                await page.screenshot(path=str(path))
-                screenshots.append(str(path))
+        # Take scrolling screenshots for whatever state we're in
+        height = await page.evaluate("document.body.scrollHeight")
+        for pct in [0, 25, 50, 75, 100]:
+            await page.evaluate(f"window.scrollTo(0, {int(height * pct / 100)})")
+            await page.wait_for_timeout(500)
+            path = SS_DIR / f"ge_final_scroll{pct}_{ts}.png"
+            await page.screenshot(path=str(path))
+            screenshots.append(str(path))
+            print(f"  Scroll screenshot: {path.name}", flush=True)
 
     return screenshots
 
@@ -412,7 +445,7 @@ PIPELINE OUTPUT SUMMARY:
 - Visual concepts: {status['num_vis_concepts']}
 - Campaign images: {status['num_images']}
 - Videos: {status['num_videos']}
-- 15s Commercial: {'YES - ' + status['commercial_uri'][:100] if status['has_commercial'] else 'NO'}
+- {status.get('state', {}).get('commercial_duration', 8)}s Commercial: {'YES - ' + status['commercial_uri'][:100] if status['has_commercial'] else 'NO'}
 - Focus group evaluation: {'YES' if status['has_focus_group'] else 'NO'}
 - Final PDF report: {status['final_report_len']} chars
 - Focus group excerpt: {status['focus_group_text'][:300]}
@@ -563,7 +596,7 @@ RALPH LOOP RESULT — {timestamp}
 
   Pipeline Gates:
     Research: {status['report_len']} chars {'PASS' if status['report_len'] > 500 else 'FAIL'}
-    Images: {status['num_images']} {'PASS' if status['num_images'] >= 1 else 'FAIL'}
+    Images: {status['num_images']} {'PASS' if status['num_images'] >= 3 else 'FAIL'}
     Commercial: {'PASS' if status['has_commercial'] else 'FAIL'}
     Focus Group: {'PASS' if status['has_focus_group'] else 'FAIL'}
     PDF Report: {'PASS' if status['final_report_len'] > 0 else 'FAIL'}
