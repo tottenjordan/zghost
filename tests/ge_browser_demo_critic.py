@@ -384,10 +384,11 @@ def _find_chips(obj, chips):
 
 
 async def capture_ge_screenshots(session_id):
-    """Run pipeline via streamAssist API, capture GE browser screenshots.
+    """Drive pipeline in GE browser via @mention picker and capture screenshots.
 
-    Uses the streamAssist API with agentsSpec for proper agent routing,
-    while monitoring the GE browser UI for content updates.
+    Types @mention in the GE chat input to route to our agent, sends the
+    campaign message, then takes screenshots as the conversation progresses.
+    Falls back to streamAssist API if browser input fails.
     """
     from playwright.async_api import async_playwright
 
@@ -395,27 +396,8 @@ async def capture_ge_screenshots(session_id):
     screenshots = []
 
     print(f"\n{'#'*60}")
-    print("PHASE 2: GE Browser — streamAssist API + screenshots")
+    print("PHASE 2: GE Browser — @mention + screenshots")
     print(f"{'#'*60}\n", flush=True)
-
-    # Get auth token for streamAssist API
-    token = subprocess.run(
-        ["gcloud", "auth", "print-access-token"],
-        capture_output=True, text=True, check=True,
-    ).stdout.strip()
-
-    # Send initial message via streamAssist with proper agent routing
-    print("  Sending campaign message via streamAssist API...", flush=True)
-    result = _stream_assist_send(token, CAMPAIGN_MESSAGE)
-    ge_session = result.get("session_path", "")
-    print(f"  GE Session: {ge_session}", flush=True)
-    print(f"  Reply: {result.get('reply_text', '')[:200]}", flush=True)
-    print(f"  Thoughts: {result.get('thoughts', 0)} | Chips: {len(result.get('status_chips', []))}", flush=True)
-
-    save_screenshot_text("ge_wave_00_api_init", result)
-
-    # Extract session ID for browser URL
-    ge_session_id = ge_session.split("/sessions/")[-1] if "/sessions/" in ge_session else ""
 
     async with async_playwright() as p:
         try:
@@ -428,84 +410,177 @@ async def capture_ge_screenshots(session_id):
         page = context.pages[0] if context.pages else await context.new_page()
         await page.set_viewport_size({"width": 1920, "height": 1080})
 
-        # Navigate to GE chat (the session should appear in the conversation list)
+        # Navigate to GE chat home
         print("  Navigating to GE chat...", flush=True)
         await page.goto(GE_CHAT_URL, wait_until="domcontentloaded", timeout=30000)
         await page.wait_for_timeout(5000)
-
         ts = datetime.now().strftime("%H%M%S")
 
-        # Take initial screenshot
-        path = SS_DIR / f"ge_chat_{ts}.png"
-        await page.screenshot(path=str(path))
-        screenshots.append(str(path))
+        # Step 1: Type @ to trigger agent picker, select our agent
+        print("  Triggering @mention picker...", flush=True)
+        input_el = await page.query_selector("textarea, [contenteditable], [role='textbox']")
+        if not input_el:
+            # Fallback: click on the placeholder text
+            await page.click("text=Ask anything", timeout=5000)
+            await page.wait_for_timeout(500)
+            input_el = await page.query_selector("textarea, [contenteditable], [role='textbox']")
 
-        # Continue sending "continue" via streamAssist API and monitoring browser
-        # Each wave: send via API, wait, screenshot
-        for wave in range(MAX_WAVES):
-            status = get_pipeline_status(get_ae_client(), session_id)
-            if status["stage"] == "COMPLETE":
-                print(f"\n  Pipeline COMPLETE at wave {wave + 1}!", flush=True)
-                break
+        if input_el:
+            await input_el.click()
+            await page.wait_for_timeout(300)
+            await input_el.type("@", delay=100)
+            await page.wait_for_timeout(2000)
 
-            # Refresh token periodically
-            if wave % 10 == 0 and wave > 0:
-                token = subprocess.run(
-                    ["gcloud", "auth", "print-access-token"],
-                    capture_output=True, text=True, check=True,
-                ).stdout.strip()
+            # Take screenshot of the @mention picker
+            path = SS_DIR / f"ge_01_mention_picker_{ts}.png"
+            await page.screenshot(path=str(path))
+            screenshots.append(str(path))
+            print(f"  Screenshot: {path.name}", flush=True)
 
-            # Send continue via streamAssist
-            print(f"\n  [Wave {wave + 1}] Sending 'continue' via streamAssist...", flush=True)
-            result = _stream_assist_send(token, "continue", ge_session)
-            reply_preview = result.get("reply_text", "")[:200]
-            chips = result.get("status_chips", [])
-            print(f"  Reply: {reply_preview}", flush=True)
-            if chips:
-                print(f"  Status chips: {chips[-3:]}", flush=True)
+            # Click our agent (the projects/679926387543/locatio... entry)
+            agent_clicked = False
+            try:
+                # Look for the agent with our project number in the picker
+                picker_items = await page.query_selector_all("[role='option'], [role='listbox'] > *, [class*='option'], [class*='item']")
+                for item in picker_items:
+                    text = await item.inner_text()
+                    if "679926387543" in text or "projects/" in text:
+                        await item.click()
+                        agent_clicked = True
+                        print(f"  Selected agent: {text[:60]}", flush=True)
+                        break
 
-            save_screenshot_text(f"ge_wave_{wave+1:02d}_api_{ts}", {
-                "wave": wave + 1,
-                "reply_preview": reply_preview,
-                "thoughts": result.get("thoughts", 0),
-                "status_chips": chips,
-            })
+                if not agent_clicked:
+                    # Try clicking the third item (index 2) in the picker
+                    all_items = await page.query_selector_all("[role='option'], li, [class*='menu-item']")
+                    if len(all_items) >= 3:
+                        await all_items[2].click()
+                        agent_clicked = True
+                        print("  Selected agent (3rd picker item)", flush=True)
+                    elif all_items:
+                        await all_items[-1].click()
+                        agent_clicked = True
+                        print("  Selected agent (last picker item)", flush=True)
+            except Exception as e:
+                print(f"  Picker click error: {e}", flush=True)
 
-            # Refresh browser to show updated conversation
-            await page.reload(wait_until="domcontentloaded", timeout=15000)
-            await page.wait_for_timeout(3000)
-            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            if not agent_clicked:
+                # Last resort: press down arrow keys + Enter
+                await page.keyboard.press("ArrowDown")
+                await page.keyboard.press("ArrowDown")
+                await page.keyboard.press("ArrowDown")
+                await page.keyboard.press("Enter")
+                print("  Selected agent (keyboard navigation)", flush=True)
+
             await page.wait_for_timeout(1000)
 
-            # Take screenshot
-            path = SS_DIR / f"ge_wave_{wave+1:02d}_{ts}.png"
-            await page.screenshot(path=str(path))
-            screenshots.append(str(path))
-
-            # Check content
-            try:
-                info = await page.evaluate(CHECK_CONTENT_JS)
-                stages = []
-                if info.get("hasResearch"): stages.append("RESEARCH")
-                if info.get("hasAdCopy"): stages.append("AD_COPY")
-                if info.get("hasImages"): stages.append(f"IMAGES({info.get('imageCount', 0)})")
-                if info.get("hasVideo"): stages.append("VIDEO")
-                if info.get("hasFocusGroup"): stages.append("FOCUS_GROUP")
-                if info.get("hasPDF"): stages.append("PDF")
-                if info.get("hasComplete"): stages.append("COMPLETE")
-                print(f"  Browser content: {stages} | text={info.get('textLength', 0)} chars", flush=True)
-            except Exception:
-                pass
-
-        # Final scrolling screenshots
-        height = await page.evaluate("document.body.scrollHeight")
-        for pct in [0, 25, 50, 75, 100]:
-            await page.evaluate(f"window.scrollTo(0, {int(height * pct / 100)})")
+            # Step 2: Type the campaign message
+            short_msg = (
+                "Create a full marketing campaign for Tide Fabric Softener "
+                "with Hibiscus Scent. Target: Gen Z. Key: New Hibiscus Scent, "
+                "Plant-based formula, Biodegradable packaging. "
+                "Run full pipeline: research, 3 reference images with Gecko scoring, "
+                "8s video commercial, focus group, and PDF report."
+            )
+            await page.keyboard.type(short_msg, delay=10)
             await page.wait_for_timeout(500)
-            path = SS_DIR / f"ge_FINAL_scroll{pct}_{ts}.png"
+
+            # Take screenshot of the typed message
+            path = SS_DIR / f"ge_02_message_typed_{ts}.png"
             await page.screenshot(path=str(path))
             screenshots.append(str(path))
-            print(f"  Final screenshot: {path.name}", flush=True)
+            print(f"  Screenshot: {path.name}", flush=True)
+
+            # Step 3: Submit the message
+            await page.keyboard.press("Enter")
+            print("  Message submitted!", flush=True)
+            await page.wait_for_timeout(3000)
+
+            # Step 4: Monitor the conversation — take screenshots as it progresses
+            prev_text_len = 0
+            stale_count = 0
+            for wave in range(MAX_WAVES):
+                await page.wait_for_timeout(15000)  # Wait 15s between checks
+
+                # Scroll to bottom
+                await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                await page.wait_for_timeout(1000)
+
+                # Check content
+                try:
+                    info = await page.evaluate(CHECK_CONTENT_JS)
+                    text_len = info.get("textLength", 0)
+                    stages = []
+                    if info.get("hasResearch"): stages.append("RESEARCH")
+                    if info.get("hasAdCopy"): stages.append("AD_COPY")
+                    if info.get("hasImages"): stages.append(f"IMAGES({info.get('imageCount', 0)})")
+                    if info.get("hasVideo"): stages.append("VIDEO")
+                    if info.get("hasFocusGroup"): stages.append("FOCUS_GROUP")
+                    if info.get("hasPDF"): stages.append("PDF")
+                    if info.get("hasComplete"): stages.append("COMPLETE")
+                    print(f"  [Wave {wave+1}] {stages} | text={text_len} chars", flush=True)
+
+                    # Take screenshot if content changed
+                    if text_len > prev_text_len + 50 or wave % 3 == 0:
+                        path = SS_DIR / f"ge_wave_{wave+1:02d}_{ts}.png"
+                        await page.screenshot(path=str(path))
+                        screenshots.append(str(path))
+                        print(f"  Screenshot: {path.name}", flush=True)
+                        stale_count = 0
+                    else:
+                        stale_count += 1
+
+                    prev_text_len = text_len
+
+                    # Check if pipeline is complete (via AE status)
+                    try:
+                        status = get_pipeline_status(get_ae_client(), session_id)
+                        if status["stage"] == "COMPLETE":
+                            print(f"\n  Pipeline COMPLETE at wave {wave + 1}!", flush=True)
+                            break
+                    except Exception:
+                        pass
+
+                    # Also check browser for completion
+                    if info.get("hasComplete") or info.get("hasPDF"):
+                        print(f"\n  Pipeline complete detected in browser!", flush=True)
+                        break
+
+                    # If content is stale for 5+ checks, try sending "continue"
+                    if stale_count >= 5:
+                        print(f"  Content stale for {stale_count} checks, sending 'continue'...", flush=True)
+                        input_el = await page.query_selector("textarea, [contenteditable], [role='textbox']")
+                        if input_el:
+                            await input_el.click()
+                            await page.keyboard.type("continue", delay=20)
+                            await page.keyboard.press("Enter")
+                            stale_count = 0
+
+                except Exception as e:
+                    print(f"  [Wave {wave+1}] Content check error: {e}", flush=True)
+
+        else:
+            print("  ERROR: Could not find GE input element!", flush=True)
+
+        # Final scrolling screenshots of the full conversation
+        print("\n  Taking final scrolling screenshots...", flush=True)
+        await page.wait_for_timeout(3000)
+        await page.evaluate("window.scrollTo(0, 0)")
+        await page.wait_for_timeout(500)
+
+        height = await page.evaluate("document.body.scrollHeight")
+        viewport_h = 1080
+        num_scrolls = max(1, int(height / viewport_h) + 1)
+        num_scrolls = min(num_scrolls, 15)
+
+        for i in range(num_scrolls):
+            scroll_y = int(i * viewport_h * 0.8)
+            await page.evaluate(f"window.scrollTo(0, {scroll_y})")
+            await page.wait_for_timeout(500)
+            path = SS_DIR / f"ge_FINAL_{i:02d}_{ts}.png"
+            await page.screenshot(path=str(path))
+            screenshots.append(str(path))
+            print(f"  Final screenshot {i+1}/{num_scrolls}: {path.name}", flush=True)
 
     return screenshots
 

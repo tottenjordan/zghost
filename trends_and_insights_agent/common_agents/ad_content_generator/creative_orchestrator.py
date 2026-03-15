@@ -481,18 +481,17 @@ class CreativeProductionOrchestrator(BaseAgent):
         yield self._status_event(ctx, f"Generating image {img_idx + 1}/{MAX_IMAGES} ({shot['shot_type']}: {concept_name})...")
 
         try:
+            import re as _re
             from google.genai.types import GenerateImagesConfig
             img_client = genai.Client(vertexai=True)
-            safe_name = concept_name.replace(",", "").replace(" ", "_")
+            # Sanitize name: alphanumeric, underscores, hyphens only
+            safe_name = _re.sub(r"[^a-zA-Z0-9_\-]", "", concept_name.replace(" ", "_"))
             artifact_key = f"{safe_name}_0.png"
             gcs_uri = ""
 
-            # Use Imagen 4 generate_images() — synchronous, reliable on AE
-            output_gcs = f"{bucket}/{gcs_folder}" if bucket and gcs_folder else None
-            img_config = GenerateImagesConfig(
-                number_of_images=1,
-                **({"output_gcs_uri": output_gcs} if output_gcs else {}),
-            )
+            # Use Imagen 4 generate_images() — no output_gcs_uri so we always
+            # get image_bytes back (output_gcs_uri returns None bytes + unknown URI)
+            img_config = GenerateImagesConfig(number_of_images=1)
             response = img_client.models.generate_images(
                 model="imagen-4.0-generate-preview-06-06",
                 prompt=prompt,
@@ -503,10 +502,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                 gen_img = response.generated_images[0]
                 image_bytes = gen_img.image.image_bytes if gen_img.image else None
 
-                if output_gcs and hasattr(gen_img, 'gcs_uri') and gen_img.gcs_uri:
-                    gcs_uri = gen_img.gcs_uri
-                elif bucket and gcs_folder and image_bytes:
-                    # Upload manually if GCS output wasn't set
+                if bucket and gcs_folder and image_bytes:
                     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                         tmp.write(image_bytes)
                         tmp_path = tmp.name
