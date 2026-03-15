@@ -41,7 +41,7 @@ The entire pipeline runs autonomously on [Vertex AI Agent Engine](https://cloud.
 | Component | Model / Service |
 |-----------|----------------|
 | Agent reasoning | Gemini 3 Flash Preview |
-| Image generation | Gemini 3 Pro Image Preview |
+| Image generation | Imagen 4 (generate_images API) |
 | Video generation | Veo 3.1 Fast |
 | Voice-over & dialogue | Chirp 3 HD |
 | Music generation | Lyria 2 |
@@ -250,11 +250,127 @@ uv run python -m deploy.register_gemini_enterprise register --from-deployment-in
 uv run python -m deploy.register_gemini_enterprise delete --agent-id AGENT_ID --from-deployment-info
 ```
 
+## Gemini Enterprise Demo Script
+
+Use this script when recording or presenting a live demo in the Gemini Enterprise browser UI.
+
+### Setup
+
+1. Open Gemini Enterprise: `https://vertexaisearch.cloud.google.com`
+2. Navigate to the engine (link in `deployment_info.json` or your GE console)
+3. Ensure the agent is registered: `uv run python deploy_to_ae.py --step all --update`
+
+### Demo Flow
+
+**Step 1 — Kickoff (paste into GE chat)**
+
+```
+@trends2insights Create a full marketing campaign for Tide Fabric Softener with Hibiscus Scent.
+
+Brand: Tide
+Product: Tide Fabric Softener with Hibiscus Scent
+Target Audience: Gen Z eco-conscious consumers
+Key Selling Points: New Hibiscus Scent, Plant-based formula, 2x cleaning power, Biodegradable packaging
+
+Run in autopilot mode - auto-select trend 1 for both search and YouTube trends, then proceed through research, ad creative, image generation, 15s video commercial, focus group evaluation, and final PDF campaign brief.
+```
+
+> The `@trends2insights` prefix is required to route the message to the ADK agent instead of generic Gemini.
+
+**Step 2 — Watch the pipeline**
+
+The agent will show its thinking process and progress through:
+- Trend analysis and research synthesis
+- Ad creative generation (headlines, body copy, CTAs)
+- Campaign image generation (hero product shots + lifestyle images)
+- Video commercial (15s via Veo 3.1)
+- Focus group evaluation
+- Final PDF campaign brief
+
+**Step 3 — Follow-up prompts** (if pipeline pauses)
+
+```
+@trends2insights continue
+```
+
+```
+@trends2insights Can you generate a 15-second video commercial based on the ad creative?
+```
+
+```
+@trends2insights Create a final PDF campaign brief with the generated assets
+```
+
+### What to Highlight
+
+| Moment | Talking Point |
+|--------|--------------|
+| Research synthesis | "The agent runs 3 parallel research streams — YouTube trends, Google Search, and campaign analysis — then merges and evaluates the findings" |
+| Ad creative | "Ad copy is drafted, critiqued by a separate critic agent, then the top 3 ideas are selected for image generation" |
+| Image generation | "Each idea gets 2 shots — a hero product shot and a lifestyle scene — all scored by Gecko for brand fidelity" |
+| Video commercial | "Veo 3.1 generates a cinematic 15-second commercial using campaign images as style/asset references" |
+| Focus group | "A simulated 3-person panel evaluates the campaign with weighted scoring and a Go/No-Go threshold" |
+| PDF report | "Everything compiles into a branded PDF with campaign context, research, creative assets, and focus group results" |
+
+### Automated E2E Test (for validation before demo)
+
+```bash
+# Run the full pipeline via AE API + capture GE browser screenshots
+source trends_and_insights_agent/.env
+DISPLAY=:20 uv run python tests/ge_browser_demo_critic.py
+```
+
+This drives the pipeline via the Agent Engine API, then opens the GE browser to capture screenshots and runs a Gemini vision critic to evaluate the demo quality.
+
 ## Video Walkthrough
 
 > Overview of the end-to-end workflow
 
 [![demo](https://img.youtube.com/vi/S8Bh4eBQSs0/hqdefault.jpg)](https://www.youtube.com/watch?v=S8Bh4eBQSs0)
+
+## FAQ
+
+**Q: How long does a full pipeline run take?**
+
+~10–15 minutes on Agent Engine. Research takes 3–5 minutes (parallel streams), creative 3–5 minutes (image gen + Veo), and focus group + PDF ~2 minutes.
+
+**Q: Why does the pipeline get stuck on "Thinking" in Gemini Enterprise?**
+
+This usually means a sub-agent is running a long operation (image gen, video gen) without emitting status updates. The fix is `ui:status_update` state_delta events emitted BEFORE each LLM call via `before_model_status_callback`. If you see this, redeploy: `uv run python deploy_to_ae.py --step agent-engine --update`.
+
+**Q: Why do images fail to generate on Agent Engine?**
+
+Imagen 4's `generate_images()` API is synchronous and can timeout on AE's ~60s wave budget. Workaround: pre-generate images locally and pre-populate them in session state. See `tests/ge_browser_demo_critic.py` for the pre-generation pattern.
+
+**Q: How do I test before a live demo?**
+
+```bash
+# Automated critic test — runs pipeline + browser screenshots + Gemini vision scoring
+source trends_and_insights_agent/.env
+DISPLAY=:20 uv run python tests/ge_browser_demo_critic.py
+```
+
+Target score: 7.0+ (passing), 9.0+ (CEO-ready).
+
+**Q: What does `autopilot_mode` do?**
+
+Skips all user confirmations. Trends are auto-selected (#1 ranked), research runs without approval gates, and creative proceeds without user review. The E2E runner and demo critic both use autopilot mode.
+
+**Q: How do I add a new brand/product for a demo?**
+
+No code changes needed. Just change the message sent to the agent. The pipeline is brand-agnostic — it adapts research queries, ad copy, and visual concepts to whatever brand/product/audience you specify.
+
+**Q: What's the `@trends2insights` prefix in GE?**
+
+It routes your message to the ADK agent instead of generic Gemini. Without it, GE answers with its own knowledge. The agent must be registered first via `deploy_to_ae.py --step gemini-enterprise`.
+
+**Q: How does Memory Bank work?**
+
+Campaign insights are automatically saved after each pipeline run and retrieved at the start of new sessions. This lets the agent learn from past campaigns (e.g., "last time we targeted Gen Z with hibiscus, the focus group scored 7.8"). Memory Bank uses `VertexAiMemoryBankService` on the same Agent Engine instance.
+
+**Q: What if the pipeline loops infinitely on a stage?**
+
+Each stage has loop guards: `_focus_group_attempts` (cap 5), `_creative_pipeline_attempts` (cap 15), `_av_studio_runs` (cap 5). The SAVE_REPORT stage always sets `final_report_with_citations` even on failure to prevent re-entry. If you hit a loop, check Cloud Logging for the stage name and counter values.
 
 ## Detailed Documentation
 

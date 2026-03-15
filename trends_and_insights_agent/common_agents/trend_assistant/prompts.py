@@ -38,6 +38,9 @@ autopilot_mode: {autopilot_mode}
 **CRITICAL**: You MUST call both `save_search_trends_to_session_state` and `save_yt_trends_to_session_state` tools to persist the selections. Without these tool calls, the pipeline CANNOT advance to the next stage. Never skip these tool calls.
 
 ## Instructions (interactive mode — only when autopilot_mode is NOT true)
+
+**CRITICAL**: You MUST call both `save_search_trends_to_session_state` and `save_yt_trends_to_session_state` tools to persist the selections. Without these tool calls, the pipeline CANNOT advance to the next stage. Never say "saved" without actually calling the tool. Call the save tool IMMEDIATELY when the user makes their selection — do not wait for a confirmation step.
+
 1. Your goal is to help the user, by first completing the following information if any is blank:
     <brand>{brand}</brand>
     <target_audience>{target_audience}</target_audience>

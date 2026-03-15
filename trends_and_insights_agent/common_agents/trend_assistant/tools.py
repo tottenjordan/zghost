@@ -63,11 +63,14 @@ async def save_yt_trends_to_session_state(
     Returns:
         A status message.
     """
-    existing_target_yt_trends = tool_context.state.get("target_yt_trends")
-    if existing_target_yt_trends is not {"target_yt_trends": []}:
-        existing_target_yt_trends["target_yt_trends"].append(selected_trends)
-    tool_context.state["target_yt_trends"] = existing_target_yt_trends
-    return {"status": "ok"}
+    logger = logging.getLogger("google_adk.trend_tools")
+    logger.info(f"[SaveYTTrends] CALLED with selected_trends={selected_trends}")
+    existing = tool_context.state.get("target_yt_trends", {})
+    old_list = existing.get("target_yt_trends", []) if isinstance(existing, dict) else []
+    new_list = list(old_list) + [selected_trends]
+    tool_context.state["target_yt_trends"] = {"target_yt_trends": new_list}
+    logger.info(f"[SaveYTTrends] SET target_yt_trends with {len(new_list)} items")
+    return {"status": "ok", "saved_count": len(new_list), "saved_data": selected_trends}
 
 
 def get_youtube_trends(
@@ -133,11 +136,14 @@ async def save_search_trends_to_session_state(
     Returns:
         A status message.
     """
-    existing_target_search_trends = tool_context.state.get("target_search_trends")
-    if existing_target_search_trends is not {"target_search_trends": []}:
-        existing_target_search_trends["target_search_trends"].append(new_trends)
-    tool_context.state["target_search_trends"] = existing_target_search_trends
-    return {"status": "ok"}
+    logger = logging.getLogger("google_adk.trend_tools")
+    logger.info(f"[SaveSearchTrends] CALLED with new_trends={new_trends}")
+    existing = tool_context.state.get("target_search_trends", {})
+    old_list = existing.get("target_search_trends", []) if isinstance(existing, dict) else []
+    new_list = list(old_list) + [new_trends]
+    tool_context.state["target_search_trends"] = {"target_search_trends": new_list}
+    logger.info(f"[SaveSearchTrends] SET target_search_trends with {len(new_list)} items")
+    return {"status": "ok", "saved_count": len(new_list), "saved_data": new_trends}
 
 
 # ==============================
