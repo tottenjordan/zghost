@@ -477,7 +477,7 @@ class CreativeProductionOrchestrator(BaseAgent):
         # Track failures per image index to avoid infinite retry
         img_fail_key = f"_img_fail_{img_idx}"
         img_failures = state.get(img_fail_key, 0)
-        MAX_IMG_RETRIES = 3
+        MAX_IMG_RETRIES = 5
 
         shot = shot_list[img_idx]
         concept_name = shot["concept_name"]
@@ -513,7 +513,12 @@ class CreativeProductionOrchestrator(BaseAgent):
         try:
             import re as _re
             from google.genai.types import GenerateImagesConfig
-            img_client = genai.Client(vertexai=True)
+            # Imagen 4 requires us-central1, NOT "global" (which is for Gemini 3)
+            img_client = genai.Client(
+                vertexai=True,
+                project=os.environ.get("GOOGLE_CLOUD_PROJECT"),
+                location="us-central1",
+            )
             # Sanitize name: alphanumeric, underscores, hyphens only
             safe_name = _re.sub(r"[^a-zA-Z0-9_\-]", "", concept_name.replace(" ", "_"))
             artifact_key = f"{safe_name}_0.png"
@@ -574,7 +579,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                 # Gecko fidelity (best-effort, skip if tight on time)
                 fidelity_score = None
                 _img_gen_elapsed = time.time() - _img_start_t
-                if gcs_uri and _img_gen_elapsed < 30:  # Only run gecko if <30s spent on image gen
+                if gcs_uri and _img_gen_elapsed < 20:  # Only run gecko if <20s spent on image gen
                     try:
                         result = gecko_evaluate(
                             prompt=state.get("key_selling_points", product),
@@ -591,7 +596,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                     except Exception as e:
                         logger.warning(f"[ImageGen] Gecko fidelity eval failed (non-fatal): {e}")
                 elif gcs_uri:
-                    logger.info(f"[ImageGen] Skipping Gecko eval — image gen took {_img_gen_elapsed:.0f}s (budget: 30s)")
+                    logger.info(f"[ImageGen] Skipping Gecko eval — image gen took {_img_gen_elapsed:.0f}s (budget: 20s)")
 
                 new_list = list(existing_imgs) + [img_meta]
                 existing_imgs = new_list
@@ -662,7 +667,12 @@ class CreativeProductionOrchestrator(BaseAgent):
         NUM_CLIPS = 1  # Single-clip for AE reliability (multi-clip causes state loss)
         clip_duration = duration
 
-        veo_client = genai.Client(vertexai=True)
+        # Veo 3.1 requires us-central1, NOT "global" (which is for Gemini 3)
+        veo_client = genai.Client(
+            vertexai=True,
+            project=os.environ.get("GOOGLE_CLOUD_PROJECT"),
+            location="us-central1",
+        )
         clips_cache = state.get("_commercial_clips", {})
 
         # Track completed clips and pending op

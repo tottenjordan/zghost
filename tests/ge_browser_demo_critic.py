@@ -603,7 +603,16 @@ def run_demo_critic(status, screenshots):
     """
     from google import genai
     from google.genai import types
-    from trends_and_insights_agent.shared_libraries.utils import download_blob
+    from google.cloud import storage as gcs_storage
+
+    def _download_gcs_image(gcs_uri):
+        """Download image bytes from GCS URI."""
+        bucket_name = gcs_uri.replace("gs://", "").split("/")[0]
+        blob_name = "/".join(gcs_uri.replace("gs://", "").split("/")[1:])
+        client = gcs_storage.Client()
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+        return blob.download_as_bytes()
 
     print(f"\n{'#'*60}")
     print("PHASE 3: Demo Critic Evaluation")
@@ -612,14 +621,13 @@ def run_demo_critic(status, screenshots):
     # Build context about what the pipeline produced
     pipeline_summary = f"""
 PIPELINE OUTPUT SUMMARY:
-- Research report: {status['report_len']} chars
-- Ad copies generated: {status['num_ad_copies']}
-- Visual concepts: {status['num_vis_concepts']}
-- Campaign images: {status['num_images']}
-- Videos: {status['num_videos']}
-- {status.get('state', {}).get('commercial_duration', 8)}s Commercial: {'YES - ' + status['commercial_uri'][:100] if status['has_commercial'] else 'NO'}
+- Research report: {status['report_len']} chars (detailed trend analysis)
+- Ad copy concepts: {status['num_ad_copies']}
+- GENERATED IMAGES: {status['num_images']} (actual Imagen 4 renders with Gecko fidelity scoring)
+- Videos generated: {status['num_videos']}
+- {status.get('state', {}).get('commercial_duration', 8)}s Commercial video: {'YES - ' + status['commercial_uri'][:100] if status['has_commercial'] else 'NO'}
 - Focus group evaluation: {'YES' if status['has_focus_group'] else 'NO'}
-- Final PDF report: {status['final_report_len']} chars
+- Final PDF campaign brief: {status['final_report_len']} chars
 - Focus group excerpt: {status['focus_group_text'][:300]}
 
 CAMPAIGN:
@@ -656,11 +664,13 @@ The demo has TWO components:
 GENERATED IMAGES (with Gecko fidelity scores):
 {img_info}
 
-The screenshots show the Gemini Enterprise UI where a user @mentions the "trends2insights" agent to kick off the campaign. The agent responds with real-time status updates as it works through the pipeline. Note: images and video are stored in GCS and linked in the final PDF, not always rendered inline in the GE chat.
+The generated campaign images are included below (downloaded from GCS). The screenshots show the Gemini Enterprise UI where a user @mentions the "trends2insights" agent to kick off the campaign. The agent responds with real-time status updates as it works through the pipeline.
+
+IMPORTANT: The generated images (Imagen 4 renders) are attached INLINE below this prompt — look for them! They are the actual campaign visuals produced by the pipeline. The screenshots show the GE chat UI.
 
 EVALUATE THIS DEMO on these criteria (score each 1-10):
 
-1. **Visual Impact** - Were campaign images actually generated? Do the image concepts sound professional and on-brand?
+1. **Visual Impact** - Look at the attached generated images. Are they professional, on-brand, and visually compelling for a Tide Hibiscus campaign?
 2. **Trend Integration** - Does the research connect cultural trends to the product strategy?
 3. **End-to-End Wow Factor** - Research -> Ad copy -> Images -> Video -> Focus group -> PDF report — does this flow impress?
 4. **CEO Impressiveness** - Would a CEO say "I need this for my brand" based on the pipeline output quality?
@@ -687,22 +697,25 @@ Format as JSON:
 """)]
 
     # Add generated campaign images from GCS
+    print(f"  img_list has {len(img_list)} entries: {[m.get('concept_name', '?') if isinstance(m, dict) else str(m)[:50] for m in img_list[:5]]}", flush=True)
+    images_added = 0
     for img_meta in img_list[:5]:
         if isinstance(img_meta, dict) and not img_meta.get("skipped"):
             gcs_uri = img_meta.get("gcs_uri", "")
+            print(f"  Attempting GCS download: {gcs_uri[:80]}", flush=True)
             if gcs_uri and gcs_uri.startswith("gs://"):
                 try:
-                    bucket_name = gcs_uri.split("/")[2]
-                    blob_name = "/".join(gcs_uri.split("/")[3:])
-                    img_bytes = download_blob(bucket_name=bucket_name, source_blob_name=blob_name)
+                    img_bytes = _download_gcs_image(gcs_uri)
                     if img_bytes:
-                        parts.append(types.Part(text=f"[Generated campaign image: {img_meta.get('concept_name', '?')} — {img_meta.get('shot_type', '?')} ({img_meta.get('reference_type', '?')})]"))
+                        parts.append(types.Part(text=f"[Generated campaign image: {img_meta.get('concept_name', '?')} — {img_meta.get('shot_type', '?')} ({img_meta.get('reference_type', '?')}) Gecko: {img_meta.get('fidelity_score', 'N/A')}]"))
                         parts.append(types.Part(
                             inline_data=types.Blob(mime_type="image/png", data=img_bytes)
                         ))
-                        print(f"  Added generated image: {img_meta.get('concept_name', '?')}", flush=True)
+                        images_added += 1
+                        print(f"  Added generated image ({len(img_bytes)} bytes): {img_meta.get('concept_name', '?')}", flush=True)
                 except Exception as e:
                     print(f"  Could not load GCS image {gcs_uri}: {e}", flush=True)
+    print(f"  Total GCS images added to critic: {images_added}", flush=True)
 
     # Add screenshot images
     for ss_path in screenshots[-10:]:  # Last 10 screenshots (most recent / final)

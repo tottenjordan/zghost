@@ -252,6 +252,14 @@ class CampaignOrchestrator(BaseAgent):
             async for event in self._gather_trends_deterministic(ctx):
                 yield event
         else:
+            # Track focus group attempts to prevent infinite loop
+            if stage == "FOCUS_GROUP":
+                fg_count = state.get("_focus_group_attempts", 0) + 1
+                fg_event = Event(
+                    invocation_id=ctx.invocation_id, author=self.name, branch=ctx.branch,
+                    actions=EventActions(state_delta={"_focus_group_attempts": fg_count}),
+                )
+                yield fg_event
             # Route to the sub-agent for this stage
             target = self._get_agent_for_stage(stage)
             if target:
@@ -325,7 +333,8 @@ class CampaignOrchestrator(BaseAgent):
             return "CREATIVE"
 
         # Stage 3: Need focus group evaluation
-        if not state.get("focus_group_evaluation") and not state.get("_focus_group_complete"):
+        fg_attempts = state.get("_focus_group_attempts", 0)
+        if not state.get("focus_group_evaluation") and not state.get("_focus_group_complete") and fg_attempts < 5:
             return "FOCUS_GROUP"
 
         # Stage 4: Need final report PDF
@@ -467,7 +476,10 @@ class CampaignOrchestrator(BaseAgent):
         gcs_folder = state.get("gcs_folder", "")
 
         if not processed_report:
-            yield self._status_event(ctx, "No research report to save — skipping PDF generation.")
+            # Even without a report, set final_report_with_citations to prevent infinite SAVE_REPORT loop
+            skip_event = self._status_event(ctx, "No research report to save — skipping PDF generation.")
+            skip_event.actions.state_delta["final_report_with_citations"] = "(No research report available)"
+            yield skip_event
             return
 
         # Extract artifact lists
@@ -542,7 +554,10 @@ class CampaignOrchestrator(BaseAgent):
             yield report_event
         else:
             msg = f"Failed to save final report: {result.get('error', 'unknown')}"
-            yield self._status_event(ctx, msg)
+            # Still set final_report_with_citations to prevent infinite SAVE_REPORT loop
+            fail_event = self._status_event(ctx, msg)
+            fail_event.actions.state_delta["final_report_with_citations"] = processed_report
+            yield fail_event
 
         # Run Skill Council AFTER report save (non-blocking, best-effort)
         novastorm_enabled = (
