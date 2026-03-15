@@ -79,6 +79,7 @@ def deploy_agent_engine(update=False):
         "tabulate",
         "google-cloud-texttospeech",
         "google-cloud-storage",
+        "google-cloud-aiplatform[evaluation]",
     ]
     extra_packages = [
         "trends_and_insights_agent",
