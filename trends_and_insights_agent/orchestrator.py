@@ -294,10 +294,22 @@ class CampaignOrchestrator(BaseAgent):
         elif stage == "RESEARCH":
             async for event in self._run_agent_and_capture(ctx, "research_agent", "combined_final_cited_report"):
                 yield event
-            # Mark research complete
+            # Mark research complete and display the report
+            report_text = ctx.session.state.get("combined_final_cited_report", "")
             done_event = self._status_event(ctx, "Research pipeline complete.")
             done_event.actions.state_delta["_research_pipeline_complete"] = True
             yield done_event
+            # Yield the actual research report as a visible model message
+            if report_text:
+                yield Event(
+                    invocation_id=ctx.invocation_id,
+                    author=self.name,
+                    branch=ctx.branch,
+                    content=types.Content(
+                        role="model",
+                        parts=[types.Part(text=report_text)],
+                    ),
+                )
         elif stage == "AD_CREATIVE":
             async for event in self._run_agent_and_capture(ctx, "ad_creative_agent", "ad_creative_output"):
                 yield event
