@@ -35,6 +35,24 @@ from ...shared_libraries.config import config
 from ...shared_libraries.utils import upload_blob_to_gcs, download_blob
 from ...shared_libraries import callbacks
 from ...shared_libraries.fidelity_eval.gecko import evaluate as gecko_evaluate
+
+# Cached media gen client (us-central1 for Imagen/Veo, NOT "global")
+_media_client = None
+
+def _get_media_client():
+    """Get or create a cached genai.Client for media gen APIs (Imagen, Veo)."""
+    global _media_client
+    if _media_client is None:
+        _orig = os.environ.get("GOOGLE_CLOUD_LOCATION", "")
+        os.environ["GOOGLE_CLOUD_LOCATION"] = "us-central1"
+        try:
+            _media_client = genai.Client(vertexai=True)
+        finally:
+            if _orig:
+                os.environ["GOOGLE_CLOUD_LOCATION"] = _orig
+            else:
+                os.environ.pop("GOOGLE_CLOUD_LOCATION", None)
+    return _media_client
 from ...skills.focus_group.tools import analyze_commercial_video
 from .tools import evaluate_media_fidelity
 
@@ -513,12 +531,7 @@ class CreativeProductionOrchestrator(BaseAgent):
         try:
             import re as _re
             from google.genai.types import GenerateImagesConfig
-            # Imagen 4 requires us-central1, NOT "global" (which is for Gemini 3)
-            img_client = genai.Client(
-                vertexai=True,
-                project=os.environ.get("GOOGLE_CLOUD_PROJECT"),
-                location="us-central1",
-            )
+            img_client = _get_media_client()
             # Sanitize name: alphanumeric, underscores, hyphens only
             safe_name = _re.sub(r"[^a-zA-Z0-9_\-]", "", concept_name.replace(" ", "_"))
             artifact_key = f"{safe_name}_0.png"
@@ -638,8 +651,9 @@ class CreativeProductionOrchestrator(BaseAgent):
                 yield fail_event
 
         except Exception as e:
-            logger.warning(f"[ImageGen] Failed: {e}")
-            fail_event = self._status_event(ctx, f"Image gen failed: {str(e)[:100]} — retry {img_failures+1}/{MAX_IMG_RETRIES}.")
+            _elapsed = time.time() - _img_start_t if '_img_start_t' in dir() else 0
+            logger.warning(f"[ImageGen] Failed after {_elapsed:.1f}s: {type(e).__name__}: {e}")
+            fail_event = self._status_event(ctx, f"Image gen error ({_elapsed:.0f}s): {type(e).__name__}: {str(e)[:200]} — retry {img_failures+1}/{MAX_IMG_RETRIES}.")
             fail_event.actions.state_delta[img_fail_key] = img_failures + 1
             yield fail_event
 
@@ -667,12 +681,7 @@ class CreativeProductionOrchestrator(BaseAgent):
         NUM_CLIPS = 1  # Single-clip for AE reliability (multi-clip causes state loss)
         clip_duration = duration
 
-        # Veo 3.1 requires us-central1, NOT "global" (which is for Gemini 3)
-        veo_client = genai.Client(
-            vertexai=True,
-            project=os.environ.get("GOOGLE_CLOUD_PROJECT"),
-            location="us-central1",
-        )
+        veo_client = _get_media_client()
         clips_cache = state.get("_commercial_clips", {})
 
         # Track completed clips and pending op
