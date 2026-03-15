@@ -21,7 +21,7 @@ from typing import AsyncGenerator
 from google.genai import types
 from google.adk.agents.base_agent import BaseAgent, BaseAgentState
 from google.adk.agents.invocation_context import InvocationContext
-from google.adk.events.event import Event
+from google.adk.events.event import Event, EventActions
 from google.adk.utils.context_utils import Aclosing
 from google.adk.utils.feature_decorator import experimental
 
@@ -255,15 +255,39 @@ class CampaignOrchestrator(BaseAgent):
             # Route to the sub-agent for this stage
             target = self._get_agent_for_stage(stage)
             if target:
+                _captured_text_parts: list[str] = []
                 async with Aclosing(target.run_async(ctx)) as agen:
                     async for event in agen:
                         yield event
+                        # Capture text from focus group agent for state_delta persistence
+                        if stage == "FOCUS_GROUP" and getattr(event, "content", None):
+                            for part in (event.content.parts or []):
+                                if getattr(part, "text", None):
+                                    _captured_text_parts.append(part.text)
                         if ctx.should_pause_invocation(event):
                             # Yield wave-boundary context before pausing
                             descriptor = f"{state.get('brand', '')} {state.get('target_product', '')}".strip() or "the campaign"
                             wave_msg = f"{status_msg.rstrip('.')} — say 'continue' to proceed."
                             yield self._status_event(ctx, wave_msg)
                             return
+
+                # Persist focus_group_evaluation via state_delta (output_key alone
+                # doesn't survive AE wave boundaries)
+                if stage == "FOCUS_GROUP" and _captured_text_parts:
+                    fg_text = "\n".join(_captured_text_parts)
+                    if len(fg_text) > 100:  # Only persist meaningful evaluations
+                        persist_event = Event(
+                            invocation_id=ctx.invocation_id,
+                            author=self.name,
+                            branch=ctx.branch,
+                            actions=EventActions(
+                                state_delta={
+                                    "focus_group_evaluation": fg_text,
+                                    "_focus_group_complete": True,
+                                },
+                            ),
+                        )
+                        yield persist_event
 
         # After sub-agent completes, mark end for AE
         if ctx.is_resumable:
@@ -300,7 +324,7 @@ class CampaignOrchestrator(BaseAgent):
             return "CREATIVE"
 
         # Stage 3: Need focus group evaluation
-        if not state.get("focus_group_evaluation"):
+        if not state.get("focus_group_evaluation") and not state.get("_focus_group_complete"):
             return "FOCUS_GROUP"
 
         # Stage 4: Need final report PDF
