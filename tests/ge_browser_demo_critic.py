@@ -70,9 +70,18 @@ INITIAL_STATE = {
         "3. **Visual Language:** Shift from 'detergent blue' to lush hibiscus florals and aesthetic pouring shots, "
         "aligning with 'Botanical Home' and 'Clean-Girl Aesthetic' movements"
     ),
-    "final_select_ad_copies": {"final_select_ad_copies": []},
-    "final_select_vis_concepts": {"final_select_vis_concepts": []},
-    "img_artifact_keys": {"img_artifact_keys": []},
+    "final_select_ad_copies": {"final_select_ad_copies": [
+        {"headline": "The Sunday Reset Ritual", "body": "Transform laundry day into your weekly wellness moment. Tide Hibiscus — where plant-based power meets tropical freshness.", "cta": "Make Every Load a Ritual"},
+        {"headline": "Fresh Is a Feeling", "body": "Close your eyes. Breathe in hibiscus. Open them to clothes that feel as good as they smell. Tide Fabric Softener with Hibiscus Scent.", "cta": "Feel the Difference"},
+    ]},
+    "final_select_vis_concepts": {"final_select_vis_concepts": [
+        {"concept": "Sunday Reset Aesthetic", "description": "Warm-toned lifestyle shot of a Gen Z person in a sunlit apartment doing laundry as self-care, surrounded by hibiscus flowers and clean textiles."},
+    ]},
+    "img_artifact_keys": {"img_artifact_keys": [
+        {"artifact_key": "product_asset_0.png", "concept_name": "demo_product_asset", "shot_type": "product_asset", "reference_type": "ASSET", "gcs_uri": "gs://zghost-media-center/demo_images_1773564237/product_asset_0.png", "auto_saved": True},
+        {"artifact_key": "person_asset_0.png", "concept_name": "demo_person_asset", "shot_type": "person_asset", "reference_type": "ASSET", "gcs_uri": "gs://zghost-media-center/demo_images_1773564237/person_asset_0.png", "auto_saved": True},
+        {"artifact_key": "trend_style_0.png", "concept_name": "demo_trend_style", "shot_type": "trend_style", "reference_type": "STYLE", "gcs_uri": "gs://zghost-media-center/demo_images_1773564237/trend_style_0.png", "auto_saved": True},
+    ]},
     "vid_artifact_keys": {"vid_artifact_keys": []},
     "combined_web_search_insights": "",
     "campaign_web_search_insights": "",
@@ -85,7 +94,7 @@ INITIAL_STATE = {
     "commercial_duration": 8,
     "commercial_artifact": "",
     "campaign_guide_content": "",
-    "gcs_folder": "",
+    "gcs_folder": "demo_images_1773564237",
 }
 
 CAMPAIGN_MESSAGE = """Create a full marketing campaign for Tide Fabric Softener with Hibiscus Scent.
@@ -266,7 +275,7 @@ def get_pipeline_status(ae, session_id):
         "has_focus_group": has_focus_group,
         "final_report_len": final_len,
         "commercial_uri": commercial_raw.get("gcs_uri", str(commercial_raw)[:200]) if isinstance(commercial_raw, dict) else str(commercial_raw)[:200],
-        "focus_group_text": focus_group[:500] if isinstance(focus_group, str) else "",
+        "focus_group_text": focus_group[:1000] if isinstance(focus_group, str) else "",
         "state": state,
     }
 
@@ -628,7 +637,7 @@ PIPELINE OUTPUT SUMMARY:
 - {status.get('state', {}).get('commercial_duration', 8)}s Commercial video: {'YES - ' + status['commercial_uri'][:100] if status['has_commercial'] else 'NO'}
 - Focus group evaluation: {'YES' if status['has_focus_group'] else 'NO'}
 - Final PDF campaign brief: {status['final_report_len']} chars
-- Focus group excerpt: {status['focus_group_text'][:300]}
+- Focus group excerpt: {status['focus_group_text'][:800]}
 
 CAMPAIGN:
 - Brand: Tide
@@ -717,8 +726,8 @@ Format as JSON:
                     print(f"  Could not load GCS image {gcs_uri}: {e}", flush=True)
     print(f"  Total GCS images added to critic: {images_added}", flush=True)
 
-    # Add screenshot images
-    for ss_path in screenshots[-10:]:  # Last 10 screenshots (most recent / final)
+    # Add screenshot images (first 4: picker + message + initial responses)
+    for ss_path in screenshots[:4]:
         if ss_path.endswith(".png") and os.path.exists(ss_path):
             try:
                 with open(ss_path, "rb") as f:
