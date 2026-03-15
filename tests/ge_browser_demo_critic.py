@@ -442,10 +442,24 @@ async def capture_ge_screenshots(session_id):
         print("  Triggering @mention picker...", flush=True)
         input_el = await page.query_selector("textarea, [contenteditable], [role='textbox']")
         if not input_el:
-            # Fallback: click on the placeholder text
-            await page.click("text=Ask anything", timeout=5000)
-            await page.wait_for_timeout(500)
-            input_el = await page.query_selector("textarea, [contenteditable], [role='textbox']")
+            # Fallback: try various placeholder texts in GE UI
+            for placeholder in ["Ask anything", "Type a message", "Enter a prompt", "Ask a question"]:
+                try:
+                    await page.click(f"text={placeholder}", timeout=3000)
+                    await page.wait_for_timeout(500)
+                    input_el = await page.query_selector("textarea, [contenteditable], [role='textbox']")
+                    if input_el:
+                        break
+                except Exception:
+                    continue
+        if not input_el:
+            # Last resort: try clicking the main chat area
+            try:
+                await page.click("main", timeout=3000)
+                await page.wait_for_timeout(500)
+                input_el = await page.query_selector("textarea, [contenteditable], [role='textbox']")
+            except Exception:
+                pass
 
         if input_el:
             await input_el.click()
@@ -807,8 +821,13 @@ async def main():
         print(f"  Final report: {status['final_report_len']} chars")
         print(f"\n  Proceeding to browser capture anyway...", flush=True)
 
-    # Phase 2: Capture GE browser screenshots
-    screenshots = await capture_ge_screenshots(session_id)
+    # Phase 2: Capture GE browser screenshots (best-effort — critic runs regardless)
+    screenshots = []
+    try:
+        screenshots = await capture_ge_screenshots(session_id)
+    except Exception as e:
+        print(f"\n  GE browser screenshot capture failed: {e}", flush=True)
+        print(f"  Continuing with critic evaluation (no screenshots)...\n", flush=True)
 
     # Phase 3: Demo critic evaluation
     critique = run_demo_critic(status, screenshots)

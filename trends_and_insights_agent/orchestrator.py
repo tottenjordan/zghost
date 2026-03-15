@@ -292,13 +292,57 @@ class CampaignOrchestrator(BaseAgent):
             async for event in self._gather_trends_interactive(ctx):
                 yield event
         elif stage == "RESEARCH":
-            async for event in self._run_agent_and_capture(ctx, "research_agent", "combined_final_cited_report"):
-                yield event
-            # Mark research complete and display the report
-            report_text = ctx.session.state.get("combined_final_cited_report", "")
-            done_event = self._status_event(ctx, "Research pipeline complete.")
-            done_event.actions.state_delta["_research_pipeline_complete"] = True
-            yield done_event
+            # Pre-increment research attempt counter
+            attempts = ctx.session.state.get("_research_attempts", 0) + 1
+            ctx.session.state["_research_attempts"] = attempts
+            pre_event = self._status_event(ctx, f"Research attempt {attempts}/5...")
+            pre_event.actions.state_delta["_research_attempts"] = attempts
+            yield pre_event
+
+            # Call recall_prior_insights before research (can't mix with google_search grounding)
+            if not ctx.session.state.get("prior_campaign_insights"):
+                try:
+                    from .common_agents.staged_researcher.tools import recall_prior_insights
+                    brand = ctx.session.state.get("brand", "")
+                    product = ctx.session.state.get("target_product", "")
+                    if brand and product:
+                        yield self._status_event(ctx, "Retrieving prior campaign insights from Memory Bank...")
+                        # recall_prior_insights is async and needs ToolContext, call it manually
+                        import vertexai
+                        agent_engine_id = os.getenv("MEMORY_BANK_AGENT_ENGINE_ID")
+                        if agent_engine_id:
+                            client = vertexai.Client(
+                                project=os.environ.get("GOOGLE_CLOUD_PROJECT"),
+                                location="us-central1",
+                            )
+                            engine = client.agent_engines.get(name=f"projects/{os.environ.get('GOOGLE_CLOUD_PROJECT_NUMBER')}/locations/us-central1/reasoningEngines/{agent_engine_id}")
+                            query = f"{brand} {product} marketing campaign insights"
+                            results = engine.retrieve_memories(scope={"app_name": "trends_and_insights_agent"}, query=query)
+                            if results:
+                                insights = [getattr(m, 'fact', str(m)) if hasattr(m, 'fact') else str(m) for m in results[:5]]
+                                prior = "\n".join(f"- {i}" for i in insights if i)
+                                if prior:
+                                    ctx.session.state["prior_campaign_insights"] = prior
+                                    pi_event = self._status_event(ctx, f"Found {len(insights)} prior insights from Memory Bank")
+                                    pi_event.actions.state_delta["prior_campaign_insights"] = prior
+                                    yield pi_event
+                except Exception as e:
+                    logger.warning(f"[CampaignOrchestrator] recall_prior_insights failed: {e}")
+
+            # Generate research report via direct model call (sub-agent approach
+            # broken on AE — google_search grounding and sub-agent events don't work)
+            report_text = await self._generate_research_direct(ctx)
+            report_len = len(report_text) if isinstance(report_text, str) else 0
+            if report_len >= 500:
+                ctx.session.state["combined_final_cited_report"] = report_text
+                done_event = self._status_event(ctx, f"Research pipeline complete — {report_len} chars captured.")
+                done_event.actions.state_delta["combined_final_cited_report"] = report_text
+                done_event.actions.state_delta["_research_pipeline_complete"] = True
+                yield done_event
+            else:
+                logger.warning(f"[CampaignOrchestrator] Research attempt {attempts} failed — only {report_len} chars captured")
+                fail_event = self._status_event(ctx, f"Research attempt {attempts} captured only {report_len} chars — will retry.")
+                yield fail_event
             # Yield the actual research report as a visible model message
             if report_text:
                 yield Event(
@@ -417,10 +461,10 @@ class CampaignOrchestrator(BaseAgent):
         if not self._has_trends(search_trends) or not self._has_trends(yt_trends):
             return "TRENDS"
 
-        # Stage 1: Need research report
+        # Stage 1: Need research report (retry up to 5 times if report is too short)
         report = state.get("combined_final_cited_report", "")
-        research_done = state.get("_research_pipeline_complete", False)
-        if not research_done and (not report or len(str(report)) < 500):
+        research_attempts = state.get("_research_attempts", 0)
+        if (not report or len(str(report)) < 500) and research_attempts < 5:
             return "RESEARCH"
 
         # Stage 2: Need ad copies and visual concepts
@@ -444,12 +488,12 @@ class CampaignOrchestrator(BaseAgent):
             if img_attempts < MAX_CREATIVE_ATTEMPTS:
                 return "IMAGE_GEN"
 
-        # Stage 4: Need commercial video
+        # Stage 4: Need commercial video (absolute cap to prevent infinite Veo loops)
         has_commercial = bool(state.get("commercial_artifact"))
         clips_cache = state.get("_commercial_clips", {})
         has_pending_veo = bool(clips_cache.get("_pending_veo_op")) if isinstance(clips_cache, dict) else False
         av_runs = state.get("_av_studio_runs", 0)
-        if not has_commercial and (has_pending_veo or av_runs < AV_STUDIO_MAX_RUNS):
+        if not has_commercial and (has_pending_veo or av_runs < AV_STUDIO_MAX_RUNS) and av_runs < AV_STUDIO_MAX_RUNS * 3:
             return "AV_STUDIO"
 
         # Stage 5: Need focus group evaluation
@@ -564,11 +608,20 @@ class CampaignOrchestrator(BaseAgent):
                 f"(from {len(all_text_parts)} text parts, longest single: {len(captured_text)})"
             )
         else:
+            combined_len = len("\n\n".join(all_text_parts))
             logger.warning(
                 f"[CampaignOrchestrator] Failed to capture {state_key} — "
                 f"no qualifying text found (parts: {len(all_text_parts)}, "
-                f"longest: {len(captured_text)}, combined: {len('\n\n'.join(all_text_parts))})"
+                f"longest: {len(captured_text)}, combined: {combined_len})"
             )
+            # Emit visible status so AE stream shows the failure
+            fail_event = self._status_event(
+                ctx,
+                f"Warning: {agent_name} produced {len(all_text_parts)} text parts "
+                f"(longest: {len(captured_text)} chars, combined: {combined_len} chars) — "
+                f"no qualifying output captured for {state_key}."
+            )
+            yield fail_event
             # Last resort: check if state was set by the sub-agent directly
             direct_val = ctx.session.state.get(state_key, "")
             if direct_val and len(str(direct_val)) > 100:
@@ -1690,7 +1743,8 @@ class CampaignOrchestrator(BaseAgent):
                 if operation.error:
                     yield self._status_event(ctx, f"Commercial failed after retry — skipping")
                     clear_event = self._status_event(ctx, "Clearing commercial state")
-                    clear_event.actions.state_delta["_commercial_clips"] = {}
+                    clear_event.actions.state_delta["_commercial_clips"] = {"_pending_veo_op": ""}
+                    ctx.session.state["_commercial_clips"] = {"_pending_veo_op": ""}
                     yield clear_event
                     return
 
@@ -1705,7 +1759,8 @@ class CampaignOrchestrator(BaseAgent):
             if not video_uri:
                 logger.warning(f"[DetAV] No video URI in Veo result")
                 clear_event = self._status_event(ctx, f"Commercial returned empty — will retry")
-                clear_event.actions.state_delta["_commercial_clips"] = {}
+                clear_event.actions.state_delta["_commercial_clips"] = {"_pending_veo_op": ""}
+                ctx.session.state["_commercial_clips"] = {"_pending_veo_op": ""}
                 yield clear_event
                 return
 
@@ -1992,6 +2047,81 @@ class CampaignOrchestrator(BaseAgent):
             fail_event = self._status_event(ctx, msg)
             fail_event.actions.state_delta["final_report_with_citations"] = processed_report
             yield fail_event
+
+    async def _generate_research_direct(self, ctx: InvocationContext) -> str:
+        """Generate research report via direct model call (bypasses sub-agent).
+
+        Sub-agent approach is broken on AE — events don't propagate from
+        sub-agents running inside BaseAgent on Agent Engine.
+        """
+        state = ctx.session.state
+        brand = state.get("brand", "")
+        product = state.get("target_product", "")
+        audience = state.get("target_audience", "")
+        selling_points = state.get("key_selling_points", "")
+        search_trends = state.get("target_search_trends", {})
+        yt_trends = state.get("target_yt_trends", {})
+        yt_analysis = state.get("yt_video_analysis", "")
+        prior_insights = state.get("prior_campaign_insights", "No prior insights available")
+
+        prompt = f"""You are a senior marketing research analyst. Write a comprehensive research report for this campaign.
+
+## Campaign Context
+- Brand: {brand}
+- Product: {product}
+- Target Audience: {audience}
+- Key Selling Points: {selling_points}
+- Google Search Trends: {search_trends}
+- YouTube Trends: {yt_trends}
+
+## YouTube Video Analysis
+{yt_analysis}
+
+## Prior Campaign Insights
+{prior_insights}
+
+## Write a comprehensive report with these sections:
+
+### Campaign Guide
+- Product overview, brand positioning, target audience profile
+- Key selling points and competitive advantages
+
+### Search Trend Analysis
+- Detailed analysis of each Google Search trend and its relevance
+- Opportunities for trend-jacking in campaign messaging
+
+### YouTube Trend Analysis
+- Detailed analysis of each YouTube trend and its relevance
+- Content format insights
+
+### Key Insights
+- Synthesized findings across all data
+- Consumer sentiment and behavioral patterns
+- Cultural context and timing considerations
+
+### Strategic Recommendations
+- 3-5 actionable campaign strategy recommendations
+- Messaging themes that bridge trends and product benefits
+- Channel and format recommendations
+
+Write the complete report now. Be specific and reference the actual trend titles by name."""
+
+        try:
+            client = genai.Client(vertexai=True)
+            response = client.models.generate_content(
+                model=config.critic_model,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                    temperature=0.7,
+                ),
+            )
+            report = response.text or ""
+            logger.info(f"[CampaignOrchestrator] Direct research generated {len(report)} chars")
+            return report
+        except Exception as e:
+            logger.error(f"[CampaignOrchestrator] Direct research failed: {e}")
+            return ""
 
     def _status_event(self, ctx: InvocationContext, message: str) -> Event:
         """Create an event with a status message and ui:status_update."""

@@ -9,12 +9,9 @@ import datetime
 
 from google.genai import types
 from google.adk.agents import Agent
-from google.adk.planners import BuiltInPlanner
-from google.adk.tools import google_search
 
 from .shared_libraries.config import config
 from .shared_libraries import callbacks
-from .common_agents.staged_researcher.tools import recall_prior_insights
 from .common_agents.ad_content_generator.tools import (
     save_select_ad_copy,
     save_select_visual_concept,
@@ -37,31 +34,25 @@ Here is the campaign you are researching:
 - **YouTube Trends**: {{target_yt_trends}}
 - **YouTube Video Analysis**: {{yt_video_analysis}}
 
-## Step 2 — Recall Prior Campaign Insights
+## Step 2 — Prior Campaign Insights
 
-Call `recall_prior_insights` with the brand and product to retrieve historical campaign learnings from Memory Bank. Incorporate any relevant prior insights into your analysis.
+Prior campaign insights from Memory Bank (if available):
+{{prior_campaign_insights}}
 
-## Step 3 — Primary Research (5-7 searches)
+Incorporate any relevant prior insights into your analysis.
 
-Use `google_search` to investigate. Cover ALL of these angles:
-1. How the YouTube trends intersect with the product/brand
-2. How the Google Search trends intersect with the product/brand
-3. Competitive landscape — what competitors are doing in this space
+## Step 3 — Deep Analysis
+
+Using ALL the data above (trends, YouTube analysis, selling points, prior insights), conduct deep analysis across these angles:
+1. How the YouTube trends intersect with the product/brand — specific opportunities
+2. How the Google Search trends intersect with the product/brand — content angles
+3. Competitive landscape — what competitors are likely doing in this space
 4. Audience insights — what the target audience cares about right now
 5. The product's key selling points in the context of current cultural trends
-6. Any relevant seasonal, cultural, or social factors
-7. Recent news or developments affecting the brand/product category
+6. Relevant seasonal, cultural, or social factors
+7. Strategic positioning opportunities
 
-## Step 4 — Evaluate & Fill Gaps (3-5 follow-up searches)
-
-Review your findings so far. Identify gaps in coverage:
-- Are there angles you missed?
-- Do any claims need verification?
-- Are there emerging sub-trends worth exploring?
-
-Conduct 3-5 additional targeted searches to fill these gaps.
-
-## Step 5 — Compose Final Report
+## Step 4 — Compose Final Report
 
 Write a comprehensive, well-structured research report with these sections:
 
@@ -90,9 +81,9 @@ Write a comprehensive, well-structured research report with these sections:
 - Risks and considerations
 
 ## Citation Rules
-- Use `<cite source="src-ID" />` tags for inline citations throughout the report
-- Every factual claim from web research must be cited
-- Include prior campaign insights from Memory Bank if available, citing them as "Memory Bank: [insight summary]"
+- Reference specific trend titles by name throughout the report
+- Cite YouTube video analysis findings where applicable
+- Include prior campaign insights from Memory Bank if available
 
 ## Output
 Write the complete report as your final response. Do NOT ask for user input or confirmation — complete the entire pipeline autonomously.
@@ -100,22 +91,17 @@ Write the complete report as your final response. Do NOT ask for user input or c
 
 research_agent = Agent(
     name="research_agent",
+    # NOTE: google_search grounding is broken as sub-agent tool on AE (0 events).
+    # Research synthesizes from pre-populated state context instead.
     model=config.critic_model,
     instruction=RESEARCH_INSTRUCTION,
-    tools=[google_search, recall_prior_insights],
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_budget=2048,
-        )
-    ),
+    tools=[],
     before_model_callback=callbacks.before_model_status_callback,
     before_tool_callback=callbacks.before_tool_status_callback,
     after_tool_callback=callbacks.after_tool_status_callback,
     after_model_callback=callbacks.reorder_parts_text_first,
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
-    include_contents="none",
 )
 
 
