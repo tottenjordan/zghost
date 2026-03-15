@@ -474,9 +474,32 @@ class CreativeProductionOrchestrator(BaseAgent):
             yield self._status_event(ctx, f"All {len(shot_list)} images already generated.")
             return
 
+        # Track failures per image index to avoid infinite retry
+        img_fail_key = f"_img_fail_{img_idx}"
+        img_failures = state.get(img_fail_key, 0)
+        MAX_IMG_RETRIES = 3
+
         shot = shot_list[img_idx]
         concept_name = shot["concept_name"]
         prompt = shot["prompt"]
+
+        if img_failures >= MAX_IMG_RETRIES:
+            # Skip this image after too many failures — add placeholder to advance
+            logger.warning(f"[ImageGen] Skipping image {img_idx+1} after {img_failures} failures")
+            placeholder = {
+                "artifact_key": f"skipped_{concept_name}_0.png",
+                "concept_name": concept_name,
+                "shot_type": shot["shot_type"],
+                "reference_type": shot.get("reference_type", "ASSET"),
+                "skipped": True,
+            }
+            new_list = list(existing_imgs) + [placeholder]
+            skip_event = self._status_event(
+                ctx, f"Image {img_idx + 1}/{MAX_IMAGES} skipped after {img_failures} attempts — advancing pipeline."
+            )
+            skip_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": new_list}
+            yield skip_event
+            return
 
         yield self._status_event(ctx, f"Generating image {img_idx + 1}/{MAX_IMAGES} ({shot['shot_type']}: {concept_name})...")
 
@@ -582,11 +605,15 @@ class CreativeProductionOrchestrator(BaseAgent):
                         logger.warning(f"[ImageGen] Failed to save artifact: {e}")
                 yield save_event
             else:
-                yield self._status_event(ctx, f"Image {img_idx + 1} returned empty — will retry next wave.")
+                fail_event = self._status_event(ctx, f"Image {img_idx + 1} returned empty — retry {img_failures+1}/{MAX_IMG_RETRIES}.")
+                fail_event.actions.state_delta[img_fail_key] = img_failures + 1
+                yield fail_event
 
         except Exception as e:
             logger.warning(f"[ImageGen] Failed: {e}")
-            yield self._status_event(ctx, f"Image gen failed: {str(e)[:100]} — will retry.")
+            fail_event = self._status_event(ctx, f"Image gen failed: {str(e)[:100]} — retry {img_failures+1}/{MAX_IMG_RETRIES}.")
+            fail_event.actions.state_delta[img_fail_key] = img_failures + 1
+            yield fail_event
 
     async def _generate_commercial_deterministic(
         self, ctx: InvocationContext
@@ -852,11 +879,32 @@ class CreativeProductionOrchestrator(BaseAgent):
                 yield clear_event
                 return
 
-            yield self._status_event(ctx, f"Concatenating {len(completed_clips)} clips into {duration}s commercial...")
-
-            final_gcs_uri, video_bytes = self._concatenate_clips(
-                completed_clips, bucket_name, gcs_folder, bucket, product, duration,
-            )
+            # Single clip: use directly (skip ffmpeg concatenation)
+            if len(completed_clips) == 1:
+                yield self._status_event(ctx, f"Commercial (single clip fallback): {completed_clips[0][-60:]}")
+                final_gcs_uri = completed_clips[0]
+                # Copy to canonical name in GCS
+                video_bytes = None
+                try:
+                    source_blob = completed_clips[0].replace(f"gs://{bucket_name}/", "")
+                    video_bytes = download_blob(bucket_name=bucket_name, source_blob_name=source_blob)
+                    if gcs_folder and bucket:
+                        art_blob = f"{gcs_folder}/commercial_{duration}s.mp4"
+                        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+                            tmp.write(video_bytes)
+                            tmp_path = tmp.name
+                        try:
+                            upload_blob_to_gcs(source_file_name=tmp_path, destination_blob_name=art_blob)
+                            final_gcs_uri = f"{bucket}/{art_blob}"
+                        finally:
+                            os.unlink(tmp_path)
+                except Exception as e:
+                    logger.warning(f"[DetAV] Single clip copy failed (non-fatal): {e}")
+            else:
+                yield self._status_event(ctx, f"Concatenating {len(completed_clips)} clips into {duration}s commercial...")
+                final_gcs_uri, video_bytes = self._concatenate_clips(
+                    completed_clips, bucket_name, gcs_folder, bucket, product, duration,
+                )
             art_fname = f"commercial_{duration}s.mp4"
 
             if final_gcs_uri:

@@ -437,40 +437,50 @@ async def capture_ge_screenshots(session_id):
             screenshots.append(str(path))
             print(f"  Screenshot: {path.name}", flush=True)
 
-            # Click our agent (the projects/679926387543/locatio... entry)
+            # Click our agent — the "projects/679926387543/locatio..." entry (3rd item)
+            # IMPORTANT: Must NOT click "Deep Research" (2nd item) or "Data Agent" (1st)
             agent_clicked = False
             try:
-                # Look for the agent with our project number in the picker
-                picker_items = await page.query_selector_all("[role='option'], [role='listbox'] > *, [class*='option'], [class*='item']")
-                for item in picker_items:
-                    text = await item.inner_text()
-                    if "679926387543" in text or "projects/" in text:
-                        await item.click()
-                        agent_clicked = True
-                        print(f"  Selected agent: {text[:60]}", flush=True)
-                        break
+                # Strategy 1: Click by text content matching our project number
+                proj_item = await page.query_selector(f"text=projects/{PROJECT_NUMBER}")
+                if proj_item:
+                    await proj_item.click()
+                    agent_clicked = True
+                    print(f"  Selected agent via text match: projects/{PROJECT_NUMBER}", flush=True)
 
                 if not agent_clicked:
-                    # Try clicking the third item (index 2) in the picker
-                    all_items = await page.query_selector_all("[role='option'], li, [class*='menu-item']")
-                    if len(all_items) >= 3:
-                        await all_items[2].click()
-                        agent_clicked = True
-                        print("  Selected agent (3rd picker item)", flush=True)
-                    elif all_items:
-                        await all_items[-1].click()
-                        agent_clicked = True
-                        print("  Selected agent (last picker item)", flush=True)
+                    # Strategy 2: Find all visible text in the picker and click the right one
+                    # The picker shows: 1) Data Agent - Baseline, 2) Deep Research, 3) projects/...
+                    all_visible = await page.query_selector_all("div, span, li, a")
+                    for el in all_visible:
+                        try:
+                            text = await el.inner_text()
+                            if "projects/" in text and "679926387543" in text:
+                                bbox = await el.bounding_box()
+                                if bbox and bbox["width"] > 50:  # Must be a real clickable element
+                                    await el.click()
+                                    agent_clicked = True
+                                    print(f"  Selected agent via DOM scan: {text[:60]}", flush=True)
+                                    break
+                        except Exception:
+                            continue
+
+                if not agent_clicked:
+                    # Strategy 3: Keyboard — ArrowDown twice to reach 3rd item, then Enter
+                    # Item 1 is pre-highlighted, so ArrowDown once = item 2, twice = item 3
+                    await page.keyboard.press("ArrowDown")
+                    await page.keyboard.press("ArrowDown")
+                    await page.keyboard.press("Enter")
+                    agent_clicked = True
+                    print("  Selected agent (keyboard: 2x ArrowDown + Enter)", flush=True)
+
             except Exception as e:
                 print(f"  Picker click error: {e}", flush=True)
-
-            if not agent_clicked:
-                # Last resort: press down arrow keys + Enter
-                await page.keyboard.press("ArrowDown")
+                # Emergency fallback
                 await page.keyboard.press("ArrowDown")
                 await page.keyboard.press("ArrowDown")
                 await page.keyboard.press("Enter")
-                print("  Selected agent (keyboard navigation)", flush=True)
+                print("  Selected agent (emergency keyboard fallback)", flush=True)
 
             await page.wait_for_timeout(1000)
 
