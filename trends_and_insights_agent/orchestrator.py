@@ -1085,14 +1085,14 @@ class CampaignOrchestrator(BaseAgent):
     async def _generate_images_deterministic(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        """Generate 3 purpose-built reference images for Veo video generation.
+        """Generate 3 purpose-built ASSET reference images for Veo video generation.
 
-        1. Product ASSET — hero product shot (VideoGenerationReferenceType.ASSET)
-        2. Person ASSET — model/person for the ad (VideoGenerationReferenceType.ASSET)
-        3. Trend STYLE — trend mood/aesthetic (VideoGenerationReferenceType.STYLE)
+        1. Product ASSET — hero product shot
+        2. Person ASSET — model/person for the ad
+        3. Trend ASSET — trend-driven scene blending product + cultural moment
 
+        All images are ASSET type (Veo only supports one reference type per call).
         All images scored with Gecko fidelity. One image per AE wave.
-        The 2 best Gecko-scoring refs are sent to Veo.
         """
         state = ctx.session.state
         product = state.get("target_product", "the product")
@@ -1101,7 +1101,7 @@ class CampaignOrchestrator(BaseAgent):
         ksp = state.get("key_selling_points", "")
         gcs_folder = state.get("gcs_folder", "")
         bucket = os.getenv("BUCKET", "")
-        MAX_IMAGES = 3  # Product ASSET + Person ASSET + Trend STYLE
+        MAX_IMAGES = 3  # Product ASSET + Person ASSET + Trend ASSET
 
         existing_imgs = state.get("img_artifact_keys", {})
         if isinstance(existing_imgs, dict):
@@ -1123,7 +1123,7 @@ class CampaignOrchestrator(BaseAgent):
             idea_name = ad_copies[0].get("name", ad_copies[0].get("concept_name", "campaign"))
         idea_name = idea_name.replace(",", "").replace(" ", "_")
 
-        # Get trend titles for STYLE image
+        # Get trend titles for trend ASSET image
         trend_desc = state.get("target_search_trends", {})
         search_trend_title = ""
         if isinstance(trend_desc, dict):
@@ -1188,18 +1188,19 @@ class CampaignOrchestrator(BaseAgent):
                     f"No text, no watermarks."
                 ),
             },
-            # Shot 3: Trend STYLE — aesthetic derived from actual selected trends
+            # Shot 3: Trend ASSET — scene blending product with the cultural trend moment
             {
-                "concept_name": f"{idea_name}_trend_style",
-                "shot_type": "trend_style",
-                "reference_type": "STYLE",
+                "concept_name": f"{idea_name}_trend_asset",
+                "shot_type": "trend_asset",
+                "reference_type": "ASSET",
                 "prompt": (
-                    f"Aesthetic mood board photo"
-                    + (f" {trend_context}" if trend_context else "")
-                    + (f", visual style: {visual_prompt_hint[:200]}" if visual_prompt_hint else "")
-                    + f". Cinematic color grading, aspirational lifestyle setting"
-                    + (f", evoking {brand}'s brand identity" if brand else "")
-                    + ". No text, no watermarks."
+                    f"Cinematic lifestyle scene: {brand} {product}"
+                    + (f" placed in a setting that evokes {trend_context}" if trend_context else "")
+                    + (f". Visual direction: {visual_prompt_hint[:250]}" if visual_prompt_hint else "")
+                    + f". The product is clearly visible in the scene"
+                    + f", {audience} aesthetic, aspirational and culturally resonant"
+                    + ". Cinematic color grading, golden-hour lighting. "
+                    f"No text, no watermarks, no logos."
                 ),
             },
         ]
@@ -1370,9 +1371,9 @@ class CampaignOrchestrator(BaseAgent):
     async def _generate_commercial_deterministic(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        """Generate a commercial video using Veo with ASSET + STYLE reference images.
+        """Generate a commercial video using Veo with ASSET reference images.
 
-        Uses the campaign's reference images (product ASSET, trend STYLE) to guide
+        Uses the campaign's reference images (product ASSET, trend ASSET) to guide
         Veo generation for brand and trend consistency.
 
         Wave-safe: saves pending operations to state so AE can resume polling.
@@ -1395,17 +1396,16 @@ class CampaignOrchestrator(BaseAgent):
         if pending_op:
             yield self._status_event(ctx, f"Polling Veo commercial (resuming)...")
         else:
-            yield self._status_event(ctx, f"Generating {duration}s commercial with ASSET + STYLE references...")
+            yield self._status_event(ctx, f"Generating {duration}s commercial with ASSET references...")
 
-        # Build Veo reference_images from campaign images (ASSET + STYLE typed)
+        # Build Veo ASSET reference images from campaign images
         reference_images = self._build_veo_reference_images(state, bucket, gcs_folder)
 
         if reference_images:
             ref_details = []
             for ref_img in reference_images:
-                ref_type = "STYLE" if ref_img.reference_type == types.VideoGenerationReferenceType.STYLE else "ASSET"
                 uri = ref_img.image.gcs_uri if ref_img.image else "?"
-                ref_details.append(f"{ref_type}: {uri[-60:]}")
+                ref_details.append(f"ASSET: {uri[-60:]}")
             yield self._status_event(
                 ctx, f"Veo references: {', '.join(ref_details)}"
             )
@@ -1415,8 +1415,26 @@ class CampaignOrchestrator(BaseAgent):
         # Get trend context for video prompt
         trend_context = self._get_trend_context(state)
 
-        # Build commercial prompt with brand + trend context
-        clip_prompt = self._build_commercial_prompt(product, audience, selling_points, duration, brand, trend_context)
+        # Get ad headline and visual direction from creative phase
+        ad_copies = state.get("final_select_ad_copies", {})
+        if isinstance(ad_copies, dict):
+            ad_copies = ad_copies.get("final_select_ad_copies", [])
+        ad_headline = ""
+        if ad_copies and isinstance(ad_copies[0], dict):
+            ad_headline = ad_copies[0].get("headline", "")
+
+        visual_concepts = state.get("final_select_visual_concepts", {})
+        if isinstance(visual_concepts, dict):
+            visual_concepts = visual_concepts.get("final_select_visual_concepts", [])
+        visual_prompt_hint = ""
+        if visual_concepts and isinstance(visual_concepts[0], dict):
+            visual_prompt_hint = visual_concepts[0].get("prompt", "")
+
+        # Build commercial prompt with brand + trend + creative context
+        clip_prompt = self._build_commercial_prompt(
+            product, audience, selling_points, duration, brand, trend_context,
+            ad_headline=ad_headline, visual_prompt_hint=visual_prompt_hint,
+        )
 
         gen_config = GenerateVideosConfig(
             aspect_ratio="16:9",
@@ -1553,18 +1571,17 @@ class CampaignOrchestrator(BaseAgent):
                     "gcs_uri": final_gcs_uri,
                     "metadata": {
                         "title": f"{duration}s commercial for {product}",
-                        "scene_descriptions": [
-                            f"Clip {i+1}: {clip_prompts[i][:100]}..." if i < len(clip_prompts) else f"Clip {i+1}"
-                            for i in range(len(completed_clips))
-                        ],
-                        "total_clips": len(completed_clips),
+                        "scene_descriptions": [clip_prompt[:200]],
+                        "total_clips": 1,
                         "duration_seconds": duration,
-                        "narrative_arc": f"Multi-clip narrative for {product} by {brand}",
+                        "narrative_arc": f"Trend-driven commercial for {brand} {product}",
                         "target_audience_appeal": f"Designed for {audience}",
+                        "trend_connections": trend_context if trend_context else "N/A",
+                        "has_audio": True,
                         "deterministic_av_studio": True,
                     },
                 }
-                event = self._status_event(ctx, f"Commercial generated: {len(completed_clips)} clips, {duration}s")
+                event = self._status_event(ctx, f"Commercial generated: {duration}s, {final_gcs_uri[-60:]}")
                 event.actions.state_delta["commercial_artifact"] = commercial_data
                 event.actions.state_delta["vid_artifact_keys"] = {"vid_artifact_keys": [commercial_data]}
                 event.actions.state_delta["_commercial_clips"] = {}
@@ -1579,54 +1596,12 @@ class CampaignOrchestrator(BaseAgent):
                     except Exception as e:
                         logger.warning(f"[DetAV] Failed to save commercial artifact: {e}")
                 yield event
-                logger.info(f"[DetAV] Multi-clip commercial saved: {final_gcs_uri}")
+                logger.info(f"[DetAV] Commercial saved: {final_gcs_uri}")
             else:
-                # Fallback: use first clip as the commercial
-                if completed_clips:
-                    clip_uri = completed_clips[0]
-                    source_blob = clip_uri.replace(f"gs://{bucket_name}/", "")
-                    try:
-                        video_bytes = download_blob(bucket_name=bucket_name, source_blob_name=source_blob)
-                        if gcs_folder and bucket:
-                            dest_blob = f"{gcs_folder}/{art_fname}"
-                            with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
-                                tmp.write(video_bytes)
-                                tmp_path = tmp.name
-                            try:
-                                upload_blob_to_gcs(source_file_name=tmp_path, destination_blob_name=dest_blob)
-                                final_gcs_uri = f"{bucket}/{dest_blob}"
-                            finally:
-                                os.unlink(tmp_path)
-                    except Exception as e:
-                        final_gcs_uri = clip_uri
-                        video_bytes = None
-                        logger.warning(f"[DetAV] Fallback copy failed: {e}")
-
-                    commercial_data = {
-                        "artifact_key": art_fname,
-                        "gcs_uri": final_gcs_uri,
-                        "metadata": {
-                            "title": f"{duration}s commercial for {product} (single clip fallback)",
-                            "total_clips": 1,
-                            "duration_seconds": duration,
-                            "deterministic_av_studio": True,
-                        },
-                    }
-                    event = self._status_event(ctx, f"Commercial (single clip fallback): {final_gcs_uri}")
-                    event.actions.state_delta["commercial_artifact"] = commercial_data
-                    event.actions.state_delta["vid_artifact_keys"] = {"vid_artifact_keys": [commercial_data]}
-                    event.actions.state_delta["_commercial_clips"] = {}
-                    if ctx.artifact_service and video_bytes:
-                        try:
-                            version = await ctx.artifact_service.save_artifact(
-                                app_name=ctx.app_name, user_id=ctx.user_id,
-                                session_id=ctx.session.id, filename=art_fname,
-                                artifact=types.Part.from_bytes(data=video_bytes, mime_type="video/mp4"),
-                            )
-                            event.actions.artifact_delta[art_fname] = version
-                        except Exception as e:
-                            logger.warning(f"[DetAV] Failed to save fallback artifact: {e}")
-                    yield event
+                # No video URI — clear state so retry can happen
+                clear_event = self._status_event(ctx, "Commercial generation produced no output — will retry")
+                clear_event.actions.state_delta["_commercial_clips"] = {}
+                yield clear_event
 
         except Exception as e:
             logger.warning(f"[DetAV] Veo exception: {e}")
@@ -1635,11 +1610,10 @@ class CampaignOrchestrator(BaseAgent):
     def _build_veo_reference_images(
         self, state: dict, bucket: str, gcs_folder: str,
     ) -> list:
-        """Build typed Veo reference images from campaign image state.
+        """Build ASSET-only Veo reference images from campaign image state.
 
-        Selects product ASSET + trend STYLE images from img_artifact_keys,
-        maps each to the correct VideoGenerationReferenceType, and returns
-        a list of VideoGenerationReferenceImage objects for the Veo API.
+        Veo only supports one reference type per call. All images are sent as
+        ASSET type. Selects product ASSET + trend ASSET (or person ASSET fallback).
         """
         img_keys = state.get("img_artifact_keys", {})
         if isinstance(img_keys, dict):
@@ -1654,12 +1628,12 @@ class CampaignOrchestrator(BaseAgent):
         # Exclude skipped images (no actual GCS content)
         _valid = [m for m in img_list if isinstance(m, dict) and not m.get("skipped")]
         product_refs = [m for m in _valid if m.get("shot_type") == "product_asset"]
-        style_refs = [m for m in _valid if m.get("reference_type") == "STYLE"]
+        trend_refs = [m for m in _valid if m.get("shot_type") == "trend_asset"]
         person_refs = [m for m in _valid if m.get("shot_type") == "person_asset"]
 
-        # Product ASSET + Trend STYLE (prefer STYLE over person for video aesthetic)
-        selected_refs = product_refs[:1] + style_refs[:1]
-        if not style_refs and person_refs:
+        # Product ASSET + Trend ASSET (fallback to person if no trend image)
+        selected_refs = product_refs[:1] + trend_refs[:1]
+        if not trend_refs and person_refs:
             selected_refs = product_refs[:1] + person_refs[:1]
 
         for img_meta in selected_refs:
@@ -1669,18 +1643,14 @@ class CampaignOrchestrator(BaseAgent):
                 if not img_filename:
                     continue
                 img_gcs_uri = f"{bucket}/{gcs_folder}/{img_filename}"
-            ref_type_str = img_meta.get("reference_type", "ASSET")
-            ref_type = (types.VideoGenerationReferenceType.STYLE
-                        if ref_type_str == "STYLE"
-                        else types.VideoGenerationReferenceType.ASSET)
             reference_images.append(
                 types.VideoGenerationReferenceImage(
                     image=types.Image(gcs_uri=img_gcs_uri, mime_type="image/png"),
-                    reference_type=ref_type,
+                    reference_type=types.VideoGenerationReferenceType.ASSET,
                 )
             )
             logger.info(
-                f"[DetAV] Reference: {ref_type_str} "
+                f"[DetAV] Reference ASSET "
                 f"(shot: {img_meta.get('shot_type', '?')}, "
                 f"Gecko: {img_meta.get('fidelity_score', 'N/A')}) -> {img_gcs_uri}"
             )
@@ -1713,15 +1683,20 @@ class CampaignOrchestrator(BaseAgent):
     def _build_commercial_prompt(
         self, product: str, audience: str, selling_points: str, duration: int,
         brand: str = "", trend_context: str = "",
+        ad_headline: str = "", visual_prompt_hint: str = "",
     ) -> str:
         """Build a detailed Veo prompt for the commercial."""
         trend_line = f"TREND INTEGRATION: Visually evoke {trend_context} through the aesthetic, setting, and mood. " if trend_context else ""
+        concept_line = f"CREATIVE CONCEPT: \"{ad_headline}\" — " if ad_headline else ""
+        visual_direction = f"VISUAL DIRECTION: {visual_prompt_hint[:300]}. " if visual_prompt_hint else ""
         return (
             f"A cinematic {duration}-second commercial for {brand} {product}. "
+            f"{concept_line}"
             f"NARRATIVE: A {audience} discovers {brand} {product} — moment of genuine delight "
             f"as they experience the product — product in action showcasing its benefits — "
             f"close-up hero shot of the {brand} product packaging with branding visible. "
             f"{trend_line}"
+            f"{visual_direction}"
             f"VISUAL STYLE: Premium commercial quality, warm golden-hour lighting, "
             f"shallow depth of field, smooth camera movements, cinematic color grading. "
             f"CAMERA: Start medium-wide, dolly in to close-up on product, "
@@ -1816,6 +1791,14 @@ class CampaignOrchestrator(BaseAgent):
                 asset_summary += f"\n\n## Focus Group\n{str(focus_group_evaluation)[:500]}"
 
             report_event.actions.state_delta["final_report_with_citations"] = processed_report + asset_summary
+            # Persist PDF artifact location in state for frontend access
+            gcs_bucket = os.environ.get("BUCKET", "gs://zghost-media-center")
+            pdf_gcs_uri = f"{gcs_bucket}/{gcs_folder}/{artifact_key}" if gcs_folder else ""
+            report_event.actions.state_delta["pdf_artifact"] = {
+                "artifact_key": artifact_key,
+                "gcs_uri": pdf_gcs_uri,
+                "version": result.get("version"),
+            }
             # Set artifact_delta so PDF appears inline in ADK web UI / GE
             version = result.get("version")
             if version is not None:

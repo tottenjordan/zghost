@@ -1,68 +1,164 @@
 @startuml
-!theme spacelab
-skinparam Handwritten false
-skinparam Monochrome false
-skinparam BackgroundColor #f9f9f9
+
+' GCP_BRANDING_APPLIED
+!theme materia
+skinparam backgroundColor #F8F9FA
+skinparam roundCorner 10
+skinparam defaultFontName "Open Sans"
+skinparam DefaultFontSize 12
 skinparam Padding 10
 
-title Trends & Insights - Creative Production Pipeline
+skinparam database {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam component {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam rectangle {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam note {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam collections {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam state {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam activity {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #4285F4
+    FontColor #000
+    Shadowing false
+    BorderThickness 2
+}
+skinparam usecase {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam cloud {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam frame {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam package {
+    BackgroundColor #F8F9FA
+    BorderColor #CCCCCC
+    FontColor #000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam node {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam queue {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+
+
+
+title Trends & Insights - Creative Production Pipeline (Flat 2-Level)
 
 | User |
-| Platform (Orchestrator) |
-| Research |
-| Copywriter (AI) |
-| Critic (AI) |
-| Visuals (AI) |
+| Orchestrator (Deterministic) |
+| research_agent (LLM) |
+| ad_creative_agent (LLM) |
+| Imagen 4 / Gecko (SDK) |
+| Veo 3.1 (SDK) |
+| focus_group_agent (LLM) |
 
 | User |
 start
-:Select Trends;
 :Provide Campaign Brief;
 
-| Platform (Orchestrator) |
-:Launch Pipeline;
+| Orchestrator (Deterministic) |
+:TRENDS: Query BigQuery + YouTube API;
+:Select top trends (deterministic);
 
-| Research |
-:Conduct Multi-Source Research;
-:Synthesize Insights;
-:Save Draft Report;
+| research_agent (LLM) |
+:Read campaign context from state;
+:recall_prior_insights (Memory Bank);
+:google_search (5-7 primary + 3-5 follow-up);
+:Compose cited research report;
 
-| Platform (Orchestrator) |
-:Trigger Creative Generation;
+| Orchestrator (Deterministic) |
+:Capture report via _run_agent_and_capture;
+:Persist combined_final_cited_report;
 
-| Copywriter (AI) |
-Partition "Ad Copy Loop" {
-  :Draft 10-12 Ideas;
-}
+| ad_creative_agent (LLM) |
+:Draft 10-12 trend-driven ad copies;
+:Critique & select top 2 (save_select_ad_copy);
+:Draft visual concepts per ad copy;
+:Critique & select top 2 (save_select_visual_concept);
 
-| Critic (AI) |
-Partition "Ad Copy Loop" {
-  :Evaluate & Filter;
-  :Select Top 6-8;
-}
+| Orchestrator (Deterministic) |
+:Capture ad copies + visual concepts;
 
-| Platform (Orchestrator) |
-:Select Final Top 2 Ad Copies;
+| Imagen 4 / Gecko (SDK) |
+:Generate product ASSET image;
+:Gecko fidelity score;
+:Generate person ASSET image;
+:Gecko fidelity score;
+:Generate trend ASSET image;
+:Gecko fidelity score;
 
-| Visuals (AI) |
-Partition "Visual Concepts Loop" {
-  :Draft Visual Concepts;
-}
+| Veo 3.1 (SDK) |
+:Generate commercial with ASSET references;
+:Product ASSET + Trend ASSET -> Veo;
+:Poll operation (wave-safe);
 
-| Critic (AI) |
-Partition "Visual Concepts Loop" {
-  :Evaluate Visuals;
-  :Refine Prompts;
-}
+| focus_group_agent (LLM) |
+:Analyze commercial video;
+:Simulate 3-person focus group panel;
+:Generate panelist portraits + testimonials;
+:Go/No-Go decision (threshold 7.0);
 
-| Visuals (AI) |
-:Generate Final Images;
-:Generate Final Videos (Veo);
-
-| Platform (Orchestrator) |
-:Save Artifacts to GCS;
+| Orchestrator (Deterministic) |
+:SAVE_REPORT: Compile branded PDF;
+:Upload PDF to GCS + save as artifact;
 
 | User |
-:Review Final Campaign;
+:Review final campaign report;
 stop
-@endum
+@enduml

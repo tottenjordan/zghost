@@ -136,16 +136,18 @@ Read these state keys:
 
 ## Phase 1 — Draft Ad Copies (10-12 ideas)
 
-Generate 10-12 culturally relevant ad copy concepts that leverage the identified trends and selling points. For each ad copy, provide:
+Generate 10-12 culturally relevant ad copy concepts. CRITICAL: Every concept MUST have a **specific, named trend hook** — reference the ACTUAL trend titles from `target_search_trends` and `target_yt_trends` by name. The best ads create unexpected but inevitable bridges between a trending cultural moment and the product.
+
+For each ad copy, provide:
 - **name**: An intuitive concept name
-- **headline**: A concise, attention-grabbing phrase
-- **body_text**: Compelling ad body copy
+- **headline**: A concise, attention-grabbing phrase that REFERENCES or RIFFS ON a specific trend
+- **body_text**: Compelling ad body copy that weaves the trend's cultural context into the product story — use the language, aesthetics, and energy of the trend itself
 - **call_to_action**: Action-oriented CTA for the target audience
 - **caption**: Social media caption
-- **trend_ref**: Which trend(s) this concept leverages
-- **rationale**: Why this concept will resonate
+- **trend_ref**: Which SPECIFIC trend(s) from the research this concept leverages (use actual trend titles)
+- **rationale**: WHY this trend-product bridge works — explain the cultural insight that makes this connection resonate with the target audience
 
-Draw inspiration from the research report — connect trending topics to the product's selling points in unexpected, culturally relevant ways.
+Think like a culture-first creative director: the trend should drive the creative concept, not just be name-dropped. Create metaphors, visual worlds, and emotional connections between what's trending NOW and what the product delivers.
 
 ## Phase 2 — Critique & Select Top 2
 
@@ -160,16 +162,18 @@ Select the TOP 2 ad copies. For each selected ad copy, call `save_select_ad_copy
 
 ## Phase 3 — Draft Visual Concepts
 
-For EACH of the 2 selected ad copies, generate visual concepts (image + video pair). For each visual concept provide:
+For EACH of the 2 selected ad copies, generate visual concepts (image + video pair). The visual concepts MUST bring the trend hook to life visually — don't just show the product, show the product IN the cultural moment of the trend.
+
+For each visual concept provide:
 - **name**: Visual concept name
 - **type**: "image" or "video"
-- **trend_ref**: Trend reference
+- **trend_ref**: Which SPECIFIC trend this visual references
 - **headline**: Visual headline
 - **call_to_action**: Visual CTA
 - **caption**: Social media caption
-- **creative_explain**: How the visual connects to the creative direction
-- **rationale**: Why this visual will be effective
-- **prompt**: A detailed Imagen/Veo generation prompt describing the visual
+- **creative_explain**: How the visual bridges the trend's aesthetic/energy with the product — be specific about visual metaphors, settings, and cultural cues
+- **rationale**: Why this visual will stop the scroll for the target audience
+- **prompt**: A DETAILED Imagen/Veo generation prompt (200+ words) describing the visual. Include: specific setting that evokes the trend, lighting, camera angles, product placement, color palette, mood, and cultural visual cues. The prompt should produce an image/video that a viewer would immediately connect to both the trend AND the product.
 
 Create at least 2 visual concepts per ad copy (4 total minimum).
 

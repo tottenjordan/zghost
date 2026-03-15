@@ -1,54 +1,153 @@
 @startuml
-skinparam Handwritten false
-skinparam Monochrome false
-skinparam BackgroundColor #f9f9f9
+
+' GCP_BRANDING_APPLIED
+!theme materia
+skinparam backgroundColor #F8F9FA
+skinparam roundCorner 10
+skinparam defaultFontName "Open Sans"
+skinparam DefaultFontSize 12
 skinparam Padding 10
 
-title Trends & Insights - Artifact Production Flow
+skinparam database {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam component {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam rectangle {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam note {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam collections {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam state {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam activity {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #4285F4
+    FontColor #000
+    Shadowing false
+    BorderThickness 2
+}
+skinparam usecase {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam cloud {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam frame {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam package {
+    BackgroundColor #F8F9FA
+    BorderColor #CCCCCC
+    FontColor #000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam node {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam queue {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
 
-| Campaign Orchestrator |
-| Services |
+
+
+title Trends & Insights - Artifact Production Flow (Flat 2-Level)
+
+| Campaign Orchestrator (Deterministic) |
+| LLM Agents |
+| SDK Calls (Deterministic) |
 | Storage (GCS) |
 
-| Campaign Orchestrator |
+| Campaign Orchestrator (Deterministic) |
 start
 :Initialize Session;
 
-| Services |
-:Trends & Insights Agent;
-:Query Trends;
+:TRENDS: Query BigQuery + YouTube API;
 | Storage (GCS) |
-:Save Trends Metadata;
+:Save Trends Metadata (state_delta);
 
-| Services |
-:Research Orchestrator;
-:Fetch Content;
-:Generate Draft Report;
-| Storage (GCS) |
-:Save Draft Report (PDF);
-:Save Research Data;
+| LLM Agents |
+:research_agent: google_search + recall_prior_insights;
+:Compose cited research report;
+| Campaign Orchestrator (Deterministic) |
+:Capture report via _run_agent_and_capture;
 
-| Services |
-:Creative Production Orchestrator;
-:Draft Copy;
-:Generate Images (Imagen);
-:Generate Video (Veo);
-| Storage (GCS) |
-:Save Ad Copy;
-:Save Images;
-:Save Videos;
+| LLM Agents |
+:ad_creative_agent: Draft/critique/select;
+:2 ad copies + 2 visual concepts;
+| Campaign Orchestrator (Deterministic) |
+:Capture ad copies + visual concepts;
 
-| Services |
-:Focus Group Evaluator;
-:Evaluate Commercial;
-:Simulate Focus Group;
+| SDK Calls (Deterministic) |
+:Imagen 4: Product ASSET image;
+:Imagen 4: Person ASSET image;
+:Imagen 4: Trend ASSET image;
+:Gecko: Score each image;
 | Storage (GCS) |
-:Save Evaluation Report;
+:Save 3 reference images;
 
-| Campaign Orchestrator |
-:Compile Final Report;
+| SDK Calls (Deterministic) |
+:Veo 3.1: Commercial with ASSET references;
 | Storage (GCS) |
-:Save Final Report (PDF);
+:Save commercial video;
+
+| LLM Agents |
+:focus_group_evaluator_agent;
+:Analyze commercial + simulate panel;
+| Storage (GCS) |
+:Save portraits + testimonials;
+
+| Campaign Orchestrator (Deterministic) |
+:SAVE_REPORT: Compile branded PDF;
+| Storage (GCS) |
+:Save Final Report (PDF) + artifact;
 
 stop
-@endum
+@enduml

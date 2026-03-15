@@ -1,46 +1,139 @@
 @startuml
-skinparam Handwritten false
-skinparam Monochrome false
-skinparam BackgroundColor #f9f9f9
+
+' GCP_BRANDING_APPLIED
+!theme materia
+skinparam backgroundColor #F8F9FA
+skinparam roundCorner 10
+skinparam defaultFontName "Open Sans"
+skinparam DefaultFontSize 12
 skinparam Padding 10
 
-title Trends & Insights - Functional Architecture
-
-package "Orchestration" {
-  [Campaign Orchestrator] as Orchestrator #4285F4
+skinparam database {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam component {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam rectangle {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam note {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam collections {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam state {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam activity {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #4285F4
+    FontColor #000
+    Shadowing false
+    BorderThickness 2
+}
+skinparam usecase {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam cloud {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam frame {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam package {
+    BackgroundColor #F8F9FA
+    BorderColor #CCCCCC
+    FontColor #000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam node {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam queue {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
 }
 
-package "Services" {
-  [Trends & Insights] as Trends #EA4335
-  [Research Orchestrator] as Research #EA4335
-  [Creative Production\nOrchestrator] as Creative #FBBC05
-  [Focus Group Evaluator] as Eval #34A853
+
+
+title Trends & Insights - Functional Architecture (Flat 2-Level)
+
+package "Deterministic Orchestrator" {
+  [Campaign Orchestrator\n(BaseAgent State Machine)] as Orchestrator #4285F4
+}
+
+package "LLM Sub-Agents (3)" {
+  [research_agent\n(google_search, recall_prior_insights)] as Research #EA4335
+  [ad_creative_agent\n(save_select_ad_copy, save_select_visual_concept)] as Creative #FBBC05
+  [focus_group_evaluator_agent\n(analyze_commercial_video, portraits)] as Eval #34A853
 }
 
 package "Google Cloud" {
   database "BigQuery" as BQ #4285F4
   cloud "Cloud Storage" as GCS #4285F4
-  cloud "Vertex AI" as Vertex #4285F4
+  cloud "Vertex AI\n(Imagen 4 / Veo 3.1 / Gecko)" as Vertex #4285F4
 }
 
 package "External" {
-  node "YouTube" as YT #White
+  node "YouTube API" as YT #White
+  node "Google Search" as GS #White
 }
 
 ' Relationships
-Orchestrator --> Trends : 1. Discover
-Orchestrator --> Research : 2. Research
-Orchestrator --> Creative : 3. Generate
-Orchestrator --> Eval : 4. Evaluate
-Orchestrator --> GCS : 5. Save Report
+Orchestrator --> BQ : 1. TRENDS (deterministic)
+Orchestrator --> YT : 1. TRENDS (deterministic)
+Orchestrator --> Research : 2. RESEARCH
+Orchestrator --> Creative : 3. AD_CREATIVE
+Orchestrator --> Vertex : 4-5. IMAGE_GEN + AV_STUDIO (deterministic)
+Orchestrator --> Eval : 6. FOCUS_GROUP
+Orchestrator --> GCS : 7. SAVE_REPORT (branded PDF)
 
-Trends --> BQ : Query
-Research --> YT : Fetch
-Research --> GCS : Save Draft
-
-Creative --> Vertex : Generate Assets
-Eval --> Vertex : Analyze Video
+Research --> GS : google_search
+Research --> Vertex : recall_prior_insights (Memory Bank)
+Eval --> Vertex : Analyze video
 
 Vertex ..> GCS : Read/Write Assets
 
-@endum
+@enduml

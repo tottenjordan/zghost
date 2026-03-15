@@ -1,60 +1,151 @@
 @startuml
-!theme spacelab
-skinparam Handwritten false
-skinparam Monochrome false
-skinparam BackgroundColor #f9f9f9
-skinparam BoxPadding 10
+
+' GCP_BRANDING_APPLIED
+!theme materia
+skinparam backgroundColor #F8F9FA
+skinparam roundCorner 10
+skinparam defaultFontName "Open Sans"
+skinparam DefaultFontSize 12
 skinparam Padding 10
 
-title Trends & Insights - System Architecture
+skinparam database {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam component {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam rectangle {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam note {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam collections {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam state {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam activity {
+    BackgroundColor #4285F4
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #4285F4
+    FontColor #000
+    Shadowing false
+    BorderThickness 2
+}
+skinparam usecase {
+    BackgroundColor #FBBC05
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam cloud {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam frame {
+    BackgroundColor #FFFFFF
+    BorderColor #E0E0E0
+    FontColor #000
+    Shadowing false
+}
+skinparam package {
+    BackgroundColor #F8F9FA
+    BorderColor #CCCCCC
+    FontColor #000
+    Shadowing false
+    BorderThickness 1
+}
+skinparam node {
+    BackgroundColor #EA4335
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+skinparam queue {
+    BackgroundColor #34A853
+    BorderColor #E0E0E0
+    FontColor #FFF
+    Shadowing false
+}
+
+
+
+title Trends & Insights - System Architecture (Flat 2-Level)
 
 package "Orchestration Layer" {
-  agent "Campaign\nOrchestrator" as Root #LightBlue
+  agent "Campaign\nOrchestrator\n(BaseAgent)" as Root #LightBlue
+  note right of Root
+    Deterministic state machine
+    All stages inlined
+    No nested orchestrators
+  end note
 }
 
-package "Asset Generation Layer" {
-  agent "Creative Production\nOrchestrator" as Creative #LightCyan
-  agent "Ad Content\nGenerator" as AdGen #LightCyan
-  agent "AV Editing\nStudio" as AVStudio #LightCyan
-}
-
-package "Research Layer" {
-  agent "Research\nOrchestrator" as Research #LightYellow
-  agent "Trends &\nInsights" as Trends #LightYellow
-}
-
-package "Evaluation Layer" {
+package "LLM Agents (3 total)" {
+  agent "Research\nAgent" as Research #LightYellow
+  agent "Ad Creative\nAgent" as AdCreative #LightCyan
   agent "Focus Group\nEvaluator" as Eval #LightGreen
+}
+
+package "Deterministic SDK Calls" {
+  component "Imagen 4\n(3 ASSET refs)" as Imagen #FBBC05
+  component "Gecko\n(Fidelity Scoring)" as Gecko #FBBC05
+  component "Veo 3.1\n(ASSET references)" as Veo #FBBC05
 }
 
 package "External Services" {
   cloud "Google Cloud Storage" as GCS #White
   database "BigQuery" as BQ #White
-  node "YouTube" as YT #White
+  node "YouTube API" as YT #White
   node "Google Search" as GS #White
-  cloud "Veo / Gemini / Lyria" as AI #White
-  cloud "Vertex AI / Agent Engines (Memory Bank)" as AE #White
+  cloud "Vertex AI / Agent Engine\n(Memory Bank)" as AE #White
 }
 
 ' Relationships
-Root --> Trends : 1. Discover Trends
-Root --> Research : 2. Research
-Root --> Creative : 3. Generate Assets
-Root --> Eval : 4. Evaluate
-Root --> GCS : 5. Save Report
+Root --> BQ : 1. TRENDS (deterministic)
+Root --> YT : 1. TRENDS (deterministic)
+Root --> Research : 2. RESEARCH
+Root --> AdCreative : 3. AD_CREATIVE
+Root --> Imagen : 4. IMAGE_GEN
+Root --> Gecko : 4. Gecko scoring
+Root --> Veo : 5. AV_STUDIO
+Root --> Eval : 6. FOCUS_GROUP
+Root --> GCS : 7. SAVE_REPORT (PDF)
 
-Research --> AE : 1. Recall Memory
-Trends --> BQ : 2. Discover Trends
-Research --> YT : 3. Parallel Research
-Research --> GS : 3. Parallel Research
-Research --> GCS : 4. Save Draft
+Research --> GS : google_search tool
+Research --> AE : recall_prior_insights
 
-Creative --> AdGen : Delegate
-Creative --> AVStudio : Delegate
-AdGen --> AI : Generate Images
-AVStudio --> AI : Generate Video/Audio
+Imagen --> GCS : Save images
+Veo --> GCS : Save video
 
-Eval --> GCS : Read Assets
-Eval --> AI : Analyze Video
+Eval --> GCS : Read assets
 
-@endum
+@enduml
