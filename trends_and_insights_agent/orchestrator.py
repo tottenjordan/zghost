@@ -301,8 +301,18 @@ class CampaignOrchestrator(BaseAgent):
         elif stage == "AD_CREATIVE":
             async for event in self._run_agent_and_capture(ctx, "ad_creative_agent", "ad_creative_output"):
                 yield event
+            # Re-persist ad copies & visual concepts via state_delta (tool writes don't survive AE waves)
             done_event = self._status_event(ctx, "Ad creative pipeline complete.")
             done_event.actions.state_delta["_ad_creative_complete"] = True
+            for key in ("final_select_ad_copies", "final_select_visual_concepts", "final_select_vis_concepts"):
+                val = ctx.session.state.get(key)
+                if val:
+                    done_event.actions.state_delta[key] = val
+            # Normalize: copy final_select_vis_concepts -> final_select_visual_concepts if needed
+            vis = ctx.session.state.get("final_select_vis_concepts")
+            if vis and not ctx.session.state.get("final_select_visual_concepts"):
+                done_event.actions.state_delta["final_select_visual_concepts"] = vis
+                ctx.session.state["final_select_visual_concepts"] = vis
             yield done_event
         elif stage == "IMAGE_GEN":
             async for event in self._generate_images_deterministic(ctx):
@@ -357,6 +367,18 @@ class CampaignOrchestrator(BaseAgent):
                             wave_msg = f"{status_msg.rstrip('.')} — say 'continue' to proceed."
                             yield self._status_event(ctx, wave_msg)
                             return
+                # After agent completes: persist final evaluation + any panelist data via state_delta
+                fg_text_final = "\n".join(_captured_fg_parts)
+                if fg_text_final and len(fg_text_final) > 100:
+                    final_fg_event = self._status_event(ctx, f"Focus group evaluation captured ({len(fg_text_final)} chars)")
+                    final_fg_event.actions.state_delta["focus_group_evaluation"] = fg_text_final
+                    final_fg_event.actions.state_delta["_focus_group_complete"] = True
+                    # Re-persist panelist data (tool writes don't survive AE waves)
+                    for key in ("focus_group_panelists", "focus_group_reel_gcs_uri", "focus_group_reel_artifact"):
+                        val = ctx.session.state.get(key)
+                        if val:
+                            final_fg_event.actions.state_delta[key] = val
+                    yield final_fg_event
         elif stage == "SAVE_REPORT":
             async for event in self._save_final_report(ctx):
                 yield event
@@ -479,38 +501,60 @@ class CampaignOrchestrator(BaseAgent):
                 # Capture non-thought text from model events — keep the LONGEST
                 if hasattr(event, 'content') and event.content:
                     for part in (event.content.parts or []):
-                        if hasattr(part, 'text') and part.text and len(part.text) > 100:
+                        if hasattr(part, 'text') and part.text:
                             if not getattr(part, 'thought', False):
+                                # Accept ANY non-thought text (even short parts)
                                 all_text_parts.append(part.text)
                                 if len(part.text) > len(captured_text):
                                     captured_text = part.text
+
+                # Also check for state_delta from sub-agent events (tool saves)
+                if hasattr(event, 'actions') and event.actions and event.actions.state_delta:
+                    delta_val = event.actions.state_delta.get(state_key)
+                    if delta_val and len(str(delta_val)) > len(captured_text):
+                        captured_text = str(delta_val)
+                        logger.info(f"[CampaignOrchestrator] Found {state_key} in sub-agent state_delta ({len(captured_text)} chars)")
+
                 if ctx.should_pause_invocation(event):
-                    # Persist what we have before pausing
-                    if captured_text and len(captured_text) > 200:
-                        ctx.session.state[state_key] = captured_text
-                        persist_event = self._status_event(ctx, f"Persisting {state_key} ({len(captured_text)} chars) before wave pause")
-                        persist_event.actions.state_delta[state_key] = captured_text
+                    # Persist what we have before pausing (use best available)
+                    best = captured_text or "\n\n".join(all_text_parts)
+                    if best and len(best) > 100:
+                        ctx.session.state[state_key] = best
+                        persist_event = self._status_event(ctx, f"Persisting {state_key} ({len(best)} chars) before wave pause")
+                        persist_event.actions.state_delta[state_key] = best
                         yield persist_event
                     return
 
         # Persist captured text — both via state_delta AND direct state write
-        if captured_text and len(captured_text) > 200:
-            ctx.session.state[state_key] = captured_text
-            persist_event = self._status_event(ctx, f"{state_key} captured ({len(captured_text)} chars)")
-            persist_event.actions.state_delta[state_key] = captured_text
-            yield persist_event
-            logger.info(f"[CampaignOrchestrator] Captured {state_key}: {len(captured_text)} chars (from {len(all_text_parts)} text parts)")
-        else:
-            # Fallback: concatenate all text parts if individual parts were too short
+        # Strategy: prefer longest single part, fallback to concatenation
+        best_text = captured_text
+        if not best_text or len(best_text) < 200:
             combined = "\n\n".join(all_text_parts)
-            if combined and len(combined) > 200:
-                ctx.session.state[state_key] = combined
-                persist_event = self._status_event(ctx, f"{state_key} captured ({len(combined)} chars, concatenated from {len(all_text_parts)} parts)")
-                persist_event.actions.state_delta[state_key] = combined
+            if len(combined) > len(best_text or ""):
+                best_text = combined
+
+        if best_text and len(best_text) > 100:
+            ctx.session.state[state_key] = best_text
+            persist_event = self._status_event(ctx, f"{state_key} captured ({len(best_text)} chars)")
+            persist_event.actions.state_delta[state_key] = best_text
+            yield persist_event
+            logger.info(
+                f"[CampaignOrchestrator] Captured {state_key}: {len(best_text)} chars "
+                f"(from {len(all_text_parts)} text parts, longest single: {len(captured_text)})"
+            )
+        else:
+            logger.warning(
+                f"[CampaignOrchestrator] Failed to capture {state_key} — "
+                f"no qualifying text found (parts: {len(all_text_parts)}, "
+                f"longest: {len(captured_text)}, combined: {len('\n\n'.join(all_text_parts))})"
+            )
+            # Last resort: check if state was set by the sub-agent directly
+            direct_val = ctx.session.state.get(state_key, "")
+            if direct_val and len(str(direct_val)) > 100:
+                logger.info(f"[CampaignOrchestrator] Found {state_key} in direct state ({len(str(direct_val))} chars)")
+                persist_event = self._status_event(ctx, f"{state_key} recovered from state ({len(str(direct_val))} chars)")
+                persist_event.actions.state_delta[state_key] = direct_val
                 yield persist_event
-                logger.info(f"[CampaignOrchestrator] Captured {state_key} via concatenation: {len(combined)} chars")
-            else:
-                logger.warning(f"[CampaignOrchestrator] Failed to capture {state_key} — no qualifying text found (parts: {len(all_text_parts)}, longest: {len(captured_text)})")
 
     async def _gather_trends_deterministic(
         self, ctx: InvocationContext
@@ -640,14 +684,17 @@ class CampaignOrchestrator(BaseAgent):
             # Creative pipeline
             "ad_copy_draft", "ad_copy_critique", "ad_copy_final",
             "ad_creative_output", "_ad_creative_complete",
+            "final_select_ad_copies", "final_select_visual_concepts", "final_select_vis_concepts",
             "img_artifact_keys", "vid_artifact_keys", "commercial_artifact",
             "_creative_pipeline_attempts", "_av_studio_runs", "_commercial_clips",
+            "_img_fail_0", "_img_fail_1", "_img_fail_2",
             "reference_images",
             # Focus group
             "focus_group_evaluation", "focus_group_panelists",
+            "focus_group_reel_gcs_uri", "focus_group_reel_artifact",
             "_focus_group_attempts", "_focus_group_complete",
             # Final report
-            "final_report_with_citations",
+            "final_report_with_citations", "pdf_artifact",
             # GCS
             "gcs_folder",
         }
@@ -706,6 +753,10 @@ class CampaignOrchestrator(BaseAgent):
                                     reconstructed["target_audience"] = aud_m.group(1).strip()
                                 if feat_m:
                                     reconstructed["key_selling_points"] = feat_m.group(1).strip()
+
+        # Normalize key aliases: final_select_vis_concepts -> final_select_visual_concepts
+        if "final_select_vis_concepts" in reconstructed and "final_select_visual_concepts" not in reconstructed:
+            reconstructed["final_select_visual_concepts"] = reconstructed["final_select_vis_concepts"]
 
         # Pass 2: Only emit state that's actually missing from current session state
         missing = {}
@@ -1152,9 +1203,9 @@ class CampaignOrchestrator(BaseAgent):
             ad_headline = ad_copies[0].get("headline", "")
 
         # Get visual concept prompt if available
-        visual_concepts = state.get("final_select_visual_concepts", {})
+        visual_concepts = state.get("final_select_visual_concepts") or state.get("final_select_vis_concepts") or {}
         if isinstance(visual_concepts, dict):
-            visual_concepts = visual_concepts.get("final_select_visual_concepts", [])
+            visual_concepts = visual_concepts.get("final_select_visual_concepts") or visual_concepts.get("final_select_vis_concepts") or []
         visual_prompt_hint = ""
         if visual_concepts and isinstance(visual_concepts[0], dict):
             visual_prompt_hint = visual_concepts[0].get("prompt", "")
@@ -1352,6 +1403,8 @@ class CampaignOrchestrator(BaseAgent):
                     results[i] = {"idx": i, "error": f"{type(e).__name__}: {str(e)[:200]}"}
 
         # --- Process results: update slots, emit status, save artifacts ---
+        # CRITICAL FOR AE/GE: Persist state_delta AFTER EACH image, not batched.
+        # If wave times out mid-processing, we keep progress for completed images.
         any_below_threshold = False
 
         for i, shot, fc in slots_to_generate:
@@ -1373,11 +1426,11 @@ class CampaignOrchestrator(BaseAgent):
             img_slots[i] = img_meta
 
             # Gecko status + quality gate
+            gecko_passed = score is None or score >= GECKO_THRESHOLD
             if score is not None:
-                passed = score >= GECKO_THRESHOLD
                 fidelity_msg = (
                     f"Gecko fidelity: {score:.2f}/1.00 "
-                    f"({'PASS' if passed else 'BELOW THRESHOLD'}) — "
+                    f"({'PASS' if gecko_passed else 'BELOW THRESHOLD'}) — "
                     f"reference type: {ref_type}"
                 )
                 yield self._status_event(
@@ -1385,21 +1438,8 @@ class CampaignOrchestrator(BaseAgent):
                     f"Image {i+1}/{MAX_IMAGES} ({shot['shot_type']}): "
                     f"{img_meta['concept_name']} | {fidelity_msg}"
                 )
-                if not passed:
+                if not gecko_passed:
                     any_below_threshold = True
-                    yield self._status_event(
-                        ctx,
-                        f"Image {i+1} scored {score:.2f} < {GECKO_THRESHOLD} — "
-                        f"will auto-regenerate on next iteration (attempt {fc+1}/{MAX_IMG_RETRIES})"
-                    )
-                    # Don't reset failure counter — triggers regen on next wave
-                else:
-                    yield self._status_event(
-                        ctx,
-                        f"Image fidelity analysis: {img_meta['concept_name']} scored "
-                        f"{score:.2f}/1.00 via Gecko embeddings — exceeds {GECKO_THRESHOLD} "
-                        f"threshold, approved as {ref_type} reference for video generation"
-                    )
             else:
                 yield self._status_event(
                     ctx,
@@ -1421,23 +1461,33 @@ class CampaignOrchestrator(BaseAgent):
                 except Exception as e:
                     logger.warning(f"[ImageGen] Failed to save artifact: {e}")
 
-        # --- Persist updated image list + reset counters for passing images ---
+            # PER-IMAGE state_delta: persist updated image list + counter IMMEDIATELY
+            # This ensures AE/GE waves that timeout don't lose completed images
+            current_list = [m for m in img_slots if m is not None]
+            per_img_event = self._status_event(
+                ctx,
+                f"Image {i+1}/{MAX_IMAGES} persisted"
+                + (f" (Gecko {score:.2f})" if score is not None else "")
+                + (f" — will regenerate" if not gecko_passed else " — approved")
+            )
+            per_img_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": current_list}
+            if gecko_passed:
+                per_img_event.actions.state_delta[f"_img_fail_{i}"] = 0
+            # Also write to ctx.session.state for same-invocation reads
+            ctx.session.state["img_artifact_keys"] = {"img_artifact_keys": current_list}
+            yield per_img_event
+
+        # Final summary status (no state_delta needed — already persisted per-image)
         final_list = [m for m in img_slots if m is not None]
-        save_event = self._status_event(
-            ctx,
-            f"{'All' if not any_below_threshold else 'Some'} images processed — "
-            f"{len(final_list)}/{MAX_IMAGES} generated"
-            + (f", {sum(1 for m in final_list if m.get('fidelity_score') is not None and m['fidelity_score'] >= GECKO_THRESHOLD)} passed Gecko" if any(m.get('fidelity_score') is not None for m in final_list) else "")
-            + (". Below-threshold images will auto-regenerate." if any_below_threshold else ".")
-        )
-        save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": final_list}
-        # Reset failure counters for images that passed Gecko
-        for i, m in enumerate(img_slots):
-            if m and not m.get("skipped"):
-                score = m.get("fidelity_score")
-                if score is None or score >= GECKO_THRESHOLD:
-                    save_event.actions.state_delta[f"_img_fail_{i}"] = 0
-        yield save_event
+        passing = sum(1 for m in final_list if m.get("fidelity_score") is None or m.get("fidelity_score", 0) >= GECKO_THRESHOLD)
+        if any_below_threshold:
+            yield self._status_event(
+                ctx,
+                f"Image generation complete: {len(final_list)}/{MAX_IMAGES} generated, "
+                f"{passing} passed Gecko. Below-threshold images will auto-regenerate."
+            )
+        else:
+            yield self._status_event(ctx, f"All {len(final_list)} reference images generated and verified.")
 
     # -------------------------------------------------------------------------
     # AV_STUDIO — deterministic Veo commercial generation
@@ -1498,9 +1548,9 @@ class CampaignOrchestrator(BaseAgent):
         if ad_copies and isinstance(ad_copies[0], dict):
             ad_headline = ad_copies[0].get("headline", "")
 
-        visual_concepts = state.get("final_select_visual_concepts", {})
+        visual_concepts = state.get("final_select_visual_concepts") or state.get("final_select_vis_concepts") or {}
         if isinstance(visual_concepts, dict):
-            visual_concepts = visual_concepts.get("final_select_visual_concepts", [])
+            visual_concepts = visual_concepts.get("final_select_visual_concepts") or visual_concepts.get("final_select_vis_concepts") or []
         visual_prompt_hint = ""
         if visual_concepts and isinstance(visual_concepts[0], dict):
             visual_prompt_hint = visual_concepts[0].get("prompt", "")
@@ -1795,11 +1845,23 @@ class CampaignOrchestrator(BaseAgent):
         gcs_folder = state.get("gcs_folder", "")
 
         if not processed_report:
-            # Even without a report, set final_report_with_citations to prevent infinite SAVE_REPORT loop
-            skip_event = self._status_event(ctx, "No research report to save — skipping PDF generation.")
-            skip_event.actions.state_delta["final_report_with_citations"] = "(No research report available)"
-            yield skip_event
-            return
+            # Fallback: try to assemble report from other pipeline outputs
+            fallback_parts = []
+            ad_output = state.get("ad_creative_output", "")
+            fg_eval = state.get("focus_group_evaluation", "")
+            if ad_output:
+                fallback_parts.append(f"## Ad Creative Output\n\n{ad_output}")
+            if fg_eval:
+                fallback_parts.append(f"## Focus Group Evaluation\n\n{fg_eval}")
+            if fallback_parts:
+                processed_report = "\n\n---\n\n".join(fallback_parts)
+                yield self._status_event(ctx, f"Research report missing — assembling PDF from {len(fallback_parts)} available pipeline outputs.")
+            else:
+                # No content at all — prevent infinite SAVE_REPORT loop
+                skip_event = self._status_event(ctx, "No pipeline content to save — skipping PDF generation.")
+                skip_event.actions.state_delta["final_report_with_citations"] = "(No report content available)"
+                yield skip_event
+                return
 
         # Extract artifact lists
         img_keys = state.get("img_artifact_keys", {})
