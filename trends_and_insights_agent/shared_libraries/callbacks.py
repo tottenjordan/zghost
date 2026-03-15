@@ -44,6 +44,10 @@ TOOL_STATUS_MESSAGES = {
     "load_artifacts": "Loading artifacts for display...",
     "preload_memory": "Loading campaign memories...",
     "recall_prior_insights": "Searching memory bank for prior insights...",
+    "analyze_commercial_video": "Analyzing commercial video with Gemini vision...",
+    "generate_panelist_portrait": "Generating focus group panelist portrait with Imagen 4...",
+    "generate_panelist_testimonial": "Creating Ken Burns testimonial video with Chirp voice-over...",
+    "concatenate_panelist_videos": "Assembling focus group reel with Lyria background music...",
 }
 
 TOOL_DESCRIPTIONS = {
@@ -68,6 +72,10 @@ TOOL_DESCRIPTIONS = {
     "evaluate_media_fidelity": "evaluates visual brand consistency and product accuracy using Gecko AI scoring",
     "transfer_to_agent": "transfers control to another agent",
     "combined_research_pipeline": "runs the full research pipeline",
+    "analyze_commercial_video": "analyzes the commercial video frame-by-frame using Gemini vision for quality, consistency, and brand alignment",
+    "generate_panelist_portrait": "generates a realistic AI portrait of a focus group panelist using Imagen 4",
+    "generate_panelist_testimonial": "creates a cinematic Ken Burns testimonial video with Chirp HD voice-over matched to the panelist's demographic",
+    "concatenate_panelist_videos": "assembles all panelist testimonials into a polished focus group reel with Lyria 2 background music",
 }
 
 

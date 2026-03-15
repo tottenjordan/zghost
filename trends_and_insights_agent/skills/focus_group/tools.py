@@ -151,17 +151,40 @@ async def generate_panelist_portrait(
         f"Style: modern consumer research panel participant photo."
     )
 
-    response = None
+    safe_name = panelist_name.replace(" ", "_").replace(",", "")
+    artifact_key = f"panelist_{safe_name}.png"
+    local_dir = "session_media/focus_group/portraits"
+    os.makedirs(local_dir, exist_ok=True)
+
+    gcs_folder = tool_context.state.get("gcs_folder", "default")
+    bucket = os.environ.get("BUCKET", "gs://zghost-media-center")
+
+    # Use Imagen 4 generate_images() — synchronous, reliable on AE
+    from google.genai.types import GenerateImagesConfig
+    img_client = genai.Client(vertexai=True)
+    image_bytes = None
+    gcs_uri = ""
+
     for attempt in range(3):
         try:
-            response = client.models.generate_content(
-                model=config.image_gen_model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_modalities=["IMAGE"],
-                ),
+            output_gcs = f"{bucket}/{gcs_folder}" if bucket and gcs_folder else None
+            img_config = GenerateImagesConfig(
+                number_of_images=1,
+                **({"output_gcs_uri": output_gcs} if output_gcs else {}),
             )
-            break
+            response = img_client.models.generate_images(
+                model="imagen-4.0-generate-preview-06-06",
+                prompt=prompt,
+                config=img_config,
+            )
+            if response and response.generated_images:
+                gen_img = response.generated_images[0]
+                image_bytes = gen_img.image.image_bytes if gen_img.image else None
+                if output_gcs and hasattr(gen_img, 'gcs_uri') and gen_img.gcs_uri:
+                    gcs_uri = gen_img.gcs_uri
+                break
+            else:
+                logging.warning(f"Portrait gen returned empty (attempt {attempt + 1}/3)")
         except Exception as e:
             err_str = str(e)
             if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str) and attempt < 2:
@@ -172,59 +195,49 @@ async def generate_panelist_portrait(
                 logging.error(f"Panelist portrait generation failed: {e}")
                 return {"status": "failed", "error": str(e)}
 
-    if not response or not response.candidates or not response.candidates[0].content.parts:
-        return {"status": "failed", "error": "No image data in response"}
+    if not image_bytes:
+        return {"status": "failed", "error": "No image data from Imagen 4"}
 
-    safe_name = panelist_name.replace(" ", "_").replace(",", "")
-    artifact_key = f"panelist_{safe_name}.png"
+    # Save locally
+    local_path = os.path.join(local_dir, artifact_key)
+    with open(local_path, "wb") as f:
+        f.write(image_bytes)
 
-    local_dir = "session_media/focus_group/portraits"
-    os.makedirs(local_dir, exist_ok=True)
+    # Upload to GCS if not already there
+    if not gcs_uri:
+        destination_blob = f"{gcs_folder}/focus_group/{artifact_key}"
+        upload_blob_to_gcs(
+            source_file_name=local_path,
+            destination_blob_name=destination_blob,
+        )
+        gcs_uri = f"{bucket}/{destination_blob}"
 
-    for part in response.candidates[0].content.parts:
-        if hasattr(part, 'inline_data') and part.inline_data and part.inline_data.data:
-            image_bytes = part.inline_data.data
+    # Save as ADK artifact
+    await tool_context.save_artifact(
+        filename=artifact_key,
+        artifact=types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+    )
 
-            await tool_context.save_artifact(
-                filename=artifact_key,
-                artifact=types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
-            )
+    logging.info(f"Generated panelist portrait via Imagen 4: {artifact_key}")
 
-            local_path = os.path.join(local_dir, artifact_key)
-            with open(local_path, "wb") as f:
-                f.write(image_bytes)
+    # Store panelist portrait metadata in state (new dict for AE persistence)
+    panelists = tool_context.state.get("focus_group_panelists", {"panelists": []})
+    new_panelist = {
+        "name": panelist_name,
+        "age": age,
+        "persona": persona_description,
+        "portrait_artifact": artifact_key,
+        "portrait_gcs_uri": gcs_uri,
+    }
+    new_list = list(panelists.get("panelists", [])) + [new_panelist]
+    tool_context.state["focus_group_panelists"] = {"panelists": new_list}
 
-            gcs_folder = tool_context.state.get("gcs_folder", "default")
-            destination_blob = f"{gcs_folder}/focus_group/{artifact_key}"
-            upload_blob_to_gcs(
-                source_file_name=local_path,
-                destination_blob_name=destination_blob,
-            )
-
-            bucket = os.environ.get("BUCKET", "gs://zghost-media-center")
-            gcs_uri = f"{bucket}/{destination_blob}"
-
-            logging.info(f"Generated panelist portrait: {artifact_key}")
-
-            # Store panelist portrait metadata in state
-            panelists = tool_context.state.get("focus_group_panelists", {"panelists": []})
-            panelists["panelists"].append({
-                "name": panelist_name,
-                "age": age,
-                "persona": persona_description,
-                "portrait_artifact": artifact_key,
-                "portrait_gcs_uri": gcs_uri,
-            })
-            tool_context.state["focus_group_panelists"] = panelists
-
-            return {
-                "status": "ok",
-                "artifact_key": artifact_key,
-                "gcs_uri": gcs_uri,
-                "panelist_name": panelist_name,
-            }
-
-    return {"status": "failed", "error": "No image data in response parts"}
+    return {
+        "status": "ok",
+        "artifact_key": artifact_key,
+        "gcs_uri": gcs_uri,
+        "panelist_name": panelist_name,
+    }
 
 
 async def generate_panelist_testimonial(
@@ -419,14 +432,18 @@ async def generate_panelist_testimonial(
         video_gcs_uri = f"{bucket}/{dest_blob}"
         logging.info(f"Generated panelist Ken Burns testimonial: {video_artifact_key}")
 
-        # Update panelist data in state
+        # Update panelist data in state (create new dict for AE persistence)
+        updated_panelists = []
         for p in panelists.get("panelists", []):
             if p["name"] == panelist_name:
-                p["testimonial_video_artifact"] = video_artifact_key
-                p["testimonial_video_gcs_uri"] = video_gcs_uri
-                p["voiceover_gcs_uri"] = vo_gcs_uri
-                break
-        tool_context.state["focus_group_panelists"] = panelists
+                updated_p = dict(p)
+                updated_p["testimonial_video_artifact"] = video_artifact_key
+                updated_p["testimonial_video_gcs_uri"] = video_gcs_uri
+                updated_p["voiceover_gcs_uri"] = vo_gcs_uri
+                updated_panelists.append(updated_p)
+            else:
+                updated_panelists.append(p)
+        tool_context.state["focus_group_panelists"] = {"panelists": updated_panelists}
 
         return {
             "status": "ok",
