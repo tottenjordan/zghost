@@ -37,13 +37,14 @@ Read the following session state to understand the creative intent behind the co
 - Target audience: `{target_audience}`
 - Key selling points: `{key_selling_points}`
 
-## Step 3: Generate Panelist Personas with Portraits
+## Step 3: Generate Panelist Personas with Portraits (PARALLEL)
 
 Create 3 diverse consumer personas matching the target audience: `{target_audience}`.
 
-For EACH panelist, attempt to call `generate_panelist_portrait` to create their headshot photo:
-1. Define a name, age, and brief persona description fitting the target demographic
-2. Call `generate_panelist_portrait(panelist_name, age, persona_description)` for each
+**IMPORTANT: Call `generate_panelist_portrait` for ALL 3 panelists IN PARALLEL (in a single tool-call turn).** Do NOT generate portraits one at a time — submit all 3 portrait requests simultaneously to save time.
+
+1. Define 3 panelists: each with name, age, and brief persona description fitting the target demographic
+2. Call `generate_panelist_portrait(panelist_name, age, persona_description)` for ALL 3 panelists in a SINGLE response
 3. Aim for diversity in age, background, and lifestyle within the target audience
 
 **CRITICAL: NO RETRIES** — If `generate_panelist_portrait` or `generate_panelist_testimonial` fails for ANY panelist, do NOT retry. Skip portrait/testimonial generation entirely and proceed to the next step with text-only output. These are optional enhancements; the evaluation itself is what matters.
@@ -100,10 +101,11 @@ Format each panelist's feedback as:
 
 **IMPORTANT**: Only run this step if `commercial_artifact` exists and is non-empty. If there is no commercial, skip directly to Step 6.
 
-After scoring, generate a short Ken Burns video testimonial for ALL 3 panelists using `generate_panelist_testimonial`:
-1. Write a 30-50 word spoken testimonial in the panelist's voice summarizing their key feedback
+**IMPORTANT: Call `generate_panelist_testimonial` for ALL 3 panelists IN PARALLEL (in a single tool-call turn).** Do NOT generate testimonials one at a time.
+
+1. Write a 30-50 word spoken testimonial in each panelist's voice summarizing their key feedback
 2. Choose a matching voice_style from: "young_female", "young_male", "mature_female", "mature_male", "british_female"
-3. Call `generate_panelist_testimonial(panelist_name, testimonial_script, voice_style)` for each panelist
+3. Call `generate_panelist_testimonial(panelist_name, testimonial_script, voice_style)` for ALL 3 panelists in a SINGLE response
 4. After ALL panelist testimonials are generated, call `concatenate_panelist_videos` to create a combined focus group reel
 
 The testimonial creates a cinematic Ken Burns zoom effect on the panelist's portrait with their voiceover audio. The reel concatenates all testimonials into a single video.

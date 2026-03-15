@@ -396,11 +396,16 @@ class CampaignOrchestrator(BaseAgent):
         if not ad_copies and not state.get("_ad_creative_complete"):
             return "AD_CREATIVE"
 
-        # Stage 3: Need 3 reference images
+        # Stage 3: Need 3 reference images (all passing Gecko >= 0.7)
         img_keys = state.get("img_artifact_keys", {})
         if isinstance(img_keys, dict):
             img_keys = img_keys.get("img_artifact_keys", [])
-        if not img_keys or len(img_keys) < 3:
+        valid_imgs = [m for m in (img_keys or []) if isinstance(m, dict) and not m.get("skipped")]
+        needs_regen = any(
+            m.get("fidelity_score") is not None and m["fidelity_score"] < 0.7
+            for m in valid_imgs
+        )
+        if len(valid_imgs) < 3 or needs_regen:
             img_attempts = state.get("_creative_pipeline_attempts", 0)
             if img_attempts < MAX_CREATIVE_ATTEMPTS:
                 return "IMAGE_GEN"
@@ -1080,21 +1085,26 @@ class CampaignOrchestrator(BaseAgent):
         return None
 
     # -------------------------------------------------------------------------
-    # IMAGE_GEN — deterministic Imagen 4 image generation
+    # IMAGE_GEN — parallel Imagen 4 image generation with Gecko quality gate
     # -------------------------------------------------------------------------
 
     async def _generate_images_deterministic(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        """Generate 3 purpose-built ASSET reference images for Veo video generation.
+        """Generate 3 ASSET reference images in parallel, with Gecko quality gating.
 
         1. Product ASSET — hero product shot
         2. Person ASSET — model/person for the ad
         3. Trend ASSET — trend-driven scene blending product + cultural moment
 
-        All images are ASSET type (Veo only supports one reference type per call).
-        All images scored with Gecko fidelity. One image per AE wave.
+        All images generated in parallel via ThreadPoolExecutor.
+        Each scored with Gecko fidelity — images below 0.7 are auto-regenerated
+        on the next wave (up to MAX_IMG_RETRIES per slot).
         """
+        import re as _re
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        from google.genai.types import GenerateImagesConfig
+
         state = ctx.session.state
         product = state.get("target_product", "the product")
         audience = state.get("target_audience", "consumers")
@@ -1102,18 +1112,15 @@ class CampaignOrchestrator(BaseAgent):
         ksp = state.get("key_selling_points", "")
         gcs_folder = state.get("gcs_folder", "")
         bucket = os.getenv("BUCKET", "")
-        MAX_IMAGES = 3  # Product ASSET + Person ASSET + Trend ASSET
+        MAX_IMAGES = 3
+        MAX_IMG_RETRIES = 5
+        GECKO_THRESHOLD = 0.7
 
         existing_imgs = state.get("img_artifact_keys", {})
         if isinstance(existing_imgs, dict):
             existing_imgs = existing_imgs.get("img_artifact_keys", [])
         if not isinstance(existing_imgs, list):
             existing_imgs = []
-        already_generated = len(existing_imgs)
-
-        if already_generated >= MAX_IMAGES:
-            yield self._status_event(ctx, f"All {MAX_IMAGES} reference images already generated.")
-            return
 
         # Get the best ad idea name for naming
         ad_copies = state.get("final_select_ad_copies", {})
@@ -1141,10 +1148,8 @@ class CampaignOrchestrator(BaseAgent):
 
         # Get the winning ad copy's headline/concept for creative direction
         ad_headline = ""
-        ad_rationale = ""
         if ad_copies and isinstance(ad_copies[0], dict):
             ad_headline = ad_copies[0].get("headline", "")
-            ad_rationale = ad_copies[0].get("rationale", "")
 
         # Get visual concept prompt if available
         visual_concepts = state.get("final_select_visual_concepts", {})
@@ -1163,7 +1168,6 @@ class CampaignOrchestrator(BaseAgent):
 
         # Build 3 purpose-built reference images with dynamic brand/trend context
         shot_list = [
-            # Shot 1: Product ASSET — hero product shot with brand identity
             {
                 "concept_name": f"{idea_name}_product_asset",
                 "shot_type": "product_asset",
@@ -1175,7 +1179,6 @@ class CampaignOrchestrator(BaseAgent):
                     f"No text, no watermarks, no logos."
                 ),
             },
-            # Shot 2: Person ASSET — model/person reflecting target audience + ad concept
             {
                 "concept_name": f"{idea_name}_person_asset",
                 "shot_type": "person_asset",
@@ -1189,7 +1192,6 @@ class CampaignOrchestrator(BaseAgent):
                     f"No text, no watermarks."
                 ),
             },
-            # Shot 3: Trend ASSET — scene blending product with the cultural trend moment
             {
                 "concept_name": f"{idea_name}_trend_asset",
                 "shot_type": "trend_asset",
@@ -1206,164 +1208,236 @@ class CampaignOrchestrator(BaseAgent):
             },
         ]
 
-        # Generate one image per wave (AE-safe)
-        img_idx = already_generated
-        if img_idx >= len(shot_list):
-            yield self._status_event(ctx, f"All {len(shot_list)} images already generated.")
+        # --- Determine which slots need (re)generation ---
+        # Pad existing list to MAX_IMAGES slots
+        img_slots = list(existing_imgs)
+        while len(img_slots) < MAX_IMAGES:
+            img_slots.append(None)
+
+        slots_to_generate = []
+        for i, shot in enumerate(shot_list):
+            fail_count = state.get(f"_img_fail_{i}", 0)
+            existing = img_slots[i]
+
+            if fail_count >= MAX_IMG_RETRIES:
+                # Exhausted retries — ensure skip placeholder exists
+                if not existing or not existing.get("skipped"):
+                    safe = _re.sub(r"[^a-zA-Z0-9_\-]", "", shot["concept_name"].replace(" ", "_"))
+                    img_slots[i] = {
+                        "artifact_key": f"skipped_{safe}_0.png",
+                        "concept_name": shot["concept_name"],
+                        "shot_type": shot["shot_type"],
+                        "reference_type": "ASSET",
+                        "skipped": True,
+                    }
+                continue
+
+            if existing is None:
+                # Never generated
+                slots_to_generate.append((i, shot, fail_count))
+            elif existing.get("skipped"):
+                continue
+            elif (existing.get("fidelity_score") is not None
+                  and existing["fidelity_score"] < GECKO_THRESHOLD):
+                # Below Gecko threshold — regenerate
+                slots_to_generate.append((i, shot, fail_count))
+
+        if not slots_to_generate:
+            yield self._status_event(ctx, f"All {MAX_IMAGES} reference images generated and verified (Gecko >= {GECKO_THRESHOLD}).")
             return
 
-        # Track failures per image index to avoid infinite retry
-        img_fail_key = f"_img_fail_{img_idx}"
-        img_failures = state.get(img_fail_key, 0)
-        MAX_IMG_RETRIES = 5
+        # --- Pre-increment failure counters (AE wave-safe) ---
+        is_regen = any(img_slots[i] is not None and not (img_slots[i] or {}).get("skipped") for i, _, _ in slots_to_generate)
+        label = "Regenerating" if is_regen else "Generating"
+        shot_types = ", ".join(shot["shot_type"] for _, shot, _ in slots_to_generate)
+        pre_event = self._status_event(ctx, f"{label} {len(slots_to_generate)} image(s) in parallel ({shot_types})...")
+        for i, _, fc in slots_to_generate:
+            pre_event.actions.state_delta[f"_img_fail_{i}"] = fc + 1
+        yield pre_event
 
-        shot = shot_list[img_idx]
-        concept_name = shot["concept_name"]
-        prompt = shot["prompt"]
+        # --- Parallel image generation + GCS upload + Gecko scoring ---
+        img_client = _get_media_client()
+        gecko_prompt = state.get("key_selling_points", product)
+        project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
 
-        if img_failures >= MAX_IMG_RETRIES:
-            # Skip this image after too many failures — add placeholder to advance
-            import re as _re
-            logger.warning(f"[ImageGen] Skipping image {img_idx+1} after {img_failures} failures")
-            _skip_safe = _re.sub(r"[^a-zA-Z0-9_\-]", "", concept_name.replace(" ", "_"))
-            placeholder = {
-                "artifact_key": f"skipped_{_skip_safe}_0.png",
-                "concept_name": concept_name,
-                "shot_type": shot["shot_type"],
-                "reference_type": shot.get("reference_type", "ASSET"),
-                "skipped": True,
-            }
-            new_list = list(existing_imgs) + [placeholder]
-            skip_event = self._status_event(
-                ctx, f"Image {img_idx + 1}/{MAX_IMAGES} skipped after {img_failures} attempts — advancing pipeline."
-            )
-            skip_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": new_list}
-            yield skip_event
-            return
-
-        # Pre-increment failure counter BEFORE calling generate_images().
-        # If AE wave times out during the call, the counter is already saved,
-        # preventing infinite retry on the same image.
-        pre_fail_event = self._status_event(ctx, f"Generating image {img_idx + 1}/{MAX_IMAGES} ({shot['shot_type']}: {concept_name})...")
-        pre_fail_event.actions.state_delta[img_fail_key] = img_failures + 1
-        yield pre_fail_event
-
-        try:
-            import re as _re
-            from google.genai.types import GenerateImagesConfig
-            img_client = _get_media_client()
-            # Sanitize name: alphanumeric, underscores, hyphens only
+        def _gen_upload_score(idx: int, shot_def: dict) -> dict:
+            """Generate one image, upload to GCS, run Gecko. All synchronous."""
+            concept_name = shot_def["concept_name"]
+            prompt = shot_def["prompt"]
             safe_name = _re.sub(r"[^a-zA-Z0-9_\-]", "", concept_name.replace(" ", "_"))
             artifact_key = f"{safe_name}_0.png"
-            gcs_uri = ""
 
-            # Generate image (no output_gcs_uri — upload separately for reliability)
-            img_config = GenerateImagesConfig(number_of_images=1)
-            _img_start_t = time.time()
+            t0 = time.time()
             response = img_client.models.generate_images(
                 model="imagen-4.0-generate-preview-06-06",
                 prompt=prompt,
-                config=img_config,
+                config=GenerateImagesConfig(number_of_images=1),
             )
+            gen_elapsed = time.time() - t0
 
-            if response and response.generated_images:
-                gen_img = response.generated_images[0]
-                image_bytes = gen_img.image.image_bytes if gen_img.image else None
+            if not response or not response.generated_images:
+                return {"idx": idx, "error": "empty_response"}
 
-                if bucket and gcs_folder and image_bytes:
-                    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                        tmp.write(image_bytes)
-                        tmp_path = tmp.name
-                    try:
-                        upload_blob_to_gcs(
-                            source_file_name=tmp_path,
-                            destination_blob_name=os.path.join(gcs_folder, artifact_key),
-                        )
-                        gcs_uri = f"{bucket}/{gcs_folder}/{artifact_key}"
-                    finally:
-                        os.unlink(tmp_path)
+            gen_img = response.generated_images[0]
+            image_bytes = gen_img.image.image_bytes if gen_img.image else None
+            if not image_bytes:
+                return {"idx": idx, "error": "no_image_bytes"}
 
-                img_meta = {
-                    "artifact_key": artifact_key,
-                    "img_prompt": prompt[:500],
-                    "concept": concept_name,
-                    "concept_name": concept_name,
-                    "headline": shot.get("headline", ""),
-                    "caption": shot.get("caption", ""),
-                    "shot_type": shot["shot_type"],
-                    "reference_type": shot.get("reference_type", "ASSET"),
-                    "auto_saved": True,
-                }
-                if gcs_uri:
-                    img_meta["gcs_uri"] = gcs_uri
+            # Upload to GCS
+            gcs_uri = ""
+            if bucket and gcs_folder:
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                    tmp.write(image_bytes)
+                    tmp_path = tmp.name
+                try:
+                    upload_blob_to_gcs(
+                        source_file_name=tmp_path,
+                        destination_blob_name=os.path.join(gcs_folder, artifact_key),
+                    )
+                    gcs_uri = f"{bucket}/{gcs_folder}/{artifact_key}"
+                finally:
+                    os.unlink(tmp_path)
 
-                # Gecko fidelity (best-effort, skip if tight on time)
-                fidelity_score = None
-                _img_gen_elapsed = time.time() - _img_start_t
-                if gcs_uri and _img_gen_elapsed < 20:  # Only run gecko if <20s spent on image gen
-                    try:
-                        result = gecko_evaluate(
-                            prompt=state.get("key_selling_points", product),
-                            media_uri=gcs_uri,
-                            media_type="image",
-                            project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", ""),
-                            location="us-central1",
-                        )
-                        if isinstance(result, dict) and result.get("status") == "success":
-                            fidelity_score = result.get("score", 0.0)
-                        elif isinstance(result, (int, float)):
-                            fidelity_score = float(result)
-                        img_meta["fidelity_score"] = fidelity_score
-                    except Exception as e:
-                        logger.warning(f"[ImageGen] Gecko fidelity eval failed (non-fatal): {e}")
-                elif gcs_uri:
-                    logger.info(f"[ImageGen] Skipping Gecko eval — image gen took {_img_gen_elapsed:.0f}s (budget: 20s)")
+            img_meta = {
+                "artifact_key": artifact_key,
+                "img_prompt": prompt[:500],
+                "concept": concept_name,
+                "concept_name": concept_name,
+                "headline": shot_def.get("headline", ""),
+                "caption": shot_def.get("caption", ""),
+                "shot_type": shot_def["shot_type"],
+                "reference_type": shot_def.get("reference_type", "ASSET"),
+                "auto_saved": True,
+            }
+            if gcs_uri:
+                img_meta["gcs_uri"] = gcs_uri
 
-                new_list = list(existing_imgs) + [img_meta]
-                existing_imgs = new_list
-                ref_type = shot.get("reference_type", "ASSET")
-                fidelity_msg = (
-                    f"Gecko fidelity: {fidelity_score:.2f}/1.00 "
-                    f"({'PASS' if fidelity_score >= 0.7 else 'BELOW THRESHOLD'}) — "
-                    f"reference type: {ref_type}"
-                ) if fidelity_score is not None else f"reference type: {ref_type}"
-                save_event = self._status_event(
-                    ctx, f"Image {img_idx + 1}/{MAX_IMAGES} saved: {concept_name} | {fidelity_msg}"
+            # Gecko fidelity scoring
+            if gcs_uri and gen_elapsed < 30:
+                try:
+                    result = gecko_evaluate(
+                        prompt=gecko_prompt,
+                        media_uri=gcs_uri,
+                        media_type="image",
+                        project_id=project_id,
+                        location="us-central1",
+                    )
+                    if isinstance(result, dict) and result.get("status") == "success":
+                        img_meta["fidelity_score"] = result.get("score", 0.0)
+                    elif isinstance(result, (int, float)):
+                        img_meta["fidelity_score"] = float(result)
+                except Exception as e:
+                    logger.warning(f"[ImageGen] Gecko eval failed for {concept_name}: {e}")
+
+            return {
+                "idx": idx,
+                "img_meta": img_meta,
+                "image_bytes": image_bytes,
+                "artifact_key": artifact_key,
+                "gen_elapsed": gen_elapsed,
+            }
+
+        results = {}
+        with ThreadPoolExecutor(max_workers=len(slots_to_generate)) as pool:
+            futures = {
+                pool.submit(_gen_upload_score, i, shot): (i, shot, fc)
+                for i, shot, fc in slots_to_generate
+            }
+            for fut in as_completed(futures):
+                i, shot, fc = futures[fut]
+                try:
+                    results[i] = fut.result()
+                except Exception as e:
+                    logger.warning(f"[ImageGen] Parallel gen failed for slot {i}: {e}")
+                    results[i] = {"idx": i, "error": f"{type(e).__name__}: {str(e)[:200]}"}
+
+        # --- Process results: update slots, emit status, save artifacts ---
+        any_below_threshold = False
+
+        for i, shot, fc in slots_to_generate:
+            result = results.get(i, {"idx": i, "error": "no_result"})
+
+            if "error" in result:
+                yield self._status_event(
+                    ctx,
+                    f"Image {i+1}/{MAX_IMAGES} ({shot['shot_type']}) failed: "
+                    f"{result['error']} — retry {fc+1}/{MAX_IMG_RETRIES}"
                 )
-                # Emit fidelity narrative status
-                if fidelity_score is not None:
+                continue
+
+            img_meta = result["img_meta"]
+            score = img_meta.get("fidelity_score")
+            ref_type = img_meta.get("reference_type", "ASSET")
+
+            # Update slot
+            img_slots[i] = img_meta
+
+            # Gecko status + quality gate
+            if score is not None:
+                passed = score >= GECKO_THRESHOLD
+                fidelity_msg = (
+                    f"Gecko fidelity: {score:.2f}/1.00 "
+                    f"({'PASS' if passed else 'BELOW THRESHOLD'}) — "
+                    f"reference type: {ref_type}"
+                )
+                yield self._status_event(
+                    ctx,
+                    f"Image {i+1}/{MAX_IMAGES} ({shot['shot_type']}): "
+                    f"{img_meta['concept_name']} | {fidelity_msg}"
+                )
+                if not passed:
+                    any_below_threshold = True
                     yield self._status_event(
                         ctx,
-                        f"Image fidelity analysis: {concept_name} scored {fidelity_score:.2f}/1.00 via Gecko embeddings — "
-                        f"{'exceeds 0.70 threshold, approved as ' + ref_type + ' reference for video generation' if fidelity_score >= 0.7 else 'below threshold, will regenerate'}"
+                        f"Image {i+1} scored {score:.2f} < {GECKO_THRESHOLD} — "
+                        f"will auto-regenerate on next iteration (attempt {fc+1}/{MAX_IMG_RETRIES})"
                     )
-                save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": new_list}
-                # Reset failure counter on success (was pre-incremented)
-                save_event.actions.state_delta[img_fail_key] = 0
-                # Save as ADK artifact for inline display
-                if ctx.artifact_service and image_bytes:
-                    try:
-                        version = await ctx.artifact_service.save_artifact(
-                            app_name=ctx.app_name, user_id=ctx.user_id,
-                            session_id=ctx.session.id, filename=artifact_key,
-                            artifact=types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
-                        )
-                        save_event.actions.artifact_delta[artifact_key] = version
-                        logger.info(f"[ImageGen] Saved artifact: {artifact_key} v{version}")
-                    except Exception as e:
-                        logger.warning(f"[ImageGen] Failed to save artifact: {e}")
-                yield save_event
+                    # Don't reset failure counter — triggers regen on next wave
+                else:
+                    yield self._status_event(
+                        ctx,
+                        f"Image fidelity analysis: {img_meta['concept_name']} scored "
+                        f"{score:.2f}/1.00 via Gecko embeddings — exceeds {GECKO_THRESHOLD} "
+                        f"threshold, approved as {ref_type} reference for video generation"
+                    )
             else:
-                fail_event = self._status_event(ctx, f"Image {img_idx + 1} returned empty — retry {img_failures+1}/{MAX_IMG_RETRIES}.")
-                fail_event.actions.state_delta[img_fail_key] = img_failures + 1
-                yield fail_event
+                yield self._status_event(
+                    ctx,
+                    f"Image {i+1}/{MAX_IMAGES} saved: {img_meta['concept_name']} | "
+                    f"reference type: {ref_type} (Gecko skipped)"
+                )
 
-        except Exception as e:
-            _elapsed = time.time() - _img_start_t if '_img_start_t' in dir() else 0
-            logger.warning(f"[ImageGen] Failed after {_elapsed:.1f}s: {type(e).__name__}: {e}")
-            fail_event = self._status_event(ctx, f"Image gen error ({_elapsed:.0f}s): {type(e).__name__}: {str(e)[:200]} — retry {img_failures+1}/{MAX_IMG_RETRIES}.")
-            fail_event.actions.state_delta[img_fail_key] = img_failures + 1
-            yield fail_event
+            # Save as ADK artifact (async — must be done sequentially)
+            image_bytes = result.get("image_bytes")
+            artifact_key = result.get("artifact_key")
+            if ctx.artifact_service and image_bytes and artifact_key:
+                try:
+                    version = await ctx.artifact_service.save_artifact(
+                        app_name=ctx.app_name, user_id=ctx.user_id,
+                        session_id=ctx.session.id, filename=artifact_key,
+                        artifact=types.Part.from_bytes(data=image_bytes, mime_type="image/png"),
+                    )
+                    logger.info(f"[ImageGen] Saved artifact: {artifact_key} v{version}")
+                except Exception as e:
+                    logger.warning(f"[ImageGen] Failed to save artifact: {e}")
+
+        # --- Persist updated image list + reset counters for passing images ---
+        final_list = [m for m in img_slots if m is not None]
+        save_event = self._status_event(
+            ctx,
+            f"{'All' if not any_below_threshold else 'Some'} images processed — "
+            f"{len(final_list)}/{MAX_IMAGES} generated"
+            + (f", {sum(1 for m in final_list if m.get('fidelity_score') is not None and m['fidelity_score'] >= GECKO_THRESHOLD)} passed Gecko" if any(m.get('fidelity_score') is not None for m in final_list) else "")
+            + (". Below-threshold images will auto-regenerate." if any_below_threshold else ".")
+        )
+        save_event.actions.state_delta["img_artifact_keys"] = {"img_artifact_keys": final_list}
+        # Reset failure counters for images that passed Gecko
+        for i, m in enumerate(img_slots):
+            if m and not m.get("skipped"):
+                score = m.get("fidelity_score")
+                if score is None or score >= GECKO_THRESHOLD:
+                    save_event.actions.state_delta[f"_img_fail_{i}"] = 0
+        yield save_event
 
     # -------------------------------------------------------------------------
     # AV_STUDIO — deterministic Veo commercial generation
