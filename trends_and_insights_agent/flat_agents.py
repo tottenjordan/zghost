@@ -206,10 +206,12 @@ ad_creative_agent = Agent(
     model=config.worker_model,
     instruction=AD_CREATIVE_INSTRUCTION,
     tools=[save_select_ad_copy, save_select_visual_concept],
-    # NOTE: No BuiltInPlanner/thinking here — thinking + tool calls causes
-    # "missing thought_signature" API errors when ADK replays conversation history.
+    # NOTE: Thinking MUST be explicitly disabled — gemini-3-flash-preview has
+    # thinking on by default, and thinking + tool calls causes "missing
+    # thought_signature" API errors when ADK replays conversation history.
     generate_content_config=types.GenerateContentConfig(
         temperature=1.2,
+        thinking_config=types.ThinkingConfig(thinking_budget=0),
     ),
     before_model_callback=callbacks.before_model_status_callback,
     before_tool_callback=callbacks.before_tool_status_callback,
