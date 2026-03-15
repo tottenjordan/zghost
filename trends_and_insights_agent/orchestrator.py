@@ -255,39 +255,40 @@ class CampaignOrchestrator(BaseAgent):
             # Route to the sub-agent for this stage
             target = self._get_agent_for_stage(stage)
             if target:
-                _captured_text_parts: list[str] = []
+                _fg_persisted = False
+                _captured_fg_parts: list[str] = []
                 async with Aclosing(target.run_async(ctx)) as agen:
                     async for event in agen:
                         yield event
-                        # Capture text from focus group agent for state_delta persistence
-                        if stage == "FOCUS_GROUP" and getattr(event, "content", None):
-                            for part in (event.content.parts or []):
-                                if getattr(part, "text", None):
-                                    _captured_text_parts.append(part.text)
+                        # Capture focus group text and persist via state_delta
+                        # BEFORE the pause check (AE always pauses, so post-loop
+                        # code never runs)
+                        if stage == "FOCUS_GROUP" and not _fg_persisted:
+                            if getattr(event, "content", None):
+                                for part in (event.content.parts or []):
+                                    if getattr(part, "text", None):
+                                        _captured_fg_parts.append(part.text)
+                            fg_text = "\n".join(_captured_fg_parts)
+                            if len(fg_text) > 200:
+                                persist_event = Event(
+                                    invocation_id=ctx.invocation_id,
+                                    author=self.name,
+                                    branch=ctx.branch,
+                                    actions=EventActions(
+                                        state_delta={
+                                            "focus_group_evaluation": fg_text,
+                                            "_focus_group_complete": True,
+                                        },
+                                    ),
+                                )
+                                yield persist_event
+                                _fg_persisted = True
                         if ctx.should_pause_invocation(event):
                             # Yield wave-boundary context before pausing
                             descriptor = f"{state.get('brand', '')} {state.get('target_product', '')}".strip() or "the campaign"
                             wave_msg = f"{status_msg.rstrip('.')} — say 'continue' to proceed."
                             yield self._status_event(ctx, wave_msg)
                             return
-
-                # Persist focus_group_evaluation via state_delta (output_key alone
-                # doesn't survive AE wave boundaries)
-                if stage == "FOCUS_GROUP" and _captured_text_parts:
-                    fg_text = "\n".join(_captured_text_parts)
-                    if len(fg_text) > 100:  # Only persist meaningful evaluations
-                        persist_event = Event(
-                            invocation_id=ctx.invocation_id,
-                            author=self.name,
-                            branch=ctx.branch,
-                            actions=EventActions(
-                                state_delta={
-                                    "focus_group_evaluation": fg_text,
-                                    "_focus_group_complete": True,
-                                },
-                            ),
-                        )
-                        yield persist_event
 
         # After sub-agent completes, mark end for AE
         if ctx.is_resumable:

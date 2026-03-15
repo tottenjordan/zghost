@@ -512,9 +512,14 @@ class CreativeProductionOrchestrator(BaseAgent):
             artifact_key = f"{safe_name}_0.png"
             gcs_uri = ""
 
-            # Use Imagen 4 generate_images() — no output_gcs_uri so we always
-            # get image_bytes back (output_gcs_uri returns None bytes + unknown URI)
-            img_config = GenerateImagesConfig(number_of_images=1)
+            # Use Imagen 4 generate_images() with output_gcs_uri for speed
+            # (avoids downloading bytes then re-uploading). Image writes directly
+            # to GCS. We construct the known URI from the output prefix.
+            output_gcs = f"{bucket}/{gcs_folder}/{safe_name}" if bucket and gcs_folder else None
+            img_config = GenerateImagesConfig(
+                number_of_images=1,
+                **({"output_gcs_uri": output_gcs} if output_gcs else {}),
+            )
             response = img_client.models.generate_images(
                 model="imagen-4.0-generate-preview-06-06",
                 prompt=prompt,
@@ -525,7 +530,13 @@ class CreativeProductionOrchestrator(BaseAgent):
                 gen_img = response.generated_images[0]
                 image_bytes = gen_img.image.image_bytes if gen_img.image else None
 
-                if bucket and gcs_folder and image_bytes:
+                if output_gcs:
+                    # Imagen writes to {output_gcs_uri}/sample_0.png
+                    gcs_uri = f"{output_gcs}/sample_0.png"
+                    # Also try to get URI from response if available
+                    if hasattr(gen_img.image, 'gcs_uri') and gen_img.image.gcs_uri:
+                        gcs_uri = gen_img.image.gcs_uri
+                elif bucket and gcs_folder and image_bytes:
                     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                         tmp.write(image_bytes)
                         tmp_path = tmp.name
