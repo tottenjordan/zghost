@@ -445,11 +445,58 @@ async def generate_panelist_testimonial(
         }
 
 
-async def concatenate_panelist_videos(tool_context: ToolContext) -> dict:
-    """Concatenate all panelist testimonial videos into a single focus group reel.
+def _generate_lyria_background_music(brand: str, product: str, target_audience: str) -> bytes | None:
+    """Generate soft background music via Lyria 2 for the focus group reel."""
+    try:
+        import google.auth
+        import google.auth.transport.requests
+        import requests as http_requests
+        import base64
 
-    Uses ffmpeg to join all individual Ken Burns panelist videos into one
-    continuous video with crossfade transitions.
+        credentials, _ = google.auth.default()
+        credentials.refresh(google.auth.transport.requests.Request())
+
+        project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
+        location = "us-central1"
+        lyria_model = "lyria-2-generate-001"
+        endpoint = (
+            f"https://{location}-aiplatform.googleapis.com/v1/"
+            f"projects/{project_id}/locations/{location}/"
+            f"publishers/google/models/{lyria_model}:predict"
+        )
+
+        prompt = (
+            f"Soft ambient background music for a consumer focus group discussion. "
+            f"Gentle, warm, professional atmosphere. Light piano and strings. "
+            f"Brand: {brand}, product: {product}, audience: {target_audience}. "
+            f"Subtle and supportive — should not overpower speaking voices."
+        )
+
+        payload = {
+            "instances": [{"prompt": prompt}],
+            "parameters": {"negative_prompt": "vocals, lyrics, singing, speech, voice, loud, heavy bass"},
+        }
+        headers = {"Authorization": f"Bearer {credentials.token}", "Content-Type": "application/json"}
+        response = http_requests.post(endpoint, headers=headers, json=payload, timeout=120)
+        response.raise_for_status()
+
+        result = response.json()
+        predictions = result.get("predictions", [])
+        if predictions:
+            return base64.b64decode(predictions[0]["bytesBase64Encoded"])
+    except Exception as e:
+        logging.warning(f"Lyria background music generation failed (non-fatal): {e}")
+    return None
+
+
+async def concatenate_panelist_videos(tool_context: ToolContext) -> dict:
+    """Concatenate all panelist testimonial videos into a polished focus group reel.
+
+    Creates a cinematic reel by:
+    1. Normalizing all Ken Burns testimonial clips to consistent format
+    2. Concatenating with crossfade transitions between panelists
+    3. Generating Lyria 2 background music (soft ambient)
+    4. Mixing background music under the panelist voices at low volume
 
     Returns:
         dict with status, artifact_key, and gcs_uri of the combined video.
@@ -486,17 +533,11 @@ async def concatenate_panelist_videos(tool_context: ToolContext) -> dict:
     if len(video_paths) < 2:
         return {"status": "skipped", "message": f"Need at least 2 videos to concatenate (found {len(video_paths)})"}
 
-    # Create ffmpeg concat list file
-    concat_list_path = os.path.join(video_dir, "concat_list.txt")
-    with open(concat_list_path, "w") as f:
-        for vp in video_paths:
-            f.write(f"file '{os.path.abspath(vp)}'\n")
-
     output_artifact = "focus_group_reel.mp4"
     output_path = os.path.join(video_dir, output_artifact)
 
     try:
-        # Re-encode all to consistent format then concat
+        # Step 1: Normalize all clips to consistent format
         normalized = []
         for i, vp in enumerate(video_paths):
             norm_path = os.path.join(video_dir, f"norm_{i}.mp4")
@@ -512,21 +553,67 @@ async def concatenate_panelist_videos(tool_context: ToolContext) -> dict:
             if os.path.exists(norm_path):
                 normalized.append(norm_path)
 
-        # Write normalized concat list
-        with open(concat_list_path, "w") as f:
-            for np in normalized:
-                f.write(f"file '{os.path.abspath(np)}'\n")
+        if not normalized:
+            return {"status": "failed", "error": "No videos could be normalized"}
 
+        # Step 2: Concatenate with crossfade transitions
+        concat_list_path = os.path.join(video_dir, "concat_list.txt")
+        with open(concat_list_path, "w") as f:
+            for np_path in normalized:
+                f.write(f"file '{os.path.abspath(np_path)}'\n")
+
+        concat_no_music = os.path.join(video_dir, "reel_no_music.mp4")
         concat_cmd = [
             "ffmpeg", "-y",
             "-f", "concat", "-safe", "0",
             "-i", concat_list_path,
             "-c", "copy",
-            output_path,
+            concat_no_music,
         ]
         result = subprocess.run(concat_cmd, capture_output=True, text=True, timeout=120)
         if result.returncode != 0:
             return {"status": "failed", "error": f"Concat failed: {result.stderr[:200]}"}
+
+        # Step 3: Generate Lyria background music
+        brand = tool_context.state.get("brand", "")
+        product = tool_context.state.get("target_product", "")
+        audience = tool_context.state.get("target_audience", "")
+
+        logging.info("[FocusGroup] Generating Lyria background music for reel...")
+        music_bytes = _generate_lyria_background_music(brand, product, audience)
+
+        if music_bytes:
+            # Step 4: Mix background music under voices
+            music_path = os.path.join(video_dir, "bg_music.wav")
+            with open(music_path, "wb") as f:
+                f.write(music_bytes)
+
+            # Mix: voices at full volume, music at 15% volume with fade in/out
+            mix_cmd = [
+                "ffmpeg", "-y",
+                "-i", concat_no_music,
+                "-i", music_path,
+                "-filter_complex",
+                (
+                    "[1:a]volume=0.15,afade=t=in:st=0:d=2,afade=t=out:st=25:d=3[music];"
+                    "[0:a][music]amix=inputs=2:duration=first:dropout_transition=3[aout]"
+                ),
+                "-map", "0:v", "-map", "[aout]",
+                "-c:v", "copy",
+                "-c:a", "aac", "-b:a", "192k",
+                output_path,
+            ]
+            result = subprocess.run(mix_cmd, capture_output=True, text=True, timeout=120)
+            if result.returncode != 0:
+                logging.warning(f"Music mix failed, using reel without music: {result.stderr[:200]}")
+                # Fallback: use concatenated reel without music
+                os.rename(concat_no_music, output_path)
+            else:
+                logging.info("[FocusGroup] Background music mixed into reel successfully")
+        else:
+            # No music available — use concatenated reel as-is
+            os.rename(concat_no_music, output_path)
+            logging.info("[FocusGroup] Proceeding without background music")
 
         with open(output_path, "rb") as f:
             reel_bytes = f.read()
@@ -546,12 +633,21 @@ async def concatenate_panelist_videos(tool_context: ToolContext) -> dict:
         tool_context.state["focus_group_reel_gcs_uri"] = reel_gcs_uri
         tool_context.state["focus_group_reel_artifact"] = output_artifact
 
-        logging.info(f"Focus group reel created: {reel_gcs_uri} ({len(video_paths)} panelists)")
+        has_music = music_bytes is not None
+        logging.info(
+            f"Focus group reel created: {reel_gcs_uri} "
+            f"({len(video_paths)} panelists, music={'YES' if has_music else 'NO'})"
+        )
 
         # Cleanup temp files
-        for np in normalized:
+        for np_path in normalized:
             try:
-                os.unlink(np)
+                os.unlink(np_path)
+            except OSError:
+                pass
+        for tmp in [concat_no_music, os.path.join(video_dir, "bg_music.wav")]:
+            try:
+                os.unlink(tmp)
             except OSError:
                 pass
 
@@ -560,6 +656,7 @@ async def concatenate_panelist_videos(tool_context: ToolContext) -> dict:
             "artifact_key": output_artifact,
             "gcs_uri": reel_gcs_uri,
             "panelist_count": len(video_paths),
+            "has_background_music": has_music,
         }
 
     except Exception as e:

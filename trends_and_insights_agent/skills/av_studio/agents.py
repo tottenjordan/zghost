@@ -72,5 +72,5 @@ av_editing_studio_agent = Agent(
     ],
     generate_content_config=types.GenerateContentConfig(temperature=1.0),
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
-    before_model_callback=callbacks.rate_limit_callback,
+    before_model_callback=[callbacks.before_model_status_callback, callbacks.rate_limit_callback],
 )

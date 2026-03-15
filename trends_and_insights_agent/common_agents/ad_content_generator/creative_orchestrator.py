@@ -74,7 +74,7 @@ Be concise. Focus on actionable quality feedback.""",
     planner=BuiltInPlanner(
         thinking_config=types.ThinkingConfig(include_thoughts=True, thinking_budget=1024)
     ),
-    before_model_callback=callbacks.rate_limit_callback,
+    before_model_callback=[callbacks.before_model_status_callback, callbacks.rate_limit_callback],
 )
 
 
@@ -740,8 +740,10 @@ class CreativeProductionOrchestrator(BaseAgent):
 
                 # Poll within AE wave budget
                 start_time = time.time()
+                poll_count = 0
                 while not operation.done:
-                    if time.time() - start_time > AE_WAVE_POLL_BUDGET:
+                    elapsed = time.time() - start_time
+                    if elapsed > AE_WAVE_POLL_BUDGET:
                         logger.info(f"[DetAV] Clip {current_clip_idx + 1} still generating, will resume")
                         save_event = self._status_event(ctx, f"Clip {current_clip_idx + 1}/{NUM_CLIPS} still generating — will resume")
                         save_event.actions.state_delta["_commercial_clips"] = {
@@ -752,6 +754,10 @@ class CreativeProductionOrchestrator(BaseAgent):
                         yield save_event
                         return
                     time.sleep(10)
+                    poll_count += 1
+                    yield self._status_event(
+                        ctx, f"Veo generating clip {current_clip_idx + 1}... {int(elapsed)}s elapsed"
+                    )
                     operation = veo_client.operations.get(operation)
 
                 if operation.error:
@@ -775,7 +781,8 @@ class CreativeProductionOrchestrator(BaseAgent):
                             yield retry_save
                         start_time = time.time()
                         while not operation.done:
-                            if time.time() - start_time > AE_WAVE_POLL_BUDGET:
+                            elapsed = time.time() - start_time
+                            if elapsed > AE_WAVE_POLL_BUDGET:
                                 save_event = self._status_event(ctx, "Retry still generating — will resume")
                                 save_event.actions.state_delta["_commercial_clips"] = {
                                     "_pending_veo_op": operation.name,
@@ -785,6 +792,9 @@ class CreativeProductionOrchestrator(BaseAgent):
                                 yield save_event
                                 return
                             time.sleep(10)
+                            yield self._status_event(
+                                ctx, f"Veo retry clip {current_clip_idx + 1}... {int(elapsed)}s elapsed"
+                            )
                             operation = veo_client.operations.get(operation)
                         if operation.error:
                             yield self._status_event(ctx, f"Clip {current_clip_idx + 1} failed after retry — skipping")

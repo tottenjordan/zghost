@@ -16,33 +16,15 @@ from .tools import analyze_commercial_video, generate_panelist_portrait, generat
 from .prompts import FOCUS_GROUP_INSTR
 
 
-async def _skip_portrait_on_autopilot(
+async def _focus_group_before_tool(
     tool: BaseTool, args: dict, tool_context: ToolContext
 ) -> dict | None:
-    """Skip portrait/testimonial generation in autopilot mode to save waves.
+    """Before-tool callback for focus group — allows all tools to run.
 
-    These tools frequently fail on AE and the LLM retries despite the prompt
-    saying not to, wasting waves. Return synthetic responses immediately.
+    Previously skipped portrait/testimonial in autopilot mode, but these are
+    now critical for the CMO-impressive demo experience (Ken Burns + Lyria music).
     """
-    if not tool_context.state.get("autopilot_mode"):
-        return None  # Let tool run normally in interactive mode
-
-    tool_name = tool.name
-    if tool_name == "generate_panelist_portrait":
-        name = args.get("panelist_name", "Panelist")
-        return {
-            "status": "skipped",
-            "reason": "Portrait generation skipped in autopilot mode",
-            "panelist_name": name,
-        }
-    elif tool_name == "generate_panelist_testimonial":
-        name = args.get("panelist_name", "Panelist")
-        return {
-            "status": "skipped",
-            "reason": "Testimonial generation skipped in autopilot mode",
-            "panelist_name": name,
-        }
-    return None
+    return None  # Let all tools run normally
 
 # Load this skill's own SKILL.md for self-contained documentation
 _skill_dir = pathlib.Path(__file__).parent
@@ -69,7 +51,7 @@ focus_group_evaluator_agent = Agent(
     output_key="focus_group_evaluation",
     generate_content_config=types.GenerateContentConfig(temperature=0.7),
     planner=BuiltInPlanner(thinking_config=types.ThinkingConfig(include_thoughts=True)),
-    before_tool_callback=_skip_portrait_on_autopilot,
-    before_model_callback=callbacks.rate_limit_callback,
+    before_tool_callback=_focus_group_before_tool,
+    before_model_callback=[callbacks.before_model_status_callback, callbacks.rate_limit_callback],
     after_agent_callback=callbacks.after_agent_skill_reflection,
 )

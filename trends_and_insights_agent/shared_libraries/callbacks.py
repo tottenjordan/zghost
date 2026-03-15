@@ -87,6 +87,9 @@ AGENT_STATUS_MESSAGES = {
     "visual_generator": "Preparing to generate visuals...",
     "report_saver_agent": "Saving research report...",  # legacy, now handled by ResearchPipelineOrchestrator
     "fidelity_evaluator": "Evaluating media fidelity with Gecko...",
+    "av_editing_studio_agent": "Directing commercial production in AV studio...",
+    "commercial_qa_agent": "Evaluating commercial quality with Gecko vision analysis...",
+    "focus_group_evaluator_agent": "Assembling virtual focus group panel for evaluation...",
 }
 
 
