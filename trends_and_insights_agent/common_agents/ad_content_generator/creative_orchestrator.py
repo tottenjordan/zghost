@@ -537,13 +537,20 @@ class CreativeProductionOrchestrator(BaseAgent):
                 fidelity_score = None
                 if gcs_uri:
                     try:
-                        fidelity_score = gecko_evaluate(
+                        result = gecko_evaluate(
                             prompt=state.get("key_selling_points", product),
                             media_uri=gcs_uri,
                             media_type="image",
+                            project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", ""),
+                            location="us-central1",
                         )
+                        if isinstance(result, dict) and result.get("status") == "success":
+                            fidelity_score = result.get("score", 0.0)
+                        elif isinstance(result, (int, float)):
+                            fidelity_score = float(result)
                         img_meta["fidelity_score"] = fidelity_score
-                    except Exception:
+                    except Exception as e:
+                        logger.warning(f"[ImageGen] Gecko fidelity eval failed (non-fatal): {e}")
                         pass
 
                 new_list = list(existing_imgs) + [img_meta]
@@ -632,18 +639,25 @@ class CreativeProductionOrchestrator(BaseAgent):
         first_frame_uri = ""
         reference_images = []
         if img_list and gcs_folder and bucket:
-            # Product ASSET always included; between person ASSET and trend STYLE, higher Gecko wins
+            # Select product ASSET + trend STYLE for Veo reference_images
+            # Veo accepts two reference types: ASSET (what appears) and STYLE (aesthetic)
             product_refs = [m for m in img_list if isinstance(m, dict) and m.get("shot_type") == "product_asset"]
-            other_refs = [m for m in img_list if isinstance(m, dict) and m.get("shot_type") != "product_asset"]
-            other_refs.sort(key=lambda m: m.get("fidelity_score", 0), reverse=True)
+            style_refs = [m for m in img_list if isinstance(m, dict) and m.get("reference_type") == "STYLE"]
+            person_refs = [m for m in img_list if isinstance(m, dict) and m.get("shot_type") == "person_asset"]
 
-            selected_refs = product_refs[:1] + other_refs[:1]  # Product ASSET + best of person/trend
+            # Product ASSET + Trend STYLE (prefer STYLE over person for video aesthetic)
+            selected_refs = product_refs[:1] + style_refs[:1]
+            if not style_refs and person_refs:
+                selected_refs = product_refs[:1] + person_refs[:1]
 
             for img_meta in selected_refs:
-                img_filename = img_meta.get("artifact_key", "")
-                if not img_filename:
-                    continue
-                img_gcs_uri = f"{bucket}/{gcs_folder}/{img_filename}"
+                # Use the actual GCS URI stored during image gen, not reconstructed path
+                img_gcs_uri = img_meta.get("gcs_uri", "")
+                if not img_gcs_uri:
+                    img_filename = img_meta.get("artifact_key", "")
+                    if not img_filename:
+                        continue
+                    img_gcs_uri = f"{bucket}/{gcs_folder}/{img_filename}"
                 if not first_frame_uri:
                     first_frame_uri = img_gcs_uri
                 ref_type_str = img_meta.get("reference_type", "ASSET")
@@ -761,48 +775,44 @@ class CreativeProductionOrchestrator(BaseAgent):
                     operation = veo_client.operations.get(operation)
 
                 if operation.error:
-                    logger.warning(f"[DetAV] Veo error on clip {current_clip_idx + 1}: {operation.error}")
-                    # Retry without reference images
-                    if not pending_op:
-                        logger.info("[DetAV] Retrying clip without reference images...")
-                        retry_config = GenerateVideosConfig(
-                            aspect_ratio="16:9", number_of_videos=1, output_gcs_uri=bucket,
-                        )
-                        operation = veo_client.models.generate_videos(
-                            model=config.video_gen_model, prompt=clip_prompt, config=retry_config,
-                        )
-                        if operation.name:
-                            retry_save = self._status_event(ctx, f"Retrying clip {current_clip_idx + 1} without references...")
-                            retry_save.actions.state_delta["_commercial_clips"] = {
+                    err_msg = str(operation.error)[:200]
+                    logger.warning(f"[DetAV] Veo error on clip {current_clip_idx + 1}: {err_msg}")
+                    yield self._status_event(ctx, f"Veo clip failed: {err_msg[:100]}. Retrying without reference images...")
+                    # Always retry without reference images on failure
+                    retry_config = GenerateVideosConfig(
+                        aspect_ratio="16:9", number_of_videos=1, output_gcs_uri=bucket,
+                    )
+                    operation = veo_client.models.generate_videos(
+                        model=config.video_gen_model, prompt=clip_prompt, config=retry_config,
+                    )
+                    if operation.name:
+                        retry_save = self._status_event(ctx, f"Retrying clip {current_clip_idx + 1} without references...")
+                        retry_save.actions.state_delta["_commercial_clips"] = {
+                            "_pending_veo_op": operation.name,
+                            "_current_clip_idx": current_clip_idx,
+                            "_completed_clip_uris": completed_clips,
+                        }
+                        yield retry_save
+                    pending_op = None  # Mark as fresh retry
+                    start_time = time.time()
+                    while not operation.done:
+                        elapsed = time.time() - start_time
+                        if elapsed > AE_WAVE_POLL_BUDGET:
+                            save_event = self._status_event(ctx, "Retry still generating — will resume")
+                            save_event.actions.state_delta["_commercial_clips"] = {
                                 "_pending_veo_op": operation.name,
                                 "_current_clip_idx": current_clip_idx,
                                 "_completed_clip_uris": completed_clips,
                             }
-                            yield retry_save
-                        start_time = time.time()
-                        while not operation.done:
-                            elapsed = time.time() - start_time
-                            if elapsed > AE_WAVE_POLL_BUDGET:
-                                save_event = self._status_event(ctx, "Retry still generating — will resume")
-                                save_event.actions.state_delta["_commercial_clips"] = {
-                                    "_pending_veo_op": operation.name,
-                                    "_current_clip_idx": current_clip_idx,
-                                    "_completed_clip_uris": completed_clips,
-                                }
-                                yield save_event
-                                return
-                            time.sleep(10)
-                            yield self._status_event(
-                                ctx, f"Veo retry clip {current_clip_idx + 1}... {int(elapsed)}s elapsed"
-                            )
-                            operation = veo_client.operations.get(operation)
-                        if operation.error:
-                            yield self._status_event(ctx, f"Clip {current_clip_idx + 1} failed after retry — skipping")
-                            current_clip_idx += 1
-                            pending_op = None
-                            continue
-                    else:
-                        yield self._status_event(ctx, f"Clip {current_clip_idx + 1} failed")
+                            yield save_event
+                            return
+                        time.sleep(10)
+                        yield self._status_event(
+                            ctx, f"Veo retry clip {current_clip_idx + 1}... {int(elapsed)}s elapsed"
+                        )
+                        operation = veo_client.operations.get(operation)
+                    if operation.error:
+                        yield self._status_event(ctx, f"Clip {current_clip_idx + 1} failed after retry — skipping")
                         current_clip_idx += 1
                         pending_op = None
                         continue
