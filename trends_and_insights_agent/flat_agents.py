@@ -206,12 +206,8 @@ ad_creative_agent = Agent(
     model=config.worker_model,
     instruction=AD_CREATIVE_INSTRUCTION,
     tools=[save_select_ad_copy, save_select_visual_concept],
-    planner=BuiltInPlanner(
-        thinking_config=types.ThinkingConfig(
-            include_thoughts=True,
-            thinking_budget=2048,
-        )
-    ),
+    # NOTE: No BuiltInPlanner/thinking here — thinking + tool calls causes
+    # "missing thought_signature" API errors when ADK replays conversation history.
     generate_content_config=types.GenerateContentConfig(
         temperature=1.2,
     ),
