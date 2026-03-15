@@ -103,7 +103,19 @@ DE_LOCATION = "global"
 
 # JS helpers for GE browser
 CHECK_CONTENT_JS = """() => {
-    const text = document.body.innerText.toLowerCase();
+    // GE renders conversation in shadow DOMs — fall back to full page text
+    let text = '';
+    try {
+        // Try to get text from the main conversation area
+        const mainContent = document.querySelector('main') || document.querySelector('[role="main"]');
+        text = (mainContent ? mainContent.innerText : document.body.innerText).toLowerCase();
+    } catch(e) {
+        text = document.body.innerText.toLowerCase();
+    }
+    // Also check all shadow roots for content
+    const allText = document.body.innerText.toLowerCase();
+    if (allText.length > text.length) text = allText;
+
     const imgs = document.querySelectorAll('img');
     const bigImgs = [];
     imgs.forEach(img => {
@@ -113,17 +125,18 @@ CHECK_CONTENT_JS = """() => {
     });
     const videos = document.querySelectorAll('video');
     return {
-        hasResearch: text.includes('research report') || text.includes('cited report'),
+        hasResearch: text.includes('research') || text.includes('cited report') || text.includes('market intelligence'),
         hasAdCopy: text.includes('ad copy') || text.includes('ad creative') || text.includes('headline'),
         hasImages: bigImgs.length > 0,
         imageCount: bigImgs.length,
         imageSources: bigImgs.slice(0, 5),
-        hasVideo: text.includes('commercial') || videos.length > 0,
+        hasVideo: text.includes('commercial') || text.includes('video') || videos.length > 0,
         videoCount: videos.length,
         hasFocusGroup: text.includes('focus group') || text.includes('panelist'),
         hasPDF: text.includes('pdf') || text.includes('campaign brief') || text.includes('final report'),
-        hasThinking: document.querySelectorAll('[class*="think"]').length > 0,
-        hasComplete: text.includes('pipeline complete') || text.includes('campaign is complete'),
+        hasThinking: document.querySelectorAll('[class*="think"]').length > 0 || text.includes('thinking'),
+        hasTrends: text.includes('trend') || text.includes('google search'),
+        hasComplete: text.includes('pipeline complete') || text.includes('campaign is complete') || text.includes('report saved'),
         textLength: text.length,
         lastLines: text.split('\\n').filter(l => l.trim()).slice(-5).join(' | ').substring(0, 300),
     };
@@ -519,10 +532,31 @@ async def capture_ge_screenshots(session_id):
                 await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                 await page.wait_for_timeout(1000)
 
-                # Check content
+                # Check content — use Playwright native text extraction as primary
+                # (GE may use iframes or shadow DOM that JS evaluate can't access)
                 try:
+                    # Primary: Playwright innerText (cross-frame)
+                    page_text = ""
+                    try:
+                        page_text = await page.inner_text("body", timeout=5000)
+                    except Exception:
+                        pass
                     info = await page.evaluate(CHECK_CONTENT_JS)
-                    text_len = info.get("textLength", 0)
+                    # Use max of JS eval and Playwright innerText
+                    js_text_len = info.get("textLength", 0)
+                    pw_text_len = len(page_text)
+                    text_len = max(js_text_len, pw_text_len)
+                    # Override info with Playwright-detected content
+                    pw_lower = page_text.lower()
+                    if pw_text_len > 0:
+                        info["hasResearch"] = info.get("hasResearch") or "research" in pw_lower or "market intelligence" in pw_lower
+                        info["hasAdCopy"] = info.get("hasAdCopy") or "headline" in pw_lower or "ad copy" in pw_lower
+                        info["hasVideo"] = info.get("hasVideo") or "commercial" in pw_lower or "video" in pw_lower
+                        info["hasFocusGroup"] = info.get("hasFocusGroup") or "focus group" in pw_lower or "panelist" in pw_lower
+                        info["hasPDF"] = info.get("hasPDF") or "pdf" in pw_lower or "final report" in pw_lower
+                        info["hasComplete"] = info.get("hasComplete") or "pipeline complete" in pw_lower or "report saved" in pw_lower
+                        info["hasTrends"] = info.get("hasTrends", False) or "trend" in pw_lower
+                        info["textLength"] = text_len
                     stages = []
                     if info.get("hasResearch"): stages.append("RESEARCH")
                     if info.get("hasAdCopy"): stages.append("AD_COPY")
@@ -534,12 +568,18 @@ async def capture_ge_screenshots(session_id):
                     print(f"  [Wave {wave+1}] {stages} | text={text_len} chars", flush=True)
 
                     # Take screenshot if content changed or every 3rd wave
-                    if text_len > prev_text_len + 50 or wave % 3 == 0:
+                    if text_len > prev_text_len + 50:
                         path = SS_DIR / f"ge_wave_{wave+1:02d}_{ts}.png"
                         await page.screenshot(path=str(path))
                         screenshots.append(str(path))
                         print(f"  Screenshot: {path.name}", flush=True)
-                        stale_count = 0
+                        stale_count = 0  # Content changed — reset stale counter
+                    elif wave % 3 == 0:
+                        path = SS_DIR / f"ge_wave_{wave+1:02d}_{ts}.png"
+                        await page.screenshot(path=str(path))
+                        screenshots.append(str(path))
+                        # Don't reset stale_count for periodic screenshots
+                        stale_count += 1
                     else:
                         stale_count += 1
 
