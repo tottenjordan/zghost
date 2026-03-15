@@ -88,7 +88,7 @@ INITIAL_STATE = {
     "gcs_folder": "",
 }
 
-CAMPAIGN_MESSAGE = """@trends2insights Create a full marketing campaign for Tide Fabric Softener with Hibiscus Scent.
+CAMPAIGN_MESSAGE = """Create a full marketing campaign for Tide Fabric Softener with Hibiscus Scent.
 
 Brand: Tide
 Product: Tide Fabric Softener with Hibiscus Scent
@@ -96,6 +96,10 @@ Target Audience: Gen Z eco-conscious consumers
 Key Selling Points: New Hibiscus Scent, Plant-based formula, 2x cleaning power, Biodegradable packaging
 
 Run in autopilot mode - auto-select trend 1 for both search and YouTube trends, then proceed through the full pipeline: research, ad creative, 3 reference images with Gecko fidelity scoring (product ASSET, person ASSET, trend STYLE), 8s video commercial with best Gecko-rated reference assets, focus group evaluation, and final PDF campaign brief."""
+
+# streamAssist API config
+GE_AGENT_ID = _deploy_info.get("ge_agent_id", "18371139549217338545")
+DE_LOCATION = "global"
 
 # JS helpers for GE browser
 CHECK_CONTENT_JS = """() => {
@@ -286,33 +290,145 @@ def run_pipeline_via_ae():
 # Part 2: Capture GE browser screenshots
 # ================================================================
 
+def _stream_assist_send(token: str, query: str, ge_session_path: str = None) -> dict:
+    """Send a message via streamAssist API with proper agent routing."""
+    import requests as http_requests
+
+    parent = (
+        f"projects/{PROJECT_NUMBER}/locations/{DE_LOCATION}"
+        f"/collections/default_collection/engines/{GE_ENGINE}"
+    )
+    url = f"https://{DE_LOCATION}-discoveryengine.googleapis.com/v1alpha/{parent}/assistants/default_assistant:streamAssist"
+
+    body = {
+        "query": {"text": query},
+        "agentsSpec": {"agentSpecs": [{"agentId": GE_AGENT_ID}]},
+    }
+    if ge_session_path:
+        body["session"] = ge_session_path
+    else:
+        body["session"] = f"{parent}/sessions/-"
+
+    resp = http_requests.post(
+        url, json=body,
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        timeout=180,
+    )
+
+    raw = resp.text
+    # Parse streaming JSON response
+    responses = []
+    try:
+        parsed = json.loads(raw)
+        responses = parsed if isinstance(parsed, list) else [parsed]
+    except json.JSONDecodeError:
+        for line in raw.strip().split("\n"):
+            line = line.strip().rstrip(",")
+            if line.startswith("["):
+                line = line[1:]
+            if line.endswith("]"):
+                line = line[:-1]
+            if not line:
+                continue
+            try:
+                responses.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+
+    # Extract session ID and reply text
+    session_path = ""
+    reply_text = ""
+    thoughts = 0
+    status_chips = []
+    for r in responses:
+        si = r.get("sessionInfo", {})
+        if si and si.get("session"):
+            session_path = si["session"]
+        answer = r.get("answer", {})
+        for reply in answer.get("replies", []):
+            gc = reply.get("groundedContent", {})
+            content = gc.get("content", {})
+            text = content.get("text", "")
+            if content.get("thought"):
+                thoughts += 1
+            elif text.strip():
+                reply_text += text
+        # Check for status chips in agent actions
+        aa = r.get("agentAction", {})
+        obs = aa.get("observation", {})
+        if obs:
+            _find_chips(obs, status_chips)
+
+    return {
+        "session_path": session_path,
+        "reply_text": reply_text,
+        "thoughts": thoughts,
+        "status_chips": status_chips,
+    }
+
+
+def _find_chips(obj, chips):
+    """Recursively find status chips in agent output."""
+    if isinstance(obj, dict):
+        if "ui:status_update" in obj:
+            chips.append(obj["ui:status_update"])
+        sd = obj.get("state_delta", {})
+        if isinstance(sd, dict) and "ui:status_update" in sd:
+            chips.append(sd["ui:status_update"])
+        for v in obj.values():
+            if isinstance(v, (dict, list)):
+                _find_chips(v, chips)
+    elif isinstance(obj, list):
+        for item in obj:
+            _find_chips(item, chips)
+
+
 async def capture_ge_screenshots(session_id):
-    """Open GE in browser, navigate to session, take screenshots."""
+    """Run pipeline via streamAssist API, capture GE browser screenshots.
+
+    Uses the streamAssist API with agentsSpec for proper agent routing,
+    while monitoring the GE browser UI for content updates.
+    """
     from playwright.async_api import async_playwright
 
     SS_DIR.mkdir(parents=True, exist_ok=True)
     screenshots = []
 
     print(f"\n{'#'*60}")
-    print("PHASE 2: Capture GE browser screenshots")
+    print("PHASE 2: GE Browser — streamAssist API + screenshots")
     print(f"{'#'*60}\n", flush=True)
+
+    # Get auth token for streamAssist API
+    token = subprocess.run(
+        ["gcloud", "auth", "print-access-token"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+
+    # Send initial message via streamAssist with proper agent routing
+    print("  Sending campaign message via streamAssist API...", flush=True)
+    result = _stream_assist_send(token, CAMPAIGN_MESSAGE)
+    ge_session = result.get("session_path", "")
+    print(f"  GE Session: {ge_session}", flush=True)
+    print(f"  Reply: {result.get('reply_text', '')[:200]}", flush=True)
+    print(f"  Thoughts: {result.get('thoughts', 0)} | Chips: {len(result.get('status_chips', []))}", flush=True)
+
+    save_screenshot_text("ge_wave_00_api_init", result)
+
+    # Extract session ID for browser URL
+    ge_session_id = ge_session.split("/sessions/")[-1] if "/sessions/" in ge_session else ""
 
     async with async_playwright() as p:
         try:
             browser = await p.chromium.connect_over_cdp(CDP_URL)
         except Exception as e:
             print(f"  Cannot connect to Chrome CDP on {CDP_URL}: {e}", flush=True)
-            print("  Skipping browser screenshots — using API results only", flush=True)
             return screenshots
 
         context = browser.contexts[0]
-        if not context.pages:
-            page = await context.new_page()
-        else:
-            page = context.pages[0]
+        page = context.pages[0] if context.pages else await context.new_page()
         await page.set_viewport_size({"width": 1920, "height": 1080})
 
-        # Navigate to GE chat
+        # Navigate to GE chat (the session should appear in the conversation list)
         print("  Navigating to GE chat...", flush=True)
         await page.goto(GE_CHAT_URL, wait_until="domcontentloaded", timeout=30000)
         await page.wait_for_timeout(5000)
@@ -323,39 +439,41 @@ async def capture_ge_screenshots(session_id):
         path = SS_DIR / f"ge_chat_{ts}.png"
         await page.screenshot(path=str(path))
         screenshots.append(str(path))
-        print(f"  Screenshot: {path.name}", flush=True)
 
-        # Send the campaign message in GE chat
-        print("  Sending campaign message in GE...", flush=True)
-        chat_sent = False
-        for sel in ['div[contenteditable="true"]', 'textarea', 'input[type="text"]']:
-            try:
-                el = await page.wait_for_selector(sel, timeout=5000)
-                if el and await el.is_visible():
-                    await el.click()
-                    await page.wait_for_timeout(500)
-                    await page.keyboard.type(CAMPAIGN_MESSAGE, delay=3)
-                    await page.wait_for_timeout(500)
-                    await page.keyboard.press("Enter")
-                    chat_sent = True
-                    print(f"  Message sent via {sel}", flush=True)
-                    break
-            except Exception:
-                continue
+        # Continue sending "continue" via streamAssist API and monitoring browser
+        # Each wave: send via API, wait, screenshot
+        for wave in range(MAX_WAVES):
+            status = get_pipeline_status(get_ae_client(), session_id)
+            if status["stage"] == "COMPLETE":
+                print(f"\n  Pipeline COMPLETE at wave {wave + 1}!", flush=True)
+                break
 
-        if not chat_sent:
-            print("  Could not find chat input — taking screenshots of existing content", flush=True)
+            # Refresh token periodically
+            if wave % 10 == 0 and wave > 0:
+                token = subprocess.run(
+                    ["gcloud", "auth", "print-access-token"],
+                    capture_output=True, text=True, check=True,
+                ).stdout.strip()
 
-        # Monitor for content appearing (up to 40 waves, 15s each)
-        # Bail early if content stops changing (3 stale waves)
-        print("\n  Monitoring GE for inline content...", flush=True)
-        best_info = {}
-        prev_text_len = 0
-        stale_count = 0
-        MAX_STALE = 3  # bail after 3 waves with no change
+            # Send continue via streamAssist
+            print(f"\n  [Wave {wave + 1}] Sending 'continue' via streamAssist...", flush=True)
+            result = _stream_assist_send(token, "continue", ge_session)
+            reply_preview = result.get("reply_text", "")[:200]
+            chips = result.get("status_chips", [])
+            print(f"  Reply: {reply_preview}", flush=True)
+            if chips:
+                print(f"  Status chips: {chips[-3:]}", flush=True)
 
-        for wave in range(40):
-            await page.wait_for_timeout(15000)
+            save_screenshot_text(f"ge_wave_{wave+1:02d}_api_{ts}", {
+                "wave": wave + 1,
+                "reply_preview": reply_preview,
+                "thoughts": result.get("thoughts", 0),
+                "status_chips": chips,
+            })
+
+            # Refresh browser to show updated conversation
+            await page.reload(wait_until="domcontentloaded", timeout=15000)
+            await page.wait_for_timeout(3000)
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
             await page.wait_for_timeout(1000)
 
@@ -367,54 +485,27 @@ async def capture_ge_screenshots(session_id):
             # Check content
             try:
                 info = await page.evaluate(CHECK_CONTENT_JS)
+                stages = []
+                if info.get("hasResearch"): stages.append("RESEARCH")
+                if info.get("hasAdCopy"): stages.append("AD_COPY")
+                if info.get("hasImages"): stages.append(f"IMAGES({info.get('imageCount', 0)})")
+                if info.get("hasVideo"): stages.append("VIDEO")
+                if info.get("hasFocusGroup"): stages.append("FOCUS_GROUP")
+                if info.get("hasPDF"): stages.append("PDF")
+                if info.get("hasComplete"): stages.append("COMPLETE")
+                print(f"  Browser content: {stages} | text={info.get('textLength', 0)} chars", flush=True)
             except Exception:
-                info = {}
+                pass
 
-            stages = []
-            if info.get("hasResearch"): stages.append("RESEARCH")
-            if info.get("hasAdCopy"): stages.append("AD_COPY")
-            if info.get("hasImages"): stages.append(f"IMAGES({info.get('imageCount', 0)})")
-            if info.get("hasVideo"): stages.append("VIDEO")
-            if info.get("hasFocusGroup"): stages.append("FOCUS_GROUP")
-            if info.get("hasPDF"): stages.append("PDF")
-
-            cur_text_len = info.get("textLength", 0)
-            print(f"  Wave {wave+1}: {stages} | text={cur_text_len} chars", flush=True)
-            best_info = info
-
-            # Stale detection — bail if content stopped changing
-            if cur_text_len == prev_text_len and wave > 2:
-                stale_count += 1
-                if stale_count >= MAX_STALE:
-                    print(f"\n  Content stale for {MAX_STALE} waves — GE pipeline paused/complete.", flush=True)
-                    break
-            else:
-                stale_count = 0
-            prev_text_len = cur_text_len
-
-            # Done when pipeline is complete
-            if info.get("hasComplete") or (info.get("hasFocusGroup") and info.get("hasPDF")):
-                print(f"\n  GE pipeline complete!", flush=True)
-                # Scrolling screenshots for full coverage
-                height = await page.evaluate("document.body.scrollHeight")
-                for pct in [0, 25, 50, 75, 100]:
-                    await page.evaluate(f"window.scrollTo(0, {int(height * pct / 100)})")
-                    await page.wait_for_timeout(500)
-                    path = SS_DIR / f"ge_FINAL_scroll{pct}_{ts}.png"
-                    await page.screenshot(path=str(path))
-                    screenshots.append(str(path))
-                    print(f"  Final screenshot: {path.name}", flush=True)
-                break
-
-        # Take scrolling screenshots for whatever state we're in
+        # Final scrolling screenshots
         height = await page.evaluate("document.body.scrollHeight")
         for pct in [0, 25, 50, 75, 100]:
             await page.evaluate(f"window.scrollTo(0, {int(height * pct / 100)})")
             await page.wait_for_timeout(500)
-            path = SS_DIR / f"ge_final_scroll{pct}_{ts}.png"
+            path = SS_DIR / f"ge_FINAL_scroll{pct}_{ts}.png"
             await page.screenshot(path=str(path))
             screenshots.append(str(path))
-            print(f"  Scroll screenshot: {path.name}", flush=True)
+            print(f"  Final screenshot: {path.name}", flush=True)
 
     return screenshots
 
