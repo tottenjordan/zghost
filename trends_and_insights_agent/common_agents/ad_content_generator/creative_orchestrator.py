@@ -485,9 +485,11 @@ class CreativeProductionOrchestrator(BaseAgent):
 
         if img_failures >= MAX_IMG_RETRIES:
             # Skip this image after too many failures — add placeholder to advance
+            import re as _re
             logger.warning(f"[ImageGen] Skipping image {img_idx+1} after {img_failures} failures")
+            _skip_safe = _re.sub(r"[^a-zA-Z0-9_\-]", "", concept_name.replace(" ", "_"))
             placeholder = {
-                "artifact_key": f"skipped_{concept_name}_0.png",
+                "artifact_key": f"skipped_{_skip_safe}_0.png",
                 "concept_name": concept_name,
                 "shot_type": shot["shot_type"],
                 "reference_type": shot.get("reference_type", "ASSET"),
@@ -685,9 +687,11 @@ class CreativeProductionOrchestrator(BaseAgent):
         if img_list and gcs_folder and bucket:
             # Select product ASSET + trend STYLE for Veo reference_images
             # Veo accepts two reference types: ASSET (what appears) and STYLE (aesthetic)
-            product_refs = [m for m in img_list if isinstance(m, dict) and m.get("shot_type") == "product_asset"]
-            style_refs = [m for m in img_list if isinstance(m, dict) and m.get("reference_type") == "STYLE"]
-            person_refs = [m for m in img_list if isinstance(m, dict) and m.get("shot_type") == "person_asset"]
+            # Exclude skipped images (no actual GCS content)
+            _valid = [m for m in img_list if isinstance(m, dict) and not m.get("skipped")]
+            product_refs = [m for m in _valid if m.get("shot_type") == "product_asset"]
+            style_refs = [m for m in _valid if m.get("reference_type") == "STYLE"]
+            person_refs = [m for m in _valid if m.get("shot_type") == "person_asset"]
 
             # Product ASSET + Trend STYLE (prefer STYLE over person for video aesthetic)
             selected_refs = product_refs[:1] + style_refs[:1]
@@ -947,6 +951,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                 }
                 event = self._status_event(ctx, f"Commercial generated: {len(completed_clips)} clips, {duration}s")
                 event.actions.state_delta["commercial_artifact"] = commercial_data
+                event.actions.state_delta["vid_artifact_keys"] = {"vid_artifact_keys": [commercial_data]}
                 event.actions.state_delta["_commercial_clips"] = {}
                 if ctx.artifact_service and video_bytes:
                     try:
@@ -994,6 +999,7 @@ class CreativeProductionOrchestrator(BaseAgent):
                     }
                     event = self._status_event(ctx, f"Commercial (single clip fallback): {final_gcs_uri}")
                     event.actions.state_delta["commercial_artifact"] = commercial_data
+                    event.actions.state_delta["vid_artifact_keys"] = {"vid_artifact_keys": [commercial_data]}
                     event.actions.state_delta["_commercial_clips"] = {}
                     if ctx.artifact_service and video_bytes:
                         try:

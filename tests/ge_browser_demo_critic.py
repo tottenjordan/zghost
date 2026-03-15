@@ -505,10 +505,14 @@ async def capture_ge_screenshots(session_id):
             print("  Message submitted!", flush=True)
             await page.wait_for_timeout(3000)
 
-            # Step 4: Monitor the conversation — take screenshots as it progresses
+            # Step 4: Monitor the GE conversation — take screenshots as it progresses
+            # NOTE: Do NOT check AE pipeline status here — Phase 1 already completed
+            # the pipeline. Phase 2 is a separate GE conversation. Check browser
+            # content only.
             prev_text_len = 0
             stale_count = 0
-            for wave in range(MAX_WAVES):
+            ge_max_waves = 40  # GE conversation needs many waves for the full pipeline
+            for wave in range(ge_max_waves):
                 await page.wait_for_timeout(15000)  # Wait 15s between checks
 
                 # Scroll to bottom
@@ -529,7 +533,7 @@ async def capture_ge_screenshots(session_id):
                     if info.get("hasComplete"): stages.append("COMPLETE")
                     print(f"  [Wave {wave+1}] {stages} | text={text_len} chars", flush=True)
 
-                    # Take screenshot if content changed
+                    # Take screenshot if content changed or every 3rd wave
                     if text_len > prev_text_len + 50 or wave % 3 == 0:
                         path = SS_DIR / f"ge_wave_{wave+1:02d}_{ts}.png"
                         await page.screenshot(path=str(path))
@@ -541,22 +545,18 @@ async def capture_ge_screenshots(session_id):
 
                     prev_text_len = text_len
 
-                    # Check if pipeline is complete (via AE status)
-                    try:
-                        status = get_pipeline_status(get_ae_client(), session_id)
-                        if status["stage"] == "COMPLETE":
-                            print(f"\n  Pipeline COMPLETE at wave {wave + 1}!", flush=True)
-                            break
-                    except Exception:
-                        pass
-
-                    # Also check browser for completion
-                    if info.get("hasComplete") or info.get("hasPDF"):
-                        print(f"\n  Pipeline complete detected in browser!", flush=True)
+                    # Check browser for completion — look for pipeline complete OR PDF
+                    if info.get("hasComplete"):
+                        print(f"\n  Pipeline complete detected in browser at wave {wave + 1}!", flush=True)
+                        # Take one more screenshot to capture final state
+                        await page.wait_for_timeout(5000)
+                        path = SS_DIR / f"ge_complete_{ts}.png"
+                        await page.screenshot(path=str(path))
+                        screenshots.append(str(path))
                         break
 
-                    # If content is stale for 5+ checks, try sending "continue"
-                    if stale_count >= 5:
+                    # If content is stale for 4+ checks, try sending "continue"
+                    if stale_count >= 4:
                         print(f"  Content stale for {stale_count} checks, sending 'continue'...", flush=True)
                         input_el = await page.query_selector("textarea, [contenteditable], [role='textbox']")
                         if input_el:
