@@ -1613,7 +1613,7 @@ After trends are selected, run the remaining pipeline stages **ONE TOOL PER RESP
 **CRITICAL: You MUST output text AFTER each tool result BEFORE calling the next tool. NEVER chain multiple tool calls in a single response. Each response should contain AT MOST one function call.**
 
 Order:
-1. run_research → summarize key findings (report length, top insights, strategic themes)
+1. run_research → **INCLUDE THE FULL RESEARCH REPORT** in your response. The report is the key deliverable — show the complete text, not just a summary. Include all sections: Campaign Guide, Trend Analysis, Key Insights, Strategic Recommendations.
 2. run_ad_creative → show the 2 winning ad copy headlines and their trend hooks
 3. generate_images → report ALL 3 Gecko fidelity scores (product, person, trend ASSET types)
 4. generate_commercial → report video duration, GCS URI, reference images used
