@@ -760,1065 +760,1095 @@ async def save_final_report_tool(
                 FOCUS_GROUP_STRING += "---\n\n"
 
         # ==================== #
-        # Create PDF with fpdf2
+        # Create PDF — WeasyPrint (agency quality) with fpdf2 fallback
         # ==================== #
         pdf_artifact_key = "final_trends_and_creatives_report.pdf"
         artifact_key = pdf_artifact_key
         report_filepath = f"{DIR}/{pdf_artifact_key}"
 
-        def _sanitize_text(text: str) -> str:
-            """Replace Unicode characters unsupported by Helvetica (Latin-1) with safe equivalents."""
-            replacements = {
-                "\u2014": "-", "\u2013": "-",  # em-dash, en-dash
-                "\u2018": "'", "\u2019": "'",  # smart quotes
-                "\u201c": '"', "\u201d": '"',  # smart double quotes
-                "\u2026": "...",  # ellipsis
-                "\u2022": "-",  # bullet
-                "\u2713": "[x]", "\u2717": "[ ]",  # check/cross marks
-                "\u2192": "->", "\u2190": "<-",  # arrows
-                "\u00a0": " ",  # non-breaking space
-                "\u200b": "",  # zero-width space
-            }
-            for old, new in replacements.items():
-                text = text.replace(old, new)
-            # Final fallback: encode to latin-1 replacing unknown chars
-            return text.encode("latin-1", errors="replace").decode("latin-1")
-
-        # Brand and product info — prefer explicit params, fallback to extraction
-        brand_name = brand or "Campaign Report"
-        product_name = product or ""
-        campaign_tagline = ""
-
-        if not product_name:
-            # Fallback: extract from commercial metadata or report
-            if commercial_artifact and isinstance(commercial_artifact, dict):
-                metadata = commercial_artifact.get("metadata", {})
-                if isinstance(metadata, dict) and metadata.get("title"):
-                    product_name = metadata["title"]
-            if not product_name and processed_report:
-                first_line = processed_report.strip().split("\n")[0].strip()
-                if ":" in first_line:
-                    product_name = first_line.split(":", 1)[1].strip()[:60]
-                elif first_line.startswith("#"):
-                    product_name = first_line.lstrip("# ").strip()[:60]
-
-        # Campaign tagline from image headlines or selling points
-        if img_artifact_list and len(img_artifact_list) > 0:
-            first_img = img_artifact_list[0]
-            if first_img.get("headline"):
-                campaign_tagline = first_img["headline"]
-        if not campaign_tagline and selling_points:
-            campaign_tagline = selling_points[:80]
-
-        # Custom PDF class with headers/footers and auto Unicode sanitization
-        class CampaignPDF(FPDF):
-            def __init__(self):
-                super().__init__()
-                self.is_cover = False
-                self.is_back_cover = False
-
-            def cell(self, w=0, h=None, text="", *args, **kwargs):
-                try:
-                    return super().cell(w, h, _sanitize_text(str(text)), *args, **kwargs)
-                except Exception:
-                    # Reset position to safe state and skip this cell
-                    self.set_x(10)
-                    return None
-
-            def multi_cell(self, w, h=None, text="", *args, **kwargs):
-                # Ensure we have enough horizontal space
-                avail = self.w - self.r_margin - self.x
-                if w == 0:
-                    w_actual = avail
-                else:
-                    w_actual = w
-                if w_actual < 5:
-                    self.set_x(10)
-                    w_actual = self.w - self.r_margin - 10
-                    if w == 0:
-                        w = 0  # keep 0 to use remaining space
-                    else:
-                        w = w_actual
-                try:
-                    return super().multi_cell(w, h, _sanitize_text(str(text)), *args, **kwargs)
-                except Exception:
-                    self.ln(5)
-                    return None
-
-            def header(self):
-                if self.is_cover or self.is_back_cover:
-                    return
-                # Header with brand color bar
-                self.set_fill_color(0, 51, 160)  # #0033A0
-                self.rect(0, 0, 210, 8, 'F')
-                self.set_y(10)
-
-            def footer(self):
-                if self.is_cover or self.is_back_cover:
-                    return
-                self.set_y(-15)
-                self.set_font('Helvetica', 'I', 8)
-                self.set_text_color(128, 128, 128)
-                self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
-
-        branded_pdf_ok = True
+        # Try WeasyPrint first for agency-quality output
+        weasyprint_ok = False
         try:
-            pdf = CampaignPDF()
-            pdf.set_auto_page_break(auto=True, margin=15)
+            from ...shared_libraries.pdf_generator import generate_campaign_pdf
+            generate_campaign_pdf(
+                output_path=report_filepath,
+                processed_report=processed_report,
+                img_artifact_list=img_artifact_list,
+                vid_artifact_list=vid_artifact_list,
+                commercial_artifact=commercial_artifact,
+                focus_group_evaluation=focus_group_evaluation,
+                focus_group_panelists=focus_group_panelists,
+                gcs_folder=gcs_folder,
+                brand=brand,
+                product=product,
+                audience=audience,
+                selling_points=selling_points,
+                target_search_trends=target_search_trends,
+                target_yt_trends=target_yt_trends,
+                img_dir=IMG_SUBDIR,
+                vid_dir=VID_SUBDIR,
+            )
+            weasyprint_ok = True
+            logging.info("Generated PDF with WeasyPrint (agency quality)")
+        except Exception as wp_err:
+            logging.warning(f"WeasyPrint PDF failed ({wp_err}), falling back to fpdf2")
 
-            # ==================== #
-            # 1. COVER PAGE
-            # ==================== #
-            try:
-                pdf.is_cover = True
-                pdf.add_page()
+        # ── fpdf2 fallback (only runs if WeasyPrint failed) ──
+        if not weasyprint_ok:
 
-                # Top accent bar
-                pdf.set_fill_color(0, 51, 160)  # #0033A0
-                pdf.rect(0, 0, 210, 30, 'F')
-
-                # Title area
-                pdf.set_y(50)
-                pdf.set_font('Helvetica', 'B', 32)
-                pdf.set_text_color(0, 51, 160)
-                pdf.cell(0, 15, brand_name, 0, 1, 'C')
-
-                pdf.set_font('Helvetica', '', 24)
-                pdf.set_text_color(32, 33, 36)
-                pdf.cell(0, 12, product_name, 0, 1, 'C')
-
-                if campaign_tagline:
-                    pdf.set_y(pdf.get_y() + 5)
-                    pdf.set_font('Helvetica', 'I', 14)
-                    pdf.set_text_color(100, 100, 100)
-                    # Truncate long taglines
-                    if len(campaign_tagline) > 80:
-                        campaign_tagline = campaign_tagline[:77] + "..."
-                    pdf.multi_cell(0, 8, campaign_tagline, 0, 'C')
-
-                # Hero image if available
-                if img_artifact_list and len(img_artifact_list) > 0:
-                    first_img_key = img_artifact_list[0].get("artifact_key", "")
-                    hero_path = os.path.join(IMG_SUBDIR, first_img_key)
-                    if os.path.exists(hero_path):
-                        pdf.set_y(120)
-                        try:
-                            pdf.image(hero_path, x=35, w=140)
-                        except Exception as e:
-                            logging.warning(f"Could not embed hero image: {e}")
-
-                # Footer info
-                pdf.set_y(250)
-                pdf.set_font('Helvetica', '', 10)
-                pdf.set_text_color(100, 100, 100)
-                pdf.cell(0, 5, f"Campaign Report — {datetime.now().strftime('%B %d, %Y')}", 0, 1, 'C')
-                pdf.cell(0, 5, "Prepared by Trends & Insights AI", 0, 1, 'C')
-            except Exception as cover_err:
-                logging.warning(f"Cover page failed: {cover_err}")
-
-            pdf.is_cover = False
-
-            # ==================== #
-            # 2. EXECUTIVE SUMMARY
-            # ==================== #
-            pdf.add_page()
-            pdf.set_font('Helvetica', 'B', 18)
-            pdf.set_text_color(0, 51, 160)
-            pdf.cell(0, 10, "Executive Summary", 0, 1)
-            pdf.ln(3)
-
-            pdf.set_font('Helvetica', '', 10)
-            pdf.set_text_color(32, 33, 36)
-
-            # Extract key findings from research report (first few sentences or bullets)
-            key_findings = []
-            if processed_report:
-                # Try to extract bullet points or first few sentences
-                lines = processed_report.split('\n')
-                for line in lines[:30]:  # Check first 30 lines
-                    line = line.strip()
-                    if line.startswith('- ') or line.startswith('* '):
-                        key_findings.append(line[2:].strip())
-                        if len(key_findings) >= 3:
-                            break
-
-                # If no bullets found, extract first few sentences
-                if not key_findings:
-                    sentences = re.split(r'[.!?]\s+', processed_report[:500])
-                    key_findings = [s.strip() for s in sentences[:3] if len(s.strip()) > 20]
-
-            if key_findings:
-                pdf.set_font('Helvetica', 'B', 11)
-                pdf.cell(0, 6, "Key Findings:", 0, 1)
-                pdf.set_font('Helvetica', '', 10)
-                for finding in key_findings:
-                    pdf.multi_cell(0, 5, f"• {finding[:200]}", 0)
-                    pdf.ln(2)
-            else:
-                pdf.multi_cell(0, 5, "Comprehensive market research and trend analysis conducted.", 0)
-                pdf.ln(2)
-
-            pdf.ln(3)
-
-            # Campaign metrics summary
-            pdf.set_fill_color(248, 249, 250)  # #F8F9FA light gray background
-            pdf.rect(10, pdf.get_y(), 190, 40, 'F')
-            pdf.ln(5)
-
-            pdf.set_font('Helvetica', 'B', 11)
-            pdf.cell(0, 6, "Campaign Assets:", 0, 1)
-            pdf.set_font('Helvetica', '', 10)
-
-            metrics_y = pdf.get_y()
-            pdf.set_xy(15, metrics_y)
-            pdf.cell(90, 5, f"Images Generated: {len(img_artifact_list or [])}", 0, 0)
-            pdf.set_x(105)
-            pdf.cell(90, 5, f"Videos Generated: {len(vid_artifact_list or [])}", 0, 1)
-
-            pdf.set_x(15)
-            has_commercial = bool(commercial_artifact and commercial_artifact.get("gcs_uri"))
-            pdf.cell(90, 5, f"Commercial: {'Yes' if has_commercial else 'No'}", 0, 0)
-
-            # Focus group verdict
-            focus_verdict = "Not conducted"
-            if focus_group_evaluation:
-                if "go decision" in focus_group_evaluation.lower() or "approve" in focus_group_evaluation.lower():
-                    focus_verdict = "GO"
-                elif "no-go" in focus_group_evaluation.lower() or "reject" in focus_group_evaluation.lower():
-                    focus_verdict = "NO-GO"
-                else:
-                    focus_verdict = "Completed"
-
-            pdf.set_x(105)
-            pdf.cell(90, 5, f"Focus Group: {focus_verdict}", 0, 1)
-
-            pdf.ln(10)
-
-            # ==================== #
-            # 2b. CAMPAIGN CONTEXT & TRENDS
-            # ==================== #
-            if brand or audience or target_search_trends or target_yt_trends:
-                pdf.add_page()
-                pdf.set_font('Helvetica', 'B', 18)
-                pdf.set_text_color(0, 51, 160)
-                pdf.cell(0, 10, "Campaign Context & Trend Drivers", 0, 1)
-                pdf.ln(3)
-
-                # Campaign brief box
-                try:
-                    pdf.set_fill_color(240, 245, 255)  # Light blue
-                    box_y = pdf.get_y()
-                    pdf.rect(10, box_y, 190, 50, 'F')
-                    pdf.set_xy(15, box_y + 5)
-                    pdf.set_font('Helvetica', 'B', 11)
-                    pdf.set_text_color(0, 51, 160)
-                    pdf.cell(0, 6, "Campaign Brief", 0, 1)
-                    pdf.set_font('Helvetica', '', 10)
-                    pdf.set_text_color(32, 33, 36)
-                    if brand:
-                        pdf.set_x(15)
-                        pdf.cell(0, 5, f"Brand: {brand}", 0, 1)
-                    if product:
-                        pdf.set_x(15)
-                        pdf.cell(0, 5, f"Product: {product}", 0, 1)
-                    if audience:
-                        pdf.set_x(15)
-                        pdf.cell(0, 5, f"Audience: {audience[:80]}", 0, 1)
-                    if selling_points:
-                        pdf.set_x(15)
-                        pdf.multi_cell(180, 5, f"Key Features: {selling_points[:200]}", 0)
-                    pdf.set_y(box_y + 55)
-                except Exception as brief_err:
-                    logging.warning(f"Campaign brief box layout failed: {brief_err}")
-                    pdf.ln(5)
-
-                # Trends — extract human-readable titles from dict or string
-                def _format_trends(raw_trends) -> list[str]:
-                    """Extract trend titles from various formats."""
-                    if isinstance(raw_trends, dict):
-                        items = []
-                        for v in raw_trends.values():
-                            if isinstance(v, list):
-                                for t in v:
-                                    if isinstance(t, dict):
-                                        title = t.get("trend_title") or t.get("title") or t.get("video_title") or ""
-                                        items.append(title)
-                                    elif isinstance(t, str):
-                                        items.append(t)
-                        return [i for i in items if i]
-                    elif isinstance(raw_trends, str):
-                        return [l.strip() for l in raw_trends.split('\n') if l.strip()][:10]
-                    return []
-
-                try:
-                    search_items = _format_trends(target_search_trends)
-                    if search_items:
-                        pdf.set_font('Helvetica', 'B', 12)
-                        pdf.set_text_color(26, 115, 232)
-                        pdf.cell(0, 7, "Google Search Trends", 0, 1)
-                        pdf.set_font('Helvetica', '', 10)
-                        pdf.set_text_color(32, 33, 36)
-                        for item in search_items[:10]:
-                            pdf.set_x(15)
-                            pdf.multi_cell(180, 5, f"  {item[:120]}", 0)
-                        pdf.ln(3)
-
-                    yt_items = _format_trends(target_yt_trends)
-                    if yt_items:
-                        pdf.set_font('Helvetica', 'B', 12)
-                        pdf.set_text_color(26, 115, 232)
-                        pdf.cell(0, 7, "YouTube Trends", 0, 1)
-                        pdf.set_font('Helvetica', '', 10)
-                        pdf.set_text_color(32, 33, 36)
-                        for item in yt_items[:10]:
-                            pdf.set_x(15)
-                            pdf.multi_cell(180, 5, f"  {item[:120]}", 0)
-                        pdf.ln(3)
-                except Exception as trend_err:
-                    logging.warning(f"Trend section layout failed: {trend_err}")
-
-            # ==================== #
-            # 3. RESEARCH HIGHLIGHTS
-            # ==================== #
-            pdf.add_page()
-            pdf.set_font('Helvetica', 'B', 18)
-            pdf.set_text_color(0, 51, 160)
-            pdf.cell(0, 10, "Research Highlights", 0, 1)
-            pdf.ln(3)
-
-            pdf.set_font('Helvetica', '', 10)
-            pdf.set_text_color(32, 33, 36)
-
-            if processed_report:
-                # Markdown-to-PDF renderer with proper bold, headers, bullets, separators
-                def _render_markdown_line(pdf_obj, line_stripped):
-                    """Render a single markdown line to PDF with formatting."""
-                    # Horizontal rule
-                    if line_stripped in ('---', '***', '___'):
-                        pdf_obj.ln(2)
-                        y = pdf_obj.get_y()
-                        pdf_obj.set_draw_color(200, 200, 200)
-                        pdf_obj.line(10, y, 200, y)
-                        pdf_obj.ln(3)
-                        return
-
-                    # Headers (### before ## before #)
-                    if line_stripped.startswith('### '):
-                        pdf_obj.ln(3)
-                        pdf_obj.set_font('Helvetica', 'B', 11)
-                        pdf_obj.set_text_color(32, 33, 36)
-                        pdf_obj.multi_cell(0, 5, line_stripped.lstrip('#').strip(), 0)
-                        pdf_obj.set_font('Helvetica', '', 10)
-                        pdf_obj.ln(1)
-                        return
-                    if line_stripped.startswith('## '):
-                        pdf_obj.ln(4)
-                        pdf_obj.set_font('Helvetica', 'B', 13)
-                        pdf_obj.set_text_color(26, 115, 232)
-                        pdf_obj.multi_cell(0, 6, line_stripped.lstrip('#').strip(), 0)
-                        pdf_obj.set_font('Helvetica', '', 10)
-                        pdf_obj.set_text_color(32, 33, 36)
-                        pdf_obj.ln(1)
-                        return
-                    if line_stripped.startswith('# '):
-                        pdf_obj.ln(5)
-                        pdf_obj.set_font('Helvetica', 'B', 15)
-                        pdf_obj.set_text_color(0, 51, 160)
-                        pdf_obj.multi_cell(0, 7, line_stripped.lstrip('#').strip(), 0)
-                        pdf_obj.set_font('Helvetica', '', 10)
-                        pdf_obj.set_text_color(32, 33, 36)
-                        pdf_obj.ln(2)
-                        return
-
-                    # Bullets (with sub-bullets)
-                    if line_stripped.startswith('- ') or line_stripped.startswith('* '):
-                        bullet_text = line_stripped[2:]
-                        # Check for bold label pattern: **Label:** rest
-                        bold_match = re.match(r'\*\*(.+?)\*\*:?\s*(.*)', bullet_text)
-                        if bold_match:
-                            label = bold_match.group(1).rstrip(':')
-                            rest = bold_match.group(2)
-                            pdf_obj.set_x(15)
-                            pdf_obj.set_font('Helvetica', 'B', 10)
-                            display = f"- {label}: " if rest else f"- {label}"
-                            label_w = pdf_obj.get_string_width(display) + 2
-                            pdf_obj.cell(label_w, 5, display, 0, 0)
-                            pdf_obj.set_font('Helvetica', '', 10)
-                            if rest:
-                                pdf_obj.multi_cell(0, 5, rest.replace('**', ''), 0)
-                            else:
-                                pdf_obj.ln(5)
-                        else:
-                            pdf_obj.set_x(15)
-                            clean = bullet_text.replace('**', '')
-                            pdf_obj.multi_cell(0, 5, f"- {clean}", 0)
-                        return
-
-                    # Numbered lists (e.g., "1. **Title:**")
-                    num_match = re.match(r'^(\d+)\.\s+(.*)', line_stripped)
-                    if num_match:
-                        num = num_match.group(1)
-                        rest = num_match.group(2)
-                        bold_match = re.match(r'\*\*(.+?)\*\*:?\s*(.*)', rest)
-                        if bold_match:
-                            label = bold_match.group(1).rstrip(':')
-                            desc = bold_match.group(2)
-                            pdf_obj.set_x(12)
-                            pdf_obj.set_font('Helvetica', 'B', 10)
-                            pdf_obj.multi_cell(0, 5, f"{num}. {label}", 0)
-                            if desc:
-                                pdf_obj.set_font('Helvetica', '', 10)
-                                pdf_obj.set_x(18)
-                                pdf_obj.multi_cell(0, 5, desc.replace('**', ''), 0)
-                        else:
-                            pdf_obj.set_x(12)
-                            pdf_obj.multi_cell(0, 5, f"{num}. {rest.replace('**', '')}", 0)
-                        pdf_obj.set_font('Helvetica', '', 10)
-                        return
-
-                    # Bold-only lines (e.g., "**Product Overview:**")
-                    bold_line_match = re.match(r'^\*\*(.+?)\*\*:?\s*$', line_stripped)
-                    if bold_line_match:
-                        pdf_obj.ln(2)
-                        pdf_obj.set_font('Helvetica', 'B', 10)
-                        label = bold_line_match.group(1).rstrip(':')
-                        pdf_obj.multi_cell(0, 5, label + ":", 0)
-                        pdf_obj.set_font('Helvetica', '', 10)
-                        return
-
-                    # Lines with inline bold (e.g., "**Label:** value")
-                    if '**' in line_stripped:
-                        inline_match = re.match(r'\*\*(.+?)\*\*:?\s*(.*)', line_stripped)
-                        if inline_match:
-                            label = inline_match.group(1).rstrip(':')
-                            rest = inline_match.group(2)
-                            pdf_obj.set_font('Helvetica', 'B', 10)
-                            display = f"{label}: " if rest else label
-                            label_w = pdf_obj.get_string_width(display) + 2
-                            pdf_obj.cell(label_w, 5, display, 0, 0)
-                            pdf_obj.set_font('Helvetica', '', 10)
-                            if rest:
-                                pdf_obj.multi_cell(0, 5, rest.replace('**', ''), 0)
-                            else:
-                                pdf_obj.ln(5)
-                        else:
-                            clean = line_stripped.replace('**', '')
-                            if clean.strip():
-                                pdf_obj.multi_cell(0, 5, clean, 0)
-                        return
-
-                    # Italic text (*text*)
-                    if line_stripped.startswith('*') and line_stripped.endswith('*') and not line_stripped.startswith('**'):
-                        pdf_obj.set_font('Helvetica', 'I', 10)
-                        pdf_obj.multi_cell(0, 5, line_stripped.strip('*'), 0)
-                        pdf_obj.set_font('Helvetica', '', 10)
-                        return
-
-                    # Regular text
-                    if line_stripped:
-                        pdf_obj.multi_cell(0, 5, line_stripped, 0)
-                    else:
-                        pdf_obj.ln(2)
-
-                lines = processed_report.split('\n')
-                for line in lines:
+            def _sanitize_text(text: str) -> str:
+                """Replace Unicode characters unsupported by Helvetica (Latin-1) with safe equivalents."""
+                replacements = {
+                    "\u2014": "-", "\u2013": "-",  # em-dash, en-dash
+                    "\u2018": "'", "\u2019": "'",  # smart quotes
+                    "\u201c": '"', "\u201d": '"',  # smart double quotes
+                    "\u2026": "...",  # ellipsis
+                    "\u2022": "-",  # bullet
+                    "\u2713": "[x]", "\u2717": "[ ]",  # check/cross marks
+                    "\u2192": "->", "\u2190": "<-",  # arrows
+                    "\u00a0": " ",  # non-breaking space
+                    "\u200b": "",  # zero-width space
+                }
+                for old, new in replacements.items():
+                    text = text.replace(old, new)
+                # Final fallback: encode to latin-1 replacing unknown chars
+                return text.encode("latin-1", errors="replace").decode("latin-1")
+    
+            # Brand and product info — prefer explicit params, fallback to extraction
+            brand_name = brand or "Campaign Report"
+            product_name = product or ""
+            campaign_tagline = ""
+    
+            if not product_name:
+                # Fallback: extract from commercial metadata or report
+                if commercial_artifact and isinstance(commercial_artifact, dict):
+                    metadata = commercial_artifact.get("metadata", {})
+                    if isinstance(metadata, dict) and metadata.get("title"):
+                        product_name = metadata["title"]
+                if not product_name and processed_report:
+                    first_line = processed_report.strip().split("\n")[0].strip()
+                    if ":" in first_line:
+                        product_name = first_line.split(":", 1)[1].strip()[:60]
+                    elif first_line.startswith("#"):
+                        product_name = first_line.lstrip("# ").strip()[:60]
+    
+            # Campaign tagline from image headlines or selling points
+            if img_artifact_list and len(img_artifact_list) > 0:
+                first_img = img_artifact_list[0]
+                if first_img.get("headline"):
+                    campaign_tagline = first_img["headline"]
+            if not campaign_tagline and selling_points:
+                campaign_tagline = selling_points[:80]
+    
+            # Custom PDF class with headers/footers and auto Unicode sanitization
+            class CampaignPDF(FPDF):
+                def __init__(self):
+                    super().__init__()
+                    self.is_cover = False
+                    self.is_back_cover = False
+    
+                def cell(self, w=0, h=None, text="", *args, **kwargs):
                     try:
-                        _render_markdown_line(pdf, line.strip())
+                        return super().cell(w, h, _sanitize_text(str(text)), *args, **kwargs)
                     except Exception:
-                        pdf.ln(2)
-            else:
-                pdf.multi_cell(0, 5, "No research report available.", 0)
-
-            # ==================== #
-            # 4. CREATIVE PORTFOLIO
-            # ==================== #
-            if img_artifact_list or vid_artifact_list:
-                pdf.add_page()
-                pdf.set_font('Helvetica', 'B', 18)
-                pdf.set_text_color(0, 51, 160)
-                pdf.cell(0, 10, "Creative Portfolio", 0, 1)
-                pdf.ln(5)
-
-            # Images
-            for idx, entry in enumerate(img_artifact_list or []):
-                if idx > 0:
-                    pdf.add_page()
-
-                artifact_key = entry.get("artifact_key", "")
-                img_path = os.path.join(IMG_SUBDIR, artifact_key)
-
-                pdf.set_font('Helvetica', 'B', 14)
-                pdf.set_text_color(26, 115, 232)
-                headline = entry.get("headline") or entry.get("concept_name") or entry.get("shot_type", "Untitled")
-                # Make shot_type human readable
-                headline = headline.replace("_", " ").title()
-                pdf.multi_cell(0, 7, headline, 0)
-                pdf.ln(2)
-
-                # Image
-                if os.path.exists(img_path):
-                    try:
-                        pdf.image(img_path, x=10, w=190)
-                        pdf.ln(3)
-                    except Exception as e:
-                        logging.warning(f"Could not embed image {artifact_key}: {e}")
-
-                # Fidelity score badge
-                fidelity = entry.get("fidelity_score")
-                if fidelity is not None:
-                    try:
-                        score = float(fidelity)
-                        if score >= 0.7:
-                            badge_color = (52, 168, 83)  # Green
-                            badge_text = "High Fidelity"
-                        elif score >= 0.5:
-                            badge_color = (251, 188, 4)  # Yellow
-                            badge_text = "Medium Fidelity"
-                        else:
-                            badge_color = (234, 67, 53)  # Red
-                            badge_text = "Low Fidelity"
-
-                        pdf.set_fill_color(*badge_color)
-                        pdf.set_text_color(255, 255, 255)
-                        pdf.set_font('Helvetica', 'B', 9)
-                        badge_width = pdf.get_string_width(f"{badge_text}: {score:.2f}") + 6
-                        pdf.cell(badge_width, 6, f"{badge_text}: {score:.2f}", 0, 1, 'L', True)
-                        pdf.ln(2)
-                        pdf.set_text_color(32, 33, 36)
-                    except (ValueError, TypeError):
-                        pass
-
-                # Caption
-                pdf.set_font('Helvetica', 'I', 10)
-                pdf.set_text_color(80, 80, 80)
-                caption = entry.get("caption", "")
-                if caption:
-                    pdf.multi_cell(0, 5, caption, 0)
-                    pdf.ln(2)
-
-                # Concept rationale
-                pdf.set_font('Helvetica', '', 10)
-                pdf.set_text_color(32, 33, 36)
-                concept = entry.get("concept", "")
-                if concept:
-                    pdf.set_font('Helvetica', 'B', 10)
-                    pdf.cell(0, 5, "Concept:", 0, 1)
-                    pdf.set_font('Helvetica', '', 10)
-                    pdf.multi_cell(0, 5, concept, 0)
-                    pdf.ln(2)
-
-                # AI prompt (smaller gray text)
-                prompt = entry.get("img_prompt", "")
-                if prompt:
-                    pdf.set_font('Helvetica', '', 8)
-                    pdf.set_text_color(128, 128, 128)
-                    pdf.multi_cell(0, 4, f"AI Prompt: {prompt[:300]}", 0)
-
-            # Videos
-            for idx, entry in enumerate(vid_artifact_list or []):
-                pdf.add_page()
-
-                artifact_key = entry.get("artifact_key", "")
-                vid_path = os.path.join(VID_SUBDIR, artifact_key)
-
-                pdf.set_font('Helvetica', 'B', 14)
-                pdf.set_text_color(26, 115, 232)
-                headline = entry.get("headline") or entry.get("concept_name") or entry.get("title", "Commercial Video")
-                headline = headline.replace("_", " ").title()
-                pdf.multi_cell(0, 7, headline, 0)
-                pdf.ln(2)
-
-                # Video thumbnail
-                if os.path.exists(vid_path):
-                    frame_path = os.path.join(VID_SUBDIR, artifact_key.replace(".mp4", ".png"))
-                    if os.path.exists(frame_path):
-                        try:
-                            pdf.image(frame_path, x=10, w=190)
-                            pdf.ln(3)
-                        except Exception as e:
-                            logging.warning(f"Could not embed video frame: {e}")
-
-                # Caption and details (similar to images)
-                pdf.set_font('Helvetica', 'I', 10)
-                pdf.set_text_color(80, 80, 80)
-                caption = entry.get("caption", "")
-                if caption:
-                    pdf.multi_cell(0, 5, caption, 0)
-                    pdf.ln(2)
-
-                pdf.set_font('Helvetica', '', 10)
-                pdf.set_text_color(32, 33, 36)
-                concept = entry.get("concept", "")
-                if concept:
-                    pdf.set_font('Helvetica', 'B', 10)
-                    pdf.cell(0, 5, "Concept:", 0, 1)
-                    pdf.set_font('Helvetica', '', 10)
-                    pdf.multi_cell(0, 5, concept, 0)
-
-            # ==================== #
-            # 5. COMMERCIAL STORYBOARD
-            # ==================== #
-            if commercial_artifact and commercial_artifact.get("gcs_uri"):
-                pdf.add_page()
-                pdf.set_font('Helvetica', 'B', 18)
-                pdf.set_text_color(0, 51, 160)
-                pdf.cell(0, 10, "Commercial Storyboard", 0, 1)
-                pdf.ln(3)
-
-                metadata = commercial_artifact.get("metadata", {})
-                if isinstance(metadata, dict):
-                    pdf.set_font('Helvetica', 'B', 12)
-                    pdf.set_text_color(32, 33, 36)
-                    title = metadata.get("title", "Campaign Commercial")
-                    pdf.cell(0, 6, title, 0, 1)
-
-                    pdf.set_font('Helvetica', '', 10)
-                    duration = metadata.get("duration_seconds", "N/A")
-                    pdf.cell(0, 5, f"Duration: {duration}s", 0, 1)
-                    pdf.ln(2)
-
-                # Extract 4 frames from commercial
-                gcs_uri = commercial_artifact.get("gcs_uri", "")
-                if gcs_uri:
-                    # Download commercial if not already downloaded
-                    commercial_filename = os.path.basename(gcs_uri)
-                    commercial_local_path = os.path.join(VID_SUBDIR, commercial_filename)
-
-                    if not os.path.exists(commercial_local_path):
-                        try:
-                            # Extract just the blob path from GCS URI
-                            blob_path = gcs_uri.replace(gcs_bucket + "/", "")
-                            download_image_from_gcs(
-                                source_blob_name=blob_path,
-                                destination_file_name=commercial_local_path,
-                            )
-                        except Exception as e:
-                            logging.warning(f"Could not download commercial for storyboard: {e}")
-
-                    # Extract 4 frames
-                    if os.path.exists(commercial_local_path):
-                        frame_dir = os.path.join(VID_SUBDIR, "storyboard_frames")
-                        os.makedirs(frame_dir, exist_ok=True)
-
-                        frame_paths = extract_multiple_frames(commercial_local_path, num_frames=4, output_dir=frame_dir)
-
-                        if frame_paths:
-                            scenes = metadata.get("scene_descriptions", []) if isinstance(metadata, dict) else []
-
-                            # Display frames in 2x2 grid
-                            for i in range(0, len(frame_paths), 2):
-                                row_y = pdf.get_y()
-
-                                # Left frame
-                                if i < len(frame_paths):
-                                    try:
-                                        pdf.image(frame_paths[i], x=10, y=row_y, w=90)
-                                        pdf.set_xy(10, row_y + 55)
-                                        pdf.set_font('Helvetica', 'I', 8)
-                                        pdf.set_text_color(80, 80, 80)
-                                        scene_desc = scenes[i] if i < len(scenes) else f"Frame {i+1}"
-                                        pdf.multi_cell(90, 4, scene_desc[:150], 0)
-                                    except Exception as e:
-                                        logging.warning(f"Could not embed storyboard frame {i}: {e}")
-
-                                # Right frame
-                                if i + 1 < len(frame_paths):
-                                    try:
-                                        pdf.image(frame_paths[i+1], x=110, y=row_y, w=90)
-                                        pdf.set_xy(110, row_y + 55)
-                                        pdf.set_font('Helvetica', 'I', 8)
-                                        pdf.set_text_color(80, 80, 80)
-                                        scene_desc = scenes[i+1] if i+1 < len(scenes) else f"Frame {i+2}"
-                                        pdf.multi_cell(90, 4, scene_desc[:150], 0)
-                                    except Exception as e:
-                                        logging.warning(f"Could not embed storyboard frame {i+1}: {e}")
-
-                                pdf.set_y(row_y + 70)
-                                pdf.ln(5)
-
-                            pdf.set_text_color(32, 33, 36)
-                        else:
-                            pdf.set_font('Helvetica', '', 10)
-                            pdf.cell(0, 5, "Storyboard frames could not be extracted.", 0, 1)
-
-                # Narrative arc and other details
-                if isinstance(metadata, dict):
-                    pdf.ln(3)
-                    pdf.set_font('Helvetica', '', 10)
-                    pdf.set_text_color(32, 33, 36)
-
-                    if metadata.get("narrative_arc"):
-                        pdf.set_font('Helvetica', 'B', 10)
-                        pdf.cell(0, 5, "Narrative Arc:", 0, 1)
-                        pdf.set_font('Helvetica', '', 10)
-                        pdf.multi_cell(0, 5, metadata["narrative_arc"], 0)
-                        pdf.ln(2)
-
-                    if metadata.get("target_audience_appeal"):
-                        pdf.set_font('Helvetica', 'B', 10)
-                        pdf.cell(0, 5, "Target Audience Appeal:", 0, 1)
-                        pdf.set_font('Helvetica', '', 10)
-                        pdf.multi_cell(0, 5, metadata["target_audience_appeal"], 0)
-
-            # ==================== #
-            # 6. FOCUS GROUP REPORT
-            # ==================== #
-            if focus_group_evaluation or panelists:
-                pdf.add_page()
-                pdf.set_font('Helvetica', 'B', 18)
-                pdf.set_text_color(0, 51, 160)
-                pdf.cell(0, 10, "Focus Group Evaluation", 0, 1)
-                pdf.ln(3)
-
-                pdf.set_font('Helvetica', '', 10)
-                pdf.set_text_color(32, 33, 36)
-
-                if focus_group_evaluation:
-                    # Try to parse as JSON first (common from LLM output)
-                    import json as _json
-                    fg_data = None
-                    fg_narrative_after = ""
-                    fg_text = focus_group_evaluation.strip()
-                    # Split at closing fence — text after ``` is narrative
-                    if "```" in fg_text:
-                        fence_parts = fg_text.split("```")
-                        # fence_parts[0] = before opening fence (empty)
-                        # fence_parts[1] = JSON block (with lang hint)
-                        # fence_parts[2] = narrative text after closing fence
-                        if len(fence_parts) >= 3:
-                            json_block = fence_parts[1]
-                            fg_narrative_after = fence_parts[2].strip()
-                        else:
-                            json_block = fence_parts[1] if len(fence_parts) > 1 else fg_text
-                        # Strip language hint (e.g., json_focus_group)
-                        json_block = re.sub(r"^[a-zA-Z_]+\n", "", json_block.strip())
-                        fg_text = json_block
-
-                    try:
-                        fg_data = _json.loads(fg_text)
-                    except (_json.JSONDecodeError, ValueError):
-                        fg_data = None
-
-                    if fg_data and isinstance(fg_data, dict):
-                        # Render structured focus group data
-                        fg_panelists = fg_data.get("panelists", [])
-                        overall = fg_data.get("overall_score", "")
-                        verdict = fg_data.get("go_no_go", "")
-                        suggestions = fg_data.get("improvement_suggestions", [])
-
-                        # Overall verdict banner
-                        if verdict:
-                            if str(verdict).upper() == "GO":
-                                pdf.set_fill_color(52, 168, 83)
-                            else:
-                                pdf.set_fill_color(234, 67, 53)
-                            pdf.set_text_color(255, 255, 255)
-                            pdf.set_font('Helvetica', 'B', 14)
-                            verdict_text = f"Verdict: {verdict}"
-                            if overall:
-                                verdict_text += f"  |  Overall Score: {overall}/10"
-                            vw = pdf.get_string_width(verdict_text) + 16
-                            pdf.cell(vw, 10, verdict_text, 0, 1, 'L', True)
-                            pdf.ln(5)
-                            pdf.set_text_color(32, 33, 36)
-
-                        # Panelist cards
-                        for p in fg_panelists:
-                            name = p.get("name", "Unknown")
-                            age = p.get("age", "")
-                            occ = p.get("occupation", "")
-                            persona = p.get("persona", "")
-                            testimonial = p.get("testimonial", "")
-                            scores = p.get("scores", {})
-
-                            # Name + demographics
-                            pdf.set_font('Helvetica', 'B', 12)
-                            pdf.set_text_color(0, 51, 160)
-                            demo = f"{name}"
-                            if age:
-                                demo += f", {age}"
-                            if occ:
-                                demo += f" - {occ}"
-                            pdf.multi_cell(0, 6, demo, 0)
-
-                            # Persona
-                            if persona:
-                                pdf.set_font('Helvetica', 'I', 9)
-                                pdf.set_text_color(100, 100, 100)
-                                pdf.multi_cell(0, 4, persona[:300], 0)
-                                pdf.ln(1)
-
-                            # Testimonial
-                            if testimonial:
-                                pdf.set_font('Helvetica', '', 10)
-                                pdf.set_text_color(32, 33, 36)
-                                pdf.set_x(15)
-                                pdf.multi_cell(0, 5, f'"{testimonial}"', 0)
-                                pdf.ln(1)
-
-                            # Scores as inline badges
-                            if scores and isinstance(scores, dict):
-                                pdf.set_font('Helvetica', '', 8)
-                                x_start = pdf.get_x()
-                                for metric, val in scores.items():
-                                    label = metric.replace("_", " ").title()
-                                    score_val = val if isinstance(val, (int, float)) else 0
-                                    if score_val >= 8:
-                                        pdf.set_fill_color(52, 168, 83)
-                                    elif score_val >= 6:
-                                        pdf.set_fill_color(251, 188, 4)
-                                    else:
-                                        pdf.set_fill_color(234, 67, 53)
-                                    pdf.set_text_color(255, 255, 255)
-                                    cell_text = f"{label}: {val}"
-                                    cw = pdf.get_string_width(cell_text) + 6
-                                    if pdf.get_x() + cw > 190:
-                                        pdf.ln(6)
-                                    pdf.cell(cw, 5, cell_text, 0, 0, 'C', True)
-                                    pdf.cell(2, 5, "", 0, 0)
-                                pdf.ln(8)
-                                pdf.set_text_color(32, 33, 36)
-                            else:
-                                pdf.ln(5)
-
-                        # Improvement suggestions
-                        if suggestions:
-                            pdf.ln(3)
-                            pdf.set_font('Helvetica', 'B', 11)
-                            pdf.set_text_color(26, 115, 232)
-                            pdf.cell(0, 6, "Improvement Suggestions", 0, 1)
-                            pdf.set_font('Helvetica', '', 10)
-                            pdf.set_text_color(32, 33, 36)
-                            for s in suggestions:
-                                pdf.set_x(15)
-                                pdf.multi_cell(0, 5, f"- {s}", 0)
-
-                        # Narrative evaluation (from after closing fence or inside JSON)
-                        narrative = fg_narrative_after or fg_data.get("narrative_evaluation", "")
-                        if narrative:
-                            pdf.add_page()
-                            pdf.set_font('Helvetica', 'B', 18)
-                            pdf.set_text_color(0, 51, 160)
-                            pdf.cell(0, 10, "Narrative Evaluation", 0, 1)
-                            pdf.ln(3)
-                            pdf.set_font('Helvetica', '', 10)
-                            pdf.set_text_color(32, 33, 36)
-                            # Parse narrative markdown
-                            for nline in narrative.split('\n'):
-                                ns = nline.strip()
-                                if ns.startswith('###'):
-                                    pdf.ln(2)
-                                    pdf.set_font('Helvetica', 'B', 11)
-                                    pdf.set_text_color(26, 115, 232)
-                                    pdf.multi_cell(0, 5, ns.lstrip('#').strip(), 0)
-                                    pdf.set_font('Helvetica', '', 10)
-                                    pdf.set_text_color(32, 33, 36)
-                                elif ns.startswith('##'):
-                                    pdf.ln(2)
-                                    pdf.set_font('Helvetica', 'B', 12)
-                                    pdf.set_text_color(26, 115, 232)
-                                    pdf.multi_cell(0, 6, ns.lstrip('#').strip(), 0)
-                                    pdf.set_font('Helvetica', '', 10)
-                                    pdf.set_text_color(32, 33, 36)
-                                elif ns.startswith('- ') or ns.startswith('* '):
-                                    pdf.set_x(15)
-                                    pdf.multi_cell(0, 5, f"- {ns[2:]}", 0)
-                                elif '**' in ns:
-                                    clean = ns.replace('**', '')
-                                    if clean.strip():
-                                        pdf.set_font('Helvetica', 'B', 10)
-                                        pdf.multi_cell(0, 5, clean, 0)
-                                        pdf.set_font('Helvetica', '', 10)
-                                elif ns:
-                                    pdf.multi_cell(0, 5, ns, 0)
-                                else:
-                                    pdf.ln(1)
-
+                        # Reset position to safe state and skip this cell
+                        self.set_x(10)
+                        return None
+    
+                def multi_cell(self, w, h=None, text="", *args, **kwargs):
+                    # Ensure we have enough horizontal space
+                    avail = self.w - self.r_margin - self.x
+                    if w == 0:
+                        w_actual = avail
                     else:
-                        # Fallback: render as markdown-like text
-                        eval_lines = focus_group_evaluation.split('\n')
-                        in_table = False
-                        for line in eval_lines:
-                            line_stripped = line.strip()
-
-                            if '|' in line_stripped and line_stripped.startswith('|'):
-                                cells = [c.strip() for c in line_stripped.split('|') if c.strip()]
-                                if all(set(c) <= {'-', ':'} for c in cells):
-                                    continue
-                                if not in_table:
-                                    in_table = True
-                                    pdf.set_font('Helvetica', 'B', 9)
-                                    pdf.set_fill_color(0, 51, 160)
-                                    pdf.set_text_color(255, 255, 255)
-                                    col_w = 190 / max(len(cells), 1)
-                                    for cell in cells:
-                                        pdf.cell(col_w, 6, cell[:30], 1, 0, 'C', True)
-                                    pdf.ln()
-                                    pdf.set_text_color(32, 33, 36)
-                                else:
-                                    pdf.set_font('Helvetica', '', 8)
-                                    col_w = 190 / max(len(cells), 1)
-                                    for cell in cells:
-                                        pdf.cell(col_w, 5, cell[:30], 1, 0, 'L')
-                                    pdf.ln()
-                            else:
-                                if in_table:
-                                    in_table = False
-                                    pdf.ln(2)
-
-                                if line_stripped.startswith('###'):
-                                    pdf.ln(2)
-                                    pdf.set_font('Helvetica', 'B', 11)
-                                    pdf.set_text_color(26, 115, 232)
-                                    pdf.multi_cell(0, 5, line_stripped.lstrip('#').strip(), 0)
-                                    pdf.set_font('Helvetica', '', 10)
-                                    pdf.set_text_color(32, 33, 36)
-                                elif line_stripped.startswith('##'):
-                                    pdf.ln(2)
-                                    pdf.set_font('Helvetica', 'B', 12)
-                                    pdf.set_text_color(26, 115, 232)
-                                    pdf.multi_cell(0, 6, line_stripped.lstrip('#').strip(), 0)
-                                    pdf.set_font('Helvetica', '', 10)
-                                    pdf.set_text_color(32, 33, 36)
-                                elif line_stripped.startswith('- ') or line_stripped.startswith('* '):
-                                    pdf.set_x(15)
-                                    pdf.multi_cell(0, 5, f"- {line_stripped[2:]}", 0)
-                                elif '**' in line_stripped:
-                                    clean = line_stripped.replace('**', '')
-                                    if clean.strip():
-                                        pdf.set_font('Helvetica', 'B', 10)
-                                        pdf.multi_cell(0, 5, clean, 0)
-                                        pdf.set_font('Helvetica', '', 10)
-                                elif line_stripped:
-                                    pdf.multi_cell(0, 5, line_stripped, 0)
-                                else:
-                                    pdf.ln(1)
+                        w_actual = w
+                    if w_actual < 5:
+                        self.set_x(10)
+                        w_actual = self.w - self.r_margin - 10
+                        if w == 0:
+                            w = 0  # keep 0 to use remaining space
+                        else:
+                            w = w_actual
+                    try:
+                        return super().multi_cell(w, h, _sanitize_text(str(text)), *args, **kwargs)
+                    except Exception:
+                        self.ln(5)
+                        return None
+    
+                def header(self):
+                    if self.is_cover or self.is_back_cover:
+                        return
+                    # Header with brand color bar
+                    self.set_fill_color(0, 51, 160)  # #0033A0
+                    self.rect(0, 0, 210, 8, 'F')
+                    self.set_y(10)
+    
+                def footer(self):
+                    if self.is_cover or self.is_back_cover:
+                        return
+                    self.set_y(-15)
+                    self.set_font('Helvetica', 'I', 8)
+                    self.set_text_color(128, 128, 128)
+                    self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+    
+            branded_pdf_ok = True
+            try:
+                pdf = CampaignPDF()
+                pdf.set_auto_page_break(auto=True, margin=15)
+    
+                # ==================== #
+                # 1. COVER PAGE
+                # ==================== #
+                try:
+                    pdf.is_cover = True
+                    pdf.add_page()
+    
+                    # Top accent bar
+                    pdf.set_fill_color(0, 51, 160)  # #0033A0
+                    pdf.rect(0, 0, 210, 30, 'F')
+    
+                    # Title area
+                    pdf.set_y(50)
+                    pdf.set_font('Helvetica', 'B', 32)
+                    pdf.set_text_color(0, 51, 160)
+                    pdf.cell(0, 15, brand_name, 0, 1, 'C')
+    
+                    pdf.set_font('Helvetica', '', 24)
+                    pdf.set_text_color(32, 33, 36)
+                    pdf.cell(0, 12, product_name, 0, 1, 'C')
+    
+                    if campaign_tagline:
+                        pdf.set_y(pdf.get_y() + 5)
+                        pdf.set_font('Helvetica', 'I', 14)
+                        pdf.set_text_color(100, 100, 100)
+                        # Truncate long taglines
+                        if len(campaign_tagline) > 80:
+                            campaign_tagline = campaign_tagline[:77] + "..."
+                        pdf.multi_cell(0, 8, campaign_tagline, 0, 'C')
+    
+                    # Hero image if available
+                    if img_artifact_list and len(img_artifact_list) > 0:
+                        first_img_key = img_artifact_list[0].get("artifact_key", "")
+                        hero_path = os.path.join(IMG_SUBDIR, first_img_key)
+                        if os.path.exists(hero_path):
+                            pdf.set_y(120)
+                            try:
+                                pdf.image(hero_path, x=35, w=140)
+                            except Exception as e:
+                                logging.warning(f"Could not embed hero image: {e}")
+    
+                    # Footer info
+                    pdf.set_y(250)
+                    pdf.set_font('Helvetica', '', 10)
+                    pdf.set_text_color(100, 100, 100)
+                    pdf.cell(0, 5, f"Campaign Report — {datetime.now().strftime('%B %d, %Y')}", 0, 1, 'C')
+                    pdf.cell(0, 5, "Prepared by Trends & Insights AI", 0, 1, 'C')
+                except Exception as cover_err:
+                    logging.warning(f"Cover page failed: {cover_err}")
+    
+                pdf.is_cover = False
+    
+                # ==================== #
+                # 2. EXECUTIVE SUMMARY
+                # ==================== #
+                pdf.add_page()
+                pdf.set_font('Helvetica', 'B', 18)
+                pdf.set_text_color(0, 51, 160)
+                pdf.cell(0, 10, "Executive Summary", 0, 1)
+                pdf.ln(3)
+    
+                pdf.set_font('Helvetica', '', 10)
+                pdf.set_text_color(32, 33, 36)
+    
+                # Extract key findings from research report (first few sentences or bullets)
+                key_findings = []
+                if processed_report:
+                    # Try to extract bullet points or first few sentences
+                    lines = processed_report.split('\n')
+                    for line in lines[:30]:  # Check first 30 lines
+                        line = line.strip()
+                        if line.startswith('- ') or line.startswith('* '):
+                            key_findings.append(line[2:].strip())
+                            if len(key_findings) >= 3:
+                                break
+    
+                    # If no bullets found, extract first few sentences
+                    if not key_findings:
+                        sentences = re.split(r'[.!?]\s+', processed_report[:500])
+                        key_findings = [s.strip() for s in sentences[:3] if len(s.strip()) > 20]
+    
+                if key_findings:
+                    pdf.set_font('Helvetica', 'B', 11)
+                    pdf.cell(0, 6, "Key Findings:", 0, 1)
+                    pdf.set_font('Helvetica', '', 10)
+                    for finding in key_findings:
+                        pdf.multi_cell(0, 5, f"• {finding[:200]}", 0)
+                        pdf.ln(2)
                 else:
-                    pdf.multi_cell(0, 5, "No focus group evaluation was conducted.", 0)
-
-                # Panelist profiles with portrait images
-                if panelists:
+                    pdf.multi_cell(0, 5, "Comprehensive market research and trend analysis conducted.", 0)
+                    pdf.ln(2)
+    
+                pdf.ln(3)
+    
+                # Campaign metrics summary
+                pdf.set_fill_color(248, 249, 250)  # #F8F9FA light gray background
+                pdf.rect(10, pdf.get_y(), 190, 40, 'F')
+                pdf.ln(5)
+    
+                pdf.set_font('Helvetica', 'B', 11)
+                pdf.cell(0, 6, "Campaign Assets:", 0, 1)
+                pdf.set_font('Helvetica', '', 10)
+    
+                metrics_y = pdf.get_y()
+                pdf.set_xy(15, metrics_y)
+                pdf.cell(90, 5, f"Images Generated: {len(img_artifact_list or [])}", 0, 0)
+                pdf.set_x(105)
+                pdf.cell(90, 5, f"Videos Generated: {len(vid_artifact_list or [])}", 0, 1)
+    
+                pdf.set_x(15)
+                has_commercial = bool(commercial_artifact and commercial_artifact.get("gcs_uri"))
+                pdf.cell(90, 5, f"Commercial: {'Yes' if has_commercial else 'No'}", 0, 0)
+    
+                # Focus group verdict
+                focus_verdict = "Not conducted"
+                if focus_group_evaluation:
+                    if "go decision" in focus_group_evaluation.lower() or "approve" in focus_group_evaluation.lower():
+                        focus_verdict = "GO"
+                    elif "no-go" in focus_group_evaluation.lower() or "reject" in focus_group_evaluation.lower():
+                        focus_verdict = "NO-GO"
+                    else:
+                        focus_verdict = "Completed"
+    
+                pdf.set_x(105)
+                pdf.cell(90, 5, f"Focus Group: {focus_verdict}", 0, 1)
+    
+                pdf.ln(10)
+    
+                # ==================== #
+                # 2b. CAMPAIGN CONTEXT & TRENDS
+                # ==================== #
+                if brand or audience or target_search_trends or target_yt_trends:
                     pdf.add_page()
                     pdf.set_font('Helvetica', 'B', 18)
                     pdf.set_text_color(0, 51, 160)
-                    pdf.cell(0, 10, "Focus Group Panelists", 0, 1)
+                    pdf.cell(0, 10, "Campaign Context & Trend Drivers", 0, 1)
                     pdf.ln(3)
-
-                    PORTRAIT_DIR = f"{DIR}/portraits"
-                    os.makedirs(PORTRAIT_DIR, exist_ok=True)
-
-                    for p in panelists:
-                        name = p.get("name", "Unknown")
-                        age = p.get("age", "N/A")
-                        persona = p.get("persona", "")
-                        portrait_uri = p.get("portrait_gcs_uri", "")
-
-                        # Try to download and embed portrait
-                        portrait_local = None
-                        if portrait_uri:
+    
+                    # Campaign brief box
+                    try:
+                        pdf.set_fill_color(240, 245, 255)  # Light blue
+                        box_y = pdf.get_y()
+                        pdf.rect(10, box_y, 190, 50, 'F')
+                        pdf.set_xy(15, box_y + 5)
+                        pdf.set_font('Helvetica', 'B', 11)
+                        pdf.set_text_color(0, 51, 160)
+                        pdf.cell(0, 6, "Campaign Brief", 0, 1)
+                        pdf.set_font('Helvetica', '', 10)
+                        pdf.set_text_color(32, 33, 36)
+                        if brand:
+                            pdf.set_x(15)
+                            pdf.cell(0, 5, f"Brand: {brand}", 0, 1)
+                        if product:
+                            pdf.set_x(15)
+                            pdf.cell(0, 5, f"Product: {product}", 0, 1)
+                        if audience:
+                            pdf.set_x(15)
+                            pdf.cell(0, 5, f"Audience: {audience[:80]}", 0, 1)
+                        if selling_points:
+                            pdf.set_x(15)
+                            pdf.multi_cell(180, 5, f"Key Features: {selling_points[:200]}", 0)
+                        pdf.set_y(box_y + 55)
+                    except Exception as brief_err:
+                        logging.warning(f"Campaign brief box layout failed: {brief_err}")
+                        pdf.ln(5)
+    
+                    # Trends — extract human-readable titles from dict or string
+                    def _format_trends(raw_trends) -> list[str]:
+                        """Extract trend titles from various formats."""
+                        if isinstance(raw_trends, dict):
+                            items = []
+                            for v in raw_trends.values():
+                                if isinstance(v, list):
+                                    for t in v:
+                                        if isinstance(t, dict):
+                                            title = t.get("trend_title") or t.get("title") or t.get("video_title") or ""
+                                            items.append(title)
+                                        elif isinstance(t, str):
+                                            items.append(t)
+                            return [i for i in items if i]
+                        elif isinstance(raw_trends, str):
+                            return [l.strip() for l in raw_trends.split('\n') if l.strip()][:10]
+                        return []
+    
+                    try:
+                        search_items = _format_trends(target_search_trends)
+                        if search_items:
+                            pdf.set_font('Helvetica', 'B', 12)
+                            pdf.set_text_color(26, 115, 232)
+                            pdf.cell(0, 7, "Google Search Trends", 0, 1)
+                            pdf.set_font('Helvetica', '', 10)
+                            pdf.set_text_color(32, 33, 36)
+                            for item in search_items[:10]:
+                                pdf.set_x(15)
+                                pdf.multi_cell(180, 5, f"  {item[:120]}", 0)
+                            pdf.ln(3)
+    
+                        yt_items = _format_trends(target_yt_trends)
+                        if yt_items:
+                            pdf.set_font('Helvetica', 'B', 12)
+                            pdf.set_text_color(26, 115, 232)
+                            pdf.cell(0, 7, "YouTube Trends", 0, 1)
+                            pdf.set_font('Helvetica', '', 10)
+                            pdf.set_text_color(32, 33, 36)
+                            for item in yt_items[:10]:
+                                pdf.set_x(15)
+                                pdf.multi_cell(180, 5, f"  {item[:120]}", 0)
+                            pdf.ln(3)
+                    except Exception as trend_err:
+                        logging.warning(f"Trend section layout failed: {trend_err}")
+    
+                # ==================== #
+                # 3. RESEARCH HIGHLIGHTS
+                # ==================== #
+                pdf.add_page()
+                pdf.set_font('Helvetica', 'B', 18)
+                pdf.set_text_color(0, 51, 160)
+                pdf.cell(0, 10, "Research Highlights", 0, 1)
+                pdf.ln(3)
+    
+                pdf.set_font('Helvetica', '', 10)
+                pdf.set_text_color(32, 33, 36)
+    
+                if processed_report:
+                    # Markdown-to-PDF renderer with proper bold, headers, bullets, separators
+                    def _render_markdown_line(pdf_obj, line_stripped):
+                        """Render a single markdown line to PDF with formatting."""
+                        # Horizontal rule
+                        if line_stripped in ('---', '***', '___'):
+                            pdf_obj.ln(2)
+                            y = pdf_obj.get_y()
+                            pdf_obj.set_draw_color(200, 200, 200)
+                            pdf_obj.line(10, y, 200, y)
+                            pdf_obj.ln(3)
+                            return
+    
+                        # Headers (### before ## before #)
+                        if line_stripped.startswith('### '):
+                            pdf_obj.ln(3)
+                            pdf_obj.set_font('Helvetica', 'B', 11)
+                            pdf_obj.set_text_color(32, 33, 36)
+                            pdf_obj.multi_cell(0, 5, line_stripped.lstrip('#').strip(), 0)
+                            pdf_obj.set_font('Helvetica', '', 10)
+                            pdf_obj.ln(1)
+                            return
+                        if line_stripped.startswith('## '):
+                            pdf_obj.ln(4)
+                            pdf_obj.set_font('Helvetica', 'B', 13)
+                            pdf_obj.set_text_color(26, 115, 232)
+                            pdf_obj.multi_cell(0, 6, line_stripped.lstrip('#').strip(), 0)
+                            pdf_obj.set_font('Helvetica', '', 10)
+                            pdf_obj.set_text_color(32, 33, 36)
+                            pdf_obj.ln(1)
+                            return
+                        if line_stripped.startswith('# '):
+                            pdf_obj.ln(5)
+                            pdf_obj.set_font('Helvetica', 'B', 15)
+                            pdf_obj.set_text_color(0, 51, 160)
+                            pdf_obj.multi_cell(0, 7, line_stripped.lstrip('#').strip(), 0)
+                            pdf_obj.set_font('Helvetica', '', 10)
+                            pdf_obj.set_text_color(32, 33, 36)
+                            pdf_obj.ln(2)
+                            return
+    
+                        # Bullets (with sub-bullets)
+                        if line_stripped.startswith('- ') or line_stripped.startswith('* '):
+                            bullet_text = line_stripped[2:]
+                            # Check for bold label pattern: **Label:** rest
+                            bold_match = re.match(r'\*\*(.+?)\*\*:?\s*(.*)', bullet_text)
+                            if bold_match:
+                                label = bold_match.group(1).rstrip(':')
+                                rest = bold_match.group(2)
+                                pdf_obj.set_x(15)
+                                pdf_obj.set_font('Helvetica', 'B', 10)
+                                display = f"- {label}: " if rest else f"- {label}"
+                                label_w = pdf_obj.get_string_width(display) + 2
+                                pdf_obj.cell(label_w, 5, display, 0, 0)
+                                pdf_obj.set_font('Helvetica', '', 10)
+                                if rest:
+                                    pdf_obj.multi_cell(0, 5, rest.replace('**', ''), 0)
+                                else:
+                                    pdf_obj.ln(5)
+                            else:
+                                pdf_obj.set_x(15)
+                                clean = bullet_text.replace('**', '')
+                                pdf_obj.multi_cell(0, 5, f"- {clean}", 0)
+                            return
+    
+                        # Numbered lists (e.g., "1. **Title:**")
+                        num_match = re.match(r'^(\d+)\.\s+(.*)', line_stripped)
+                        if num_match:
+                            num = num_match.group(1)
+                            rest = num_match.group(2)
+                            bold_match = re.match(r'\*\*(.+?)\*\*:?\s*(.*)', rest)
+                            if bold_match:
+                                label = bold_match.group(1).rstrip(':')
+                                desc = bold_match.group(2)
+                                pdf_obj.set_x(12)
+                                pdf_obj.set_font('Helvetica', 'B', 10)
+                                pdf_obj.multi_cell(0, 5, f"{num}. {label}", 0)
+                                if desc:
+                                    pdf_obj.set_font('Helvetica', '', 10)
+                                    pdf_obj.set_x(18)
+                                    pdf_obj.multi_cell(0, 5, desc.replace('**', ''), 0)
+                            else:
+                                pdf_obj.set_x(12)
+                                pdf_obj.multi_cell(0, 5, f"{num}. {rest.replace('**', '')}", 0)
+                            pdf_obj.set_font('Helvetica', '', 10)
+                            return
+    
+                        # Bold-only lines (e.g., "**Product Overview:**")
+                        bold_line_match = re.match(r'^\*\*(.+?)\*\*:?\s*$', line_stripped)
+                        if bold_line_match:
+                            pdf_obj.ln(2)
+                            pdf_obj.set_font('Helvetica', 'B', 10)
+                            label = bold_line_match.group(1).rstrip(':')
+                            pdf_obj.multi_cell(0, 5, label + ":", 0)
+                            pdf_obj.set_font('Helvetica', '', 10)
+                            return
+    
+                        # Lines with inline bold (e.g., "**Label:** value")
+                        if '**' in line_stripped:
+                            inline_match = re.match(r'\*\*(.+?)\*\*:?\s*(.*)', line_stripped)
+                            if inline_match:
+                                label = inline_match.group(1).rstrip(':')
+                                rest = inline_match.group(2)
+                                pdf_obj.set_font('Helvetica', 'B', 10)
+                                display = f"{label}: " if rest else label
+                                label_w = pdf_obj.get_string_width(display) + 2
+                                pdf_obj.cell(label_w, 5, display, 0, 0)
+                                pdf_obj.set_font('Helvetica', '', 10)
+                                if rest:
+                                    pdf_obj.multi_cell(0, 5, rest.replace('**', ''), 0)
+                                else:
+                                    pdf_obj.ln(5)
+                            else:
+                                clean = line_stripped.replace('**', '')
+                                if clean.strip():
+                                    pdf_obj.multi_cell(0, 5, clean, 0)
+                            return
+    
+                        # Italic text (*text*)
+                        if line_stripped.startswith('*') and line_stripped.endswith('*') and not line_stripped.startswith('**'):
+                            pdf_obj.set_font('Helvetica', 'I', 10)
+                            pdf_obj.multi_cell(0, 5, line_stripped.strip('*'), 0)
+                            pdf_obj.set_font('Helvetica', '', 10)
+                            return
+    
+                        # Regular text
+                        if line_stripped:
+                            pdf_obj.multi_cell(0, 5, line_stripped, 0)
+                        else:
+                            pdf_obj.ln(2)
+    
+                    lines = processed_report.split('\n')
+                    for line in lines:
+                        try:
+                            _render_markdown_line(pdf, line.strip())
+                        except Exception:
+                            pdf.ln(2)
+                else:
+                    pdf.multi_cell(0, 5, "No research report available.", 0)
+    
+                # ==================== #
+                # 4. CREATIVE PORTFOLIO
+                # ==================== #
+                if img_artifact_list or vid_artifact_list:
+                    pdf.add_page()
+                    pdf.set_font('Helvetica', 'B', 18)
+                    pdf.set_text_color(0, 51, 160)
+                    pdf.cell(0, 10, "Creative Portfolio", 0, 1)
+                    pdf.ln(5)
+    
+                # Images
+                for idx, entry in enumerate(img_artifact_list or []):
+                    if idx > 0:
+                        pdf.add_page()
+    
+                    artifact_key = entry.get("artifact_key", "")
+                    img_path = os.path.join(IMG_SUBDIR, artifact_key)
+    
+                    pdf.set_font('Helvetica', 'B', 14)
+                    pdf.set_text_color(26, 115, 232)
+                    headline = entry.get("headline") or entry.get("concept_name") or entry.get("shot_type", "Untitled")
+                    # Make shot_type human readable
+                    headline = headline.replace("_", " ").title()
+                    pdf.multi_cell(0, 7, headline, 0)
+                    pdf.ln(2)
+    
+                    # Image
+                    if os.path.exists(img_path):
+                        try:
+                            pdf.image(img_path, x=10, w=190)
+                            pdf.ln(3)
+                        except Exception as e:
+                            logging.warning(f"Could not embed image {artifact_key}: {e}")
+    
+                    # Fidelity score badge
+                    fidelity = entry.get("fidelity_score")
+                    if fidelity is not None:
+                        try:
+                            score = float(fidelity)
+                            if score >= 0.7:
+                                badge_color = (52, 168, 83)  # Green
+                                badge_text = "High Fidelity"
+                            elif score >= 0.5:
+                                badge_color = (251, 188, 4)  # Yellow
+                                badge_text = "Medium Fidelity"
+                            else:
+                                badge_color = (234, 67, 53)  # Red
+                                badge_text = "Low Fidelity"
+    
+                            pdf.set_fill_color(*badge_color)
+                            pdf.set_text_color(255, 255, 255)
+                            pdf.set_font('Helvetica', 'B', 9)
+                            badge_width = pdf.get_string_width(f"{badge_text}: {score:.2f}") + 6
+                            pdf.cell(badge_width, 6, f"{badge_text}: {score:.2f}", 0, 1, 'L', True)
+                            pdf.ln(2)
+                            pdf.set_text_color(32, 33, 36)
+                        except (ValueError, TypeError):
+                            pass
+    
+                    # Caption
+                    pdf.set_font('Helvetica', 'I', 10)
+                    pdf.set_text_color(80, 80, 80)
+                    caption = entry.get("caption", "")
+                    if caption:
+                        pdf.multi_cell(0, 5, caption, 0)
+                        pdf.ln(2)
+    
+                    # Concept rationale
+                    pdf.set_font('Helvetica', '', 10)
+                    pdf.set_text_color(32, 33, 36)
+                    concept = entry.get("concept", "")
+                    if concept:
+                        pdf.set_font('Helvetica', 'B', 10)
+                        pdf.cell(0, 5, "Concept:", 0, 1)
+                        pdf.set_font('Helvetica', '', 10)
+                        pdf.multi_cell(0, 5, concept, 0)
+                        pdf.ln(2)
+    
+                    # AI prompt (smaller gray text)
+                    prompt = entry.get("img_prompt", "")
+                    if prompt:
+                        pdf.set_font('Helvetica', '', 8)
+                        pdf.set_text_color(128, 128, 128)
+                        pdf.multi_cell(0, 4, f"AI Prompt: {prompt[:300]}", 0)
+    
+                # Videos
+                for idx, entry in enumerate(vid_artifact_list or []):
+                    pdf.add_page()
+    
+                    artifact_key = entry.get("artifact_key", "")
+                    vid_path = os.path.join(VID_SUBDIR, artifact_key)
+    
+                    pdf.set_font('Helvetica', 'B', 14)
+                    pdf.set_text_color(26, 115, 232)
+                    headline = entry.get("headline") or entry.get("concept_name") or entry.get("title", "Commercial Video")
+                    headline = headline.replace("_", " ").title()
+                    pdf.multi_cell(0, 7, headline, 0)
+                    pdf.ln(2)
+    
+                    # Video thumbnail
+                    if os.path.exists(vid_path):
+                        frame_path = os.path.join(VID_SUBDIR, artifact_key.replace(".mp4", ".png"))
+                        if os.path.exists(frame_path):
                             try:
-                                safe_n = name.replace(" ", "_").replace(",", "")
-                                portrait_local = os.path.join(PORTRAIT_DIR, f"{safe_n}.png")
-                                blob_name = portrait_uri.replace(gcs_bucket + "/", "")
+                                pdf.image(frame_path, x=10, w=190)
+                                pdf.ln(3)
+                            except Exception as e:
+                                logging.warning(f"Could not embed video frame: {e}")
+    
+                    # Caption and details (similar to images)
+                    pdf.set_font('Helvetica', 'I', 10)
+                    pdf.set_text_color(80, 80, 80)
+                    caption = entry.get("caption", "")
+                    if caption:
+                        pdf.multi_cell(0, 5, caption, 0)
+                        pdf.ln(2)
+    
+                    pdf.set_font('Helvetica', '', 10)
+                    pdf.set_text_color(32, 33, 36)
+                    concept = entry.get("concept", "")
+                    if concept:
+                        pdf.set_font('Helvetica', 'B', 10)
+                        pdf.cell(0, 5, "Concept:", 0, 1)
+                        pdf.set_font('Helvetica', '', 10)
+                        pdf.multi_cell(0, 5, concept, 0)
+    
+                # ==================== #
+                # 5. COMMERCIAL STORYBOARD
+                # ==================== #
+                if commercial_artifact and commercial_artifact.get("gcs_uri"):
+                    pdf.add_page()
+                    pdf.set_font('Helvetica', 'B', 18)
+                    pdf.set_text_color(0, 51, 160)
+                    pdf.cell(0, 10, "Commercial Storyboard", 0, 1)
+                    pdf.ln(3)
+    
+                    metadata = commercial_artifact.get("metadata", {})
+                    if isinstance(metadata, dict):
+                        pdf.set_font('Helvetica', 'B', 12)
+                        pdf.set_text_color(32, 33, 36)
+                        title = metadata.get("title", "Campaign Commercial")
+                        pdf.cell(0, 6, title, 0, 1)
+    
+                        pdf.set_font('Helvetica', '', 10)
+                        duration = metadata.get("duration_seconds", "N/A")
+                        pdf.cell(0, 5, f"Duration: {duration}s", 0, 1)
+                        pdf.ln(2)
+    
+                    # Extract 4 frames from commercial
+                    gcs_uri = commercial_artifact.get("gcs_uri", "")
+                    if gcs_uri:
+                        # Download commercial if not already downloaded
+                        commercial_filename = os.path.basename(gcs_uri)
+                        commercial_local_path = os.path.join(VID_SUBDIR, commercial_filename)
+    
+                        if not os.path.exists(commercial_local_path):
+                            try:
+                                # Extract just the blob path from GCS URI
+                                blob_path = gcs_uri.replace(gcs_bucket + "/", "")
                                 download_image_from_gcs(
-                                    source_blob_name=blob_name,
-                                    destination_file_name=portrait_local,
+                                    source_blob_name=blob_path,
+                                    destination_file_name=commercial_local_path,
                                 )
                             except Exception as e:
-                                logging.warning(f"Could not download panelist portrait {name}: {e}")
-                                portrait_local = None
-
-                        # Card layout: portrait left, info right
-                        card_y = pdf.get_y()
-                        pdf.set_fill_color(248, 249, 250)
-                        pdf.rect(10, card_y, 190, 55, 'F')
-
-                        if portrait_local and os.path.exists(portrait_local):
-                            try:
-                                pdf.image(portrait_local, x=15, y=card_y + 5, w=40, h=40)
-                            except Exception:
-                                pass
-
-                        info_x = 65 if portrait_local else 15
-                        pdf.set_xy(info_x, card_y + 5)
-                        pdf.set_font('Helvetica', 'B', 13)
-                        pdf.set_text_color(32, 33, 36)
-                        pdf.cell(0, 7, f"{name}, Age {age}", 0, 1)
-
-                        pdf.set_x(info_x)
-                        pdf.set_font('Helvetica', 'I', 10)
-                        pdf.set_text_color(80, 80, 80)
-                        if persona:
-                            pdf.multi_cell(130, 5, persona[:200], 0)
-
-                        if p.get("testimonial_video_gcs_uri"):
-                            pdf.set_x(info_x)
-                            pdf.set_font('Helvetica', '', 8)
-                            pdf.set_text_color(26, 115, 232)
-                            pdf.cell(0, 4, "Video testimonial recorded", 0, 1)
-
-                        pdf.set_y(card_y + 60)
+                                logging.warning(f"Could not download commercial for storyboard: {e}")
+    
+                        # Extract 4 frames
+                        if os.path.exists(commercial_local_path):
+                            frame_dir = os.path.join(VID_SUBDIR, "storyboard_frames")
+                            os.makedirs(frame_dir, exist_ok=True)
+    
+                            frame_paths = extract_multiple_frames(commercial_local_path, num_frames=4, output_dir=frame_dir)
+    
+                            if frame_paths:
+                                scenes = metadata.get("scene_descriptions", []) if isinstance(metadata, dict) else []
+    
+                                # Display frames in 2x2 grid
+                                for i in range(0, len(frame_paths), 2):
+                                    row_y = pdf.get_y()
+    
+                                    # Left frame
+                                    if i < len(frame_paths):
+                                        try:
+                                            pdf.image(frame_paths[i], x=10, y=row_y, w=90)
+                                            pdf.set_xy(10, row_y + 55)
+                                            pdf.set_font('Helvetica', 'I', 8)
+                                            pdf.set_text_color(80, 80, 80)
+                                            scene_desc = scenes[i] if i < len(scenes) else f"Frame {i+1}"
+                                            pdf.multi_cell(90, 4, scene_desc[:150], 0)
+                                        except Exception as e:
+                                            logging.warning(f"Could not embed storyboard frame {i}: {e}")
+    
+                                    # Right frame
+                                    if i + 1 < len(frame_paths):
+                                        try:
+                                            pdf.image(frame_paths[i+1], x=110, y=row_y, w=90)
+                                            pdf.set_xy(110, row_y + 55)
+                                            pdf.set_font('Helvetica', 'I', 8)
+                                            pdf.set_text_color(80, 80, 80)
+                                            scene_desc = scenes[i+1] if i+1 < len(scenes) else f"Frame {i+2}"
+                                            pdf.multi_cell(90, 4, scene_desc[:150], 0)
+                                        except Exception as e:
+                                            logging.warning(f"Could not embed storyboard frame {i+1}: {e}")
+    
+                                    pdf.set_y(row_y + 70)
+                                    pdf.ln(5)
+    
+                                pdf.set_text_color(32, 33, 36)
+                            else:
+                                pdf.set_font('Helvetica', '', 10)
+                                pdf.cell(0, 5, "Storyboard frames could not be extracted.", 0, 1)
+    
+                    # Narrative arc and other details
+                    if isinstance(metadata, dict):
                         pdf.ln(3)
-
-            # ==================== #
-            # 7. BACK COVER
-            # ==================== #
-            pdf.is_back_cover = True
-            pdf.add_page()
-
-            # Bottom accent bar
-            pdf.set_fill_color(0, 51, 160)
-            pdf.rect(0, 267, 210, 30, 'F')
-
-            # Center content
-            pdf.set_y(100)
-            pdf.set_font('Helvetica', 'B', 24)
-            pdf.set_text_color(0, 51, 160)
-            pdf.cell(0, 12, "Trends & Insights AI Platform", 0, 1, 'C')
-
-            pdf.ln(10)
-            pdf.set_font('Helvetica', '', 11)
-            pdf.set_text_color(100, 100, 100)
-            pdf.cell(0, 6, "Powered by Google Gemini, Veo, and Agent Development Kit", 0, 1, 'C')
-
-            pdf.ln(20)
-            pdf.set_font('Helvetica', '', 10)
-
-            # Campaign metadata summary
-            summary_items = [
-                f"Report Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}",
-                f"Total Images: {len(img_artifact_list or [])}",
-                f"Total Videos: {len(vid_artifact_list or [])}",
-                f"Commercial: {'Included' if has_commercial else 'Not produced'}",
-                f"Focus Group: {focus_verdict}",
-            ]
-
-            for item in summary_items:
-                pdf.cell(0, 6, item, 0, 1, 'C')
-
-            pdf.is_back_cover = False
-
-            # Output branded PDF
-            pdf.output(report_filepath)
-
-        except Exception as branded_err:
-            logging.warning(f"Branded PDF layout failed ({branded_err}), falling back to simple PDF")
-            pdf = FPDF()
-            pdf.set_auto_page_break(auto=True, margin=15)
-            pdf.add_page()
-            pdf.set_font('Helvetica', '', 10)
-            all_text = f"{processed_report}\n\n{IMG_CREATIVE_STRING}\n\n{VID_CREATIVE_STRING}\n\n{COMMERCIAL_STRING}\n\n{FOCUS_GROUP_STRING}"
-            for line in all_text.split('\n'):
-                safe_line = _sanitize_text(line.strip())
-                if safe_line:
-                    try:
-                        pdf.multi_cell(0, 5, safe_line, 0)
-                    except Exception:
-                        pass
-                else:
-                    pdf.ln(2)
-            pdf.output(report_filepath)
-
+                        pdf.set_font('Helvetica', '', 10)
+                        pdf.set_text_color(32, 33, 36)
+    
+                        if metadata.get("narrative_arc"):
+                            pdf.set_font('Helvetica', 'B', 10)
+                            pdf.cell(0, 5, "Narrative Arc:", 0, 1)
+                            pdf.set_font('Helvetica', '', 10)
+                            pdf.multi_cell(0, 5, metadata["narrative_arc"], 0)
+                            pdf.ln(2)
+    
+                        if metadata.get("target_audience_appeal"):
+                            pdf.set_font('Helvetica', 'B', 10)
+                            pdf.cell(0, 5, "Target Audience Appeal:", 0, 1)
+                            pdf.set_font('Helvetica', '', 10)
+                            pdf.multi_cell(0, 5, metadata["target_audience_appeal"], 0)
+    
+                # ==================== #
+                # 6. FOCUS GROUP REPORT
+                # ==================== #
+                if focus_group_evaluation or panelists:
+                    pdf.add_page()
+                    pdf.set_font('Helvetica', 'B', 18)
+                    pdf.set_text_color(0, 51, 160)
+                    pdf.cell(0, 10, "Focus Group Evaluation", 0, 1)
+                    pdf.ln(3)
+    
+                    pdf.set_font('Helvetica', '', 10)
+                    pdf.set_text_color(32, 33, 36)
+    
+                    if focus_group_evaluation:
+                        # Try to parse as JSON first (common from LLM output)
+                        import json as _json
+                        fg_data = None
+                        fg_narrative_after = ""
+                        fg_text = focus_group_evaluation.strip()
+                        # Split at closing fence — text after ``` is narrative
+                        if "```" in fg_text:
+                            fence_parts = fg_text.split("```")
+                            # fence_parts[0] = before opening fence (empty)
+                            # fence_parts[1] = JSON block (with lang hint)
+                            # fence_parts[2] = narrative text after closing fence
+                            if len(fence_parts) >= 3:
+                                json_block = fence_parts[1]
+                                fg_narrative_after = fence_parts[2].strip()
+                            else:
+                                json_block = fence_parts[1] if len(fence_parts) > 1 else fg_text
+                            # Strip language hint (e.g., json_focus_group)
+                            json_block = re.sub(r"^[a-zA-Z_]+\n", "", json_block.strip())
+                            fg_text = json_block
+    
+                        try:
+                            fg_data = _json.loads(fg_text)
+                        except (_json.JSONDecodeError, ValueError):
+                            fg_data = None
+    
+                        if fg_data and isinstance(fg_data, dict):
+                            # Render structured focus group data
+                            fg_panelists = fg_data.get("panelists", [])
+                            overall = fg_data.get("overall_score", "")
+                            verdict = fg_data.get("go_no_go", "")
+                            suggestions = fg_data.get("improvement_suggestions", [])
+    
+                            # Overall verdict banner
+                            if verdict:
+                                if str(verdict).upper() == "GO":
+                                    pdf.set_fill_color(52, 168, 83)
+                                else:
+                                    pdf.set_fill_color(234, 67, 53)
+                                pdf.set_text_color(255, 255, 255)
+                                pdf.set_font('Helvetica', 'B', 14)
+                                verdict_text = f"Verdict: {verdict}"
+                                if overall:
+                                    verdict_text += f"  |  Overall Score: {overall}/10"
+                                vw = pdf.get_string_width(verdict_text) + 16
+                                pdf.cell(vw, 10, verdict_text, 0, 1, 'L', True)
+                                pdf.ln(5)
+                                pdf.set_text_color(32, 33, 36)
+    
+                            # Panelist cards
+                            for p in fg_panelists:
+                                name = p.get("name", "Unknown")
+                                age = p.get("age", "")
+                                occ = p.get("occupation", "")
+                                persona = p.get("persona", "")
+                                testimonial = p.get("testimonial", "")
+                                scores = p.get("scores", {})
+    
+                                # Name + demographics
+                                pdf.set_font('Helvetica', 'B', 12)
+                                pdf.set_text_color(0, 51, 160)
+                                demo = f"{name}"
+                                if age:
+                                    demo += f", {age}"
+                                if occ:
+                                    demo += f" - {occ}"
+                                pdf.multi_cell(0, 6, demo, 0)
+    
+                                # Persona
+                                if persona:
+                                    pdf.set_font('Helvetica', 'I', 9)
+                                    pdf.set_text_color(100, 100, 100)
+                                    pdf.multi_cell(0, 4, persona[:300], 0)
+                                    pdf.ln(1)
+    
+                                # Testimonial
+                                if testimonial:
+                                    pdf.set_font('Helvetica', '', 10)
+                                    pdf.set_text_color(32, 33, 36)
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(0, 5, f'"{testimonial}"', 0)
+                                    pdf.ln(1)
+    
+                                # Scores as inline badges
+                                if scores and isinstance(scores, dict):
+                                    pdf.set_font('Helvetica', '', 8)
+                                    x_start = pdf.get_x()
+                                    for metric, val in scores.items():
+                                        label = metric.replace("_", " ").title()
+                                        score_val = val if isinstance(val, (int, float)) else 0
+                                        if score_val >= 8:
+                                            pdf.set_fill_color(52, 168, 83)
+                                        elif score_val >= 6:
+                                            pdf.set_fill_color(251, 188, 4)
+                                        else:
+                                            pdf.set_fill_color(234, 67, 53)
+                                        pdf.set_text_color(255, 255, 255)
+                                        cell_text = f"{label}: {val}"
+                                        cw = pdf.get_string_width(cell_text) + 6
+                                        if pdf.get_x() + cw > 190:
+                                            pdf.ln(6)
+                                        pdf.cell(cw, 5, cell_text, 0, 0, 'C', True)
+                                        pdf.cell(2, 5, "", 0, 0)
+                                    pdf.ln(8)
+                                    pdf.set_text_color(32, 33, 36)
+                                else:
+                                    pdf.ln(5)
+    
+                            # Improvement suggestions
+                            if suggestions:
+                                pdf.ln(3)
+                                pdf.set_font('Helvetica', 'B', 11)
+                                pdf.set_text_color(26, 115, 232)
+                                pdf.cell(0, 6, "Improvement Suggestions", 0, 1)
+                                pdf.set_font('Helvetica', '', 10)
+                                pdf.set_text_color(32, 33, 36)
+                                for s in suggestions:
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(0, 5, f"- {s}", 0)
+    
+                            # Narrative evaluation (from after closing fence or inside JSON)
+                            narrative = fg_narrative_after or fg_data.get("narrative_evaluation", "")
+                            if narrative:
+                                pdf.add_page()
+                                pdf.set_font('Helvetica', 'B', 18)
+                                pdf.set_text_color(0, 51, 160)
+                                pdf.cell(0, 10, "Narrative Evaluation", 0, 1)
+                                pdf.ln(3)
+                                pdf.set_font('Helvetica', '', 10)
+                                pdf.set_text_color(32, 33, 36)
+                                # Parse narrative markdown
+                                for nline in narrative.split('\n'):
+                                    ns = nline.strip()
+                                    if ns.startswith('###'):
+                                        pdf.ln(2)
+                                        pdf.set_font('Helvetica', 'B', 11)
+                                        pdf.set_text_color(26, 115, 232)
+                                        pdf.multi_cell(0, 5, ns.lstrip('#').strip(), 0)
+                                        pdf.set_font('Helvetica', '', 10)
+                                        pdf.set_text_color(32, 33, 36)
+                                    elif ns.startswith('##'):
+                                        pdf.ln(2)
+                                        pdf.set_font('Helvetica', 'B', 12)
+                                        pdf.set_text_color(26, 115, 232)
+                                        pdf.multi_cell(0, 6, ns.lstrip('#').strip(), 0)
+                                        pdf.set_font('Helvetica', '', 10)
+                                        pdf.set_text_color(32, 33, 36)
+                                    elif ns.startswith('- ') or ns.startswith('* '):
+                                        pdf.set_x(15)
+                                        pdf.multi_cell(0, 5, f"- {ns[2:]}", 0)
+                                    elif '**' in ns:
+                                        clean = ns.replace('**', '')
+                                        if clean.strip():
+                                            pdf.set_font('Helvetica', 'B', 10)
+                                            pdf.multi_cell(0, 5, clean, 0)
+                                            pdf.set_font('Helvetica', '', 10)
+                                    elif ns:
+                                        pdf.multi_cell(0, 5, ns, 0)
+                                    else:
+                                        pdf.ln(1)
+    
+                        else:
+                            # Fallback: render as markdown-like text
+                            eval_lines = focus_group_evaluation.split('\n')
+                            in_table = False
+                            for line in eval_lines:
+                                line_stripped = line.strip()
+    
+                                if '|' in line_stripped and line_stripped.startswith('|'):
+                                    cells = [c.strip() for c in line_stripped.split('|') if c.strip()]
+                                    if all(set(c) <= {'-', ':'} for c in cells):
+                                        continue
+                                    if not in_table:
+                                        in_table = True
+                                        pdf.set_font('Helvetica', 'B', 9)
+                                        pdf.set_fill_color(0, 51, 160)
+                                        pdf.set_text_color(255, 255, 255)
+                                        col_w = 190 / max(len(cells), 1)
+                                        for cell in cells:
+                                            pdf.cell(col_w, 6, cell[:30], 1, 0, 'C', True)
+                                        pdf.ln()
+                                        pdf.set_text_color(32, 33, 36)
+                                    else:
+                                        pdf.set_font('Helvetica', '', 8)
+                                        col_w = 190 / max(len(cells), 1)
+                                        for cell in cells:
+                                            pdf.cell(col_w, 5, cell[:30], 1, 0, 'L')
+                                        pdf.ln()
+                                else:
+                                    if in_table:
+                                        in_table = False
+                                        pdf.ln(2)
+    
+                                    if line_stripped.startswith('###'):
+                                        pdf.ln(2)
+                                        pdf.set_font('Helvetica', 'B', 11)
+                                        pdf.set_text_color(26, 115, 232)
+                                        pdf.multi_cell(0, 5, line_stripped.lstrip('#').strip(), 0)
+                                        pdf.set_font('Helvetica', '', 10)
+                                        pdf.set_text_color(32, 33, 36)
+                                    elif line_stripped.startswith('##'):
+                                        pdf.ln(2)
+                                        pdf.set_font('Helvetica', 'B', 12)
+                                        pdf.set_text_color(26, 115, 232)
+                                        pdf.multi_cell(0, 6, line_stripped.lstrip('#').strip(), 0)
+                                        pdf.set_font('Helvetica', '', 10)
+                                        pdf.set_text_color(32, 33, 36)
+                                    elif line_stripped.startswith('- ') or line_stripped.startswith('* '):
+                                        pdf.set_x(15)
+                                        pdf.multi_cell(0, 5, f"- {line_stripped[2:]}", 0)
+                                    elif '**' in line_stripped:
+                                        clean = line_stripped.replace('**', '')
+                                        if clean.strip():
+                                            pdf.set_font('Helvetica', 'B', 10)
+                                            pdf.multi_cell(0, 5, clean, 0)
+                                            pdf.set_font('Helvetica', '', 10)
+                                    elif line_stripped:
+                                        pdf.multi_cell(0, 5, line_stripped, 0)
+                                    else:
+                                        pdf.ln(1)
+                    else:
+                        pdf.multi_cell(0, 5, "No focus group evaluation was conducted.", 0)
+    
+                    # Panelist profiles with portrait images
+                    if panelists:
+                        pdf.add_page()
+                        pdf.set_font('Helvetica', 'B', 18)
+                        pdf.set_text_color(0, 51, 160)
+                        pdf.cell(0, 10, "Focus Group Panelists", 0, 1)
+                        pdf.ln(3)
+    
+                        PORTRAIT_DIR = f"{DIR}/portraits"
+                        os.makedirs(PORTRAIT_DIR, exist_ok=True)
+    
+                        for p in panelists:
+                            name = p.get("name", "Unknown")
+                            age = p.get("age", "N/A")
+                            persona = p.get("persona", "")
+                            portrait_uri = p.get("portrait_gcs_uri", "")
+    
+                            # Try to download and embed portrait
+                            portrait_local = None
+                            if portrait_uri:
+                                try:
+                                    safe_n = name.replace(" ", "_").replace(",", "")
+                                    portrait_local = os.path.join(PORTRAIT_DIR, f"{safe_n}.png")
+                                    blob_name = portrait_uri.replace(gcs_bucket + "/", "")
+                                    download_image_from_gcs(
+                                        source_blob_name=blob_name,
+                                        destination_file_name=portrait_local,
+                                    )
+                                except Exception as e:
+                                    logging.warning(f"Could not download panelist portrait {name}: {e}")
+                                    portrait_local = None
+    
+                            # Card layout: portrait left, info right
+                            card_y = pdf.get_y()
+                            pdf.set_fill_color(248, 249, 250)
+                            pdf.rect(10, card_y, 190, 55, 'F')
+    
+                            if portrait_local and os.path.exists(portrait_local):
+                                try:
+                                    pdf.image(portrait_local, x=15, y=card_y + 5, w=40, h=40)
+                                except Exception:
+                                    pass
+    
+                            info_x = 65 if portrait_local else 15
+                            pdf.set_xy(info_x, card_y + 5)
+                            pdf.set_font('Helvetica', 'B', 13)
+                            pdf.set_text_color(32, 33, 36)
+                            pdf.cell(0, 7, f"{name}, Age {age}", 0, 1)
+    
+                            pdf.set_x(info_x)
+                            pdf.set_font('Helvetica', 'I', 10)
+                            pdf.set_text_color(80, 80, 80)
+                            if persona:
+                                pdf.multi_cell(130, 5, persona[:200], 0)
+    
+                            if p.get("testimonial_video_gcs_uri"):
+                                pdf.set_x(info_x)
+                                pdf.set_font('Helvetica', '', 8)
+                                pdf.set_text_color(26, 115, 232)
+                                pdf.cell(0, 4, "Video testimonial recorded", 0, 1)
+    
+                            pdf.set_y(card_y + 60)
+                            pdf.ln(3)
+    
+                # ==================== #
+                # 7. BACK COVER
+                # ==================== #
+                pdf.is_back_cover = True
+                pdf.add_page()
+    
+                # Bottom accent bar
+                pdf.set_fill_color(0, 51, 160)
+                pdf.rect(0, 267, 210, 30, 'F')
+    
+                # Center content
+                pdf.set_y(100)
+                pdf.set_font('Helvetica', 'B', 24)
+                pdf.set_text_color(0, 51, 160)
+                pdf.cell(0, 12, "Trends & Insights AI Platform", 0, 1, 'C')
+    
+                pdf.ln(10)
+                pdf.set_font('Helvetica', '', 11)
+                pdf.set_text_color(100, 100, 100)
+                pdf.cell(0, 6, "Powered by Google Gemini, Veo, and Agent Development Kit", 0, 1, 'C')
+    
+                pdf.ln(20)
+                pdf.set_font('Helvetica', '', 10)
+    
+                # Campaign metadata summary
+                summary_items = [
+                    f"Report Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}",
+                    f"Total Images: {len(img_artifact_list or [])}",
+                    f"Total Videos: {len(vid_artifact_list or [])}",
+                    f"Commercial: {'Included' if has_commercial else 'Not produced'}",
+                    f"Focus Group: {focus_verdict}",
+                ]
+    
+                for item in summary_items:
+                    pdf.cell(0, 6, item, 0, 1, 'C')
+    
+                pdf.is_back_cover = False
+    
+                # Output branded PDF
+                pdf.output(report_filepath)
+    
+            except Exception as branded_err:
+                logging.warning(f"Branded PDF layout failed ({branded_err}), falling back to simple PDF")
+                pdf = FPDF()
+                pdf.set_auto_page_break(auto=True, margin=15)
+                pdf.add_page()
+                pdf.set_font('Helvetica', '', 10)
+                all_text = f"{processed_report}\n\n{IMG_CREATIVE_STRING}\n\n{VID_CREATIVE_STRING}\n\n{COMMERCIAL_STRING}\n\n{FOCUS_GROUP_STRING}"
+                for line in all_text.split('\n'):
+                    safe_line = _sanitize_text(line.strip())
+                    if safe_line:
+                        try:
+                            pdf.multi_cell(0, 5, safe_line, 0)
+                        except Exception:
+                            pass
+                    else:
+                        pdf.ln(2)
+                pdf.output(report_filepath)
+    
         with open(report_filepath, "rb") as f:
             document_bytes = f.read()
 
