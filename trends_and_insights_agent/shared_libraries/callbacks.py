@@ -192,9 +192,10 @@ def before_model_status_callback(
             status_msg = "Analyzing campaign brief and preparing trend discovery..."
             _force_tool("gather_trends", restrict=True)
         elif not has_trends and not has_cached_trends and not has_campaign_info:
-            # Campaign info missing — force setup_campaign so LLM extracts from user message
-            status_msg = "Setting up campaign details..."
-            _force_tool("setup_campaign", restrict=True)
+            # Campaign info missing — let the model ask the user for details naturally.
+            # Do NOT force any tool here — the model will either ask for brand/product
+            # or call setup_campaign if the user's message already contains the info.
+            status_msg = "Getting campaign details from user..."
         elif not has_trends and has_cached_trends:
             # Trends fetched but user hasn't selected yet — let model present and wait
             status_msg = "Presenting trend options for your selection..."

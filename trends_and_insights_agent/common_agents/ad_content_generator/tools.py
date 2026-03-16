@@ -1090,47 +1090,141 @@ async def save_final_report_tool(
             pdf.set_text_color(32, 33, 36)
 
             if processed_report:
-                # Simple markdown parsing for headers and bullets
+                # Markdown-to-PDF renderer with proper bold, headers, bullets, separators
+                def _render_markdown_line(pdf_obj, line_stripped):
+                    """Render a single markdown line to PDF with formatting."""
+                    # Horizontal rule
+                    if line_stripped in ('---', '***', '___'):
+                        pdf_obj.ln(2)
+                        y = pdf_obj.get_y()
+                        pdf_obj.set_draw_color(200, 200, 200)
+                        pdf_obj.line(10, y, 200, y)
+                        pdf_obj.ln(3)
+                        return
+
+                    # Headers (### before ## before #)
+                    if line_stripped.startswith('### '):
+                        pdf_obj.ln(3)
+                        pdf_obj.set_font('Helvetica', 'B', 11)
+                        pdf_obj.set_text_color(32, 33, 36)
+                        pdf_obj.multi_cell(0, 5, line_stripped.lstrip('#').strip(), 0)
+                        pdf_obj.set_font('Helvetica', '', 10)
+                        pdf_obj.ln(1)
+                        return
+                    if line_stripped.startswith('## '):
+                        pdf_obj.ln(4)
+                        pdf_obj.set_font('Helvetica', 'B', 13)
+                        pdf_obj.set_text_color(26, 115, 232)
+                        pdf_obj.multi_cell(0, 6, line_stripped.lstrip('#').strip(), 0)
+                        pdf_obj.set_font('Helvetica', '', 10)
+                        pdf_obj.set_text_color(32, 33, 36)
+                        pdf_obj.ln(1)
+                        return
+                    if line_stripped.startswith('# '):
+                        pdf_obj.ln(5)
+                        pdf_obj.set_font('Helvetica', 'B', 15)
+                        pdf_obj.set_text_color(0, 51, 160)
+                        pdf_obj.multi_cell(0, 7, line_stripped.lstrip('#').strip(), 0)
+                        pdf_obj.set_font('Helvetica', '', 10)
+                        pdf_obj.set_text_color(32, 33, 36)
+                        pdf_obj.ln(2)
+                        return
+
+                    # Bullets (with sub-bullets)
+                    if line_stripped.startswith('- ') or line_stripped.startswith('* '):
+                        bullet_text = line_stripped[2:]
+                        # Check for bold label pattern: **Label:** rest
+                        bold_match = re.match(r'\*\*(.+?)\*\*:?\s*(.*)', bullet_text)
+                        if bold_match:
+                            label = bold_match.group(1).rstrip(':')
+                            rest = bold_match.group(2)
+                            pdf_obj.set_x(15)
+                            pdf_obj.set_font('Helvetica', 'B', 10)
+                            display = f"- {label}: " if rest else f"- {label}"
+                            label_w = pdf_obj.get_string_width(display) + 2
+                            pdf_obj.cell(label_w, 5, display, 0, 0)
+                            pdf_obj.set_font('Helvetica', '', 10)
+                            if rest:
+                                pdf_obj.multi_cell(0, 5, rest.replace('**', ''), 0)
+                            else:
+                                pdf_obj.ln(5)
+                        else:
+                            pdf_obj.set_x(15)
+                            clean = bullet_text.replace('**', '')
+                            pdf_obj.multi_cell(0, 5, f"- {clean}", 0)
+                        return
+
+                    # Numbered lists (e.g., "1. **Title:**")
+                    num_match = re.match(r'^(\d+)\.\s+(.*)', line_stripped)
+                    if num_match:
+                        num = num_match.group(1)
+                        rest = num_match.group(2)
+                        bold_match = re.match(r'\*\*(.+?)\*\*:?\s*(.*)', rest)
+                        if bold_match:
+                            label = bold_match.group(1).rstrip(':')
+                            desc = bold_match.group(2)
+                            pdf_obj.set_x(12)
+                            pdf_obj.set_font('Helvetica', 'B', 10)
+                            pdf_obj.multi_cell(0, 5, f"{num}. {label}", 0)
+                            if desc:
+                                pdf_obj.set_font('Helvetica', '', 10)
+                                pdf_obj.set_x(18)
+                                pdf_obj.multi_cell(0, 5, desc.replace('**', ''), 0)
+                        else:
+                            pdf_obj.set_x(12)
+                            pdf_obj.multi_cell(0, 5, f"{num}. {rest.replace('**', '')}", 0)
+                        pdf_obj.set_font('Helvetica', '', 10)
+                        return
+
+                    # Bold-only lines (e.g., "**Product Overview:**")
+                    bold_line_match = re.match(r'^\*\*(.+?)\*\*:?\s*$', line_stripped)
+                    if bold_line_match:
+                        pdf_obj.ln(2)
+                        pdf_obj.set_font('Helvetica', 'B', 10)
+                        label = bold_line_match.group(1).rstrip(':')
+                        pdf_obj.multi_cell(0, 5, label + ":", 0)
+                        pdf_obj.set_font('Helvetica', '', 10)
+                        return
+
+                    # Lines with inline bold (e.g., "**Label:** value")
+                    if '**' in line_stripped:
+                        inline_match = re.match(r'\*\*(.+?)\*\*:?\s*(.*)', line_stripped)
+                        if inline_match:
+                            label = inline_match.group(1).rstrip(':')
+                            rest = inline_match.group(2)
+                            pdf_obj.set_font('Helvetica', 'B', 10)
+                            display = f"{label}: " if rest else label
+                            label_w = pdf_obj.get_string_width(display) + 2
+                            pdf_obj.cell(label_w, 5, display, 0, 0)
+                            pdf_obj.set_font('Helvetica', '', 10)
+                            if rest:
+                                pdf_obj.multi_cell(0, 5, rest.replace('**', ''), 0)
+                            else:
+                                pdf_obj.ln(5)
+                        else:
+                            clean = line_stripped.replace('**', '')
+                            if clean.strip():
+                                pdf_obj.multi_cell(0, 5, clean, 0)
+                        return
+
+                    # Italic text (*text*)
+                    if line_stripped.startswith('*') and line_stripped.endswith('*') and not line_stripped.startswith('**'):
+                        pdf_obj.set_font('Helvetica', 'I', 10)
+                        pdf_obj.multi_cell(0, 5, line_stripped.strip('*'), 0)
+                        pdf_obj.set_font('Helvetica', '', 10)
+                        return
+
+                    # Regular text
+                    if line_stripped:
+                        pdf_obj.multi_cell(0, 5, line_stripped, 0)
+                    else:
+                        pdf_obj.ln(2)
+
                 lines = processed_report.split('\n')
                 for line in lines:
-                    line_stripped = line.strip()
-
-                    # Headers
-                    if line_stripped.startswith('## '):
-                        pdf.ln(3)
-                        pdf.set_font('Helvetica', 'B', 13)
-                        pdf.set_text_color(26, 115, 232)  # #1A73E8 Google blue
-                        pdf.multi_cell(0, 6, line_stripped[3:], 0)
-                        pdf.set_font('Helvetica', '', 10)
-                        pdf.set_text_color(32, 33, 36)
-                        pdf.ln(1)
-                    elif line_stripped.startswith('### '):
-                        pdf.ln(2)
-                        pdf.set_font('Helvetica', 'B', 11)
-                        pdf.multi_cell(0, 5, line_stripped[4:], 0)
-                        pdf.set_font('Helvetica', '', 10)
-                        pdf.ln(1)
-                    elif line_stripped.startswith('# ') and not line_stripped.startswith('## '):
-                        pdf.ln(4)
-                        pdf.set_font('Helvetica', 'B', 15)
-                        pdf.set_text_color(0, 51, 160)
-                        pdf.multi_cell(0, 7, line_stripped[2:], 0)
-                        pdf.set_font('Helvetica', '', 10)
-                        pdf.set_text_color(32, 33, 36)
-                        pdf.ln(2)
-                    # Bullets
-                    elif line_stripped.startswith('- ') or line_stripped.startswith('* '):
-                        pdf.set_x(15)
-                        pdf.multi_cell(0, 5, f"• {line_stripped[2:]}", 0)
-                    # Bold text — strip markers and render as regular text
-                    elif '**' in line_stripped:
-                        clean = line_stripped.replace('**', '')
-                        if clean.strip():
-                            pdf.multi_cell(0, 5, clean, 0)
-                    # Regular text
-                    elif line_stripped:
-                        pdf.multi_cell(0, 5, line_stripped, 0)
-                    else:
+                    try:
+                        _render_markdown_line(pdf, line.strip())
+                    except Exception:
                         pdf.ln(2)
             else:
                 pdf.multi_cell(0, 5, "No research report available.", 0)
