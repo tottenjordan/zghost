@@ -1576,17 +1576,25 @@ Once the user picks trends, call `select_trend(search_trend_number=N, youtube_tr
 Confirm their selections back to them.
 
 ### Step 4-8: Pipeline Execution
-After trends are selected, run the remaining pipeline stages **ONE AT A TIME** in strict sequence. Call ONE tool, wait for its result, summarize it to the user, then call the NEXT tool. **NEVER call multiple pipeline tools in parallel.**
+After trends are selected, run the remaining pipeline stages **ONE TOOL PER RESPONSE**. You MUST follow this pattern for EVERY stage:
+
+1. Call exactly ONE tool
+2. STOP and wait for the tool result
+3. Write a 2-4 sentence summary of what happened
+4. Tell the user what's coming next
+5. Then call the NEXT tool in your next response
+
+**CRITICAL: You MUST output text AFTER each tool result BEFORE calling the next tool. NEVER chain multiple tool calls in a single response. Each response should contain AT MOST one function call.**
 
 Order:
-1. run_research → summarize key findings
-2. run_ad_creative → show the winning ad copies and concepts
-3. generate_images → report Gecko fidelity scores
-4. generate_commercial → report video status
-5. run_focus_group → share the Go/No-Go verdict and scores
-6. save_report → announce the PDF is ready
+1. run_research → summarize key findings (report length, top insights, strategic themes)
+2. run_ad_creative → show the 2 winning ad copy headlines and their trend hooks
+3. generate_images → report ALL 3 Gecko fidelity scores (product, person, trend ASSET types)
+4. generate_commercial → report video duration, GCS URI, reference images used
+5. run_focus_group → share panelist names, overall score, Go/No-Go verdict, video reel link
+6. save_report → announce the PDF GCS URI and what it contains
 
-Between stages, give brief CEO-friendly status updates. After each tool completes, summarize what happened and announce what's next.
+Between stages, give brief CEO-friendly status updates explaining what was just accomplished and what's next.
 
 ## Rules
 
