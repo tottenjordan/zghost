@@ -475,7 +475,7 @@ Write the complete report now. Be specific and reference the actual trend titles
             model=config.critic_model,
             contents=prompt,
             config=types.GenerateContentConfig(
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                thinking_config=types.ThinkingConfig(thinking_budget=4096),
                 temperature=0.7,
             ),
         )
@@ -564,7 +564,7 @@ Be bold and creative. Ground every decision in the research findings."""
             model=config.worker_model,
             contents=prompt,
             config=types.GenerateContentConfig(
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                thinking_config=types.ThinkingConfig(thinking_budget=4096),
                 temperature=1.2,
             ),
         )
@@ -1007,13 +1007,21 @@ def generate_commercial(tool_context: ToolContext) -> dict:
 # TOOL 6: run_focus_group
 # ===================================================================
 def run_focus_group(tool_context: ToolContext) -> dict:
-    """Run a simulated focus group evaluation of the campaign creative assets.
+    """Run a full focus group with portraits, Chirp voiceovers, Ken Burns video, Lyria music, and evaluation.
 
-    Call this AFTER generate_commercial. Uses a direct Gemini model call to
-    simulate a 3-person focus group panel evaluating the campaign.
+    Call this AFTER generate_commercial. Produces:
+    1. 3 panelist portraits (Imagen 4)
+    2. 3 Chirp HD voiceover testimonials
+    3. 3 Ken Burns zoom videos (portrait + voiceover)
+    4. Lyria 2 background music
+    5. Concatenated focus group reel
+    6. Text evaluation with scores and Go/No-Go
 
-    Returns a dict with the focus group evaluation text and scores.
+    Returns a dict with the evaluation text, scores, and video assets.
     """
+    import json as _json
+    import subprocess
+
     state = tool_context.state
     brand = state.get("brand", "")
     product = state.get("target_product", "")
@@ -1031,6 +1039,8 @@ def run_focus_group(tool_context: ToolContext) -> dict:
     if isinstance(img_keys, dict):
         img_keys = img_keys.get("img_artifact_keys", [])
     trend_context = _get_trend_context({k: state.get(k) for k in ["target_search_trends", "target_yt_trends", "img_artifact_keys"]})
+    gcs_folder = state.get("gcs_folder", "")
+    bucket = os.getenv("BUCKET", "gs://zghost-media-center")
 
     # Track attempts
     fg_count = state.get("_focus_group_attempts", 0) + 1
@@ -1039,7 +1049,8 @@ def run_focus_group(tool_context: ToolContext) -> dict:
         tool_context.state["_focus_group_complete"] = True
         return {"status": "skipped", "reason": "Max focus group attempts exceeded"}
 
-    prompt = f"""You are simulating a FOCUS GROUP evaluation of a marketing campaign.
+    # Step 1: Generate focus group evaluation text (with panelist personas + testimonials)
+    eval_prompt = f"""You are simulating a FOCUS GROUP evaluation of a marketing campaign.
 
 ## Campaign
 - Brand: {brand}
@@ -1061,44 +1072,310 @@ def run_focus_group(tool_context: ToolContext) -> dict:
 
 Simulate a 3-person focus group with diverse perspectives from the target audience ({audience}).
 
-For each panelist:
-1. Create a persona (name, age, occupation, relevant interests)
-2. Have them evaluate the campaign on these dimensions (score 1-10 each):
-   - Creative Impact: How attention-grabbing and memorable?
-   - Brand Alignment: Does it feel authentic to {brand}?
-   - Trend Relevance: Does it connect to current cultural moments?
-   - Purchase Intent: Would this make them consider buying {product}?
-   - Emotional Response: What feelings does it evoke?
-3. Provide a brief testimonial quote from each panelist
+For each panelist, provide ALL of these fields:
+1. **name**: A realistic full name
+2. **age**: An age appropriate for the target audience
+3. **occupation**: Their job/role
+4. **persona**: A brief description of their personality, interests, and lifestyle (used for portrait generation)
+5. **voice_style**: One of: "young_female", "young_male", "mature_female", "mature_male", "british_female"
+6. **testimonial**: A 2-3 sentence spoken testimonial quote (what they'd say on camera)
+7. **scores**: Rate on 5 dimensions (1-10 each): creative_impact, brand_alignment, trend_relevance, purchase_intent, emotional_response
 
-## Final Assessment
-- Calculate weighted average scores across all panelists
-- Provide an overall campaign score (1-10)
-- Make a Go/No-Go recommendation (threshold: 7.0)
-- List 3 specific improvement suggestions
+## Output Format
+Output a JSON block with the panelists AND the overall assessment:
 
-Output the COMPLETE evaluation with all scores, testimonials, and the Go/No-Go decision."""
+```json_focus_group
+{{
+  "panelists": [
+    {{
+      "name": "...",
+      "age": 25,
+      "occupation": "...",
+      "persona": "...",
+      "voice_style": "young_female",
+      "testimonial": "...",
+      "scores": {{"creative_impact": 8, "brand_alignment": 7, "trend_relevance": 9, "purchase_intent": 7, "emotional_response": 8}}
+    }}
+  ],
+  "overall_score": 8.0,
+  "go_no_go": "GO",
+  "improvement_suggestions": ["...", "...", "..."]
+}}
+```
+
+Then write a narrative evaluation with detailed analysis."""
+
+    evaluation = ""
+    panelists_data = []
+    overall_score = 0.0
+    go_no_go = "PENDING"
 
     try:
         client = genai.Client(vertexai=True)
         response = client.models.generate_content(
             model=config.critic_model,
-            contents=prompt,
+            contents=eval_prompt,
             config=types.GenerateContentConfig(
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                thinking_config=types.ThinkingConfig(thinking_budget=4096),
                 temperature=0.7,
             ),
         )
         evaluation = response.text or ""
-        if len(evaluation) > 200:
-            tool_context.state["focus_group_evaluation"] = evaluation
-            tool_context.state["_focus_group_complete"] = True
-            return {"status": "ok", "evaluation_length": len(evaluation), "evaluation": evaluation}
-        else:
-            return {"status": "error", "error": f"Evaluation too short ({len(evaluation)} chars)"}
+
+        # Parse JSON block from evaluation
+        fg_match = re.search(r'```json_focus_group\s*\n(.*?)\n```', evaluation, re.DOTALL)
+        if not fg_match:
+            fg_match = re.search(r'```json\s*\n(\{.*?"panelists".*?\})\n```', evaluation, re.DOTALL)
+        if fg_match:
+            try:
+                fg_data = _json.loads(fg_match.group(1))
+                panelists_data = fg_data.get("panelists", [])
+                overall_score = fg_data.get("overall_score", 0.0)
+                go_no_go = fg_data.get("go_no_go", "PENDING")
+            except _json.JSONDecodeError:
+                logger.warning("[run_focus_group] Could not parse JSON from evaluation")
     except Exception as e:
-        logger.error(f"[run_focus_group] Failed: {e}")
+        logger.error(f"[run_focus_group] Evaluation failed: {e}")
         return {"status": "error", "error": str(e)[:200]}
+
+    if len(evaluation) < 200:
+        return {"status": "error", "error": f"Evaluation too short ({len(evaluation)} chars)"}
+
+    # Save evaluation text
+    tool_context.state["focus_group_evaluation"] = evaluation
+
+    # Step 2: Generate portraits, voiceovers, Ken Burns videos for each panelist
+    from .skills.focus_group.tools import (
+        PANELIST_VOICES,
+        _generate_lyria_background_music,
+    )
+    from google.cloud import texttospeech_v1beta1 as texttospeech
+    from .shared_libraries.utils import download_blob
+
+    img_client = _get_media_client()
+    tts_client = texttospeech.TextToSpeechClient()
+    bucket_name = bucket.replace("gs://", "")
+    panelist_results = []
+
+    for i, panelist in enumerate(panelists_data[:3]):
+        p_name = panelist.get("name", f"Panelist_{i+1}")
+        p_age = panelist.get("age", 30)
+        p_persona = panelist.get("persona", "consumer")
+        p_voice = panelist.get("voice_style", "young_female")
+        p_testimonial = panelist.get("testimonial", "This is a great product.")
+        safe_name = re.sub(r"[^a-zA-Z0-9_]", "", p_name.replace(" ", "_"))
+
+        p_result = {"name": p_name, "age": p_age, "persona": p_persona}
+
+        # 2a: Generate portrait
+        try:
+            portrait_prompt = (
+                f"Professional headshot photograph of a {p_age}-year-old person matching this "
+                f"consumer persona: {p_persona}. "
+                f"Natural lighting, friendly genuine smile, neutral soft-focus background. "
+                f"High-quality portrait photography. Approachable and authentic."
+            )
+            from google.genai.types import GenerateImagesConfig
+            portrait_resp = img_client.models.generate_images(
+                model="imagen-4.0-generate-preview-06-06",
+                prompt=portrait_prompt,
+                config=GenerateImagesConfig(number_of_images=1),
+            )
+            if portrait_resp and portrait_resp.generated_images:
+                portrait_bytes = portrait_resp.generated_images[0].image.image_bytes
+                portrait_key = f"panelist_{safe_name}.png"
+                portrait_dir = "session_media/focus_group/portraits"
+                os.makedirs(portrait_dir, exist_ok=True)
+                portrait_path = os.path.join(portrait_dir, portrait_key)
+                with open(portrait_path, "wb") as f:
+                    f.write(portrait_bytes)
+
+                # Upload to GCS
+                if gcs_folder:
+                    dest = f"{gcs_folder}/focus_group/{portrait_key}"
+                    upload_blob_to_gcs(source_file_name=portrait_path, destination_blob_name=dest)
+                    p_result["portrait_gcs_uri"] = f"{bucket}/{dest}"
+                p_result["portrait_local"] = portrait_path
+                p_result["portrait_artifact"] = portrait_key
+                logger.info(f"[focus_group] Portrait generated: {p_name}")
+            else:
+                logger.warning(f"[focus_group] Portrait empty for {p_name}")
+        except Exception as e:
+            logger.warning(f"[focus_group] Portrait failed for {p_name}: {e}")
+
+        # 2b: Generate Chirp voiceover
+        try:
+            voice_config = PANELIST_VOICES.get(p_voice, PANELIST_VOICES["young_female"])
+            ssml = f'<speak><prosody rate="1.0">{p_testimonial}</prosody></speak>'
+            voice = texttospeech.VoiceSelectionParams(
+                language_code=voice_config["language_code"],
+                name=voice_config["name"],
+            )
+            audio_cfg = texttospeech.AudioConfig(
+                audio_encoding=texttospeech.AudioEncoding.MP3,
+                sample_rate_hertz=48000,
+            )
+            tts_resp = tts_client.synthesize_speech(
+                request=texttospeech.SynthesizeSpeechRequest(
+                    input=texttospeech.SynthesisInput(ssml=ssml),
+                    voice=voice, audio_config=audio_cfg,
+                )
+            )
+            vo_dir = "session_media/focus_group/voiceover"
+            os.makedirs(vo_dir, exist_ok=True)
+            vo_path = os.path.join(vo_dir, f"panelist_vo_{safe_name}.mp3")
+            with open(vo_path, "wb") as f:
+                f.write(tts_resp.audio_content)
+            if gcs_folder:
+                dest = f"{gcs_folder}/focus_group/voiceover/panelist_vo_{safe_name}.mp3"
+                upload_blob_to_gcs(source_file_name=vo_path, destination_blob_name=dest)
+                p_result["voiceover_gcs_uri"] = f"{bucket}/{dest}"
+            p_result["voiceover_local"] = vo_path
+            logger.info(f"[focus_group] Voiceover generated: {p_name} ({voice_config['name']})")
+        except Exception as e:
+            logger.warning(f"[focus_group] Voiceover failed for {p_name}: {e}")
+
+        # 2c: Ken Burns video (portrait + voiceover)
+        portrait_local = p_result.get("portrait_local")
+        vo_local = p_result.get("voiceover_local")
+        if portrait_local and vo_local and os.path.exists(portrait_local) and os.path.exists(vo_local):
+            try:
+                # Probe audio duration
+                probe = subprocess.run(
+                    ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                     "-of", "default=noprint_wrappers=1:nokey=1", vo_local],
+                    capture_output=True, text=True, timeout=10,
+                )
+                try:
+                    audio_dur = float(probe.stdout.strip())
+                except (ValueError, AttributeError):
+                    audio_dur = 15.0
+                video_dur = audio_dur + 0.5
+
+                vid_dir = "session_media/focus_group/testimonials"
+                os.makedirs(vid_dir, exist_ok=True)
+                vid_key = f"panelist_testimonial_{safe_name}.mp4"
+                vid_path = os.path.join(vid_dir, vid_key)
+                fps = 30
+                total_frames = int(video_dur * fps)
+
+                ffmpeg_cmd = [
+                    "ffmpeg", "-y",
+                    "-loop", "1", "-i", portrait_local,
+                    "-i", vo_local,
+                    "-filter_complex",
+                    (
+                        "[0:v]"
+                        "scale=2160:2160:force_original_aspect_ratio=decrease,"
+                        "pad=2160:2160:(ow-iw)/2:(oh-ih)/2:black,"
+                        f"zoompan=z='1+0.15*on/{total_frames}':"
+                        "x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+                        f"d={total_frames}:s=1920x1080:fps={fps}"
+                        "[v]"
+                    ),
+                    "-map", "[v]", "-map", "1:a",
+                    "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-t", f"{video_dur:.2f}",
+                    "-pix_fmt", "yuv420p",
+                    vid_path,
+                ]
+                result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=120)
+                if result.returncode == 0:
+                    if gcs_folder:
+                        dest = f"{gcs_folder}/focus_group/{vid_key}"
+                        upload_blob_to_gcs(source_file_name=vid_path, destination_blob_name=dest)
+                        p_result["testimonial_video_gcs_uri"] = f"{bucket}/{dest}"
+                    p_result["testimonial_video_local"] = vid_path
+                    p_result["testimonial_video_artifact"] = vid_key
+                    logger.info(f"[focus_group] Ken Burns video: {p_name} ({video_dur:.1f}s)")
+                else:
+                    logger.warning(f"[focus_group] ffmpeg failed for {p_name}: {result.stderr[:200]}")
+            except Exception as e:
+                logger.warning(f"[focus_group] Ken Burns failed for {p_name}: {e}")
+
+        panelist_results.append(p_result)
+
+    # Step 3: Generate Lyria background music
+    lyria_path = None
+    try:
+        music_bytes = _generate_lyria_background_music(brand, product, audience)
+        if music_bytes:
+            lyria_dir = "session_media/focus_group"
+            os.makedirs(lyria_dir, exist_ok=True)
+            lyria_path = os.path.join(lyria_dir, "background_music.mp3")
+            with open(lyria_path, "wb") as f:
+                f.write(music_bytes)
+            if gcs_folder:
+                dest = f"{gcs_folder}/focus_group/background_music.mp3"
+                upload_blob_to_gcs(source_file_name=lyria_path, destination_blob_name=dest)
+            logger.info("[focus_group] Lyria background music generated")
+    except Exception as e:
+        logger.warning(f"[focus_group] Lyria music failed (non-fatal): {e}")
+
+    # Step 4: Concatenate panelist videos into a focus group reel
+    reel_gcs_uri = ""
+    testimonial_videos = [p.get("testimonial_video_local") for p in panelist_results if p.get("testimonial_video_local")]
+    if len(testimonial_videos) >= 2:
+        try:
+            concat_dir = "session_media/focus_group"
+            os.makedirs(concat_dir, exist_ok=True)
+            concat_list = os.path.join(concat_dir, "concat_list.txt")
+            with open(concat_list, "w") as f:
+                for vp in testimonial_videos:
+                    f.write(f"file '{os.path.abspath(vp)}'\n")
+
+            reel_path = os.path.join(concat_dir, "focus_group_reel.mp4")
+            concat_cmd = [
+                "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+                "-i", concat_list, "-c", "copy", reel_path,
+            ]
+            result = subprocess.run(concat_cmd, capture_output=True, text=True, timeout=60)
+            if result.returncode != 0:
+                logger.warning(f"[focus_group] Concat failed: {result.stderr[:200]}")
+            else:
+                # Mix in Lyria music if available
+                if lyria_path and os.path.exists(lyria_path):
+                    reel_with_music = os.path.join(concat_dir, "focus_group_reel_music.mp4")
+                    mix_cmd = [
+                        "ffmpeg", "-y",
+                        "-i", reel_path, "-i", lyria_path,
+                        "-filter_complex",
+                        "[1:a]volume=0.15[bg];[0:a][bg]amix=inputs=2:duration=first[aout]",
+                        "-map", "0:v", "-map", "[aout]",
+                        "-c:v", "copy", "-c:a", "aac", "-b:a", "128k",
+                        reel_with_music,
+                    ]
+                    mix_result = subprocess.run(mix_cmd, capture_output=True, text=True, timeout=60)
+                    if mix_result.returncode == 0:
+                        reel_path = reel_with_music
+                        logger.info("[focus_group] Mixed Lyria music into reel")
+
+                if gcs_folder:
+                    dest = f"{gcs_folder}/focus_group/focus_group_reel.mp4"
+                    upload_blob_to_gcs(source_file_name=reel_path, destination_blob_name=dest)
+                    reel_gcs_uri = f"{bucket}/{dest}"
+                    logger.info(f"[focus_group] Final reel: {reel_gcs_uri}")
+        except Exception as e:
+            logger.warning(f"[focus_group] Reel concat failed: {e}")
+
+    # Persist panelist data and reel URI
+    tool_context.state["focus_group_panelists"] = {"panelists": panelist_results}
+    if reel_gcs_uri:
+        tool_context.state["focus_group_reel_gcs_uri"] = reel_gcs_uri
+    tool_context.state["_focus_group_complete"] = True
+
+    return {
+        "status": "ok",
+        "evaluation_length": len(evaluation),
+        "evaluation": evaluation,
+        "panelists": len(panelist_results),
+        "portraits_generated": sum(1 for p in panelist_results if p.get("portrait_artifact")),
+        "testimonial_videos": sum(1 for p in panelist_results if p.get("testimonial_video_artifact")),
+        "reel_gcs_uri": reel_gcs_uri,
+        "overall_score": overall_score,
+        "go_no_go": go_no_go,
+    }
 
 
 # ===================================================================
