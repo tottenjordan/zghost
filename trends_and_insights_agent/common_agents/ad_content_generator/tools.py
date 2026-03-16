@@ -1155,7 +1155,9 @@ async def save_final_report_tool(
 
                 pdf.set_font('Helvetica', 'B', 14)
                 pdf.set_text_color(26, 115, 232)
-                headline = entry.get("headline", "Untitled")
+                headline = entry.get("headline") or entry.get("concept_name") or entry.get("shot_type", "Untitled")
+                # Make shot_type human readable
+                headline = headline.replace("_", " ").title()
                 pdf.multi_cell(0, 7, headline, 0)
                 pdf.ln(2)
 
@@ -1227,7 +1229,8 @@ async def save_final_report_tool(
 
                 pdf.set_font('Helvetica', 'B', 14)
                 pdf.set_text_color(26, 115, 232)
-                headline = entry.get("headline", "Untitled Video")
+                headline = entry.get("headline") or entry.get("concept_name") or entry.get("title", "Commercial Video")
+                headline = headline.replace("_", " ").title()
                 pdf.multi_cell(0, 7, headline, 0)
                 pdf.ln(2)
 
@@ -1377,70 +1380,225 @@ async def save_final_report_tool(
                 pdf.set_text_color(32, 33, 36)
 
                 if focus_group_evaluation:
-                    # Parse the evaluation text with table support
-                    eval_lines = focus_group_evaluation.split('\n')
-                    in_table = False
-                    for line in eval_lines:
-                        line_stripped = line.strip()
-
-                        # Detect markdown tables (| col1 | col2 |)
-                        if '|' in line_stripped and line_stripped.startswith('|'):
-                            cells = [c.strip() for c in line_stripped.split('|') if c.strip()]
-                            # Skip separator rows (|---|---|)
-                            if all(set(c) <= {'-', ':'} for c in cells):
-                                continue
-                            if not in_table:
-                                in_table = True
-                                # Table header row
-                                pdf.set_font('Helvetica', 'B', 9)
-                                pdf.set_fill_color(0, 51, 160)
-                                pdf.set_text_color(255, 255, 255)
-                                col_w = 190 / max(len(cells), 1)
-                                for cell in cells:
-                                    pdf.cell(col_w, 6, cell[:30], 1, 0, 'C', True)
-                                pdf.ln()
-                                pdf.set_text_color(32, 33, 36)
-                            else:
-                                # Table body row
-                                pdf.set_font('Helvetica', '', 8)
-                                row_fill = pdf.page_no() % 2 == 0  # alternating is hard per-row, skip
-                                col_w = 190 / max(len(cells), 1)
-                                for cell in cells:
-                                    pdf.cell(col_w, 5, cell[:30], 1, 0, 'L')
-                                pdf.ln()
+                    # Try to parse as JSON first (common from LLM output)
+                    import json as _json
+                    fg_data = None
+                    fg_narrative_after = ""
+                    fg_text = focus_group_evaluation.strip()
+                    # Split at closing fence — text after ``` is narrative
+                    if "```" in fg_text:
+                        fence_parts = fg_text.split("```")
+                        # fence_parts[0] = before opening fence (empty)
+                        # fence_parts[1] = JSON block (with lang hint)
+                        # fence_parts[2] = narrative text after closing fence
+                        if len(fence_parts) >= 3:
+                            json_block = fence_parts[1]
+                            fg_narrative_after = fence_parts[2].strip()
                         else:
-                            if in_table:
-                                in_table = False
-                                pdf.ln(2)
+                            json_block = fence_parts[1] if len(fence_parts) > 1 else fg_text
+                        # Strip language hint (e.g., json_focus_group)
+                        json_block = re.sub(r"^[a-zA-Z_]+\n", "", json_block.strip())
+                        fg_text = json_block
 
-                            if line_stripped.startswith('###'):
-                                pdf.ln(2)
-                                pdf.set_font('Helvetica', 'B', 11)
-                                pdf.set_text_color(26, 115, 232)
-                                pdf.multi_cell(0, 5, line_stripped.lstrip('#').strip(), 0)
-                                pdf.set_font('Helvetica', '', 10)
-                                pdf.set_text_color(32, 33, 36)
-                            elif line_stripped.startswith('##'):
-                                pdf.ln(2)
-                                pdf.set_font('Helvetica', 'B', 12)
-                                pdf.set_text_color(26, 115, 232)
-                                pdf.multi_cell(0, 6, line_stripped.lstrip('#').strip(), 0)
-                                pdf.set_font('Helvetica', '', 10)
-                                pdf.set_text_color(32, 33, 36)
-                            elif line_stripped.startswith('- ') or line_stripped.startswith('* '):
-                                pdf.set_x(15)
-                                pdf.multi_cell(0, 5, f"• {line_stripped[2:]}", 0)
-                            elif '**' in line_stripped:
-                                # Bold text — render with emphasis
-                                clean = line_stripped.replace('**', '')
-                                if clean.strip():
-                                    pdf.set_font('Helvetica', 'B', 10)
-                                    pdf.multi_cell(0, 5, clean, 0)
-                                    pdf.set_font('Helvetica', '', 10)
-                            elif line_stripped:
-                                pdf.multi_cell(0, 5, line_stripped, 0)
+                    try:
+                        fg_data = _json.loads(fg_text)
+                    except (_json.JSONDecodeError, ValueError):
+                        fg_data = None
+
+                    if fg_data and isinstance(fg_data, dict):
+                        # Render structured focus group data
+                        fg_panelists = fg_data.get("panelists", [])
+                        overall = fg_data.get("overall_score", "")
+                        verdict = fg_data.get("go_no_go", "")
+                        suggestions = fg_data.get("improvement_suggestions", [])
+
+                        # Overall verdict banner
+                        if verdict:
+                            if str(verdict).upper() == "GO":
+                                pdf.set_fill_color(52, 168, 83)
                             else:
+                                pdf.set_fill_color(234, 67, 53)
+                            pdf.set_text_color(255, 255, 255)
+                            pdf.set_font('Helvetica', 'B', 14)
+                            verdict_text = f"Verdict: {verdict}"
+                            if overall:
+                                verdict_text += f"  |  Overall Score: {overall}/10"
+                            vw = pdf.get_string_width(verdict_text) + 16
+                            pdf.cell(vw, 10, verdict_text, 0, 1, 'L', True)
+                            pdf.ln(5)
+                            pdf.set_text_color(32, 33, 36)
+
+                        # Panelist cards
+                        for p in fg_panelists:
+                            name = p.get("name", "Unknown")
+                            age = p.get("age", "")
+                            occ = p.get("occupation", "")
+                            persona = p.get("persona", "")
+                            testimonial = p.get("testimonial", "")
+                            scores = p.get("scores", {})
+
+                            # Name + demographics
+                            pdf.set_font('Helvetica', 'B', 12)
+                            pdf.set_text_color(0, 51, 160)
+                            demo = f"{name}"
+                            if age:
+                                demo += f", {age}"
+                            if occ:
+                                demo += f" - {occ}"
+                            pdf.multi_cell(0, 6, demo, 0)
+
+                            # Persona
+                            if persona:
+                                pdf.set_font('Helvetica', 'I', 9)
+                                pdf.set_text_color(100, 100, 100)
+                                pdf.multi_cell(0, 4, persona[:300], 0)
                                 pdf.ln(1)
+
+                            # Testimonial
+                            if testimonial:
+                                pdf.set_font('Helvetica', '', 10)
+                                pdf.set_text_color(32, 33, 36)
+                                pdf.set_x(15)
+                                pdf.multi_cell(0, 5, f'"{testimonial}"', 0)
+                                pdf.ln(1)
+
+                            # Scores as inline badges
+                            if scores and isinstance(scores, dict):
+                                pdf.set_font('Helvetica', '', 8)
+                                x_start = pdf.get_x()
+                                for metric, val in scores.items():
+                                    label = metric.replace("_", " ").title()
+                                    score_val = val if isinstance(val, (int, float)) else 0
+                                    if score_val >= 8:
+                                        pdf.set_fill_color(52, 168, 83)
+                                    elif score_val >= 6:
+                                        pdf.set_fill_color(251, 188, 4)
+                                    else:
+                                        pdf.set_fill_color(234, 67, 53)
+                                    pdf.set_text_color(255, 255, 255)
+                                    cell_text = f"{label}: {val}"
+                                    cw = pdf.get_string_width(cell_text) + 6
+                                    if pdf.get_x() + cw > 190:
+                                        pdf.ln(6)
+                                    pdf.cell(cw, 5, cell_text, 0, 0, 'C', True)
+                                    pdf.cell(2, 5, "", 0, 0)
+                                pdf.ln(8)
+                                pdf.set_text_color(32, 33, 36)
+                            else:
+                                pdf.ln(5)
+
+                        # Improvement suggestions
+                        if suggestions:
+                            pdf.ln(3)
+                            pdf.set_font('Helvetica', 'B', 11)
+                            pdf.set_text_color(26, 115, 232)
+                            pdf.cell(0, 6, "Improvement Suggestions", 0, 1)
+                            pdf.set_font('Helvetica', '', 10)
+                            pdf.set_text_color(32, 33, 36)
+                            for s in suggestions:
+                                pdf.set_x(15)
+                                pdf.multi_cell(0, 5, f"- {s}", 0)
+
+                        # Narrative evaluation (from after closing fence or inside JSON)
+                        narrative = fg_narrative_after or fg_data.get("narrative_evaluation", "")
+                        if narrative:
+                            pdf.add_page()
+                            pdf.set_font('Helvetica', 'B', 18)
+                            pdf.set_text_color(0, 51, 160)
+                            pdf.cell(0, 10, "Narrative Evaluation", 0, 1)
+                            pdf.ln(3)
+                            pdf.set_font('Helvetica', '', 10)
+                            pdf.set_text_color(32, 33, 36)
+                            # Parse narrative markdown
+                            for nline in narrative.split('\n'):
+                                ns = nline.strip()
+                                if ns.startswith('###'):
+                                    pdf.ln(2)
+                                    pdf.set_font('Helvetica', 'B', 11)
+                                    pdf.set_text_color(26, 115, 232)
+                                    pdf.multi_cell(0, 5, ns.lstrip('#').strip(), 0)
+                                    pdf.set_font('Helvetica', '', 10)
+                                    pdf.set_text_color(32, 33, 36)
+                                elif ns.startswith('##'):
+                                    pdf.ln(2)
+                                    pdf.set_font('Helvetica', 'B', 12)
+                                    pdf.set_text_color(26, 115, 232)
+                                    pdf.multi_cell(0, 6, ns.lstrip('#').strip(), 0)
+                                    pdf.set_font('Helvetica', '', 10)
+                                    pdf.set_text_color(32, 33, 36)
+                                elif ns.startswith('- ') or ns.startswith('* '):
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(0, 5, f"- {ns[2:]}", 0)
+                                elif '**' in ns:
+                                    clean = ns.replace('**', '')
+                                    if clean.strip():
+                                        pdf.set_font('Helvetica', 'B', 10)
+                                        pdf.multi_cell(0, 5, clean, 0)
+                                        pdf.set_font('Helvetica', '', 10)
+                                elif ns:
+                                    pdf.multi_cell(0, 5, ns, 0)
+                                else:
+                                    pdf.ln(1)
+
+                    else:
+                        # Fallback: render as markdown-like text
+                        eval_lines = focus_group_evaluation.split('\n')
+                        in_table = False
+                        for line in eval_lines:
+                            line_stripped = line.strip()
+
+                            if '|' in line_stripped and line_stripped.startswith('|'):
+                                cells = [c.strip() for c in line_stripped.split('|') if c.strip()]
+                                if all(set(c) <= {'-', ':'} for c in cells):
+                                    continue
+                                if not in_table:
+                                    in_table = True
+                                    pdf.set_font('Helvetica', 'B', 9)
+                                    pdf.set_fill_color(0, 51, 160)
+                                    pdf.set_text_color(255, 255, 255)
+                                    col_w = 190 / max(len(cells), 1)
+                                    for cell in cells:
+                                        pdf.cell(col_w, 6, cell[:30], 1, 0, 'C', True)
+                                    pdf.ln()
+                                    pdf.set_text_color(32, 33, 36)
+                                else:
+                                    pdf.set_font('Helvetica', '', 8)
+                                    col_w = 190 / max(len(cells), 1)
+                                    for cell in cells:
+                                        pdf.cell(col_w, 5, cell[:30], 1, 0, 'L')
+                                    pdf.ln()
+                            else:
+                                if in_table:
+                                    in_table = False
+                                    pdf.ln(2)
+
+                                if line_stripped.startswith('###'):
+                                    pdf.ln(2)
+                                    pdf.set_font('Helvetica', 'B', 11)
+                                    pdf.set_text_color(26, 115, 232)
+                                    pdf.multi_cell(0, 5, line_stripped.lstrip('#').strip(), 0)
+                                    pdf.set_font('Helvetica', '', 10)
+                                    pdf.set_text_color(32, 33, 36)
+                                elif line_stripped.startswith('##'):
+                                    pdf.ln(2)
+                                    pdf.set_font('Helvetica', 'B', 12)
+                                    pdf.set_text_color(26, 115, 232)
+                                    pdf.multi_cell(0, 6, line_stripped.lstrip('#').strip(), 0)
+                                    pdf.set_font('Helvetica', '', 10)
+                                    pdf.set_text_color(32, 33, 36)
+                                elif line_stripped.startswith('- ') or line_stripped.startswith('* '):
+                                    pdf.set_x(15)
+                                    pdf.multi_cell(0, 5, f"- {line_stripped[2:]}", 0)
+                                elif '**' in line_stripped:
+                                    clean = line_stripped.replace('**', '')
+                                    if clean.strip():
+                                        pdf.set_font('Helvetica', 'B', 10)
+                                        pdf.multi_cell(0, 5, clean, 0)
+                                        pdf.set_font('Helvetica', '', 10)
+                                elif line_stripped:
+                                    pdf.multi_cell(0, 5, line_stripped, 0)
+                                else:
+                                    pdf.ln(1)
                 else:
                     pdf.multi_cell(0, 5, "No focus group evaluation was conducted.", 0)
 
