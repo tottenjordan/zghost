@@ -5,6 +5,7 @@ from google.adk.agents import Agent
 
 from .orchestrator import (
     ORCHESTRATOR_INSTRUCTION,
+    setup_campaign,
     gather_trends,
     select_trend,
     run_research,
@@ -23,6 +24,7 @@ root_agent = Agent(
     description="Marketing campaign pipeline orchestrator. Runs trends, research, creative, image gen, video, focus group, and report stages.",
     instruction=ORCHESTRATOR_INSTRUCTION,
     tools=[
+        setup_campaign,
         gather_trends,
         select_trend,
         run_research,

@@ -818,10 +818,32 @@ async def save_final_report_tool(
                 self.is_back_cover = False
 
             def cell(self, w=0, h=None, text="", *args, **kwargs):
-                return super().cell(w, h, _sanitize_text(str(text)), *args, **kwargs)
+                try:
+                    return super().cell(w, h, _sanitize_text(str(text)), *args, **kwargs)
+                except Exception:
+                    # Reset position to safe state and skip this cell
+                    self.set_x(10)
+                    return None
 
             def multi_cell(self, w, h=None, text="", *args, **kwargs):
-                return super().multi_cell(w, h, _sanitize_text(str(text)), *args, **kwargs)
+                # Ensure we have enough horizontal space
+                avail = self.w - self.r_margin - self.x
+                if w == 0:
+                    w_actual = avail
+                else:
+                    w_actual = w
+                if w_actual < 5:
+                    self.set_x(10)
+                    w_actual = self.w - self.r_margin - 10
+                    if w == 0:
+                        w = 0  # keep 0 to use remaining space
+                    else:
+                        w = w_actual
+                try:
+                    return super().multi_cell(w, h, _sanitize_text(str(text)), *args, **kwargs)
+                except Exception:
+                    self.ln(5)
+                    return None
 
             def header(self):
                 if self.is_cover or self.is_back_cover:
@@ -847,50 +869,52 @@ async def save_final_report_tool(
             # ==================== #
             # 1. COVER PAGE
             # ==================== #
-            pdf.is_cover = True
-            pdf.add_page()
+            try:
+                pdf.is_cover = True
+                pdf.add_page()
 
-            # Top accent bar
-            pdf.set_fill_color(0, 51, 160)  # #0033A0
-            pdf.rect(0, 0, 210, 30, 'F')
+                # Top accent bar
+                pdf.set_fill_color(0, 51, 160)  # #0033A0
+                pdf.rect(0, 0, 210, 30, 'F')
 
-            # Title area
-            pdf.set_y(50)
-            pdf.set_font('Helvetica', 'B', 32)
-            pdf.set_text_color(0, 51, 160)
-            pdf.cell(0, 15, brand_name, 0, 1, 'C')
+                # Title area
+                pdf.set_y(50)
+                pdf.set_font('Helvetica', 'B', 32)
+                pdf.set_text_color(0, 51, 160)
+                pdf.cell(0, 15, brand_name, 0, 1, 'C')
 
-            pdf.set_font('Helvetica', '', 24)
-            pdf.set_text_color(32, 33, 36)
-            pdf.cell(0, 12, product_name, 0, 1, 'C')
+                pdf.set_font('Helvetica', '', 24)
+                pdf.set_text_color(32, 33, 36)
+                pdf.cell(0, 12, product_name, 0, 1, 'C')
 
-            if campaign_tagline:
-                pdf.set_y(pdf.get_y() + 5)
-                pdf.set_font('Helvetica', 'I', 14)
+                if campaign_tagline:
+                    pdf.set_y(pdf.get_y() + 5)
+                    pdf.set_font('Helvetica', 'I', 14)
+                    pdf.set_text_color(100, 100, 100)
+                    # Truncate long taglines
+                    if len(campaign_tagline) > 80:
+                        campaign_tagline = campaign_tagline[:77] + "..."
+                    pdf.multi_cell(0, 8, campaign_tagline, 0, 'C')
+
+                # Hero image if available
+                if img_artifact_list and len(img_artifact_list) > 0:
+                    first_img_key = img_artifact_list[0].get("artifact_key", "")
+                    hero_path = os.path.join(IMG_SUBDIR, first_img_key)
+                    if os.path.exists(hero_path):
+                        pdf.set_y(120)
+                        try:
+                            pdf.image(hero_path, x=35, w=140)
+                        except Exception as e:
+                            logging.warning(f"Could not embed hero image: {e}")
+
+                # Footer info
+                pdf.set_y(250)
+                pdf.set_font('Helvetica', '', 10)
                 pdf.set_text_color(100, 100, 100)
-                # Truncate long taglines
-                if len(campaign_tagline) > 80:
-                    campaign_tagline = campaign_tagline[:77] + "..."
-                pdf.multi_cell(0, 8, campaign_tagline, 0, 'C')
-
-            # Hero image if available
-            if img_artifact_list and len(img_artifact_list) > 0:
-                first_img_key = img_artifact_list[0].get("artifact_key", "")
-                hero_path = os.path.join(IMG_SUBDIR, first_img_key)
-                if os.path.exists(hero_path):
-                    pdf.set_y(120)
-                    try:
-                        # Center image, max width 140mm
-                        pdf.image(hero_path, x=35, w=140)
-                    except Exception as e:
-                        logging.warning(f"Could not embed hero image: {e}")
-
-            # Footer info
-            pdf.set_y(250)
-            pdf.set_font('Helvetica', '', 10)
-            pdf.set_text_color(100, 100, 100)
-            pdf.cell(0, 5, f"Campaign Report — {datetime.now().strftime('%B %d, %Y')}", 0, 1, 'C')
-            pdf.cell(0, 5, "Prepared by Trends & Insights AI", 0, 1, 'C')
+                pdf.cell(0, 5, f"Campaign Report — {datetime.now().strftime('%B %d, %Y')}", 0, 1, 'C')
+                pdf.cell(0, 5, "Prepared by Trends & Insights AI", 0, 1, 'C')
+            except Exception as cover_err:
+                logging.warning(f"Cover page failed: {cover_err}")
 
             pdf.is_cover = False
 
@@ -981,56 +1005,77 @@ async def save_final_report_tool(
                 pdf.ln(3)
 
                 # Campaign brief box
-                pdf.set_fill_color(240, 245, 255)  # Light blue
-                box_y = pdf.get_y()
-                pdf.rect(10, box_y, 190, 50, 'F')
-                pdf.set_xy(15, box_y + 5)
-                pdf.set_font('Helvetica', 'B', 11)
-                pdf.set_text_color(0, 51, 160)
-                pdf.cell(0, 6, "Campaign Brief", 0, 1)
-                pdf.set_x(15)
-                pdf.set_font('Helvetica', '', 10)
-                pdf.set_text_color(32, 33, 36)
-                if brand:
-                    pdf.set_x(15)
-                    pdf.cell(90, 5, f"Brand: {brand}", 0, 0)
-                if audience:
-                    pdf.set_x(105)
-                    pdf.cell(90, 5, f"Audience: {audience[:50]}", 0, 1)
-                if product:
-                    pdf.set_x(15)
-                    pdf.cell(0, 5, f"Product: {product}", 0, 1)
-                if selling_points:
-                    pdf.set_x(15)
-                    pdf.multi_cell(180, 5, f"Key Features: {selling_points[:200]}", 0)
-                pdf.set_y(box_y + 55)
-
-                # Trends
-                if target_search_trends:
-                    pdf.set_font('Helvetica', 'B', 12)
-                    pdf.set_text_color(26, 115, 232)
-                    pdf.cell(0, 7, "Google Search Trends", 0, 1)
+                try:
+                    pdf.set_fill_color(240, 245, 255)  # Light blue
+                    box_y = pdf.get_y()
+                    pdf.rect(10, box_y, 190, 50, 'F')
+                    pdf.set_xy(15, box_y + 5)
+                    pdf.set_font('Helvetica', 'B', 11)
+                    pdf.set_text_color(0, 51, 160)
+                    pdf.cell(0, 6, "Campaign Brief", 0, 1)
                     pdf.set_font('Helvetica', '', 10)
                     pdf.set_text_color(32, 33, 36)
-                    trend_text = target_search_trends if isinstance(target_search_trends, str) else str(target_search_trends)
-                    for trend_line in trend_text.split('\n')[:10]:
-                        if trend_line.strip():
-                            pdf.set_x(15)
-                            pdf.multi_cell(0, 5, f"• {trend_line.strip()[:150]}", 0)
-                    pdf.ln(3)
+                    if brand:
+                        pdf.set_x(15)
+                        pdf.cell(0, 5, f"Brand: {brand}", 0, 1)
+                    if product:
+                        pdf.set_x(15)
+                        pdf.cell(0, 5, f"Product: {product}", 0, 1)
+                    if audience:
+                        pdf.set_x(15)
+                        pdf.cell(0, 5, f"Audience: {audience[:80]}", 0, 1)
+                    if selling_points:
+                        pdf.set_x(15)
+                        pdf.multi_cell(180, 5, f"Key Features: {selling_points[:200]}", 0)
+                    pdf.set_y(box_y + 55)
+                except Exception as brief_err:
+                    logging.warning(f"Campaign brief box layout failed: {brief_err}")
+                    pdf.ln(5)
 
-                if target_yt_trends:
-                    pdf.set_font('Helvetica', 'B', 12)
-                    pdf.set_text_color(26, 115, 232)
-                    pdf.cell(0, 7, "YouTube Trends", 0, 1)
-                    pdf.set_font('Helvetica', '', 10)
-                    pdf.set_text_color(32, 33, 36)
-                    yt_text = target_yt_trends if isinstance(target_yt_trends, str) else str(target_yt_trends)
-                    for yt_line in yt_text.split('\n')[:10]:
-                        if yt_line.strip():
+                # Trends — extract human-readable titles from dict or string
+                def _format_trends(raw_trends) -> list[str]:
+                    """Extract trend titles from various formats."""
+                    if isinstance(raw_trends, dict):
+                        items = []
+                        for v in raw_trends.values():
+                            if isinstance(v, list):
+                                for t in v:
+                                    if isinstance(t, dict):
+                                        title = t.get("trend_title") or t.get("title") or t.get("video_title") or ""
+                                        items.append(title)
+                                    elif isinstance(t, str):
+                                        items.append(t)
+                        return [i for i in items if i]
+                    elif isinstance(raw_trends, str):
+                        return [l.strip() for l in raw_trends.split('\n') if l.strip()][:10]
+                    return []
+
+                try:
+                    search_items = _format_trends(target_search_trends)
+                    if search_items:
+                        pdf.set_font('Helvetica', 'B', 12)
+                        pdf.set_text_color(26, 115, 232)
+                        pdf.cell(0, 7, "Google Search Trends", 0, 1)
+                        pdf.set_font('Helvetica', '', 10)
+                        pdf.set_text_color(32, 33, 36)
+                        for item in search_items[:10]:
                             pdf.set_x(15)
-                            pdf.multi_cell(0, 5, f"• {yt_line.strip()[:150]}", 0)
-                    pdf.ln(3)
+                            pdf.multi_cell(180, 5, f"  {item[:120]}", 0)
+                        pdf.ln(3)
+
+                    yt_items = _format_trends(target_yt_trends)
+                    if yt_items:
+                        pdf.set_font('Helvetica', 'B', 12)
+                        pdf.set_text_color(26, 115, 232)
+                        pdf.cell(0, 7, "YouTube Trends", 0, 1)
+                        pdf.set_font('Helvetica', '', 10)
+                        pdf.set_text_color(32, 33, 36)
+                        for item in yt_items[:10]:
+                            pdf.set_x(15)
+                            pdf.multi_cell(180, 5, f"  {item[:120]}", 0)
+                        pdf.ln(3)
+                except Exception as trend_err:
+                    logging.warning(f"Trend section layout failed: {trend_err}")
 
             # ==================== #
             # 3. RESEARCH HIGHLIGHTS

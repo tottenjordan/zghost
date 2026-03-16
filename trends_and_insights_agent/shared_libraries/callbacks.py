@@ -155,9 +155,16 @@ def before_model_status_callback(
         # After gather_trends runs, cached trends exist but user hasn't picked yet
         has_cached_trends = bool(state.get("_cached_search_trends")) or bool(state.get("_cached_yt_trends"))
 
-        if not has_trends and not has_cached_trends:
+        # Check if brand/product are set (needed before gather_trends)
+        has_campaign_info = bool(state.get("brand")) and bool(state.get("target_product"))
+
+        if not has_trends and not has_cached_trends and has_campaign_info:
             status_msg = "Analyzing campaign brief and preparing trend discovery..."
             _force_tool("gather_trends")
+        elif not has_trends and not has_cached_trends and not has_campaign_info:
+            # Campaign info missing — force setup_campaign so LLM extracts from user message
+            status_msg = "Setting up campaign details..."
+            _force_tool("setup_campaign")
         elif not has_trends and has_cached_trends:
             # Trends fetched but user hasn't selected yet — let model present and wait
             status_msg = "Presenting trend options for your selection..."

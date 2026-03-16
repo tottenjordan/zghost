@@ -223,6 +223,43 @@ def _has_trends(trends) -> bool:
 
 
 # ===================================================================
+# TOOL 0: setup_campaign
+# ===================================================================
+def setup_campaign(
+    brand: str,
+    product: str,
+    audience: str,
+    selling_points: str,
+    tool_context: ToolContext,
+) -> dict:
+    """Save campaign setup details to session state.
+
+    Call this FIRST when the user provides their brand, product, audience, and features.
+    This must be called before gather_trends if the campaign info is not yet in state.
+
+    Args:
+        brand: The brand name (e.g., "Tide").
+        product: The product name (e.g., "Tide Fabric Softener").
+        audience: The target audience (e.g., "Gen Z").
+        selling_points: Key product features (e.g., "New Hibiscus Scent").
+
+    Returns:
+        Confirmation of saved campaign details.
+    """
+    tool_context.state["brand"] = brand
+    tool_context.state["target_product"] = product
+    tool_context.state["target_audience"] = audience
+    tool_context.state["key_selling_points"] = selling_points
+    return {
+        "status": "ok",
+        "brand": brand,
+        "product": product,
+        "audience": audience,
+        "selling_points": selling_points,
+    }
+
+
+# ===================================================================
 # TOOL 1: gather_trends
 # ===================================================================
 def gather_trends(tool_context: ToolContext) -> dict:
@@ -343,7 +380,16 @@ def gather_trends(tool_context: ToolContext) -> dict:
         "Do NOT proceed to run_research until the user has selected trends."
     )
 
-    # Persist campaign metadata
+    # Persist campaign metadata — also map common alias keys from UI
+    if not state.get("brand") and state.get("_user_brand"):
+        tool_context.state["brand"] = state["_user_brand"]
+    if not state.get("target_product") and state.get("product"):
+        tool_context.state["target_product"] = state["product"]
+    if not state.get("target_audience") and state.get("audience"):
+        tool_context.state["target_audience"] = state["audience"]
+    if not state.get("key_selling_points") and state.get("features"):
+        tool_context.state["key_selling_points"] = state["features"]
+
     for key in ("brand", "target_product", "target_audience", "key_selling_points"):
         val = state.get(key, "")
         if val:
@@ -1016,19 +1062,38 @@ async def generate_images(tool_context: ToolContext) -> dict:
         if gecko_passed:
             tool_context.state[f"_img_fail_{i}"] = 0
 
-        # Save as ADK artifact so ADK web UI shows inline
+        # Save as ADK artifact — versioned so the UI shows iteration history
+        # Each save to the same filename auto-increments the version
         image_bytes = result.get("image_bytes")
         if image_bytes:
             try:
                 art_part = types.Part(inline_data=types.Blob(mime_type="image/png", data=image_bytes))
-                await tool_context.save_artifact(filename=img_meta["artifact_key"], artifact=art_part)
+                version = await tool_context.save_artifact(filename=img_meta["artifact_key"], artifact=art_part)
+                img_meta["artifact_version"] = version
+                logger.info(f"[generate_images] Saved {img_meta['artifact_key']} v{version} — Gecko {score:.2f if score else 'N/A'}")
             except Exception as e:
                 logger.warning(f"[generate_images] save_artifact failed: {e}")
+
+        # Build detailed result for the model to report
+        gecko_detail = {}
+        if score is not None:
+            gecko_detail["score"] = f"{score:.2f}"
+            gecko_detail["passed"] = gecko_passed
+            gecko_detail["threshold"] = f"{GECKO_THRESHOLD:.1f}"
+            if img_meta.get("gecko_passing_verdicts"):
+                gecko_detail["passing_verdicts"] = img_meta["gecko_passing_verdicts"]
+            if img_meta.get("gecko_failing_verdicts"):
+                gecko_detail["failing_verdicts"] = img_meta["gecko_failing_verdicts"]
+            gecko_detail["attempt"] = fc + 1
+            gecko_detail["max_retries"] = MAX_IMG_RETRIES
 
         image_results.append({
             "slot": i,
             "shot_type": shot["shot_type"],
             "concept_name": img_meta["concept_name"],
+            "artifact_key": img_meta["artifact_key"],
+            "artifact_version": img_meta.get("artifact_version", 0),
+            "gecko": gecko_detail,
             "gecko_score": f"{score:.2f}" if score is not None else "skipped",
             "gecko_passed": gecko_passed,
             "gcs_uri": img_meta.get("gcs_uri", ""),
@@ -1038,7 +1103,27 @@ async def generate_images(tool_context: ToolContext) -> dict:
     current_list = [m for m in img_slots if m is not None]
     tool_context.state["img_artifact_keys"] = {"img_artifact_keys": current_list}
 
-    return {"status": "ok", "images_generated": len([r for r in image_results if "error" not in r]), "image_results": image_results}
+    # Build Gecko summary for the model to present
+    passed_count = len([r for r in image_results if r.get("gecko_passed")])
+    failed_count = len([r for r in image_results if "gecko" in r and not r.get("gecko_passed")])
+    needs_retry = failed_count > 0
+
+    return {
+        "status": "ok",
+        "images_generated": len([r for r in image_results if "error" not in r]),
+        "gecko_summary": {
+            "passed": passed_count,
+            "failed": failed_count,
+            "threshold": GECKO_THRESHOLD,
+            "needs_retry": needs_retry,
+        },
+        "image_results": image_results,
+        "instructions": (
+            "Report each image's Gecko fidelity score, pass/fail status, and specific verdicts. "
+            "Highlight which quality criteria passed and which failed. "
+            "If any images need retry, mention the regeneration with improved prompts."
+        ) if image_results else "",
+    }
 
 
 # ===================================================================
@@ -1773,8 +1858,9 @@ ORCHESTRATOR_INSTRUCTION = """You are a marketing campaign orchestrator AI. You 
 
 You are a seasoned Chief Marketing Officer. You're warm, knowledgeable, and decisive. You explain your reasoning and make the user feel like they're working with a world-class marketing team. Use the brand name and product naturally in conversation.
 
-## Pipeline (8 tools, called in sequence)
+## Pipeline (9 tools, called in sequence)
 
+0. **setup_campaign** - Save brand, product, audience, selling points to state (call first if not in state)
 1. **gather_trends** - Fetch live Google Search + YouTube trends (parallel, cached 1hr)
 2. **select_trend** - Save the user's trend picks (search + YouTube)
 3. **run_research** - Generate comprehensive research report
@@ -1788,8 +1874,9 @@ You are a seasoned Chief Marketing Officer. You're warm, knowledgeable, and deci
 
 ### Step 1: Welcome & Campaign Setup
 FIRST, check session state for `brand`, `target_product`, `target_audience`, `key_selling_points`.
-If ALL are present, greet the user briefly and proceed IMMEDIATELY to Step 2 (call gather_trends).
-Only ask for missing details if the state is empty.
+If ALL are present and non-empty, greet the user briefly and proceed IMMEDIATELY to Step 2 (call gather_trends).
+If they are empty but the user's message contains this info (e.g., "Brand: Tide"), call `setup_campaign` with the extracted values IMMEDIATELY.
+Only ask for missing details if neither state nor the user's message has them.
 
 ### Step 2: Trend Discovery (INTERACTIVE)
 Call `gather_trends` to fetch live trends. Then PRESENT BOTH TABLES to the user:
