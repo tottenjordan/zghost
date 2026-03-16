@@ -638,7 +638,7 @@ Be bold and creative. Ground every decision in the research findings."""
 # ===================================================================
 # TOOL 4: generate_images
 # ===================================================================
-def generate_images(tool_context: ToolContext) -> dict:
+async def generate_images(tool_context: ToolContext) -> dict:
     """Generate 3 reference images (product, person, trend) using Imagen 4 with Gecko quality scoring.
 
     Call this AFTER run_ad_creative. Generates images in parallel, uploads to GCS,
@@ -852,7 +852,7 @@ def generate_images(tool_context: ToolContext) -> dict:
         if image_bytes:
             try:
                 art_part = types.Part(inline_data=types.Blob(mime_type="image/png", data=image_bytes))
-                tool_context.save_artifact(filename=img_meta["artifact_key"], artifact=art_part)
+                await tool_context.save_artifact(filename=img_meta["artifact_key"], artifact=art_part)
             except Exception as e:
                 logger.warning(f"[generate_images] save_artifact failed: {e}")
 
