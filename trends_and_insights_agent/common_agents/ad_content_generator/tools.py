@@ -762,8 +762,9 @@ async def save_final_report_tool(
         # ==================== #
         # Create PDF with fpdf2
         # ==================== #
-        artifact_key = "final_trends_and_creatives_report.pdf"
-        report_filepath = f"{DIR}/{artifact_key}"
+        pdf_artifact_key = "final_trends_and_creatives_report.pdf"
+        artifact_key = pdf_artifact_key
+        report_filepath = f"{DIR}/{pdf_artifact_key}"
 
         def _sanitize_text(text: str) -> str:
             """Replace Unicode characters unsupported by Helvetica (Latin-1) with safe equivalents."""
@@ -1530,22 +1531,22 @@ async def save_final_report_tool(
 
         version = None
         if save_artifact_fn:
-            version = await save_artifact_fn(artifact_key, document_part)
+            version = await save_artifact_fn(pdf_artifact_key, document_part)
 
         if gcs_folder:
             upload_blob_to_gcs(
                 source_file_name=report_filepath,
-                destination_blob_name=os.path.join(gcs_folder, artifact_key),
+                destination_blob_name=os.path.join(gcs_folder, pdf_artifact_key),
             )
 
         logging.info(
-            f"\n\nSaved final report '{artifact_key}', version {version}, to folder '{gcs_folder}'\n\n"
+            f"\n\nSaved final report '{pdf_artifact_key}', version {version}, to folder '{gcs_folder}'\n\n"
         )
 
         shutil.rmtree(DIR)
         return {
             "status": "ok",
-            "artifact_key": artifact_key,
+            "artifact_key": pdf_artifact_key,
             "version": version,
             "message": "Final campaign report saved as PDF with all sections.",
         }

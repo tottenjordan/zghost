@@ -146,10 +146,28 @@ async def draft_research_report_tool(
         artifact_key = "draft_research_report_with_citations.pdf"
         filepath = f"{SUBDIR}/{artifact_key}"
 
-        pdf = MarkdownPdf(toc_level=4)
-        pdf.add_section(Section(f" {processed_report}\n"))
-        pdf.meta["title"] = "[Draft] Trend & Campaign Research Report"
-        pdf.save(filepath)
+        try:
+            pdf = MarkdownPdf(toc_level=4)
+            pdf.add_section(Section(f" {processed_report}\n"))
+            pdf.meta["title"] = "[Draft] Trend & Campaign Research Report"
+            pdf.save(filepath)
+        except Exception as md_err:
+            logging.warning(f"MarkdownPdf failed ({md_err}), using fpdf2 fallback")
+            from fpdf import FPDF
+            fpdf = FPDF()
+            fpdf.set_auto_page_break(auto=True, margin=15)
+            fpdf.add_page()
+            fpdf.set_font('Helvetica', '', 10)
+            for line in processed_report.split('\n'):
+                safe = line.strip().encode("latin-1", errors="replace").decode("latin-1")
+                if safe:
+                    try:
+                        fpdf.multi_cell(0, 5, safe, 0)
+                    except Exception:
+                        pass
+                else:
+                    fpdf.ln(2)
+            fpdf.output(filepath)
 
         with open(filepath, "rb") as f:
             document_bytes = f.read()

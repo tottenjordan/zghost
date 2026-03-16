@@ -114,42 +114,62 @@ def before_model_status_callback(
         model_call_count = state.get("_root_model_calls", 0) + 1
         callback_context.state["_root_model_calls"] = model_call_count
 
-        if not state.get("target_search_trends"):
+        # Detailed status based on pipeline completeness
+        has_trends = bool(state.get("target_search_trends"))
+        has_research = bool(state.get("combined_final_cited_report")) and len(str(state.get("combined_final_cited_report", ""))) > 100
+        has_ad_copies = bool(state.get("final_select_ad_copies"))
+        has_images = bool(state.get("img_artifact_keys"))
+        has_commercial = isinstance(state.get("commercial_artifact"), dict) and state.get("commercial_artifact", {}).get("gcs_uri")
+        has_focus_group = (bool(state.get("focus_group_evaluation")) and len(str(state.get("focus_group_evaluation", ""))) > 20) or state.get("_focus_group_complete")
+        has_final = bool(state.get("final_report_with_citations")) and len(str(state.get("final_report_with_citations", ""))) > 100
+
+        if not has_trends:
             status_msg = "Analyzing campaign brief and preparing trend discovery..."
-        elif not state.get("combined_final_cited_report"):
+        elif not has_research:
             variants = [
                 "Synthesizing trend data into a comprehensive research report...",
                 "Connecting cultural trends to brand strategy with AI analysis...",
                 "Building research insights across Google and YouTube trends...",
             ]
             status_msg = variants[(model_call_count - 1) % len(variants)]
-        elif not state.get("final_select_ad_copies") or (isinstance(state.get("final_select_ad_copies"), dict) and not state["final_select_ad_copies"].get("final_select_ad_copies")):
-            variants = [
-                "Drafting and critiquing ad copy concepts with creative AI...",
-                "Selecting top ad copies and visual concepts for the campaign...",
-                "Evaluating creative concepts against trend alignment scores...",
-            ]
-            status_msg = variants[(model_call_count - 1) % len(variants)]
-        elif not state.get("img_artifact_keys") or (isinstance(state.get("img_artifact_keys"), dict) and not state["img_artifact_keys"].get("img_artifact_keys")):
+        elif not has_ad_copies:
+            status_msg = "Drafting and critiquing ad copy concepts with creative AI..."
+        elif not has_images:
             status_msg = "Generating reference images with Imagen 4 and Gecko quality scoring..."
-        elif not state.get("commercial_artifact") or (isinstance(state.get("commercial_artifact"), dict) and not state["commercial_artifact"].get("gcs_uri")):
-            variants = [
-                "Producing 8-second commercial with Veo 3.1 AI video engine...",
-                "Rendering commercial video with reference image assets...",
-                "Finalizing commercial production — compositing and audio...",
-            ]
-            status_msg = variants[(model_call_count - 1) % len(variants)]
-        elif not state.get("focus_group_evaluation"):
-            variants = [
-                "Assembling virtual focus group panel for campaign evaluation...",
-                "Simulating consumer reactions with AI-generated personas...",
-                "Scoring campaign impact across creative, brand, and purchase intent...",
-            ]
-            status_msg = variants[(model_call_count - 1) % len(variants)]
-        elif not state.get("final_report_with_citations"):
-            status_msg = "Compiling final campaign brief and branded PDF report..."
+        elif not has_commercial:
+            status_msg = "Producing commercial video with Veo 3.1 AI video engine..."
+        elif not has_focus_group:
+            status_msg = "Assembling virtual focus group panel for campaign evaluation..."
+        elif not has_final:
+            # Force the model to call save_report — all stages done but PDF not saved
+            # Use looser check for forcing (any non-empty value counts)
+            _has_research_any = bool(state.get("combined_final_cited_report"))
+            _has_fg_any = bool(state.get("focus_group_evaluation")) or state.get("_focus_group_complete")
+            if _has_research_any and _has_fg_any:
+                status_msg = "Compiling final campaign brief with all assets into branded PDF report..."
+                # Force function calling mode so the model MUST call save_report
+                if llm_request.config is None:
+                    llm_request.config = types.GenerateContentConfig()
+                llm_request.config.tool_config = types.ToolConfig(
+                    function_calling_config=types.FunctionCallingConfig(
+                        mode="ANY",
+                        allowed_function_names=["save_report"],
+                    )
+                )
+                logging.info(f"[MODEL_STATUS] Forcing save_report via tool_config ANY mode. config={llm_request.config.tool_config}")
+            else:
+                # When reviewing pre-populated state, provide rich stage-specific messages
+                review_msgs = [
+                    "Reviewing 6000+ character research report across trend analysis and strategic recommendations...",
+                    "Analyzing ad creative concepts: trend alignment, audience appeal, and brand integration...",
+                    "Evaluating Gecko fidelity scores for product, person, and trend ASSET reference images...",
+                    "Reviewing Veo 3.1 commercial: 8-second cinematic spot with reference image composition...",
+                    "Analyzing focus group panel responses: creative impact, purchase intent, Go/No-Go verdict...",
+                    "Compiling final campaign brief with all assets into branded PDF report...",
+                ]
+                status_msg = review_msgs[(model_call_count - 1) % len(review_msgs)]
         else:
-            status_msg = "Campaign pipeline complete — reviewing final deliverables..."
+            status_msg = "Campaign pipeline complete — all deliverables ready for review..."
     else:
         status_msg = AGENT_STATUS_MESSAGES.get(agent_name, f"Working on {agent_name}...")
 

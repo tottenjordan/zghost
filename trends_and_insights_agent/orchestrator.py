@@ -29,6 +29,7 @@ from google.genai.types import GenerateImagesConfig, GenerateVideosConfig
 from google.adk.tools import ToolContext
 
 from .common_agents.ad_content_generator.tools import save_final_report_tool
+from .common_agents.staged_researcher.tools import draft_research_report_tool
 from .shared_libraries.config import config
 from .shared_libraries.utils import upload_blob_to_gcs, download_blob
 from .shared_libraries.fidelity_eval.gecko import evaluate as gecko_evaluate
@@ -471,7 +472,7 @@ def _recall_cached_trends(scope: str, state: dict) -> list | None:
 # ===================================================================
 # TOOL 2: run_research
 # ===================================================================
-def run_research(tool_context: ToolContext) -> dict:
+async def run_research(tool_context: ToolContext) -> dict:
     """Generate a comprehensive marketing research report using the campaign context and trends.
 
     Call this AFTER gather_trends. Uses a direct Gemini model call to synthesize
@@ -569,7 +570,25 @@ Write the complete report now. Be specific and reference the actual trend titles
         tool_context.state["combined_final_cited_report"] = cached_report
         tool_context.state["_research_pipeline_complete"] = True
         logger.info(f"[run_research] Recovered from GCS cache ({len(cached_report)} chars)")
-        return {"status": "ok", "report_length": len(cached_report), "report": cached_report, "source": "gcs_cache"}
+        # Save draft PDF from cached report
+        draft_pdf_uri = ""
+        try:
+            draft_result = await draft_research_report_tool(
+                processed_report=cached_report,
+                gcs_folder=gcs_folder,
+                save_artifact_fn=tool_context.save_artifact,
+            )
+            if draft_result.get("status") == "ok":
+                draft_key = draft_result.get("artifact_key", "")
+                gcs_bucket = os.environ.get("BUCKET", "gs://zghost-media-center")
+                draft_pdf_uri = f"{gcs_bucket}/{gcs_folder}/{draft_key}" if gcs_folder else ""
+                tool_context.state["draft_pdf_artifact"] = {"artifact_key": draft_key, "gcs_uri": draft_pdf_uri}
+        except Exception as e:
+            logger.warning(f"[run_research] Draft PDF save failed (cache path): {e}")
+        result = {"status": "ok", "report_length": len(cached_report), "report": cached_report, "source": "gcs_cache"}
+        if draft_pdf_uri:
+            result["draft_pdf_uri"] = draft_pdf_uri
+        return result
 
     try:
         client = genai.Client(vertexai=True)
@@ -587,7 +606,31 @@ Write the complete report now. Be specific and reference the actual trend titles
             _gcs_state_write("combined_final_cited_report", report, gcs_folder)
             tool_context.state["combined_final_cited_report"] = report
             tool_context.state["_research_pipeline_complete"] = True
-            return {"status": "ok", "report_length": len(report), "report": report}
+
+            # Save draft research PDF (like main branch)
+            draft_pdf_uri = ""
+            try:
+                draft_result = await draft_research_report_tool(
+                    processed_report=report,
+                    gcs_folder=gcs_folder,
+                    save_artifact_fn=tool_context.save_artifact,
+                )
+                if draft_result.get("status") == "ok":
+                    draft_key = draft_result.get("artifact_key", "")
+                    gcs_bucket = os.environ.get("BUCKET", "gs://zghost-media-center")
+                    draft_pdf_uri = f"{gcs_bucket}/{gcs_folder}/{draft_key}" if gcs_folder else ""
+                    tool_context.state["draft_pdf_artifact"] = {
+                        "artifact_key": draft_key,
+                        "gcs_uri": draft_pdf_uri,
+                    }
+                    logger.info(f"[run_research] Draft PDF saved: {draft_pdf_uri}")
+            except Exception as e:
+                logger.warning(f"[run_research] Draft PDF save failed: {e}")
+
+            result = {"status": "ok", "report_length": len(report), "report": report}
+            if draft_pdf_uri:
+                result["draft_pdf_uri"] = draft_pdf_uri
+            return result
         else:
             return {"status": "error", "error": f"Report too short ({len(report)} chars)", "report": report}
     except Exception as e:
@@ -1632,7 +1675,21 @@ async def save_report(tool_context: ToolContext) -> dict:
         gcs_bucket = os.environ.get("BUCKET", "gs://zghost-media-center")
         pdf_gcs_uri = f"{gcs_bucket}/{gcs_folder}/{artifact_key}" if gcs_folder else ""
         tool_context.state["pdf_artifact"] = {"artifact_key": artifact_key, "gcs_uri": pdf_gcs_uri, "version": result.get("version")}
-        return {"status": "ok", "artifact_key": artifact_key, "gcs_uri": pdf_gcs_uri}
+
+        # Also include draft PDF URI if available
+        draft_pdf = state.get("draft_pdf_artifact", {})
+        draft_pdf_uri = draft_pdf.get("gcs_uri", "") if isinstance(draft_pdf, dict) else ""
+
+        return {
+            "status": "ok",
+            "artifact_key": artifact_key,
+            "gcs_uri": pdf_gcs_uri,
+            "draft_pdf_uri": draft_pdf_uri,
+            "pdf_contents": "Executive Summary, Campaign Context & Trends, Research Highlights, Creative Portfolio with Gecko scores, Commercial Storyboard, Focus Group Evaluation, Panelist Profiles",
+            "total_images": len(img_artifact_list),
+            "has_commercial": bool(isinstance(commercial_artifact, dict) and commercial_artifact.get("gcs_uri")),
+            "has_focus_group": bool(focus_group_evaluation),
+        }
     else:
         tool_context.state["final_report_with_citations"] = processed_report
         return {"status": "error", "error": result.get("error", "unknown")}
@@ -1751,8 +1808,8 @@ Ask: "Which Google Search trend number and YouTube trend number would you like t
 Once the user picks trends, call `select_trend(search_trend_number=N, youtube_trend_number=M)`.
 Confirm their selections back to them.
 
-### Step 4-8: Pipeline Execution
-After trends are selected, run the remaining pipeline stages **ONE TOOL PER RESPONSE**. You MUST follow this pattern for EVERY stage:
+### Step 4-8: Pipeline Execution (YOU MUST CALL TOOLS)
+After trends are selected, run the remaining pipeline stages **ONE TOOL PER RESPONSE**. You MUST ALWAYS call the appropriate tool — NEVER just summarize or describe what would happen. If a stage is complete (state has data), skip to the next stage's tool. You MUST follow this pattern for EVERY stage:
 
 1. Call exactly ONE tool
 2. STOP and wait for the tool result
@@ -1763,23 +1820,28 @@ After trends are selected, run the remaining pipeline stages **ONE TOOL PER RESP
 **CRITICAL: You MUST output text AFTER each tool result BEFORE calling the next tool. NEVER chain multiple tool calls in a single response. Each response should contain AT MOST one function call.**
 
 Order:
-1. run_research → **INCLUDE THE FULL RESEARCH REPORT** in your response. The report is the key deliverable — show the complete text, not just a summary. Include all sections: Campaign Guide, Trend Analysis, Key Insights, Strategic Recommendations.
+1. run_research → **INCLUDE THE FULL RESEARCH REPORT** in your response. The report is the key deliverable — show the complete text, not just a summary. Include all sections: Campaign Guide, Trend Analysis, Key Insights, Strategic Recommendations. Also announce the **Draft PDF artifact** saved (URI from `draft_pdf_uri`).
 2. run_ad_creative → show the 2 winning ad copy headlines and their trend hooks
 3. generate_images → report ALL 3 Gecko fidelity scores (product, person, trend ASSET types)
 4. generate_commercial → report video duration, GCS URI, reference images used
 5. run_focus_group → share panelist names, overall score, Go/No-Go verdict, video reel link
-6. save_report → announce the PDF GCS URI and what it contains
+6. save_report → **PROMINENTLY announce** the Final Campaign PDF:
+   - Show the `gcs_uri` as a clickable GCS link
+   - List what the PDF contains (sections from `pdf_contents`)
+   - Also show the draft research PDF URI from `draft_pdf_uri`
+   - State: "Your campaign report PDF is ready for download"
 
 Between stages, give brief CEO-friendly status updates explaining what was just accomplished and what's next.
 
 ## Rules
 
 1. **ALWAYS wait for user input after presenting trends.** Never auto-select trends.
-2. **Check state before each step**: Skip tools whose output already exists.
+2. **Check state before each step**: Skip tools whose output already exists — EXCEPT save_report (see rule 5).
 3. **Handle errors gracefully**: Note failures and continue to the next stage.
 4. **Pending Veo operations**: If generate_commercial returns "pending", tell the user to say "continue" to resume.
-5. **Always complete**: The pipeline MUST reach save_report.
+5. **MANDATORY save_report**: You MUST call the `save_report` tool if `final_report_with_citations` is empty/missing. This is the ONLY way to generate the PDF — do NOT summarize or fabricate PDF links. The pipeline is NOT complete until `save_report` has been called and returned a `gcs_uri`.
 6. **Show your work**: After each tool, explain what you found/created.
+7. **Never fabricate links**: Only show GCS URIs that are returned by tools. Never construct or guess GCS paths.
 
 ## State Markers (for skipping completed stages)
 - Trends done: `target_search_trends` and `target_yt_trends` have data
@@ -1788,7 +1850,11 @@ Between stages, give brief CEO-friendly status updates explaining what was just 
 - Images done: `img_artifact_keys` has 3 entries
 - Commercial done: `commercial_artifact` has a `gcs_uri`
 - Focus group done: `focus_group_evaluation` has text
+- Draft PDF saved: `draft_pdf_artifact` has an `artifact_key`
 - Report done: `final_report_with_citations` has text
+
+## CRITICAL: If all stages are done EXCEPT save_report
+When you see that research, creative, images, commercial, and focus group data all exist in state BUT `final_report_with_citations` is empty, you MUST immediately call `save_report()`. Do NOT generate a text summary instead. Do NOT fabricate any GCS URIs. The `save_report` tool is the ONLY way to create the actual PDF file.
 
 ## Campaign Context (from session state)
 - **Brand**: {brand}
