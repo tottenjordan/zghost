@@ -145,7 +145,7 @@ def before_model_status_callback(
                 if isinstance(_img, dict) and not _img.get("skipped"):
                     _score = _img.get("fidelity_score")
                     _fails = state.get(f"_img_fail_{_idx}", 0)
-                    if _score is not None and _score < 0.7 and _fails < 5:
+                    if _score is not None and _score < 0.7 and _fails < 2:
                         _images_need_retry = True
                         break
         has_images = _has_enough_images and not _images_need_retry
@@ -190,7 +190,7 @@ def before_model_status_callback(
 
         if not has_trends and not has_cached_trends and has_campaign_info:
             status_msg = "Analyzing campaign brief and preparing trend discovery..."
-            _force_tool("gather_trends")
+            _force_tool("gather_trends", restrict=True)
         elif not has_trends and not has_cached_trends and not has_campaign_info:
             # Campaign info missing — force setup_campaign so LLM extracts from user message
             status_msg = "Setting up campaign details..."
@@ -205,19 +205,22 @@ def before_model_status_callback(
                 "Building research insights across Google and YouTube trends...",
             ]
             status_msg = variants[(model_call_count - 1) % len(variants)]
-            _force_tool("run_research")
+            _force_tool("run_research", restrict=True)
         elif not has_ad_copies:
             status_msg = "Drafting and critiquing ad copy concepts with creative AI..."
-            _force_tool("run_ad_creative")
+            _force_tool("run_ad_creative", restrict=True)
         elif not has_images:
-            status_msg = "Generating reference images with Imagen 4 and Gecko quality scoring..."
-            _force_tool("generate_images")
+            if _images_need_retry:
+                status_msg = "Re-generating images that failed Gecko quality scoring (below 0.7 threshold)..."
+            else:
+                status_msg = "Generating reference images with Imagen 4 and Gecko quality scoring..."
+            _force_tool("generate_images", restrict=True)
         elif not has_commercial:
             status_msg = "Producing commercial video with Veo 3.1 AI video engine..."
-            _force_tool("generate_commercial")
+            _force_tool("generate_commercial", restrict=True)
         elif not has_focus_group:
             status_msg = "Assembling virtual focus group panel for campaign evaluation..."
-            _force_tool("run_focus_group")
+            _force_tool("run_focus_group", restrict=True)
         elif not has_final:
             # Force the model to call save_report — all stages done but PDF not saved
             # Use looser check for forcing (any non-empty value counts)
