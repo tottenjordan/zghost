@@ -1929,6 +1929,7 @@ Between stages, give brief CEO-friendly status updates explaining what was just 
 5. **MANDATORY save_report**: You MUST call the `save_report` tool if `final_report_with_citations` is empty/missing. This is the ONLY way to generate the PDF — do NOT summarize or fabricate PDF links. The pipeline is NOT complete until `save_report` has been called and returned a `gcs_uri`.
 6. **Show your work**: After each tool, explain what you found/created.
 7. **Never fabricate links**: Only show GCS URIs that are returned by tools. Never construct or guess GCS paths.
+8. **Think out loud**: Before calling each tool, reason through WHY this is the right next step. Analyze the intersection of selected trends with the brand/product. Show strategic thinking about how trend insights connect to creative decisions.
 
 ## State Markers (for skipping completed stages)
 - Trends done: `target_search_trends` and `target_yt_trends` have data

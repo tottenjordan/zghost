@@ -131,26 +131,56 @@ def before_model_status_callback(
         ) or (isinstance(_ad_copies_raw, list) and len(_ad_copies_raw) > 0)
 
         # Check for actual image DATA inside the wrapper dict
+        # Also check that all images pass Gecko threshold (0.7) — if any fail
+        # and haven't exceeded retries, re-enter generate_images for retry
         _img_keys_raw = state.get("img_artifact_keys", {})
-        has_images = (
-            isinstance(_img_keys_raw, dict) and len(_img_keys_raw.get("img_artifact_keys", [])) >= 3
-        ) or (isinstance(_img_keys_raw, list) and len(_img_keys_raw) >= 3)
+        _img_list = (
+            _img_keys_raw.get("img_artifact_keys", []) if isinstance(_img_keys_raw, dict) else _img_keys_raw
+        ) if _img_keys_raw else []
+        _img_count = len(_img_list) if isinstance(_img_list, list) else 0
+        _has_enough_images = _img_count >= 3
+        _images_need_retry = False
+        if _has_enough_images and isinstance(_img_list, list):
+            for _idx, _img in enumerate(_img_list):
+                if isinstance(_img, dict) and not _img.get("skipped"):
+                    _score = _img.get("fidelity_score")
+                    _fails = state.get(f"_img_fail_{_idx}", 0)
+                    if _score is not None and _score < 0.7 and _fails < 5:
+                        _images_need_retry = True
+                        break
+        has_images = _has_enough_images and not _images_need_retry
 
         has_commercial = isinstance(state.get("commercial_artifact"), dict) and state.get("commercial_artifact", {}).get("gcs_uri")
         has_focus_group = (bool(state.get("focus_group_evaluation")) and len(str(state.get("focus_group_evaluation", ""))) > 20) or state.get("_focus_group_complete")
         has_final = bool(state.get("final_report_with_citations")) and len(str(state.get("final_report_with_citations", ""))) > 100
 
-        # Helper: force a specific tool call via tool_config
-        def _force_tool(tool_name: str):
+        # Helper: force a tool call via tool_config.
+        # By default, uses mode="ANY" WITHOUT allowed_function_names so the
+        # model must call *some* tool but still thinks about which one —
+        # producing visible thought parts in GE/ADK web.
+        # Use restrict=True for tools that often get skipped (setup, save).
+        def _force_tool(tool_name: str, restrict: bool = False):
             if llm_request.config is None:
                 llm_request.config = types.GenerateContentConfig()
-            llm_request.config.tool_config = types.ToolConfig(
-                function_calling_config=types.FunctionCallingConfig(
-                    mode="ANY",
-                    allowed_function_names=[tool_name],
+            # Preserve thinking config so thoughts are visible
+            if llm_request.config.thinking_config is None:
+                llm_request.config.thinking_config = types.ThinkingConfig(
+                    thinking_budget=8192
                 )
-            )
-            logging.info(f"[MODEL_STATUS] Forcing {tool_name} via tool_config ANY mode")
+            if restrict:
+                llm_request.config.tool_config = types.ToolConfig(
+                    function_calling_config=types.FunctionCallingConfig(
+                        mode="ANY",
+                        allowed_function_names=[tool_name],
+                    )
+                )
+            else:
+                llm_request.config.tool_config = types.ToolConfig(
+                    function_calling_config=types.FunctionCallingConfig(
+                        mode="ANY",
+                    )
+                )
+            logging.info(f"[MODEL_STATUS] Forcing tool call (hint={tool_name}, restrict={restrict})")
 
         # After gather_trends runs, cached trends exist but user hasn't picked yet
         has_cached_trends = bool(state.get("_cached_search_trends")) or bool(state.get("_cached_yt_trends"))
@@ -164,7 +194,7 @@ def before_model_status_callback(
         elif not has_trends and not has_cached_trends and not has_campaign_info:
             # Campaign info missing — force setup_campaign so LLM extracts from user message
             status_msg = "Setting up campaign details..."
-            _force_tool("setup_campaign")
+            _force_tool("setup_campaign", restrict=True)
         elif not has_trends and has_cached_trends:
             # Trends fetched but user hasn't selected yet — let model present and wait
             status_msg = "Presenting trend options for your selection..."
@@ -195,16 +225,7 @@ def before_model_status_callback(
             _has_fg_any = bool(state.get("focus_group_evaluation")) or state.get("_focus_group_complete")
             if _has_research_any and _has_fg_any:
                 status_msg = "Compiling final campaign brief with all assets into branded PDF report..."
-                # Force function calling mode so the model MUST call save_report
-                if llm_request.config is None:
-                    llm_request.config = types.GenerateContentConfig()
-                llm_request.config.tool_config = types.ToolConfig(
-                    function_calling_config=types.FunctionCallingConfig(
-                        mode="ANY",
-                        allowed_function_names=["save_report"],
-                    )
-                )
-                logging.info(f"[MODEL_STATUS] Forcing save_report via tool_config ANY mode. config={llm_request.config.tool_config}")
+                _force_tool("save_report", restrict=True)
             else:
                 # When reviewing pre-populated state, provide rich stage-specific messages
                 review_msgs = [
