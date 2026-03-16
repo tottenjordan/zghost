@@ -146,28 +146,48 @@ async def draft_research_report_tool(
         artifact_key = "draft_research_report_with_citations.pdf"
         filepath = f"{SUBDIR}/{artifact_key}"
 
+        # Try WeasyPrint first for agency-quality output
+        weasyprint_ok = False
         try:
-            pdf = MarkdownPdf(toc_level=4)
-            pdf.add_section(Section(f" {processed_report}\n"))
-            pdf.meta["title"] = "[Draft] Trend & Campaign Research Report"
-            pdf.save(filepath)
-        except Exception as md_err:
-            logging.warning(f"MarkdownPdf failed ({md_err}), using fpdf2 fallback")
-            from fpdf import FPDF
-            fpdf = FPDF()
-            fpdf.set_auto_page_break(auto=True, margin=15)
-            fpdf.add_page()
-            fpdf.set_font('Helvetica', '', 10)
-            for line in processed_report.split('\n'):
-                safe = line.strip().encode("latin-1", errors="replace").decode("latin-1")
-                if safe:
-                    try:
-                        fpdf.multi_cell(0, 5, safe, 0)
-                    except Exception:
-                        pass
-                else:
-                    fpdf.ln(2)
-            fpdf.output(filepath)
+            from ...shared_libraries.pdf_generator import generate_campaign_pdf
+            generate_campaign_pdf(
+                output_path=filepath,
+                processed_report=processed_report,
+                img_artifact_list=[],
+                vid_artifact_list=[],
+                commercial_artifact={},
+                focus_group_evaluation="",
+                focus_group_panelists={},
+                gcs_folder=gcs_folder,
+            )
+            weasyprint_ok = True
+            logging.info("Draft PDF generated with WeasyPrint (agency quality)")
+        except Exception as wp_err:
+            logging.warning(f"WeasyPrint draft PDF failed ({wp_err}), falling back to MarkdownPdf/fpdf2")
+
+        if not weasyprint_ok:
+            try:
+                pdf = MarkdownPdf(toc_level=4)
+                pdf.add_section(Section(f" {processed_report}\n"))
+                pdf.meta["title"] = "[Draft] Trend & Campaign Research Report"
+                pdf.save(filepath)
+            except Exception as md_err:
+                logging.warning(f"MarkdownPdf failed ({md_err}), using fpdf2 fallback")
+                from fpdf import FPDF
+                fpdf = FPDF()
+                fpdf.set_auto_page_break(auto=True, margin=15)
+                fpdf.add_page()
+                fpdf.set_font('Helvetica', '', 10)
+                for line in processed_report.split('\n'):
+                    safe = line.strip().encode("latin-1", errors="replace").decode("latin-1")
+                    if safe:
+                        try:
+                            fpdf.multi_cell(0, 5, safe, 0)
+                        except Exception:
+                            pass
+                    else:
+                        fpdf.ln(2)
+                fpdf.output(filepath)
 
         with open(filepath, "rb") as f:
             document_bytes = f.read()

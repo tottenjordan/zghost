@@ -1129,7 +1129,7 @@ async def generate_images(tool_context: ToolContext) -> dict:
 # ===================================================================
 # TOOL 5: generate_commercial
 # ===================================================================
-def generate_commercial(tool_context: ToolContext) -> dict:
+async def generate_commercial(tool_context: ToolContext) -> dict:
     """Generate a commercial video using Veo 3.1 with ASSET reference images from the campaign.
 
     Call this AFTER generate_images. Submits a Veo video generation job and polls
@@ -1274,6 +1274,16 @@ def generate_commercial(tool_context: ToolContext) -> dict:
                 "deterministic_av_studio": True,
             },
         }
+
+        # Save video as ADK artifact (visible in ADK web / GE UI)
+        try:
+            vid_art = types.Part(inline_data=types.Blob(mime_type="video/mp4", data=video_bytes))
+            vid_version = await tool_context.save_artifact(filename=f"commercial_{duration}s.mp4", artifact=vid_art)
+            commercial_data["artifact_version"] = vid_version
+            logger.info(f"[generate_commercial] Saved video artifact v{vid_version}")
+        except Exception as e:
+            logger.warning(f"[generate_commercial] save_artifact failed: {e}")
+
         # GCS write-through FIRST
         _gcs_state_write("commercial_artifact", commercial_data, gcs_folder)
         tool_context.state["commercial_artifact"] = commercial_data
@@ -1289,7 +1299,7 @@ def generate_commercial(tool_context: ToolContext) -> dict:
 # ===================================================================
 # TOOL 6: run_focus_group
 # ===================================================================
-def run_focus_group(tool_context: ToolContext) -> dict:
+async def run_focus_group(tool_context: ToolContext) -> dict:
     """Run a full focus group with portraits, Chirp voiceovers, Ken Burns video, Lyria music, and evaluation.
 
     Call this AFTER generate_commercial. Produces:
@@ -1660,6 +1670,17 @@ Then write a narrative evaluation with detailed analysis."""
                     upload_blob_to_gcs(source_file_name=reel_path, destination_blob_name=dest)
                     reel_gcs_uri = f"{bucket}/{dest}"
                     logger.info(f"[focus_group] Final reel: {reel_gcs_uri}")
+
+                # Save reel as ADK artifact (visible in ADK web / GE UI)
+                try:
+                    with open(reel_path, "rb") as rf:
+                        reel_bytes = rf.read()
+                    reel_art = types.Part(inline_data=types.Blob(mime_type="video/mp4", data=reel_bytes))
+                    reel_version = await tool_context.save_artifact(filename="focus_group_reel.mp4", artifact=reel_art)
+                    logger.info(f"[focus_group] Saved reel artifact v{reel_version}")
+                except Exception as e:
+                    logger.warning(f"[focus_group] save_artifact for reel failed: {e}")
+
         except Exception as e:
             logger.warning(f"[focus_group] Reel concat failed: {e}")
 
