@@ -115,16 +115,52 @@ def before_model_status_callback(
         callback_context.state["_root_model_calls"] = model_call_count
 
         # Detailed status based on pipeline completeness
-        has_trends = bool(state.get("target_search_trends"))
+        # Check for actual trend DATA, not just the empty dict wrapper
+        _search_trends_raw = state.get("target_search_trends", {})
+        _yt_trends_raw = state.get("target_yt_trends", {})
+        has_trends = (
+            (isinstance(_search_trends_raw, dict) and bool(_search_trends_raw.get("target_search_trends")))
+            or (isinstance(_yt_trends_raw, dict) and bool(_yt_trends_raw.get("target_yt_trends")))
+        )
         has_research = bool(state.get("combined_final_cited_report")) and len(str(state.get("combined_final_cited_report", ""))) > 100
-        has_ad_copies = bool(state.get("final_select_ad_copies"))
-        has_images = bool(state.get("img_artifact_keys"))
+
+        # Check for actual ad copy DATA inside the wrapper dict
+        _ad_copies_raw = state.get("final_select_ad_copies", {})
+        has_ad_copies = (
+            isinstance(_ad_copies_raw, dict) and bool(_ad_copies_raw.get("final_select_ad_copies"))
+        ) or (isinstance(_ad_copies_raw, list) and len(_ad_copies_raw) > 0)
+
+        # Check for actual image DATA inside the wrapper dict
+        _img_keys_raw = state.get("img_artifact_keys", {})
+        has_images = (
+            isinstance(_img_keys_raw, dict) and len(_img_keys_raw.get("img_artifact_keys", [])) >= 3
+        ) or (isinstance(_img_keys_raw, list) and len(_img_keys_raw) >= 3)
+
         has_commercial = isinstance(state.get("commercial_artifact"), dict) and state.get("commercial_artifact", {}).get("gcs_uri")
         has_focus_group = (bool(state.get("focus_group_evaluation")) and len(str(state.get("focus_group_evaluation", ""))) > 20) or state.get("_focus_group_complete")
         has_final = bool(state.get("final_report_with_citations")) and len(str(state.get("final_report_with_citations", ""))) > 100
 
-        if not has_trends:
+        # Helper: force a specific tool call via tool_config
+        def _force_tool(tool_name: str):
+            if llm_request.config is None:
+                llm_request.config = types.GenerateContentConfig()
+            llm_request.config.tool_config = types.ToolConfig(
+                function_calling_config=types.FunctionCallingConfig(
+                    mode="ANY",
+                    allowed_function_names=[tool_name],
+                )
+            )
+            logging.info(f"[MODEL_STATUS] Forcing {tool_name} via tool_config ANY mode")
+
+        # After gather_trends runs, cached trends exist but user hasn't picked yet
+        has_cached_trends = bool(state.get("_cached_search_trends")) or bool(state.get("_cached_yt_trends"))
+
+        if not has_trends and not has_cached_trends:
             status_msg = "Analyzing campaign brief and preparing trend discovery..."
+            _force_tool("gather_trends")
+        elif not has_trends and has_cached_trends:
+            # Trends fetched but user hasn't selected yet — let model present and wait
+            status_msg = "Presenting trend options for your selection..."
         elif not has_research:
             variants = [
                 "Synthesizing trend data into a comprehensive research report...",
@@ -132,14 +168,19 @@ def before_model_status_callback(
                 "Building research insights across Google and YouTube trends...",
             ]
             status_msg = variants[(model_call_count - 1) % len(variants)]
+            _force_tool("run_research")
         elif not has_ad_copies:
             status_msg = "Drafting and critiquing ad copy concepts with creative AI..."
+            _force_tool("run_ad_creative")
         elif not has_images:
             status_msg = "Generating reference images with Imagen 4 and Gecko quality scoring..."
+            _force_tool("generate_images")
         elif not has_commercial:
             status_msg = "Producing commercial video with Veo 3.1 AI video engine..."
+            _force_tool("generate_commercial")
         elif not has_focus_group:
             status_msg = "Assembling virtual focus group panel for campaign evaluation..."
+            _force_tool("run_focus_group")
         elif not has_final:
             # Force the model to call save_report — all stages done but PDF not saved
             # Use looser check for forcing (any non-empty value counts)
