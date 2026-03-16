@@ -36,6 +36,99 @@ from .shared_libraries.fidelity_eval.gecko import evaluate as gecko_evaluate
 logger = logging.getLogger("google_adk." + __name__)
 
 # ---------------------------------------------------------------------------
+# GCS Write-Through Cache (AE state persistence fix)
+# ---------------------------------------------------------------------------
+# On Agent Engine, tool_context.state writes are lost when AE waves timeout
+# before the function_response event is persisted. This write-through cache
+# saves critical state to GCS, and _load_session_state recovers it each wave.
+# ---------------------------------------------------------------------------
+
+_GCS_STATE_KEYS = [
+    "combined_final_cited_report",
+    "ad_creative_output",
+    "commercial_artifact",
+    "focus_group_evaluation",
+    "final_select_ad_copies",
+    "final_select_visual_concepts",
+    "final_select_vis_concepts",
+]
+
+
+def _gcs_state_write(key: str, value, gcs_folder: str):
+    """Write a state value to GCS as a side-channel for cross-wave recovery."""
+    import json as _json
+    if not gcs_folder:
+        return
+    try:
+        bucket = os.getenv("BUCKET", "gs://zghost-media-center")
+        blob_name = f"{gcs_folder}/state/{key}.json"
+        data = _json.dumps(value, default=str) if not isinstance(value, str) else value
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            f.write(data)
+            tmp_path = f.name
+        try:
+            upload_blob_to_gcs(source_file_name=tmp_path, destination_blob_name=blob_name)
+            logger.info(f"[gcs_state] Wrote {key} ({len(data)} chars) to gs://.../{blob_name}")
+        finally:
+            os.unlink(tmp_path)
+    except Exception as e:
+        logger.warning(f"[gcs_state] Write failed for {key}: {e}")
+
+
+def _gcs_state_read(key: str, gcs_folder: str):
+    """Read a state value from GCS side-channel."""
+    import json as _json
+    if not gcs_folder:
+        return None
+    try:
+        bucket = os.getenv("BUCKET", "gs://zghost-media-center")
+        bucket_name = bucket.replace("gs://", "")
+        blob_name = f"{gcs_folder}/state/{key}.json"
+        data = download_blob(bucket_name=bucket_name, source_blob_name=blob_name)
+        if data:
+            text = data.decode('utf-8') if isinstance(data, bytes) else data
+            try:
+                return _json.loads(text)
+            except _json.JSONDecodeError:
+                return text if len(text) > 10 else None
+    except Exception:
+        pass
+    return None
+
+
+def gcs_state_recover(state) -> int:
+    """Recover lost tool outputs from GCS. Called by _load_session_state each wave.
+
+    Returns the number of keys recovered.
+    """
+    gcs_folder = state.get("gcs_folder", "")
+    if not gcs_folder:
+        return 0
+    recovered = 0
+    for key in _GCS_STATE_KEYS:
+        current = state.get(key)
+        # Skip if state already has meaningful data
+        if current and (isinstance(current, str) and len(current) > 50):
+            continue
+        if current and isinstance(current, dict) and any(
+            isinstance(v, list) and len(v) > 0 for v in current.values()
+        ):
+            continue
+        cached = _gcs_state_read(key, gcs_folder)
+        if cached:
+            is_valid = False
+            if isinstance(cached, str) and len(cached) > 50:
+                is_valid = True
+            elif isinstance(cached, dict):
+                is_valid = True
+            if is_valid:
+                state[key] = cached
+                recovered += 1
+                logger.info(f"[gcs_state] Recovered {key} from GCS ({type(cached).__name__})")
+    return recovered
+
+
+# ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 MAX_CREATIVE_ATTEMPTS = 15
@@ -469,6 +562,15 @@ def run_research(tool_context: ToolContext) -> dict:
 
 Write the complete report now. Be specific and reference the actual trend titles by name."""
 
+    # Check GCS cache (recovery from previous wave where state was lost)
+    gcs_folder = state.get("gcs_folder", "")
+    cached_report = _gcs_state_read("combined_final_cited_report", gcs_folder)
+    if cached_report and isinstance(cached_report, str) and len(cached_report) >= 500:
+        tool_context.state["combined_final_cited_report"] = cached_report
+        tool_context.state["_research_pipeline_complete"] = True
+        logger.info(f"[run_research] Recovered from GCS cache ({len(cached_report)} chars)")
+        return {"status": "ok", "report_length": len(cached_report), "report": cached_report, "source": "gcs_cache"}
+
     try:
         client = genai.Client(vertexai=True)
         response = client.models.generate_content(
@@ -481,6 +583,8 @@ Write the complete report now. Be specific and reference the actual trend titles
         )
         report = response.text or ""
         if len(report) >= 500:
+            # Write to GCS FIRST (survives AE wave timeouts)
+            _gcs_state_write("combined_final_cited_report", report, gcs_folder)
             tool_context.state["combined_final_cited_report"] = report
             tool_context.state["_research_pipeline_complete"] = True
             return {"status": "ok", "report_length": len(report), "report": report}
@@ -512,6 +616,21 @@ def run_ad_creative(tool_context: ToolContext) -> dict:
         existing_ads = existing_ads.get("final_select_ad_copies", [])
     if existing_ads and len(existing_ads) >= 2:
         return {"status": "already_complete", "ad_copies": len(existing_ads)}
+
+    # Check GCS cache (recovery from previous wave where state was lost)
+    gcs_folder = state.get("gcs_folder", "")
+    cached_ads = _gcs_state_read("final_select_ad_copies", gcs_folder)
+    cached_vis = _gcs_state_read("final_select_visual_concepts", gcs_folder)
+    if cached_ads and isinstance(cached_ads, dict) and cached_ads.get("final_select_ad_copies"):
+        tool_context.state["final_select_ad_copies"] = cached_ads
+        if cached_vis:
+            tool_context.state["final_select_visual_concepts"] = cached_vis
+            tool_context.state["final_select_vis_concepts"] = _gcs_state_read("final_select_vis_concepts", gcs_folder) or cached_vis
+        tool_context.state["_ad_creative_complete"] = True
+        logger.info("[run_ad_creative] Recovered from GCS cache")
+        return {"status": "ok", "ad_copies": cached_ads.get("final_select_ad_copies", []),
+                "visual_concepts": (cached_vis or {}).get("final_select_visual_concepts", []),
+                "source": "gcs_cache"}
 
     brand = state.get("brand", "")
     product = state.get("target_product", "")
@@ -612,15 +731,22 @@ Be bold and creative. Ground every decision in the research findings."""
                 except _json.JSONDecodeError:
                     continue
 
-        # Persist to state
+        # Persist to state + GCS write-through
+        gcs_folder = state.get("gcs_folder", "")
         if ad_copies:
-            tool_context.state["final_select_ad_copies"] = {"final_select_ad_copies": ad_copies[:2]}
+            ad_data = {"final_select_ad_copies": ad_copies[:2]}
+            tool_context.state["final_select_ad_copies"] = ad_data
+            _gcs_state_write("final_select_ad_copies", ad_data, gcs_folder)
         if visual_concepts:
-            tool_context.state["final_select_visual_concepts"] = {"final_select_visual_concepts": visual_concepts[:2]}
+            vis_data = {"final_select_visual_concepts": visual_concepts[:2]}
+            tool_context.state["final_select_visual_concepts"] = vis_data
             tool_context.state["final_select_vis_concepts"] = {"final_select_vis_concepts": visual_concepts[:2]}
+            _gcs_state_write("final_select_visual_concepts", vis_data, gcs_folder)
+            _gcs_state_write("final_select_vis_concepts", {"final_select_vis_concepts": visual_concepts[:2]}, gcs_folder)
 
         tool_context.state["_ad_creative_complete"] = True
         tool_context.state["ad_creative_output"] = creative_text
+        _gcs_state_write("ad_creative_output", creative_text, gcs_folder)
 
         return {
             "status": "ok",
@@ -894,6 +1020,15 @@ def generate_commercial(tool_context: ToolContext) -> dict:
     bucket = os.getenv("BUCKET", "")
     bucket_name = bucket.replace("gs://", "")
 
+    # Check GCS cache (recovery from previous wave where state was lost)
+    gcs_folder = state.get("gcs_folder", "")
+    cached_commercial = _gcs_state_read("commercial_artifact", gcs_folder)
+    if cached_commercial and isinstance(cached_commercial, dict) and cached_commercial.get("gcs_uri"):
+        tool_context.state["commercial_artifact"] = cached_commercial
+        tool_context.state["vid_artifact_keys"] = {"vid_artifact_keys": [cached_commercial]}
+        logger.info(f"[generate_commercial] Recovered from GCS cache: {cached_commercial.get('gcs_uri', '')[:80]}")
+        return {"status": "ok", "gcs_uri": cached_commercial["gcs_uri"], "commercial": cached_commercial, "source": "gcs_cache"}
+
     veo_client = _get_media_client()
     clips_cache = state.get("_commercial_clips", {})
     pending_op = clips_cache.get("_pending_veo_op") if isinstance(clips_cache, dict) else None
@@ -944,6 +1079,7 @@ def generate_commercial(tool_context: ToolContext) -> dict:
             operation = veo_client.models.generate_videos(model=config.video_gen_model, prompt=clip_prompt, config=gen_config)
             if operation.name:
                 tool_context.state["_commercial_clips"] = {"_pending_veo_op": operation.name}
+                _gcs_state_write("_pending_veo_op", operation.name, gcs_folder)
 
         # Poll within wave budget
         start_time = time.time()
@@ -1010,6 +1146,8 @@ def generate_commercial(tool_context: ToolContext) -> dict:
                 "deterministic_av_studio": True,
             },
         }
+        # GCS write-through FIRST
+        _gcs_state_write("commercial_artifact", commercial_data, gcs_folder)
         tool_context.state["commercial_artifact"] = commercial_data
         tool_context.state["vid_artifact_keys"] = {"vid_artifact_keys": [commercial_data]}
         tool_context.state["_commercial_clips"] = {}
@@ -1064,6 +1202,16 @@ def run_focus_group(tool_context: ToolContext) -> dict:
     if existing_eval and len(existing_eval) > 200:
         return {"status": "already_complete", "evaluation_length": len(existing_eval),
                 "evaluation": existing_eval[:500] + "..."}
+
+    # Check GCS cache (recovery from previous wave where state was lost)
+    gcs_folder = state.get("gcs_folder", "")
+    cached_eval = _gcs_state_read("focus_group_evaluation", gcs_folder)
+    if cached_eval and isinstance(cached_eval, str) and len(cached_eval) > 200:
+        tool_context.state["focus_group_evaluation"] = cached_eval
+        tool_context.state["_focus_group_complete"] = True
+        logger.info(f"[run_focus_group] Recovered from GCS cache ({len(cached_eval)} chars)")
+        return {"status": "ok", "evaluation_length": len(cached_eval),
+                "evaluation": cached_eval, "source": "gcs_cache"}
 
     # Track attempts
     fg_count = state.get("_focus_group_attempts", 0) + 1
@@ -1164,7 +1312,9 @@ Then write a narrative evaluation with detailed analysis."""
     if len(evaluation) < 200:
         return {"status": "error", "error": f"Evaluation too short ({len(evaluation)} chars)"}
 
-    # Save evaluation text FIRST — ensures pipeline can continue even if media gen fails/times out
+    # Save evaluation text FIRST — GCS write-through ensures recovery across AE waves
+    gcs_folder = state.get("gcs_folder", "")
+    _gcs_state_write("focus_group_evaluation", evaluation, gcs_folder)
     tool_context.state["focus_group_evaluation"] = evaluation
     tool_context.state["_focus_group_complete"] = True
 

@@ -108,24 +108,48 @@ def before_model_status_callback(
     agent_name = callback_context.agent_name
 
     # For root_agent (LlmAgent orchestrator), infer the next stage from state
+    # Use a counter to vary messages and prevent repetition
     if agent_name == "root_agent":
         state = callback_context.state
+        model_call_count = state.get("_root_model_calls", 0) + 1
+        callback_context.state["_root_model_calls"] = model_call_count
+
         if not state.get("target_search_trends"):
             status_msg = "Analyzing campaign brief and preparing trend discovery..."
         elif not state.get("combined_final_cited_report"):
-            status_msg = "Reviewing trend selections and preparing research..."
-        elif not state.get("final_select_ad_copies"):
-            status_msg = "Synthesizing research insights for creative development..."
+            variants = [
+                "Synthesizing trend data into a comprehensive research report...",
+                "Connecting cultural trends to brand strategy with AI analysis...",
+                "Building research insights across Google and YouTube trends...",
+            ]
+            status_msg = variants[(model_call_count - 1) % len(variants)]
+        elif not state.get("final_select_ad_copies") or (isinstance(state.get("final_select_ad_copies"), dict) and not state["final_select_ad_copies"].get("final_select_ad_copies")):
+            variants = [
+                "Drafting and critiquing ad copy concepts with creative AI...",
+                "Selecting top ad copies and visual concepts for the campaign...",
+                "Evaluating creative concepts against trend alignment scores...",
+            ]
+            status_msg = variants[(model_call_count - 1) % len(variants)]
         elif not state.get("img_artifact_keys") or (isinstance(state.get("img_artifact_keys"), dict) and not state["img_artifact_keys"].get("img_artifact_keys")):
-            status_msg = "Planning image generation with Gecko quality scoring..."
-        elif not state.get("commercial_artifact"):
-            status_msg = "Preparing commercial video production with Veo 3.1..."
+            status_msg = "Generating reference images with Imagen 4 and Gecko quality scoring..."
+        elif not state.get("commercial_artifact") or (isinstance(state.get("commercial_artifact"), dict) and not state["commercial_artifact"].get("gcs_uri")):
+            variants = [
+                "Producing 8-second commercial with Veo 3.1 AI video engine...",
+                "Rendering commercial video with reference image assets...",
+                "Finalizing commercial production — compositing and audio...",
+            ]
+            status_msg = variants[(model_call_count - 1) % len(variants)]
         elif not state.get("focus_group_evaluation"):
-            status_msg = "Setting up virtual focus group evaluation panel..."
+            variants = [
+                "Assembling virtual focus group panel for campaign evaluation...",
+                "Simulating consumer reactions with AI-generated personas...",
+                "Scoring campaign impact across creative, brand, and purchase intent...",
+            ]
+            status_msg = variants[(model_call_count - 1) % len(variants)]
         elif not state.get("final_report_with_citations"):
-            status_msg = "Compiling final campaign brief and PDF report..."
+            status_msg = "Compiling final campaign brief and branded PDF report..."
         else:
-            status_msg = "Reviewing campaign results and preparing summary..."
+            status_msg = "Campaign pipeline complete — reviewing final deliverables..."
     else:
         status_msg = AGENT_STATUS_MESSAGES.get(agent_name, f"Working on {agent_name}...")
 
@@ -327,6 +351,11 @@ def _load_session_state(callback_context: CallbackContext):
     Set this as a callback as before_agent_call of the `root_agent`.
     This gets called before the system instruction is constructed.
 
+    Also recovers lost tool outputs from GCS write-through cache.
+    On AE, tool_context.state writes in long-running tools are lost when
+    waves timeout before the function_response event is persisted. The
+    GCS cache provides cross-wave recovery.
+
     Args:
         callback_context: The callback context.
     """
@@ -356,6 +385,15 @@ def _load_session_state(callback_context: CallbackContext):
         logging.info(f"\n\nLoading Initial State (empty): {data}\n\n")
 
     _set_initial_states(data["state"], callback_context.state)
+
+    # Recover lost tool outputs from GCS write-through cache
+    try:
+        from ..orchestrator import gcs_state_recover
+        recovered = gcs_state_recover(callback_context.state)
+        if recovered > 0:
+            logging.info(f"[GCS_RECOVERY] Recovered {recovered} state key(s) from GCS cache")
+    except Exception as e:
+        logging.warning(f"[GCS_RECOVERY] Failed: {e}")
 
 
 def rate_limit_callback(

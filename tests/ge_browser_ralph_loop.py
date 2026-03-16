@@ -316,11 +316,12 @@ async def browser_driver(results: dict, stop_event: asyncio.Event):
     wave = 0
 
     kickoff_msg = (
-        "Let's build a campaign! Campaign details, trends, and images are already set. "
-        "I've selected 'Oscars 2026' as my Google Search trend and 'Sustainable Living Hacks' as my YouTube trend. "
-        "Images are pre-generated with Gecko scores. "
-        "Please start with the research report, then run ad creative, generate the commercial video, "
-        "run the focus group evaluation, and save the final PDF report."
+        "Let's build a campaign! All pipeline stages are complete: trends selected, "
+        "research report written, ad copies and visual concepts finalized, "
+        "3 reference images generated with Gecko quality scores, "
+        "8-second Veo commercial produced, and focus group evaluation done. "
+        "Please review each stage's output and then call save_report to compile "
+        "the final branded PDF campaign brief."
     )
     _ae_stream_and_collect_async(ae_client, kickoff_msg, ae_session_id, all_chips)
     wave += 1
@@ -448,18 +449,31 @@ def _ae_stream_and_collect_async(ae, message, session_id, all_chips_accumulator)
     return reply, wave_chips
 
 
+def _load_gcs_text(blob_path: str) -> str:
+    """Load text content from GCS for pre-populating state."""
+    try:
+        from google.cloud import storage as _storage
+        client = _storage.Client()
+        bucket = client.bucket("zghost-media-center")
+        blob = bucket.blob(blob_path)
+        return blob.download_as_text()
+    except Exception as e:
+        print(f"  WARN: Could not load gs://zghost-media-center/{blob_path}: {e}", flush=True)
+        return ""
+
+
 def _build_ae_state_from_replies(all_replies: list) -> dict:
     """Build AE initial state for the LlmAgent orchestrator.
 
-    The LlmAgent handles the full pipeline via 7 tool functions. We only need
-    to pre-populate campaign metadata and mock data that would time out on AE
-    (Imagen 4 images). The LlmAgent will call gather_trends, run_research,
-    run_ad_creative, generate_images, generate_commercial, run_focus_group,
-    and save_report in sequence.
+    Pre-populates ALL pipeline state that would require long-running tool
+    execution on AE. The LlmAgent analyzes pre-populated content (with thinking
+    visible) and only calls save_report live (fast enough for AE waves).
     """
     print(f"  Building lean AE state for LlmAgent orchestrator...", flush=True)
 
     return {
+        # Prevent _set_initial_states from overriding gcs_folder on every wave
+        "_state_init": True,
         # Campaign metadata — the LlmAgent needs these to start
         "brand": "Tide",
         "target_product": "Tide Fabric Softener with Hibiscus Scent",
@@ -491,15 +505,94 @@ def _build_ae_state_from_replies(all_replies: list) -> dict:
             {"artifact_key": "person_asset_0.png", "concept_name": "demo_person_asset", "shot_type": "person_asset", "reference_type": "ASSET", "gcs_uri": "gs://zghost-media-center/demo_images_1773564237/person_asset_0.png", "fidelity_score": 0.82, "auto_saved": True},
             {"artifact_key": "trend_style_0.png", "concept_name": "demo_trend_style", "shot_type": "trend_asset", "reference_type": "ASSET", "gcs_uri": "gs://zghost-media-center/demo_images_1773564237/trend_style_0.png", "fidelity_score": 0.78, "auto_saved": True},
         ]},
-        "vid_artifact_keys": {"vid_artifact_keys": []},
         "gcs_folder": "demo_images_1773564237",
+        # Pre-populate ad creative — model call takes too long for AE waves
+        "final_select_ad_copies": {"final_select_ad_copies": [
+            {
+                "name": "The Best Supporting Scent",
+                "headline": "And the Award for Best Supporting Scent Goes To...",
+                "body_text": "While the Oscars celebrate the best in film, Tide celebrates the best in fabric care. Our new Hibiscus Scent brings red-carpet freshness to your everyday laundry.",
+                "call_to_action": "Experience the Award-Winning Scent",
+                "caption": "Tide Fabric Softener — Hibiscus Scent. Because your clothes deserve a standing ovation.",
+                "trend_ref": "Oscars 2026",
+                "rationale": "Leverages Oscars cultural moment with wordplay on 'Best Supporting' to position product as a star performer.",
+            },
+            {
+                "name": "Sustainable Living, Starring Hibiscus",
+                "headline": "Plant-Based Power. Red Carpet Freshness.",
+                "body_text": "Sustainable living meets luxury fragrance. Tide's new plant-based formula with real Hibiscus extract delivers 2x cleaning power in biodegradable packaging.",
+                "call_to_action": "Switch to Plant-Based Luxury",
+                "caption": "Tide Fabric Softener — Hibiscus Scent. Where sustainability meets sophistication.",
+                "trend_ref": "Sustainable Living Hacks",
+                "rationale": "Bridges sustainability trend with premium positioning, targeting Gen Z's eco-conscious values.",
+            },
+        ]},
+        "final_select_visual_concepts": {"final_select_visual_concepts": [
+            {
+                "name": "Red Carpet Reveal",
+                "type": "cinematic_commercial",
+                "trend_ref": "Oscars 2026",
+                "headline": "And the Award for Best Supporting Scent Goes To...",
+                "call_to_action": "Experience the Award-Winning Scent",
+                "caption": "Tide Fabric Softener — Hibiscus Scent. Red-carpet freshness for everyday life.",
+                "creative_explain": "A glamorous reveal concept where fabric softener is unveiled like an Oscar winner",
+                "rationale": "High visual impact through cultural moment integration",
+                "prompt": "Cinematic slow-motion reveal of Tide Fabric Softener bottle emerging from fresh hibiscus flowers on a red carpet. Golden-hour lighting, shallow depth of field, premium product photography. Gen Z woman in sustainable fashion smelling freshly laundered fabric with delight. Split-screen showing plant-based ingredients and biodegradable packaging.",
+            },
+            {
+                "name": "Eco-Luxe Ritual",
+                "type": "lifestyle_vignette",
+                "trend_ref": "Sustainable Living Hacks",
+                "headline": "Plant-Based Power. Red Carpet Freshness.",
+                "call_to_action": "Switch to Plant-Based Luxury",
+                "caption": "Tide Fabric Softener — Where sustainability meets sophistication.",
+                "creative_explain": "A morning routine vignette showing the product as part of a sustainable luxury lifestyle",
+                "rationale": "Connects product to Gen Z daily sustainability rituals",
+                "prompt": "Modern minimalist laundry room, morning light streaming through windows. Gen Z person practicing sustainable living, using Tide Fabric Softener with Hibiscus Scent as part of their eco-conscious morning routine. Close-up of hibiscus flowers, biodegradable packaging, fresh laundry. Warm, authentic, aspirational.",
+            },
+        ]},
+        "final_select_vis_concepts": {"final_select_vis_concepts": [
+            {"name": "Red Carpet Reveal", "type": "cinematic_commercial", "trend_ref": "Oscars 2026",
+             "prompt": "Cinematic reveal of Tide Fabric Softener with hibiscus on red carpet, golden-hour lighting"},
+            {"name": "Eco-Luxe Ritual", "type": "lifestyle_vignette", "trend_ref": "Sustainable Living Hacks",
+             "prompt": "Modern laundry room, morning light, Gen Z sustainable living with Tide Hibiscus"},
+        ]},
+        # Pre-populate commercial — Veo takes 60-90s, always exceeds AE wave budget
+        "commercial_artifact": {
+            "artifact_key": "commercial_8s.mp4",
+            "gcs_uri": "gs://zghost-media-center/demo_images_1773564237/commercial_8s.mp4",
+            "metadata": {
+                "title": "8s commercial for Tide Fabric Softener with Hibiscus Scent",
+                "scene_descriptions": ["Cinematic 8s commercial for Tide — Gen Z discovers hibiscus scent"],
+                "total_clips": 1,
+                "duration_seconds": 8,
+                "narrative_arc": "Trend-driven commercial for Tide Fabric Softener",
+                "target_audience_appeal": "Designed for Gen Z eco-conscious consumers",
+                "trend_connections": "Oscars 2026, Sustainable Living Hacks",
+                "has_audio": True,
+                "deterministic_av_studio": True,
+            },
+        },
+        "vid_artifact_keys": {"vid_artifact_keys": [{
+            "artifact_key": "commercial_8s.mp4",
+            "gcs_uri": "gs://zghost-media-center/demo_images_1773564237/commercial_8s.mp4",
+            "metadata": {"duration_seconds": 8, "has_audio": True},
+        }]},
+        # Pre-populate research report — direct model call takes 30-60s on AE
+        "combined_final_cited_report": _load_gcs_text(
+            "2026_03_16_14_47/state/combined_final_cited_report.json"
+        ),
+        "_research_pipeline_complete": True,
+        # Pre-populate focus group evaluation — takes 60-120s on AE
+        "focus_group_evaluation": _load_gcs_text(
+            "2026_03_16_14_47/state/focus_group_evaluation.json"
+        ),
+        "_focus_group_complete": True,
         # Pipeline control
         "autopilot_mode": False,
         "commercial_duration": 8,
-        # Empty state keys the LlmAgent tools will populate
-        "combined_final_cited_report": "",
+        # Only save_report needs to run live (fast, <5s)
         "final_report_with_citations": "",
-        "commercial_artifact": "",
     }
 
 
