@@ -316,9 +316,11 @@ async def browser_driver(results: dict, stop_event: asyncio.Event):
     wave = 0
 
     kickoff_msg = (
-        "Let's build a campaign! Campaign details are already set: "
-        "Tide Fabric Softener with Hibiscus Scent for Gen Z. "
-        "Please gather the latest trends so I can pick which ones to target."
+        "Let's build a campaign! Campaign details, trends, and images are already set. "
+        "I've selected 'Oscars 2026' as my Google Search trend and 'Sustainable Living Hacks' as my YouTube trend. "
+        "Images are pre-generated with Gecko scores. "
+        "Please start with the research report, then run ad creative, generate the commercial video, "
+        "run the focus group evaluation, and save the final PDF report."
     )
     _ae_stream_and_collect_async(ae_client, kickoff_msg, ae_session_id, all_chips)
     wave += 1
@@ -473,6 +475,15 @@ def _build_ae_state_from_replies(all_replies: list) -> dict:
             "* **Key Trend: 'The Efficacy Hybrid':** Video analysis identifies clear 'DIY fatigue.' Consumers who switched to "
             "vinegar-based cleaners are returning to established brands offering 'sustainable luxury.'"
         ),
+        # Pre-populate trends — the LlmAgent stops to ask for trend selection,
+        # but AE CONTINUE_MSG doesn't include picks, causing infinite loop.
+        # Pre-populate so it skips gather_trends and select_trend.
+        "target_search_trends": {"target_search_trends": [
+            {"title": "Oscars 2026", "trend_title": "Oscars 2026", "trend_rank": 1, "trend_refresh_date": "03/15/2026"},
+        ]},
+        "target_yt_trends": {"target_yt_trends": [
+            {"title": "Sustainable Living Hacks", "video_title": "Sustainable Living Hacks", "channel": "EcoVibes", "view_count": "2.1M"},
+        ]},
         # Pre-populate images — Imagen 4 always times out on AE waves.
         # These are pre-generated demo images stored in GCS.
         "img_artifact_keys": {"img_artifact_keys": [

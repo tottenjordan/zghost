@@ -505,6 +505,14 @@ def run_ad_creative(tool_context: ToolContext) -> dict:
     import json as _json
 
     state = tool_context.state
+
+    # Skip if already complete
+    existing_ads = state.get("final_select_ad_copies", {})
+    if isinstance(existing_ads, dict):
+        existing_ads = existing_ads.get("final_select_ad_copies", [])
+    if existing_ads and len(existing_ads) >= 2:
+        return {"status": "already_complete", "ad_copies": len(existing_ads)}
+
     brand = state.get("brand", "")
     product = state.get("target_product", "")
     audience = state.get("target_audience", "")
@@ -839,6 +847,15 @@ def generate_images(tool_context: ToolContext) -> dict:
         if gecko_passed:
             tool_context.state[f"_img_fail_{i}"] = 0
 
+        # Save as ADK artifact so ADK web UI shows inline
+        image_bytes = result.get("image_bytes")
+        if image_bytes:
+            try:
+                art_part = types.Part(inline_data=types.Blob(mime_type="image/png", data=image_bytes))
+                tool_context.save_artifact(filename=img_meta["artifact_key"], artifact=art_part)
+            except Exception as e:
+                logger.warning(f"[generate_images] save_artifact failed: {e}")
+
         image_results.append({
             "slot": i,
             "shot_type": shot["shot_type"],
@@ -1042,6 +1059,12 @@ def run_focus_group(tool_context: ToolContext) -> dict:
     gcs_folder = state.get("gcs_folder", "")
     bucket = os.getenv("BUCKET", "gs://zghost-media-center")
 
+    # Skip if already complete
+    existing_eval = state.get("focus_group_evaluation", "")
+    if existing_eval and len(existing_eval) > 200:
+        return {"status": "already_complete", "evaluation_length": len(existing_eval),
+                "evaluation": existing_eval[:500] + "..."}
+
     # Track attempts
     fg_count = state.get("_focus_group_attempts", 0) + 1
     tool_context.state["_focus_group_attempts"] = fg_count
@@ -1141,10 +1164,13 @@ Then write a narrative evaluation with detailed analysis."""
     if len(evaluation) < 200:
         return {"status": "error", "error": f"Evaluation too short ({len(evaluation)} chars)"}
 
-    # Save evaluation text
+    # Save evaluation text FIRST — ensures pipeline can continue even if media gen fails/times out
     tool_context.state["focus_group_evaluation"] = evaluation
+    tool_context.state["_focus_group_complete"] = True
 
     # Step 2: Generate portraits, voiceovers, Ken Burns videos for each panelist
+    # NOTE: On AE, Imagen/Chirp/ffmpeg will timeout. The evaluation text is already saved,
+    # so the pipeline can proceed to save_report even if media generation fails.
     from .skills.focus_group.tools import (
         PANELIST_VOICES,
         _generate_lyria_background_music,
@@ -1431,7 +1457,7 @@ async def save_report(tool_context: ToolContext) -> dict:
         focus_group_evaluation=focus_group_evaluation,
         focus_group_panelists=focus_group_panelists,
         gcs_folder=gcs_folder,
-        save_artifact_fn=None,
+        save_artifact_fn=tool_context.save_artifact,
         brand=state.get("brand", ""),
         product=state.get("target_product", ""),
         audience=state.get("target_audience", ""),
