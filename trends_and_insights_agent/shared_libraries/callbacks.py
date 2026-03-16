@@ -106,7 +106,29 @@ def before_model_status_callback(
 ) -> None:
     """Sets ui:status_update before each LLM call so GE shows status during model generation."""
     agent_name = callback_context.agent_name
-    status_msg = AGENT_STATUS_MESSAGES.get(agent_name, f"Working on {agent_name}...")
+
+    # For root_agent (LlmAgent orchestrator), infer the next stage from state
+    if agent_name == "root_agent":
+        state = callback_context.state
+        if not state.get("target_search_trends"):
+            status_msg = "Analyzing campaign brief and preparing trend discovery..."
+        elif not state.get("combined_final_cited_report"):
+            status_msg = "Reviewing trend selections and preparing research..."
+        elif not state.get("final_select_ad_copies"):
+            status_msg = "Synthesizing research insights for creative development..."
+        elif not state.get("img_artifact_keys") or (isinstance(state.get("img_artifact_keys"), dict) and not state["img_artifact_keys"].get("img_artifact_keys")):
+            status_msg = "Planning image generation with Gecko quality scoring..."
+        elif not state.get("commercial_artifact"):
+            status_msg = "Preparing commercial video production with Veo 3.1..."
+        elif not state.get("focus_group_evaluation"):
+            status_msg = "Setting up virtual focus group evaluation panel..."
+        elif not state.get("final_report_with_citations"):
+            status_msg = "Compiling final campaign brief and PDF report..."
+        else:
+            status_msg = "Reviewing campaign results and preparing summary..."
+    else:
+        status_msg = AGENT_STATUS_MESSAGES.get(agent_name, f"Working on {agent_name}...")
+
     callback_context.state["ui:status_update"] = status_msg
     logging.info(f"[MODEL_STATUS] {agent_name}: {status_msg}")
 
