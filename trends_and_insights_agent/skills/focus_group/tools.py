@@ -393,8 +393,8 @@ async def generate_panelist_testimonial(
             "-filter_complex",
             (
                 "[0:v]"
-                "scale=2160:2160:force_original_aspect_ratio=decrease,"
-                "pad=2160:2160:(ow-iw)/2:(oh-ih)/2:black,"
+                "scale=3840:2160:force_original_aspect_ratio=decrease,"
+                "pad=3840:2160:(ow-iw)/2:(oh-ih)/2:black,"
                 f"zoompan=z='1+0.15*on/{total_frames}':"
                 "x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
                 f"d={total_frames}:s=1920x1080:fps={fps}"

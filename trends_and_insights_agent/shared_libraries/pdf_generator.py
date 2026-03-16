@@ -561,7 +561,7 @@ def _download_portrait(portrait_uri: str, name: str, portrait_dir: str, gcs_buck
     if not portrait_uri:
         return None
     try:
-        from ..shared_libraries.utils import download_image_from_gcs
+        from .utils import download_image_from_gcs
         safe_n = name.replace(" ", "_").replace(",", "")
         local_path = os.path.join(portrait_dir, f"{safe_n}.png")
         blob_name = portrait_uri.replace(gcs_bucket + "/", "")
@@ -749,10 +749,16 @@ def generate_campaign_pdf(
         portrait_dir = os.path.join(os.path.dirname(output_path), "portraits")
         os.makedirs(portrait_dir, exist_ok=True)
         for p in panelists_raw:
-            portrait_path = _download_portrait(
-                p.get("portrait_gcs_uri", ""), p.get("name", "Unknown"),
-                portrait_dir, gcs_bucket
-            )
+            # Prefer local portrait path (already on disk) over GCS download
+            portrait_path = None
+            local_portrait = p.get("portrait_local", "")
+            if local_portrait and os.path.exists(local_portrait):
+                portrait_path = os.path.abspath(local_portrait)
+            else:
+                portrait_path = _download_portrait(
+                    p.get("portrait_gcs_uri", ""), p.get("name", "Unknown"),
+                    portrait_dir, gcs_bucket
+                )
             panelist_profiles.append({
                 "name": p.get("name", "Unknown"),
                 "age": p.get("age", "N/A"),

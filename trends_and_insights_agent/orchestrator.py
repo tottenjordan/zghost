@@ -1580,8 +1580,8 @@ Then write a narrative evaluation with detailed analysis."""
                     "-filter_complex",
                     (
                         "[0:v]"
-                        "scale=2160:2160:force_original_aspect_ratio=decrease,"
-                        "pad=2160:2160:(ow-iw)/2:(oh-ih)/2:black,"
+                        "scale=3840:2160:force_original_aspect_ratio=decrease,"
+                        "pad=3840:2160:(ow-iw)/2:(oh-ih)/2:black,"
                         f"zoompan=z='1+0.15*on/{total_frames}':"
                         "x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
                         f"d={total_frames}:s=1920x1080:fps={fps}"
@@ -1744,9 +1744,12 @@ async def save_report(tool_context: ToolContext) -> dict:
     else:
         vid_artifact_list = vid_keys if isinstance(vid_keys, list) else []
 
-    commercial_artifact = state.get("commercial_artifact", {})
-    focus_group_evaluation = state.get("focus_group_evaluation", "")
-    focus_group_panelists = state.get("focus_group_panelists", {})
+    _ca_raw = state.get("commercial_artifact", {})
+    commercial_artifact = _ca_raw.get("commercial_artifact", _ca_raw) if isinstance(_ca_raw, dict) else _ca_raw
+    _fge_raw = state.get("focus_group_evaluation", "")
+    focus_group_evaluation = _fge_raw.get("focus_group_evaluation", _fge_raw) if isinstance(_fge_raw, dict) else _fge_raw
+    _fgp_raw = state.get("focus_group_panelists", {})
+    focus_group_panelists = _fgp_raw.get("focus_group_panelists", _fgp_raw) if isinstance(_fgp_raw, dict) else _fgp_raw
 
     result = await save_final_report_tool(
         processed_report=processed_report,
