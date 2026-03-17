@@ -140,12 +140,14 @@ MAX_IMAGES = 3
 MAX_IMG_RETRIES = 5
 
 # ---------------------------------------------------------------------------
-# Cached media gen client (us-central1 for Imagen/Veo, NOT "global")
+# Cached media gen clients
 # ---------------------------------------------------------------------------
-_media_client = None
+_media_client = None      # us-central1 for Veo / Imagen portraits
+_gemini_img_client = None  # global for gemini-3.1-flash-image-preview
 
 
 def _get_media_client():
+    """Client for us-central1 (Veo, Imagen portraits)."""
     global _media_client
     if _media_client is None:
         _media_client = genai.Client(
@@ -154,6 +156,18 @@ def _get_media_client():
             location="us-central1",
         )
     return _media_client
+
+
+def _get_gemini_img_client():
+    """Client for global location (gemini-3.1-flash-image-preview)."""
+    global _gemini_img_client
+    if _gemini_img_client is None:
+        _gemini_img_client = genai.Client(
+            vertexai=True,
+            project=os.environ.get("GOOGLE_CLOUD_PROJECT", "wortz-project-352116"),
+            location="global",
+        )
+    return _gemini_img_client
 
 
 # ---------------------------------------------------------------------------
@@ -536,6 +550,8 @@ async def run_research(tool_context: ToolContext) -> dict:
     yt_analysis = state.get("yt_video_analysis", "")
     prior_insights = state.get("prior_campaign_insights", "No prior insights available")
 
+    tool_context.state["ui:status_update"] = f"Conducting deep market research for {brand} {product}..."
+
     # Recall prior insights from Memory Bank
     if not prior_insights or prior_insights == "No prior insights available":
         try:
@@ -698,6 +714,7 @@ def run_ad_creative(tool_context: ToolContext) -> dict:
     import json as _json
 
     state = tool_context.state
+    tool_context.state["ui:status_update"] = "Drafting ad copy concepts and visual directions..."
 
     # Skip if already complete
     existing_ads = state.get("final_select_ad_copies", {})
@@ -854,7 +871,7 @@ Be bold and creative. Ground every decision in the research findings."""
 # TOOL 4: generate_images
 # ===================================================================
 async def generate_images(tool_context: ToolContext) -> dict:
-    """Generate 3 reference images (product, person, trend) using Imagen 4 with Gecko quality scoring.
+    """Generate 3 reference images (product, person, trend) using gemini-3.1-flash-image-preview with Gecko quality scoring.
 
     Call this AFTER run_ad_creative. Generates images in parallel, uploads to GCS,
     and scores each with Gecko fidelity. Images below 0.7 score will be flagged.
@@ -862,6 +879,7 @@ async def generate_images(tool_context: ToolContext) -> dict:
     Returns a dict with image generation results and Gecko scores.
     """
     state = tool_context.state
+    tool_context.state["ui:status_update"] = "Generating campaign reference images with Gemini image model + Gecko fidelity scoring..."
     product = state.get("target_product", "the product")
     audience = state.get("target_audience", "consumers")
     brand = state.get("brand", "")
@@ -968,8 +986,8 @@ async def generate_images(tool_context: ToolContext) -> dict:
     for i, _, fc in slots_to_generate:
         tool_context.state[f"_img_fail_{i}"] = fc + 1
 
-    # Parallel image generation
-    img_client = _get_media_client()
+    # Parallel image generation using gemini-3.1-flash-image-preview (global)
+    img_client = _get_gemini_img_client()
     gecko_prompt = state.get("key_selling_points", product)
     project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
 
@@ -980,20 +998,25 @@ async def generate_images(tool_context: ToolContext) -> dict:
         artifact_key = f"{safe_name}_0.png"
 
         t0 = time.time()
-        response = img_client.models.generate_images(
-            model="imagen-4.0-generate-preview-06-06",
-            prompt=prompt,
-            config=GenerateImagesConfig(number_of_images=1),
+        response = img_client.models.generate_content(
+            model="gemini-3.1-flash-image-preview",
+            contents=f"Generate a high-quality image: {prompt}",
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE", "TEXT"],
+            ),
         )
         gen_elapsed = time.time() - t0
 
-        if not response or not response.generated_images:
-            return {"idx": idx, "error": "empty_response"}
+        # Extract image bytes from Gemini response parts
+        image_bytes = None
+        if response and response.candidates:
+            for part in response.candidates[0].content.parts:
+                if part.inline_data and part.inline_data.mime_type.startswith("image/"):
+                    image_bytes = part.inline_data.data
+                    break
 
-        gen_img = response.generated_images[0]
-        image_bytes = gen_img.image.image_bytes if gen_img.image else None
         if not image_bytes:
-            return {"idx": idx, "error": "no_image_bytes"}
+            return {"idx": idx, "error": "no_image_in_response"}
 
         # Upload to GCS
         gcs_uri = ""
@@ -1139,6 +1162,7 @@ async def generate_commercial(tool_context: ToolContext) -> dict:
     Returns a dict with the commercial video URI and metadata.
     """
     state = tool_context.state
+    tool_context.state["ui:status_update"] = "Generating 8-second commercial video with Veo 3.1..."
     product = state.get("target_product", "the product")
     audience = state.get("target_audience", "target consumers")
     selling_points = state.get("key_selling_points", "")
@@ -1316,6 +1340,7 @@ async def run_focus_group(tool_context: ToolContext) -> dict:
     import subprocess
 
     state = tool_context.state
+    tool_context.state["ui:status_update"] = "Running virtual focus group — generating panelist portraits, voiceovers, and evaluation..."
     brand = state.get("brand", "")
     product = state.get("target_product", "")
     audience = state.get("target_audience", "")
@@ -1715,6 +1740,7 @@ async def save_report(tool_context: ToolContext) -> dict:
     Returns a dict with the PDF artifact key and GCS URI.
     """
     state = tool_context.state
+    tool_context.state["ui:status_update"] = "Compiling final campaign PDF report with all assets..."
     processed_report = state.get("combined_final_cited_report", "")
     gcs_folder = state.get("gcs_folder", "")
 
@@ -1936,18 +1962,22 @@ After trends are selected, run the remaining pipeline stages **ONE TOOL PER RESP
 **CRITICAL: You MUST output text AFTER each tool result BEFORE calling the next tool. NEVER chain multiple tool calls in a single response. Each response should contain AT MOST one function call.**
 
 Order:
-1. run_research → **INCLUDE THE FULL RESEARCH REPORT** in your response. The report is the key deliverable — show the complete text, not just a summary. Include all sections: Campaign Guide, Trend Analysis, Key Insights, Strategic Recommendations. Also announce the **Draft PDF artifact** saved (URI from `draft_pdf_uri`).
-2. run_ad_creative → show the 2 winning ad copy headlines and their trend hooks
-3. generate_images → report ALL 3 Gecko fidelity scores (product, person, trend ASSET types)
-4. generate_commercial → report video duration, GCS URI, reference images used
-5. run_focus_group → share panelist names, overall score, Go/No-Go verdict, video reel link
+1. run_research → **INCLUDE THE FULL RESEARCH REPORT** in your response. The report is the key deliverable — show the complete text, not just a summary. Include ALL sections: Campaign Guide, Trend Analysis, Key Insights, Strategic Recommendations. Also announce the **Draft PDF artifact** saved (URI from `draft_pdf_uri`). Start with "Here is the complete research report:" before the content.
+2. run_ad_creative → **SHOW ALL AD COPIES** with full headlines, body text, CTAs, and trend hooks. Show ALL visual concepts with descriptions and prompt directions. Present them in a clear numbered list so the user can see exactly what creative directions were selected and why.
+3. generate_images → report ALL 3 Gecko fidelity scores (product, person, trend ASSET types). For each image show: concept name, reference type, Gecko score, pass/fail, and any failing quality verdicts.
+4. generate_commercial → report video duration, GCS URI, reference images used. Describe the commercial concept and visual direction.
+5. run_focus_group → share ALL panelist names/personas, their individual scores, overall score, Go/No-Go verdict, key testimonial excerpts, and video reel link.
 6. save_report → **PROMINENTLY announce** the Final Campaign PDF:
    - Show the `gcs_uri` as a clickable GCS link
    - List what the PDF contains (sections from `pdf_contents`)
    - Also show the draft research PDF URI from `draft_pdf_uri`
    - State: "Your campaign report PDF is ready for download"
 
-Between stages, give brief CEO-friendly status updates explaining what was just accomplished and what's next.
+**CRITICAL: Between EVERY stage, write a substantive 3-5 sentence CEO-friendly status update.** Explain:
+- What was just accomplished and key highlights
+- What data/decisions were used (e.g., "Based on the 'Sustainable Laundry' trend...")
+- What's coming next and why it matters
+- Never leave the user waiting with no information — always communicate progress.
 
 ## Rules
 
