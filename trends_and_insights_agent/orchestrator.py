@@ -1308,12 +1308,51 @@ async def generate_commercial(tool_context: ToolContext) -> dict:
         except Exception as e:
             logger.warning(f"[generate_commercial] save_artifact failed: {e}")
 
+        # Gecko fidelity scoring for video
+        tool_context.state["ui:status_update"] = "Evaluating commercial video quality with Gecko fidelity..."
+        try:
+            gecko_prompt_text = state.get("key_selling_points", product)
+            project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
+            gecko_result = gecko_evaluate(
+                prompt=gecko_prompt_text, media_uri=final_gcs_uri,
+                media_type="video", project_id=project_id, location="us-central1",
+            )
+            if isinstance(gecko_result, dict) and gecko_result.get("status") == "success":
+                commercial_data["gecko_fidelity_score"] = gecko_result.get("score", 0.0)
+                if gecko_result.get("failing"):
+                    commercial_data["gecko_failing_verdicts"] = gecko_result["failing"]
+                if gecko_result.get("passing"):
+                    commercial_data["gecko_passing_verdicts"] = gecko_result["passing"]
+                logger.info(f"[generate_commercial] Gecko video score: {gecko_result.get('score', 'N/A')}")
+            elif isinstance(gecko_result, (int, float)):
+                commercial_data["gecko_fidelity_score"] = float(gecko_result)
+        except Exception as e:
+            logger.warning(f"[generate_commercial] Gecko video eval failed (non-fatal): {e}")
+
         # GCS write-through FIRST
         _gcs_state_write("commercial_artifact", commercial_data, gcs_folder)
         tool_context.state["commercial_artifact"] = commercial_data
         tool_context.state["vid_artifact_keys"] = {"vid_artifact_keys": [commercial_data]}
         tool_context.state["_commercial_clips"] = {}
-        return {"status": "ok", "gcs_uri": final_gcs_uri, "duration": duration, "commercial": commercial_data}
+
+        # Build Gecko detail for return
+        gecko_detail = {}
+        video_score = commercial_data.get("gecko_fidelity_score")
+        if video_score is not None:
+            gecko_detail["score"] = f"{video_score:.2f}"
+            gecko_detail["passed"] = video_score >= GECKO_THRESHOLD
+            gecko_detail["threshold"] = f"{GECKO_THRESHOLD:.1f}"
+            if commercial_data.get("gecko_passing_verdicts"):
+                gecko_detail["passing_verdicts"] = commercial_data["gecko_passing_verdicts"]
+            if commercial_data.get("gecko_failing_verdicts"):
+                gecko_detail["failing_verdicts"] = commercial_data["gecko_failing_verdicts"]
+
+        return {
+            "status": "ok", "gcs_uri": final_gcs_uri, "duration": duration,
+            "commercial": commercial_data,
+            "gecko_video_fidelity": gecko_detail,
+            "instructions": "Report the Gecko video fidelity score, pass/fail, and specific quality verdicts for the commercial.",
+        }
 
     except Exception as e:
         logger.warning(f"[generate_commercial] Exception: {e}")
@@ -1346,14 +1385,18 @@ async def run_focus_group(tool_context: ToolContext) -> dict:
     audience = state.get("target_audience", "")
     selling_points = state.get("key_selling_points", "")
     research_report = state.get("combined_final_cited_report", "")[:2000]
-    ad_copies = state.get("final_select_ad_copies", {})
+    _ad_raw = state.get("final_select_ad_copies", {})
+    ad_copies = _ad_raw.get("final_select_ad_copies", _ad_raw) if isinstance(_ad_raw, dict) else _ad_raw
     if isinstance(ad_copies, dict):
         ad_copies = ad_copies.get("final_select_ad_copies", [])
-    visual_concepts = state.get("final_select_visual_concepts") or state.get("final_select_vis_concepts") or {}
+    _vc_raw = state.get("final_select_visual_concepts") or state.get("final_select_vis_concepts") or {}
+    visual_concepts = _vc_raw.get("final_select_visual_concepts", _vc_raw.get("final_select_vis_concepts", _vc_raw)) if isinstance(_vc_raw, dict) else _vc_raw
     if isinstance(visual_concepts, dict):
         visual_concepts = visual_concepts.get("final_select_visual_concepts") or visual_concepts.get("final_select_vis_concepts") or []
-    commercial = state.get("commercial_artifact", {})
-    img_keys = state.get("img_artifact_keys", {})
+    _com_raw = state.get("commercial_artifact", {})
+    commercial = _com_raw.get("commercial_artifact", _com_raw) if isinstance(_com_raw, dict) else _com_raw
+    _img_raw = state.get("img_artifact_keys", {})
+    img_keys = _img_raw.get("img_artifact_keys", _img_raw) if isinstance(_img_raw, dict) else _img_raw
     if isinstance(img_keys, dict):
         img_keys = img_keys.get("img_artifact_keys", [])
     trend_context = _get_trend_context({k: state.get(k) for k in ["target_search_trends", "target_yt_trends", "img_artifact_keys"]})
@@ -1395,11 +1438,16 @@ async def run_focus_group(tool_context: ToolContext) -> dict:
 ## Research Summary
 {research_report}
 
-## Creative Assets
-- Ad Copies: {ad_copies}
-- Visual Concepts: {visual_concepts}
-- Commercial: {commercial}
+## Ad Copy Concepts
+{chr(10).join(f'- Headline: "{c.get("headline", "?")}" | Body: "{c.get("body", "?")}" | CTA: "{c.get("cta", "?")}"' for c in ad_copies if isinstance(c, dict)) if isinstance(ad_copies, list) and ad_copies else "No ad copies available"}
+
+## Visual Concepts
+{chr(10).join(f'- {c.get("concept", c.get("name", "?"))}: {c.get("description", c.get("prompt", "?"))}' for c in visual_concepts if isinstance(c, dict)) if isinstance(visual_concepts, list) and visual_concepts else "No visual concepts available"}
+
+## Generated Assets
 - Reference Images: {len(img_keys) if isinstance(img_keys, list) else 0} generated
+{chr(10).join(f'  - {img.get("concept_name", "?")}: {img.get("shot_type", "?")} ({img.get("reference_type", "?")}) — Gecko score: {img.get("fidelity_score", "N/A")}' for img in (img_keys if isinstance(img_keys, list) else [])) if img_keys else ""}
+- Commercial Video: {commercial.get("gcs_uri", "not generated") if isinstance(commercial, dict) else str(commercial)[:200] if commercial else "not generated"}
 - Trend Connection: {trend_context}
 
 ## Instructions
@@ -1964,8 +2012,8 @@ After trends are selected, run the remaining pipeline stages **ONE TOOL PER RESP
 Order:
 1. run_research → **INCLUDE THE FULL RESEARCH REPORT** in your response. The report is the key deliverable — show the complete text, not just a summary. Include ALL sections: Campaign Guide, Trend Analysis, Key Insights, Strategic Recommendations. Also announce the **Draft PDF artifact** saved (URI from `draft_pdf_uri`). Start with "Here is the complete research report:" before the content.
 2. run_ad_creative → **SHOW ALL AD COPIES** with full headlines, body text, CTAs, and trend hooks. Show ALL visual concepts with descriptions and prompt directions. Present them in a clear numbered list so the user can see exactly what creative directions were selected and why.
-3. generate_images → report ALL 3 Gecko fidelity scores (product, person, trend ASSET types). For each image show: concept name, reference type, Gecko score, pass/fail, and any failing quality verdicts.
-4. generate_commercial → report video duration, GCS URI, reference images used. Describe the commercial concept and visual direction.
+3. generate_images → report ALL 3 Gecko fidelity scores (product, person, trend ASSET types). For each image show: concept name, reference type, Gecko score, pass/fail, and any failing quality verdicts. If any image scores below 0.7, explain that it will be automatically regenerated with improved prompts incorporating the failing verdicts.
+4. generate_commercial → report video duration, GCS URI, reference images used, AND the **Gecko video fidelity score** with pass/fail and quality verdicts. Describe the commercial concept and visual direction.
 5. run_focus_group → share ALL panelist names/personas, their individual scores, overall score, Go/No-Go verdict, key testimonial excerpts, and video reel link.
 6. save_report → **PROMINENTLY announce** the Final Campaign PDF:
    - Show the `gcs_uri` as a clickable GCS link
